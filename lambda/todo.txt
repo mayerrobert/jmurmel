@@ -5,13 +5,6 @@ mlib: get-setf-expansion sollte eigentlich multiple-value liefern, nicht list
 mlib: ggf. nth und nthcdr vermehrt einsetzen statt cdddr usw.,
       cXr (und ggf. print, ... weitere?) vielleicht in ein eigenes CL compatibility file auslagern?!
 
-checken ob in kompiliertem code values früh genug genullt wird
-JMurmel> (write (hashref (hash) 1))
-nil
- -> nil
- -> nil
--> ist im interpreter UND compiler falsch
-
 
 equal von mlib nach murmel schieben, damit man hashmaps mit strings machen kann #H(equal "eins" 1 "zwei" 2)
 

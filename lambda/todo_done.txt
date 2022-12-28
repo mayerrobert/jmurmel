@@ -2251,3 +2251,12 @@ read-string        (read-string filenamestr [charset]) -> result-string
 
 write-string       (write-string filenamestr string [appendp [charset]]) -> nil
 -> CL              (write-string string &optional output-stream &key start end) => string
+
+
+checken ob in kompiliertem code values früh genug genullt wird
+JMurmel> (write (hashref (hash) 1))
+nil
+ -> nil
+ -> nil
+-> ist im interpreter UND compiler falsch
+   interpreter und compiler resetten values zwischen forms, aber nicht bei nested forms

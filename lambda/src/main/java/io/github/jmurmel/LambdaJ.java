@@ -2279,10 +2279,10 @@ public class LambdaJ {
                     ConsCell allArgs = null;
                     final Object valueForms = cdr(ccArguments);
                     if (valueForms != null) for (Object valueForm : listOrMalformed("multiple-value-call", valueForms)) {
-                        values = NO_VALUES;
                         final Object prim = eval(valueForm, env, stack, level, traceLvl);
                         final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
-                        if (newValues != null) allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues));
+                        allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues)); // todo ggf. statt append2: appendPos merken
+                        values = NO_VALUES;
                     }
                     argList = allArgs;
                     if (doOpencode && funcOrSymbol instanceof LambdaJSymbol && ((LambdaJSymbol)funcOrSymbol).primitive()) {
@@ -2934,8 +2934,7 @@ public class LambdaJ {
     }
 
     private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
-        varargsMin("multiple-value-bind", bindingsAndBodyForms, 2);
-        values = NO_VALUES;
+        varargsMin("multiple-value-bind", bindingsAndBodyForms, 2); // todo sollte eig nicht noetig sein, sollte in expandForm gecheckt werden
         final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
         final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
         values = NO_VALUES;
@@ -3028,6 +3027,7 @@ public class LambdaJ {
                 insertPos = currentArg;
             }
         }
+        values = NO_VALUES; // todo oder doch besser im loop nach jedem eval?
         if (traceOn) dbgEvalDone("evlis", forms, head, stack, level);
         return head;
     }
@@ -7049,7 +7049,7 @@ public class LambdaJ {
 
 
         // logic, predicates
-        private Object bool(boolean result) { return result ? _t : null; }
+        private Object bool(boolean result) { values = null; return result ? _t : null; }
 
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length);        return bool(args[0] == args[1]); }
 
@@ -7097,28 +7097,29 @@ public class LambdaJ {
 
 
         // conses and lists
-        public final  Object _car      (Object... args) { oneArg("car",     args.length); return _car(args[0]); }
-        public final Object  _car      (Object l)       { return LambdaJ.car(l); } // also used by generated code
-        public final Object  _car      (ConsCell l)     { return LambdaJ.car(l); }
+        public final Object _car       (Object... args) { oneArg("car",     args.length); return _car(args[0]); }
+        public final Object  _car      (Object l)       { values = null; return LambdaJ.car(l); } // also used by generated code
+        public final Object  _car      (ConsCell l)     { values = null; return LambdaJ.car(l); }
 
-        public final  Object _cdr      (Object... args) { oneArg("cdr",     args.length); return _cdr(args[0]); }
-        public final Object  _cdr      (Object l)       { return LambdaJ.cdr(l); } // also used by generated code
-        public final Object  _cdr      (ConsCell l)     { return LambdaJ.cdr(l); }
+        public final Object _cdr       (Object... args) { oneArg("cdr",     args.length); return _cdr(args[0]); }
+        public final Object  _cdr      (Object l)       { values = null; return LambdaJ.cdr(l); } // also used by generated code
+        public final Object  _cdr      (ConsCell l)     { values = null; return LambdaJ.cdr(l); }
 
-        public final  ConsCell _cons   (Object... args) { twoArgs("cons",   args.length); return _cons(args[0], args[1]); }
-        public static ConsCell _cons(Object car, Object cdr)  { return ConsCell.cons(car, cdr); } // also used by generated code
+        public final ConsCell _cons   (Object... args)      { twoArgs("cons",   args.length); return _cons(args[0], args[1]); }
+        public final ConsCell _cons(Object car, Object cdr) { values = null; return ConsCell.cons(car, cdr); } // also used by generated code
 
-        public final  ConsCell _rplaca (Object... args) { twoArgs("rplaca", args.length);  return _rplaca(args[0], args[1]); }
-        public static ConsCell _rplaca(Object l, Object newCar) { return LambdaJ.requireList("rplaca", l).rplaca(newCar); }
-        public static ConsCell _rplaca(ConsCell l, Object newCar) { return l.rplaca(newCar); }
+        public final ConsCell _rplaca (Object... args)           { twoArgs("rplaca", args.length);  return _rplaca(args[0], args[1]); }
+        public final ConsCell _rplaca(Object l, Object newCar)   { values = null; return LambdaJ.requireList("rplaca", l).rplaca(newCar); }
+        public final ConsCell _rplaca(ConsCell l, Object newCar) { values = null; return l.rplaca(newCar); }
 
-        public final  ConsCell _rplacd (Object... args) { twoArgs("rplacd", args.length);  return _rplacd(args[0], args[1]); }
-        public static ConsCell _rplacd(Object l, Object newCdr) { return LambdaJ.requireList("rplacd", l).rplacd(newCdr); }
-        public static ConsCell _rplacd(ConsCell l, Object newCdr) { return l.rplacd(newCdr); }
+        public final ConsCell _rplacd (Object... args)           { twoArgs("rplacd", args.length);  return _rplacd(args[0], args[1]); }
+        public final ConsCell _rplacd(Object l, Object newCdr)   { values = null; return LambdaJ.requireList("rplacd", l).rplacd(newCdr); }
+        public final ConsCell _rplacd(ConsCell l, Object newCdr) { values = null; return l.rplacd(newCdr); }
 
-        public final ConsCell _list    (Object... args) { return ListBuilder.list(args); }
-        public final Object   listStar (Object... args) { varargs1("list*", args.length); return ListBuilder.listStar(args); }
+        public final ConsCell _list    (Object... args) { values = null; return ListBuilder.list(args); }
+        public final Object   listStar (Object... args) { values = null; varargs1("list*", args.length); return ListBuilder.listStar(args); }
         public final Object   _append  (Object... args) {
+            values = null;
             int nArgs;
             if (args == null || (nArgs = args.length) == 0) return null;
             if (nArgs == 1) return args[0];
@@ -7140,19 +7141,19 @@ public class LambdaJ {
             lb.appendLast(args[nArgs]);
             return lb.first();
         }
-        public final ConsCell _assq    (Object... args) { twoArgs("assq",        args.length); return assq(args[0], args[1]); }
-        public final ConsCell _assoc   (Object... args) { twoArgs("assoc",       args.length); return assoc(args[0], args[1]); }
+        public final ConsCell _assq    (Object... args) { values = null; twoArgs("assq",        args.length); return assq(args[0], args[1]); }
+        public final ConsCell _assoc   (Object... args) { values = null; twoArgs("assoc",       args.length); return assoc(args[0], args[1]); }
 
 
         // numbers, characters
 
-        public final double add        (Object... args) { if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret += toDouble(args[i]); return ret; } return 0.0; }
-        public final double mul        (Object... args) { if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret *= toDouble(args[i]); return ret; } return 1.0; }
+        public final double add        (Object... args) { values = null; if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret += toDouble(args[i]); return ret; } return 0.0; }
+        public final double mul        (Object... args) { values = null; if (args.length > 0) { double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret *= toDouble(args[i]); return ret; } return 1.0; }
 
-        public final double sub        (Object... args) { varargs1("-", args.length);
+        public final double sub        (Object... args) { values = null; varargs1("-", args.length);
                                                           if (args.length == 1) return 0.0 - toDouble(args[0]);
                                                           double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret -= toDouble(args[i]); return ret; }
-        public final double quot       (Object... args) { varargs1("/", args.length);
+        public final double quot       (Object... args) { values = null; varargs1("/", args.length);
                                                           if (args.length == 1) return 1.0 / toDouble(args[0]);
                                                           double ret = toDouble(args[0]); for (int i = 1; i < args.length; i++) ret /= toDouble(args[i]); return ret; }
 
@@ -7163,6 +7164,7 @@ public class LambdaJ {
         public final Object ge         (Object... args) { return compare(">=", args, (d1, d2) -> d1 >= d2); }
         public final Object gt         (Object... args) { return compare(">",  args, (d1, d2) -> d1 >  d2); }
         private Object compare(String op, Object[] args, DoubleBiPred pred) {
+            values = null;
             final int length = args.length;
             varargs1(op, length);
             double prev = toDouble(args[0]);
@@ -7174,12 +7176,12 @@ public class LambdaJ {
             return _t;
         }
 
-        public final Number   inc      (Object... args) { oneArg("1+",         args.length); return LambdaJ.inc(args[0]); }
-        public final Number   inc      (Object arg)     { return LambdaJ.inc(arg); }
-        public final Number   dec      (Object... args) { oneArg("1-",         args.length); return LambdaJ.dec(args[0]); }
-        public final Number   dec      (Object arg)     { return LambdaJ.dec(arg); }
+        public final Number   inc      (Object... args) { values = null; oneArg("1+",         args.length); return LambdaJ.inc(args[0]); }
+        public final Number   inc      (Object arg)     { values = null; return LambdaJ.inc(arg); }
+        public final Number   dec      (Object... args) { values = null; oneArg("1-",         args.length); return LambdaJ.dec(args[0]); }
+        public final Number   dec      (Object arg)     { values = null; return LambdaJ.dec(arg); }
 
-        public final Number   _signum  (Object... args) { oneArg("signum",        args.length); return cl_signum (args[0]); }
+        public final Number   _signum  (Object... args) { values = null; oneArg("signum",        args.length); return cl_signum (args[0]); }
 
         public final long     _round   (Object... args) { varargs1_2("round",     args.length); return toFixnum(cl_round   (quot12(args))); }
         public final long     _floor   (Object... args) { varargs1_2("floor",     args.length); return toFixnum(Math.floor (quot12(args))); }
@@ -7191,33 +7193,33 @@ public class LambdaJ {
         public final double   _fceiling (Object... args) { varargs1_2("fceiling", args.length); return Math.ceil  (quot12(args)); }
         public final double   _ftruncate(Object... args) { varargs1_2("ftruncate",args.length); return cl_truncate(quot12(args)); }
 
-        public static double cl_round(double d) { return Math.rint(d); }
+        public static double cl_round(double d)    { return Math.rint(d); }
         public static double cl_truncate(double d) { return LambdaJ.cl_truncate(d); }
-        public static long toFixnum(double d) { return LambdaJ.toFixnum(d); }
-        private static double quot12(Object[] args) { return args.length == 2 ? toDouble(args[0]) / toDouble(args[1]) : toDouble(args[0]); }
+        public static long   toFixnum(double d)    { return LambdaJ.toFixnum(d); }
+        private double quot12(Object[] args) { values = null; return args.length == 2 ? toDouble(args[0]) / toDouble(args[1]) : toDouble(args[0]); }
 
-        public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); return Math.sqrt (toDouble(args[0])); }
-        public final double   _log     (Object... args) { oneArg("log",           args.length); return Math.log  (toDouble(args[0])); }
-        public final double   _log10   (Object... args) { oneArg("log10",         args.length); return Math.log10(toDouble(args[0])); }
-        public final double   _exp     (Object... args) { oneArg("exp",           args.length); return Math.exp  (toDouble(args[0])); }
-        public final double   _expt    (Object... args) { twoArgs("expt",         args.length); return Math.pow  (toDouble(args[0]), toDouble(args[1])); }
+        public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); values = null; return Math.sqrt (toDouble(args[0])); }
+        public final double   _log     (Object... args) { oneArg("log",           args.length); values = null; return Math.log  (toDouble(args[0])); }
+        public final double   _log10   (Object... args) { oneArg("log10",         args.length); values = null; return Math.log10(toDouble(args[0])); }
+        public final double   _exp     (Object... args) { oneArg("exp",           args.length); values = null; return Math.exp  (toDouble(args[0])); }
+        public final double   _expt    (Object... args) { twoArgs("expt",         args.length); values = null; return Math.pow  (toDouble(args[0]), toDouble(args[1])); }
         public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(toDouble(args[0]), toDouble(args[1])); }
-        public static double cl_mod(double lhs, double rhs) { return LambdaJ.cl_mod(lhs, rhs); }
-        public final double   _rem     (Object... args) { twoArgs("rem",          args.length); return toDouble(args[0]) % toDouble(args[1]); }
+        public final double cl_mod(double lhs, double rhs) { values = null; return LambdaJ.cl_mod(lhs, rhs); }
+        public final double   _rem     (Object... args) { twoArgs("rem",          args.length); values = null; return toDouble(args[0]) % toDouble(args[1]); }
 
 
         // vectors, sequences
 
-        public final Object   makeArray(Object... args) { varargsMinMax("make-array", args.length, 1, 3);
+        public final Object   makeArray(Object... args) { values = null; varargsMinMax("make-array", args.length, 1, 3);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
                                                           return LambdaJ.makeArray(sBit, sCharacter, arraySlice(args)); }
-        public final long     vectorLength(Object... args) { oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
-        public final Object   vectorCopy  (Object... args) { varargs1_2("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0], args.length > 1 && args[1] != null); }
-        public final Object   vectorFill  (Object... args) { varargsMinMax("vector-fill", args.length, 2, 4);
+        public final long     vectorLength(Object... args) { values = null; oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
+        public final Object   vectorCopy  (Object... args) { values = null; varargs1_2("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0], args.length > 1 && args[1] != null); }
+        public final Object   vectorFill  (Object... args) { values = null; varargsMinMax("vector-fill", args.length, 2, 4);
                                                              return LambdaJ.vectorFill(args[0], args[1], args.length <= 2 ? null : args[2], args.length <= 3 ? null : args[3]); }
-        public final long     vectorAdd   (Object... args) { twoArgs("vector-add", args.length); return LambdaJ.vectorAdd(args[0], args[1]); }
+        public final long     vectorAdd   (Object... args) { values = null; twoArgs("vector-add", args.length); return LambdaJ.vectorAdd(args[0], args[1]); }
         public final Object   vectorToList (Object... args) {
-            oneArg("vector->list", args.length);
+            values = null; oneArg("vector->list", args.length);
             final Object maybeVector = args[0];
 
             if (LambdaJ.svectorp(maybeVector))    return simpleVectorToList(args);
@@ -7235,15 +7237,15 @@ public class LambdaJ {
 
             throw errorNotAVector("vector->list", maybeVector);
         }
-        public final Object   listToVector(Object... args) { varargs1_2("list->vector", args.length); return LambdaJ.listToVector(args[0], args.length > 1 && args[1] != null); }
+        public final Object   listToVector(Object... args) { values = null; varargs1_2("list->vector", args.length); return LambdaJ.listToVector(args[0], args.length > 1 && args[1] != null); }
 
-        public final long     _svlength(Object... args) { oneArg("svlength", args.length); return svlength(args[0]); }
+        public final long     _svlength(Object... args) { values = null; oneArg("svlength", args.length); return svlength(args[0]); }
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return _svref(args[0], args[1]); }
-        public static Object  _svref(Object v, Object idx) { return LambdaJ.svref(v, toArrayIndex(idx)); }
+        public final Object   _svref(Object v, Object idx) { values = null; return LambdaJ.svref(v, toArrayIndex(idx)); }
         public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return _svset(args[0], args[1], args[2]); }
-        public static Object  _svset(Object v, Object idx, Object val) { return LambdaJ.svset(v, toArrayIndex(idx), val); }
+        public final Object   _svset(Object v, Object idx, Object val) { values = null; return LambdaJ.svset(v, toArrayIndex(idx), val); }
         public final Object   simpleVectorToList (Object... args) {
-            oneArg("simple-vector->list", args.length);
+            values = null; oneArg("simple-vector->list", args.length);
             final Object maybeVector = args[0];
             final Object[] s = LambdaJ.requireSimpleVector("simple-vector->list", maybeVector);
             final ListBuilder ret = new ListBuilder();
@@ -7251,15 +7253,15 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s[i]);
             return ret.first();
         }
-        public final Object listToSimpleVector(Object... args) { oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
-        public final Object _vector  (Object... args) { return args; }
+        public final Object listToSimpleVector(Object... args) { values = null; oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
+        public final Object _vector  (Object... args) { values = null; return args; }
 
-        public final long      _slength(Object... args) { oneArg("slength", args.length); return slength(args[0]); }
-        public final char      _sref   (Object... args) { twoArgs("sref", args.length);   return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
-        public final char      _sset   (Object... args) { threeArgs("sset", args.length); return LambdaJ.sset(args[0], toArrayIndex(args[1]), LambdaJ.requireChar("sset", args[2])); }
+        public final long      _slength(Object... args) { values = null; oneArg("slength", args.length); return slength(args[0]); }
+        public final char      _sref   (Object... args) { values = null; twoArgs("sref", args.length);   return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
+        public final char      _sset   (Object... args) { values = null; threeArgs("sset", args.length); return LambdaJ.sset(args[0], toArrayIndex(args[1]), LambdaJ.requireChar("sset", args[2])); }
         public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringDesignator("string=", args[0]), LambdaJ.requireStringDesignator("string=", args[1]))); }
         public final Object   stringToList (Object... args) {
-            oneArg("string->list", args.length);
+            values = null; oneArg("string->list", args.length);
             final Object maybeString = args[0];
             final ListBuilder ret = new ListBuilder();
             if (maybeString instanceof char[]) {
@@ -7273,22 +7275,22 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
             return ret.first();
         }
-        public final Object listToString(Object... args) { varargs1_2("list->string", args.length); return LambdaJ.listToString(args[0], args.length > 1 && args[1] != null); }
+        public final Object listToString(Object... args) { values = null; varargs1_2("list->string", args.length); return LambdaJ.listToString(args[0], args.length > 1 && args[1] != null); }
 
-        public final long   charInt     (Object... args) { oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
-        public final char   intChar     (Object... args) { oneArg("code-char",     args.length); return (char) toInt(args[0]); }
+        public final long   charInt     (Object... args) { values = null; oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
+        public final char   intChar     (Object... args) { values = null; oneArg("code-char",     args.length); return (char) toInt(args[0]); }
 
-        public final  long  _bvlength   (Object... args) { oneArg("bvlength", args.length);      return bvlength(args[0]); }
+        public final  long  _bvlength   (Object... args) { values = null; oneArg("bvlength", args.length);      return bvlength(args[0]); }
         public final  long  _bvref      (Object... args) { twoArgs("bvref", args.length);        return _bvref(args[0], args[1]); }
-        public static long  _bvref(Object v, Object idx) { return LambdaJ.bvref(v, toArrayIndex(idx)); }
-        public static long  _bvref(Object v, long idx)   { return LambdaJ.bvref(v, toArrayIndex(idx)); }
+        public final  long  _bvref(Object v, Object idx) { values = null; return LambdaJ.bvref(v, toArrayIndex(idx)); }
+        public final  long  _bvref(Object v, long idx)   { values = null; return LambdaJ.bvref(v, toArrayIndex(idx)); }
         public final  long  _bvset      (Object... args) { threeArgs("bvset", args.length);      return _bvset(args[0], args[1], args[2]); }
-        public static long  _bvset(Object v, Object idx, Object val) { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
-        public static long  _bvset(Object v, Object idx, long val)   { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
-        public static long  _bvset(Object v, long idx, long val)     { return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public final  long  _bvset(Object v, Object idx, Object val) { values = null; return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public final  long  _bvset(Object v, Object idx, long val)   { values = null; return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public final  long  _bvset(Object v, long idx, long val)     { values = null; return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
         public final Object bvEq        (Object... args)             { twoArgs("bv=", args.length); return bool(LambdaJ.bvEq(args[0], args[1])); }
         public final Object bitVectorToList(Object... args) {
-            oneArg("bit-vector->list", args.length);
+            values = null; oneArg("bit-vector->list", args.length);
             final Object maybeVector = args[0];
             if (maybeVector instanceof boolean[]) {
                 final boolean[] s = (boolean[])maybeVector;
@@ -7307,76 +7309,77 @@ public class LambdaJ {
             else throw errorNotABitVector("bit-vector->list", maybeVector);
         }
         public final Object listToBitVector(Object... args) {
-            varargs1_2("list->bit-vector", args.length);
+            values = null; varargs1_2("list->bit-vector", args.length);
             return LambdaJ.listToBitVector(LambdaJ.requireList("list->bit-vector", args[0]), args.length > 1 && args[1] != null);
         }
 
-        public final Object   _seqref  (Object... args) { twoArgs("seqref",   args.length); return LambdaJ.seqref(args[0], toArrayIndex(args[1])); }
-        public final Object   _seqset  (Object... args) { threeArgs("seqset", args.length); return LambdaJ.seqset(args[0], toArrayIndex(args[1]), args[2]); }
+        public final Object   _seqref  (Object... args) { values = null; twoArgs("seqref",   args.length); return LambdaJ.seqref(args[0], toArrayIndex(args[1])); }
+        public final Object   _seqset  (Object... args) { values = null; threeArgs("seqset", args.length); return LambdaJ.seqset(args[0], toArrayIndex(args[1]), args[2]); }
 
 
         // Hashtables
-        public final Object _hash          (Object... args)      {                                              return LambdaJ.hash(symtab, arraySlice(args)); }
-        public final Object makeHash      (Object... args)      { varargs0_2("make-hash-table", args.length);   return makeHashTable(symtab,
-                                                                                                                                     args.length >= 1 ? args[0] : null,
-                                                                                                                                     args.length >= 2 ? toNonnegInt("make-hash-table", cadr(args)) : DEFAULT_HASH_SIZE); }
+        public final Object _hash         (Object... args)      { values = null;                                               return LambdaJ.hash(symtab, arraySlice(args)); }
+        public final Object makeHash      (Object... args)      { values = null; varargs0_2("make-hash-table", args.length);   return makeHashTable(symtab,
+                                                                                                                                                    args.length >= 1 ? args[0] : null,
+                                                                                                                                                    args.length >= 2 ? toNonnegInt("make-hash-table", cadr(args)) : DEFAULT_HASH_SIZE); }
         public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args.length, 2, 3);  values = hashref(args[0], args[1], args.length == 2 ? NO_DEFAULT_VALUE : args[2]); return values[0]; }
-        public final Object _hashset      (Object... args)      { varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
-        public final Object hashTableCount(Object... args)      { oneArg("hash-table-count", args.length);      return LambdaJ.hashTableCount(args[0]); }
-        public final Object _clrhash      (Object... args)      { oneArg("clrhash", args.length);               return LambdaJ.clrhash(args[0]); }
+        public final Object _hashset      (Object... args)      { values = null; varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
+        public final Object hashTableCount(Object... args)      { values = null; oneArg("hash-table-count", args.length);      return LambdaJ.hashTableCount(args[0]); }
+        public final Object _clrhash      (Object... args)      { values = null; oneArg("clrhash", args.length);               return LambdaJ.clrhash(args[0]); }
         public final Object hashRemove    (Object... args)      { varargs1_2("hash-table-remove", args.length); return bool(LambdaJ.hashRemove(arraySlice(args))); }
-        public final Object scanHash      (Object... args)      { oneArg("scan-hash-table", args.length);       return intp.scanHash(args[0]); } // todo static oder scanHash fuer compiler
+        public final Object scanHash      (Object... args)      { values = null; oneArg("scan-hash-table", args.length);       return intp.scanHash(args[0]); } // todo static oder scanHash fuer compiler
 
         // I/O
-        public final Object _read             (Object... args)  { varargs0_1("read",                    args.length);       return LambdaJ.read(lispReader, arraySlice(args)); }
-        public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args.length, 1, 4); values = LambdaJ.readFromString(arraySlice(args)); return values[0]; }
-        public final Object readTextfileLines (Object... args)  { varargs1_2("read-textfile-lines",     args.length);       return LambdaJ.readTextfileLines(arraySlice(args)); }
-        public final Object readTextfile      (Object... args)  { varargs1_2("read-textfile",           args.length);       return LambdaJ.readTextfile(arraySlice(args)); }
-        public final Object writeTextfileLines(Object... args)  { varargsMinMax("write-textfile-lines", args.length, 2, 4); return LambdaJ.writeTextfileLines(arraySlice(args)); }
-        public final Object writeTextfile     (Object... args)  { varargsMinMax("write-textfile",       args.length, 2, 4); return LambdaJ.writeTextfile(arraySlice(args)); }
-        public final Object writeToString     (Object... args)  { varargs1_2("write-to-string",         args.length);       return LambdaJ.writeToString(args[0], args.length < 2 || args[1] != null); }
-        public final Object _write            (Object... args)  { varargs1_2("write",                   args.length);       return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
-        public final Object _writeln          (Object... args)  { varargs0_2("writeln",                 args.length);       return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
-        public final Object _lnwrite          (Object... args)  { varargs0_2("lnwrite",                 args.length);       return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _read             (Object... args)  { varargs0_1("read",                    args.length);       values = null; return LambdaJ.read(lispReader, arraySlice(args)); }
+        public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args.length, 1, 4); return ret(LambdaJ.readFromString(arraySlice(args))); }
+        public final Object readTextfileLines (Object... args)  { varargs1_2("read-textfile-lines",     args.length);       values = null; return LambdaJ.readTextfileLines(arraySlice(args)); }
+        public final Object readTextfile      (Object... args)  { varargs1_2("read-textfile",           args.length);       values = null; return LambdaJ.readTextfile(arraySlice(args)); }
+        public final Object writeTextfileLines(Object... args)  { varargsMinMax("write-textfile-lines", args.length, 2, 4); values = null; return LambdaJ.writeTextfileLines(arraySlice(args)); }
+        public final Object writeTextfile     (Object... args)  { varargsMinMax("write-textfile",       args.length, 2, 4); values = null; return LambdaJ.writeTextfile(arraySlice(args)); }
+        public final Object writeToString     (Object... args)  { varargs1_2("write-to-string",         args.length);       values = null; return LambdaJ.writeToString(args[0], args.length < 2 || args[1] != null); }
+        public final Object _write            (Object... args)  { varargs1_2("write",                   args.length);       values = null; return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
+        public final Object _writeln          (Object... args)  { varargs0_2("writeln",                 args.length);       values = null; return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _lnwrite          (Object... args)  { varargs0_2("lnwrite",                 args.length);       values = null; return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
 
-        public final Object format            (Object... args)  { varargs2("format",                    args.length);       return LambdaJ.format(lispPrinter, true, arraySlice(args)); }
-        public final Object formatLocale      (Object... args)  { varargs3("format-locale",             args.length);       return LambdaJ.formatLocale(lispPrinter, true, arraySlice(args)); }
+        public final Object format            (Object... args)  { varargs2("format",                    args.length);       values = null; return LambdaJ.format(lispPrinter, true, arraySlice(args)); }
+        public final Object formatLocale      (Object... args)  { varargs3("format-locale",             args.length);       values = null; return LambdaJ.formatLocale(lispPrinter, true, arraySlice(args)); }
 
 
         // misc
         protected Object[] values;
-        public final Object _values    (Object... args) { values = args; return args.length == 0 ? null : args[0]; }
-        public final Object _gensym    (Object... args) { varargs0_1("gensym", args.length); return LambdaJ.gensym(args.length == 0 ? null : args[0]); }
-        public final Object _trace     (Object... args) { return null; }
-        public final Object _untrace   (Object... args) { return null; }
-        public final Object _error     (Object... args) { varargs1("error", args.length); LambdaJ.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
+        public final Object _values    (Object... args) { return ret(args); }
+        public final Object _gensym    (Object... args) { values = null; varargs0_1("gensym", args.length); return LambdaJ.gensym(args.length == 0 ? null : args[0]); }
+        public final Object _trace     (Object... args) { values = null; return null; }
+        public final Object _untrace   (Object... args) { values = null; return null; }
+        public final Object _error     (Object... args) { values = null; varargs1("error", args.length); LambdaJ.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
 
 
         // time
-        public final long   getInternalRealTime(Object... args) { noArgs("get-internal-real-time", args.length); return LambdaJ.getInternalRealTime(); }
-        public final long   getInternalRunTime (Object... args) { noArgs("get-internal-run-time", args.length); return LambdaJ.getInternalRunTime(); }
-        public final long   getInternalCpuTime (Object... args) { noArgs("get-internal-cpu-time", args.length); return LambdaJ.getInternalCpuTime(); }
-        public final Object sleep              (Object... args) { oneArg("sleep", args.length); return LambdaJ.sleep(args[0]); }
-        public final long   getUniversalTime   (Object... args) { noArgs("get-universal-time", args.length); return LambdaJ.getUniversalTime(); }
-        public final Object getDecodedTime     (Object... args) { noArgs("get-decoded-time", args.length); return LambdaJ.getDecodedTime(new ListBuilder(), this::bool); }
+        public final long   getInternalRealTime(Object... args) { values = null; noArgs("get-internal-real-time", args.length); return LambdaJ.getInternalRealTime(); }
+        public final long   getInternalRunTime (Object... args) { values = null; noArgs("get-internal-run-time", args.length); return LambdaJ.getInternalRunTime(); }
+        public final long   getInternalCpuTime (Object... args) { values = null; noArgs("get-internal-cpu-time", args.length); return LambdaJ.getInternalCpuTime(); }
+        public final Object sleep              (Object... args) { values = null; oneArg("sleep", args.length); return LambdaJ.sleep(args[0]); }
+        public final long   getUniversalTime   (Object... args) { values = null; noArgs("get-universal-time", args.length); return LambdaJ.getUniversalTime(); }
+        public final Object getDecodedTime     (Object... args) { values = null; noArgs("get-decoded-time", args.length); return LambdaJ.getDecodedTime(new ListBuilder(), this::bool); }
 
 
         // Java FFI
         public final Object _jmethod   (Object... args) {
-            varargs2("jmethod", args.length);
+            values = null; varargs2("jmethod", args.length);
             return LambdaJ.findMethod(LambdaJ.requireString("jmethod", args[0]), LambdaJ.requireString("jmethod", args[1]), arraySlice(args, 2));
         }
-        public static Primitive findMethod(Object className, Object methodName, Object... paramClasses) {
+        public final Primitive findMethod(Object className, Object methodName, Object... paramClasses) {
+            values = null;
             return LambdaJ.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), arraySlice(paramClasses));
         }
 
         // makeProxy kann auch interpretierte funktionen. wenn intp==null ist, kanns aber keine geben
-        public final Object _jproxy    (Object... args) { varargs3("jproxy", args.length); return makeProxy(intp, this, arraySlice(args)); }
+        public final Object _jproxy    (Object... args) { values = null; varargs3("jproxy", args.length); return makeProxy(intp, this, arraySlice(args)); }
 
 
         // graphics
         public final Object makeFrame  (Object... args) {
-            varargsMinMax("make-frame", args.length, 1, 4);
+            values = null; varargsMinMax("make-frame", args.length, 1, 4);
             final String title = LambdaJ.requireString("make-frame", args[0]);
             final TurtleFrame ret = new TurtleFrame(title, LambdaJ.requireNumberOrNull("make-frame", nth(1, args)), LambdaJ.requireNumberOrNull("make-frame", nth(2, args)), LambdaJ.requireNumberOrNull("make-frame", nth(3, args)));
             current_frame = ret;
@@ -7421,19 +7424,21 @@ public class LambdaJ {
 
         public final Object setPixel     (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return setPixel(toInt(args[0]), toInt(args[1]), toInt(args[2]), nth(3, args)); }
         public final Object setPixel     (Object x, Object y, Object rgb) { return setPixel(x, y, rgb, null);  }
-        public final Object setPixel     (Object x, Object y, Object rgb, Object frame) { return requireFrame("set-pixel", frame).setRGB(toInt(x), toInt(y), toInt(rgb));  }
+        public final Object setPixel     (Object x, Object y, Object rgb, Object frame) { values = null; return requireFrame("set-pixel", frame).setRGB(toInt(x), toInt(y), toInt(rgb));  }
 
         public final  long rgbToPixel    (Object... args) { threeArgs("rgb-to-pixel", args.length); return rgbToPixel(args[0], args[1], args[2]); }
-        public static long rgbToPixel    (Object red, Object green, Object blue) { return (int)((toInt(red) << 16) | (toInt(green) << 8) | toInt(blue)); }
+        public final  long rgbToPixel    (Object red, Object green, Object blue) { values = null; return (int)((toInt(red) << 16) | (toInt(green) << 8) | toInt(blue)); }
 
         public final  long hsbToPixel    (Object... args) { threeArgs("hsb-to-pixel", args.length); return hsbToPixel(args[0], args[1], args[2]); }
-        public static long hsbToPixel    (Object h, Object s, Object b) { return Color.HSBtoRGB(toFloat(h), toFloat(s), toFloat(b)); }
+        public final  long hsbToPixel    (Object h, Object s, Object b) { values = null; return Color.HSBtoRGB(toFloat(h), toFloat(s), toFloat(b)); }
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
+        final Object ret(Object[] _values) { values = _values; if (_values.length == 0) return null; return _values[0]; }
+
         public final LambdaJSymbol intern(String symName) { return symtab.intern(symName); }
 
-        public static Object arrayToList(Object[] args, int start) {
+        public final Object arrayToList(Object[] args, int start) {
             if (start >= args.length) return null;
             if (args.length-start == 1) return _cons(args[start], null);
             final ListBuilder ret = new ListBuilder();
@@ -7575,6 +7580,7 @@ public class LambdaJ {
         }
 
         private TurtleFrame requireFrame(String s, Object o) {
+            values = null;
             final TurtleFrame ret;
             if (o == null && (ret = current_frame) != null) return ret;
             if (o instanceof TurtleFrame) return (TurtleFrame)o;
@@ -7675,10 +7681,12 @@ public class LambdaJ {
             ConsCell cleanups = null;
             Object r = null;
             try {
+                values = null;
                 r = fn.apply(args);
                 while (r instanceof Tailcall) {
                     final Tailcall functionCall = (Tailcall) r;
                     if (functionCall.cleanup != null) cleanups = _cons(functionCall.cleanup, cleanups);
+                    values = null;
                     r = functionCall.fn.apply(functionCall.args);
                     if (Thread.interrupted()) throw new InterruptedException("got interrupted");
                 }
