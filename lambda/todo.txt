@@ -1,4 +1,5 @@
 current_frame zw. interpreter und compiler hintri/firi kopieren?
+-> current_frame, values, *features*, lispReader, lispPrinter sollten wsl. ThreadLocals sein
 
 mlib: get-setf-expansion sollte eigentlich multiple-value liefern, nicht list
 
