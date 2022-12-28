@@ -5294,69 +5294,70 @@ public class LambdaJ {
         catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method %s.%s: %s", className, methodName, e.getMessage()); }
     }
 
-    static final Map<String, Object[]> classByName = new HashMap<>(64);
+    static final Map<String, Object[]> classByName = new HashMap<>(100, 0.75f);
     static {
-        classByName.put("boolean",   new Object[] { boolean.class,   "toBoolean",   (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
-        classByName.put("byte",      new Object[] { byte.class,      "toByte",      (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
-        classByName.put("short",     new Object[] { short.class,     "toShort",     (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
-        classByName.put("int",       new Object[] { int.class,       "toInt",       (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
-        classByName.put("long",      new Object[] { long.class,      "toLong",      (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
-        classByName.put("float",     new Object[] { float.class,     "toFloat",     (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
-        classByName.put("double",    new Object[] { double.class,    "toDouble",    (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
+        classByName.put("boolean",    new Object[] { boolean.class,   "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+        classByName.put("byte",       new Object[] { byte.class,      "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
+        classByName.put("short",      new Object[] { short.class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+        classByName.put("int",        new Object[] { int.class,       "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+        classByName.put("long",       new Object[] { long.class,      "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+        classByName.put("float",      new Object[] { float.class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+        classByName.put("double",     new Object[] { double.class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
 
-        classByName.put("char",      new Object[] { char.class,      "requireChar", (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
+        classByName.put("char",       new Object[] { char.class,      "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
 
-        classByName.put("boolean...",   new Object[] { boolean[].class,   "toBoolean",   (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
-        classByName.put("byte...",      new Object[] { byte[].class,      "toByte",      (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
-        classByName.put("short...",     new Object[] { short[].class,     "toShort",     (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
-        classByName.put("int...",       new Object[] { int[].class,       "toInt",       (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
-        classByName.put("long...",      new Object[] { long[].class,      "toLong",      (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
-        classByName.put("float...",     new Object[] { float[].class,     "toFloat",     (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
-        classByName.put("double...",    new Object[] { double[].class,    "toDouble",    (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
+        classByName.put("boolean...", new Object[] { boolean[].class, "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+        classByName.put("byte...",    new Object[] { byte[].class,    "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
+        classByName.put("short...",   new Object[] { short[].class,   "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+        classByName.put("int...",     new Object[] { int[].class,     "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+        classByName.put("long...",    new Object[] { long[].class,    "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+        classByName.put("float...",   new Object[] { float[].class,   "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+        classByName.put("double...",  new Object[] { double[].class,  "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
 
-        classByName.put("char...",      new Object[] { char.class,      "requireChar", (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
-
-
-        classByName.put("Object",    new Object[] { Object.class,    "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });      aliases("Object");
-        classByName.put("Object?",   new Object[] { Object.class,    null,                  null });                                                            aliases("Object?");
-        classByName.put("Number",    new Object[] { Number.class,    "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });       aliases("Number");
-        classByName.put("Number?",   new Object[] { Number.class,    "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) }); aliases("Number?");
-        classByName.put("Boolean",   new Object[] { Boolean.class,   "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });           aliases("Boolean");
-        classByName.put("Byte",      new Object[] { Byte.class,      "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });              aliases("Byte");
-        classByName.put("Short",     new Object[] { Short.class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });             aliases("Short");
-        classByName.put("Integer",   new Object[] { Integer.class,   "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });               aliases("Integer");
-        classByName.put("Long",      new Object[] { Long.class,      "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });              aliases("Long");
-        classByName.put("Float",     new Object[] { Float.class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });             aliases("Float");
-        classByName.put("Double",    new Object[] { Double.class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });            aliases("Double");
-
-        classByName.put("Object...",    new Object[] { Object[].class,    "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });      aliases("Object...");
-        classByName.put("Object?...",   new Object[] { Object[].class,    null,                  null });                                                            aliases("Object?...");
-        classByName.put("Number...",    new Object[] { Number[].class,    "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });       aliases("Number...");
-        classByName.put("Number?...",   new Object[] { Number[].class,    "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) }); aliases("Number?...");
-        classByName.put("Boolean...",   new Object[] { Boolean[].class,   "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });           aliases("Boolean...");
-        classByName.put("Byte...",      new Object[] { Byte[].class,      "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });              aliases("Byte...");
-        classByName.put("Short...",     new Object[] { Short[].class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });             aliases("Short...");
-        classByName.put("Integer...",   new Object[] { Integer[].class,   "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });               aliases("Integer...");
-        classByName.put("Long...",      new Object[] { Long[].class,      "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });              aliases("Long...");
-        classByName.put("Float...",     new Object[] { Float[].class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });             aliases("Float...");
-        classByName.put("Double...",    new Object[] { Double[].class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });            aliases("Double...");
-
-        classByName.put("Object?[]",    new Object[] { Object[].class,    "requireArray",        (UnaryOperator<Object>)(MurmelJavaProgram::requireArray) });        aliases("Object?[]");
+        classByName.put("char...",    new Object[] { char[].class,    "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
 
 
-        classByName.put("Character",       new Object[] { Character.class,      "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliases("Character");
-        classByName.put("CharSequence",    new Object[] { CharSequence.class,   "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) }); aliases("CharSequence");
-        classByName.put("String",          new Object[] { String.class,         "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });       aliases("String");
-        classByName.put("String?",         new Object[] { String.class,         "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) }); aliases("String?");
+        putWithAlias("Object",          new Object[] { Object.class,         "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });
+        putWithAlias("Object?",         new Object[] { Object.class,         null,                  null });
+        putWithAlias("Number",          new Object[] { Number.class,         "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });
+        putWithAlias("Number?",         new Object[] { Number.class,         "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) });
+        putWithAlias("Boolean",         new Object[] { Boolean.class,        "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+        putWithAlias("Byte",            new Object[] { Byte.class,           "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });
+        putWithAlias("Short",           new Object[] { Short.class,          "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+        putWithAlias("Integer",         new Object[] { Integer.class,        "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+        putWithAlias("Long",            new Object[] { Long.class,           "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+        putWithAlias("Float",           new Object[] { Float.class,          "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+        putWithAlias("Double",          new Object[] { Double.class,         "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });
 
-        classByName.put("Character...",    new Object[] { Character[].class,    "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });         aliases("Character...");
-        classByName.put("CharSequence...", new Object[] { CharSequence[].class, "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) }); aliases("CharSequence...");
-        classByName.put("String...",       new Object[] { String[].class,       "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });       aliases("String...");
-        classByName.put("String?...",      new Object[] { String[].class,       "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) }); aliases("String?...");
+        putWithAlias("Object...",       new Object[] { Object[].class,       "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });
+        putWithAlias("Object?...",      new Object[] { Object[].class,       null,                  null });
+        putWithAlias("Number...",       new Object[] { Number[].class,       "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });
+        putWithAlias("Number?...",      new Object[] { Number[].class,       "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) });
+        putWithAlias("Boolean...",      new Object[] { Boolean[].class,      "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+        putWithAlias("Byte...",         new Object[] { Byte[].class,         "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });
+        putWithAlias("Short...",        new Object[] { Short[].class,        "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+        putWithAlias("Integer...",      new Object[] { Integer[].class,      "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+        putWithAlias("Long...",         new Object[] { Long[].class,         "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+        putWithAlias("Float...",        new Object[] { Float[].class,        "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+        putWithAlias("Double...",       new Object[] { Double[].class,       "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });
+
+        putWithAlias("Object?[]",       new Object[] { Object[].class,       "requireArray",        (UnaryOperator<Object>)(MurmelJavaProgram::requireArray) });
+
+
+        putWithAlias("Character",       new Object[] { Character.class,      "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
+        putWithAlias("CharSequence",    new Object[] { CharSequence.class,   "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) });
+        putWithAlias("String",          new Object[] { String.class,         "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });
+        putWithAlias("String?",         new Object[] { String.class,         "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) });
+
+        putWithAlias("Character...",    new Object[] { Character[].class,    "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
+        putWithAlias("CharSequence...", new Object[] { CharSequence[].class, "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) });
+        putWithAlias("String...",       new Object[] { String[].class,       "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });
+        putWithAlias("String?...",      new Object[] { String[].class,       "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) });
     }
 
-    private static void aliases(String existing) {
-        classByName.put("java.lang." + existing, classByName.get(existing));
+    private static void putWithAlias(String clsName, Object[] entry) {
+        classByName.put(clsName, entry);
+        classByName.put("java.lang." + clsName, entry);
     }
 
     /** find and load the class given by the (possibly abbreviated) name {@code clsName} */
