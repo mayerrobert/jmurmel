@@ -114,3 +114,7 @@ min
 max
 string-split
 string-join
+string-replace
+maphash
+remhash
+gethash

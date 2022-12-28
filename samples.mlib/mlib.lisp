@@ -51,7 +51,7 @@
 ;;;     - [map](#function-map), [map-into](#function-map-into), [reduce](#function-reduce)
 
 ;;; - hash tables
-;;;     - [gethash](#function-gethash), [remhash](#function-remhash)
+;;;     - [gethash](#function-gethash), [remhash](#function-remhash), [maphash](#function-maphash)
 
 ;;; - higher order
 ;;;     - [identity](#function-identity), [constantly](#function-constantly), [complement](#function-complement)
@@ -1337,6 +1337,7 @@
 ;;; = Function: scan
 ;;;     (scan start [step [endincl]])                 -> generator-function that returns subsequent numbers starting from `start` incrementing by `step` (default: 1)
 ;;;     (scan seq-or-gen [start-idx [stop-idx-excl]]) -> generator-function that returns subsequent elements of the given sequence (list or vector) or generator
+;;;     (scan hash-table)                             -> generator-function that returns subsequent (key . value) pairs of the given hash-table
 ;;;
 ;;; Since: 1.3
 ;;;
@@ -1469,6 +1470,9 @@
                      (arg))))
 
            arg))
+
+        ((hash-table-p arg)
+         (apply scan-hash-table (cons arg more-args)))
 
         (t (apply m%scan (cons arg more-args)))))
 
@@ -1917,6 +1921,17 @@
 
 (defun remhash (key hash)
   (remhash key hash))
+
+;;; = Function: maphash
+;;;     (maphash function hash) -> nil
+;;;
+;;; Since: 1.4
+;;;
+;;; Similar to CL's `maphash` but modifying the hash-table
+;;; from within `function` is not supported.
+(defun maphash (function hash)
+  (dogenerator (pair (scan-hash-table hash))
+    (function (car pair) (cdr pair))))
 
 
 ; higher order ********************************************************

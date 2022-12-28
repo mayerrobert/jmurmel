@@ -7337,7 +7337,7 @@ public class LambdaJ {
                 private Map.Entry<Object,Object> entry;
                 @Override public Object applyCompilerPrimitive(Object... args) {
                     if (it.hasNext()) { entry = it.next(); final ConsCell tuple = ConsCell.cons(entry.getKey(), entry.getValue()); values = new Object[] { tuple, sT }; return tuple; }
-                    else { entry = null;  values = null;  return null; }
+                    else { entry = null;  values = new Object[] { null, null };  return null; }
                 }
                 @Override public Object set(Object value) { if (entry != null) { entry.setValue(value); return value; } else throw new SimpleError("no such element"); }
                 @Override public boolean remove() { it.remove(); return true; }

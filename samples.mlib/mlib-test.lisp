@@ -857,6 +857,30 @@
 
 )
 
+(tests maphash.1
+  (let ((table (make-hash-table)))
+    (dotimes (i 10) (setf (gethash i table) i))  ;  =>  NIL
+    (let ((sum-of-squares 0))
+       (maphash #'(lambda (key val) 
+                    (let ((square (* val val)))
+                      (incf sum-of-squares square)
+                      (setf (gethash key table) square)))
+                table)
+       (list (floor sum-of-squares) (hash-table-count table)))) =>  (285 10)
+
+;  (maphash #'(lambda (key val)
+;                (when (oddp val) (remhash key table)))
+;            table) =>  NIL
+;  (hash-table-count table) =>  5
+;  (maphash #'(lambda (k v) (print (list k v))) table)
+; (0 0) 
+; (8 64) 
+; (2 4) 
+; (6 36) 
+; (4 16) 
+; =>  NIL
+)
+
 
 ;;; - higher order
 
@@ -1198,6 +1222,11 @@
                                             (scan 1 1 5)))
       (push x result))
     result) => (6 5 4 3 2)
+
+  (let (result)
+    (dogenerator (x (scan #H(eql 1 11 2 22 3 33)))
+      (push x result))
+    result) => ((3 . 33) (2 . 22) (1 . 11))
 )
 
 
