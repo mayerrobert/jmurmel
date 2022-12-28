@@ -1,13 +1,15 @@
+current_frame zw. interpreter und compiler hintri/firi kopieren?
+
 mlib: get-setf-expansion sollte eigentlich multiple-value liefern, nicht list
 
 mlib: ggf. nth und nthcdr vermehrt einsetzen statt cdddr usw.,
       cXr (und ggf. print, ... weitere?) vielleicht in ein eigenes CL compatibility file auslagern?!
 
 checken ob in kompiliertem code values früh genug genullt wird
-JMurmel> (write (hashref h 1))
-1
- -> 1
- -> t
+JMurmel> (write (hashref (hash) 1))
+nil
+ -> nil
+ -> nil
 -> ist im interpreter UND compiler falsch
 
 
@@ -123,40 +125,6 @@ siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node191.html
 
 
 
-SRFI 158 https://srfi.schemers.org/srfi-158/srfi-158.html hat auch generator als funktion ohne parameter
--> das hab ich nacherfunden. SRFI-158 hat weitere tricks
-
-
-
-JFFI: vararg parameter gibts: int...
--> arrays? int[]
-JMurmel> (define al ((jmethod "java.util.ArrayList" "new")))
-
-==> al
-JMurmel> (define to-array (jmethod "java.util.List" "toArray" "Object..."))
-==> to-array
-JMurmel> (to-array al #())
-==> #()
-JMurmel> :r
-/MurmelProgram.java:30: error: no suitable method found for toArray(Object)
-        try { final Object value = ((MurmelFunction)(args -> { argCheck(loc, 2, args.length);  return ((java.util.List)args[0]).toArray(requireNotNull(args[1])); }));
-       ^
-    method Collection.toArray(Object[]) is not applicable
-      (argument mismatch; Object cannot be converted to Object[])
-    method List.toArray(Object[]) is not applicable
-      (argument mismatch; Object cannot be converted to Object[])
-
--> sollte abgefangen werden, Object... für eine nicht-varargs Javamethode sollte ein fehler sein
--> classByName erweitern um "Object[]" usw., jeweils mit argconvertern, die ein passendes array liefern
-
-
-
-MurmelJavaProgram: symboltabelle + reader + featuresEnvEntry könnten evtl. lazy instanziert werden
-- brauchts für IO und/ oder eval
-- und make-array
-- und symbole, z.b. returnvalue von defun (was meist ignoriert wird)
-
-
 mlib: defsetf (kurzform) müsste einfach gehen, z.B. mit einer alist (access-fn . update-fn), oder es werden setf-funktionen on-the-fly erzeugt
 -> brauchts spätestens mit benutzerdefinierten datentypen (defstruct, defclass)
 
@@ -226,13 +194,11 @@ vector-capacity: gibt length für simple vector, capacity für stringbuffer/buil
 -> geht nicht weil arraylist gibt capacity nicht her
    -> geht evtl mit reflection, k.a. obs da add-opens braucht
 
-mlib: foldl, foldr, vielleicht foreach, filter
-
 checken was alles serializable sein sollte, Closure wsl. nicht
 
 toplevel let/let*/letrec (nicht named) gesondert behandeln: {} block mit normalen Java variablen
 -> damit würden defuns und lambdas mit nur einem toplevel letXX effizienter
--> ggf doch topelevel named letXX in einen loop kompilieren?
+-> ggf doch toplevel named letXX in einen loop kompilieren?
 
 vielleicht loc aufteilen: String filename, int linepos int colpos, String info
 -> bei (declaim (optimize (debug 0))) bleibt info leer, würde eine menge stringliterale einsparen
@@ -246,6 +212,8 @@ vielleicht loc aufteilen: String filename, int linepos int colpos, String info
 
 
 mlib - scan: weitere helper
+
+foldl, foldr, vielleicht foreach, filter
 
 (scan-tree lst)... liefert einen generator der ein depth first traversal macht und die blaetter liefert
 
@@ -328,11 +296,6 @@ clojure hat "named lambda": (fn label [params] forms)
 beim iterieren kann man das listenende mit "endp" checken, endp sollte einen fehler werfen wenn cdr kein cons und nicht nil ist (d.h. fehler bei dotted list)
 -> oder mit "atom" checken, das geht schneller, dotted lists bleiben aber unerkannt, letztes element einer dotted list bleibt unerkannt/ wird ignoriert
 
-
-JFFI: wie soll man variadic methods aufrufen, z.B.
--> ((jmethod "java.util.Arrays" "asList" "[Ljava.lang.Object;") 1) -> #(1)
--> ((jmethod "java.util.Arrays" "asList" "[Ljava.lang.Object;")) -> Error: asList: expected one argument but no argument was given
--> ((jmethod "java.util.Arrays" "asList" "[Ljava.lang.Object;") 1 2 3) -> Error: asList: expected one argument but got extra arg(s) nil
 
 -> sollte kompiliertes catch und/ oder throw TCO bekommen?
 -> interpreter + compiler:  (error 'control-error) falls es ein throw tag nicht gibt, braucht man wsl nicht für ein fertiges programm, aber fürs interaktive entwickeln

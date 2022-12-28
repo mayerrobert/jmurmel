@@ -1096,6 +1096,10 @@ pi ; ==> 3.141592653589793
 ;
 ; `scan-hash-table` returns a function of no arguments that will
 ; on subsequent invocations return `(key . value), valid?`.
+;
+; Murmel's (and [mlib's](mlib.md)) generators are somewhat similar to what
+; SRFI 158 https://srfi.schemers.org/srfi-158/srfi-158.html
+; provides.
 
 
 ;;; == I/O

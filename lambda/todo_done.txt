@@ -2002,6 +2002,34 @@ optionale-form?
 [erstes-optionales-argument [zweites-optionales-argument]]
 
 
+
+JFFI: vararg parameter gibts: int...
+-> arrays? int[]
+JMurmel> (define al ((jmethod "java.util.ArrayList" "new")))
+
+==> al
+JMurmel> (define to-array (jmethod "java.util.List" "toArray" "Object..."))
+==> to-array
+JMurmel> (to-array al #())
+==> #()
+JMurmel> :r
+/MurmelProgram.java:30: error: no suitable method found for toArray(Object)
+        try { final Object value = ((MurmelFunction)(args -> { argCheck(loc, 2, args.length);  return ((java.util.List)args[0]).toArray(requireNotNull(args[1])); }));
+       ^
+    method Collection.toArray(Object[]) is not applicable
+      (argument mismatch; Object cannot be converted to Object[])
+    method List.toArray(Object[]) is not applicable
+      (argument mismatch; Object cannot be converted to Object[])
+
+-> sollte abgefangen werden, Object... für eine nicht-varargs Javamethode sollte ein fehler sein
+-> classByName erweitern um "Object[]" usw., jeweils mit argconvertern, die ein passendes array liefern
+
+JFFI: wie soll man variadic methods aufrufen, z.B.
+-> ((jmethod "java.util.Arrays" "asList" "[Ljava.lang.Object;") 1) -> #(1)
+-> ((jmethod "java.util.Arrays" "asList" "[Ljava.lang.Object;")) -> Error: asList: expected one argument but no argument was given
+-> ((jmethod "java.util.Arrays" "asList" "[Ljava.lang.Object;") 1 2 3) -> Error: asList: expected one argument but got extra arg(s) nil
+
+
 eigentlich sollte LambdaJSymbol ein attribut haben interned/uninterned
 -> gensym sollte namen im sinne g123 vergeben, nicht #:g123
    LabmdaJSymbol.printSEx() sollte bei "escapeAtoms=true" bei uninterned "#:" voranstellen
@@ -2013,6 +2041,12 @@ eigentlich sollte LambdaJSymbol ein attribut haben interned/uninterned
 
 welche readermacros soll der lispreader (stdin) haben/ auflösen? *features*?
 -> sbcl macht/ hat anscheinend alles
+
+
+MurmelJavaProgram: symboltabelle + reader + featuresEnvEntry könnten evtl. lazy instanziert werden
+- brauchts für IO und/ oder eval
+- und make-array
+- und symbole, z.b. returnvalue von defun (was meist ignoriert wird)
 
 
 dass MurmelJavaProgram immer einen interpreter instanziert, auch wenn kein eval benutzt wird, ist nicht schön
