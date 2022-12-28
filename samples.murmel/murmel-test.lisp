@@ -1122,7 +1122,30 @@ multiline comment
           (hash-table-count (clrhash h))))
   '(t nil 0))
 
-; todo hashset, make-hash-table, scan-hash-table, remove generator, hashset generator
+#+murmel
+(deftest scanhash.1
+  (let* ((h (hash 'eql 1 11 2 22 3 33))
+         (g (scan-hash-table h))
+         (result nil))
+    (setq result (cons (g) result))
+    (setq result (cons (g) result))
+    (setq result (cons (g) result))
+    (setq result (cons (g) result))
+    result)
+  '(nil (3 . 33) (2 . 22) (1 . 11)))
+
+#+murmel
+(deftest scanhash.2
+  (let* ((h (hash 'eql 1 11 2 22 3 33))
+         (g (scan-hash-table h))
+         (result nil))
+    (setq result (cons (g) result))                    ; (1 . 11)
+    (setq result (cons (hash-table-remove g) result))  ; t
+    (setq result (cons (g) result))                    ; (2 . 22)
+    (setq result (cons (hashset g 222) result))        ; 222
+    (setq result (cons (hash-table-count h) result))   ; #H(eql 2 222 3 33) -> 2
+    result)
+  '(2 222 (2 . 22) t (1 . 11)))
 
 
 ; *******************************************************************

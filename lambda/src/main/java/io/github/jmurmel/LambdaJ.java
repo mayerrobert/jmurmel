@@ -4762,14 +4762,16 @@ public class LambdaJ {
         return ret;
     }
 
-    interface IteratorGenerator extends Primitive {
-        Object set(Object value);
-        boolean remove();
+    interface IteratorGenerator {
+        default Object set(Object value) { throw new SimpleError("no such element - hash-table is empty"); }
+        default boolean remove() { return false; }
     }
+
+    interface InterpreterIteratorGenerator extends IteratorGenerator, Primitive {}
 
     final Object scanHash(Object hash) {
         final Iterator<Map.Entry<Object,Object>> it = requireHash("scan-hash-table", hash).entrySet().iterator();
-        if (it.hasNext()) return new IteratorGenerator() {
+        if (it.hasNext()) return new InterpreterIteratorGenerator() {
             private Map.Entry<Object,Object> entry;
             @Override public Object applyPrimitive(ConsCell args) {
                 if (it.hasNext()) { entry = it.next(); final ConsCell tuple = cons(entry.getKey(), entry.getValue()); values = cons(tuple, cons(sT, null)); return tuple; }
@@ -4779,10 +4781,8 @@ public class LambdaJ {
             @Override public boolean remove() { it.remove(); return true; }
             @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
         };
-        else return new IteratorGenerator() { @Override public Object applyPrimitive(ConsCell args) { values = cons(null, cons(null, null));  return null; }
-                                              @Override public Object set(Object value) { throw new SimpleError("no such element - hash-table is empty"); }
-                                              @Override public boolean remove() { return false; }
-                                              @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
+        else return new InterpreterIteratorGenerator() { @Override public Object applyPrimitive(ConsCell args) { values = cons(null, cons(null, null));  return null; }
+                                                         @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
     }
 
 
@@ -7327,7 +7327,26 @@ public class LambdaJ {
         public final Object hashTableCount(Object... args)      { values = null; oneArg("hash-table-count", args.length);      return LambdaJ.hashTableCount(args[0]); }
         public final Object _clrhash      (Object... args)      { values = null; oneArg("clrhash", args.length);               return LambdaJ.clrhash(args[0]); }
         public final Object hashRemove    (Object... args)      { varargs1_2("hash-table-remove", args.length); return bool(LambdaJ.hashRemove(arraySlice(args))); }
-        public final Object scanHash      (Object... args)      { values = null; oneArg("scan-hash-table", args.length);       return intp.scanHash(args[0]); } // todo static oder scanHash fuer compiler
+        public final Object scanHash      (Object... args)      { values = null; oneArg("scan-hash-table", args.length);       return scanHashCompiler(args[0]); }
+
+        interface CompilerIteratorGenerator extends IteratorGenerator, CompilerPrimitive {}
+
+        private Object scanHashCompiler(Object hash) {
+            final Iterator<Map.Entry<Object,Object>> it = requireHash("scan-hash-table", hash).entrySet().iterator();
+            if (it.hasNext()) return new CompilerIteratorGenerator() {
+                private Map.Entry<Object,Object> entry;
+                @Override public Object applyCompilerPrimitive(Object... args) {
+                    if (it.hasNext()) { entry = it.next(); final ConsCell tuple = ConsCell.cons(entry.getKey(), entry.getValue()); values = new Object[] { tuple, sT }; return tuple; }
+                    else { entry = null;  values = null;  return null; }
+                }
+                @Override public Object set(Object value) { if (entry != null) { entry.setValue(value); return value; } else throw new SimpleError("no such element"); }
+                @Override public boolean remove() { it.remove(); return true; }
+                @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
+            };
+            else return new CompilerIteratorGenerator() { @Override public Object applyCompilerPrimitive(Object... args) { values = new Object[] { null, null };  return null; }
+                                                          @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
+        }
+
 
         // I/O
         public final Object _read             (Object... args)  { varargs0_1("read",                    args.length);       values = null; return LambdaJ.read(lispReader, arraySlice(args)); }
