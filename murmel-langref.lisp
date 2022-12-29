@@ -336,6 +336,7 @@ pi ; ==> 3.141592653589793
 ;           hash-table              ; (make-hash-table [test [size]])
 ;                                   ; #H(eql one 1 two 2 three 3)     -> EqlMap
 ;                                   ; (make-hash-table ['eql [size]]) -> EqlMap
+;                                   ; (make-hash-table ['equal [size]]) -> EqualMap
 ;                                   ; (make-hash-table 'eq [size])    -> java.util.IdentityHashMap
 ;                                   ; (make-hash-table 't [size])     -> java.util.HashMap
 ;                                   ; java.util.Map is acceptable for hashref, hashset, clrhash...
@@ -848,6 +849,18 @@ pi ; ==> 3.141592653589793
 (eql 2 2) ; ==> t
 (eql #\a (car "aaa")) ; ==> t
 (eql -0.0 0.0) ; ==> nil
+
+; = (equal a b) -> boolean
+;
+; Since: 1.4
+;
+; Return `t` if any of the following is true:
+;
+; - `a` and `b` are `eql`
+; - `a` and `b` are strings that have the same text value
+; - `a` and `b` are bitvectors whose elements are eql
+; - `a` and `b` are conses whose car and cdr are `equal` respectively
+
 
 ; = consp, atom, symbolp, null, listp
 

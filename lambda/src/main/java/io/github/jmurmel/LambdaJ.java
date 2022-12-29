@@ -1757,6 +1757,7 @@ public class LambdaJ {
         // logic, predicates
         sEq("eq", Features.HAVE_EQ, 2)                                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
         sEql("eql", Features.HAVE_UTIL, 2)                                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(eql(car(args), cadr(args))); } },
+        sEqual("equal", Features.HAVE_UTIL, 2)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(equal(car(args), cadr(args))); } },
 
         sConsp("consp", Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(consp(car(args))); } },
         sAtom("atom", Features.HAVE_ATOM, 1)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(atom(car(args))); } },
@@ -1854,7 +1855,7 @@ public class LambdaJ {
         sSLength("slength", Features.HAVE_STRING, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
         sSRef("sref", Features.HAVE_STRING, 2)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
         sSSet("sset", Features.HAVE_STRING, 3)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sset(car(args), toNonnegInt("sset", cadr(args)), requireChar("sset", caddr(args))); } },
-        sSEq("string=", Features.HAVE_STRING, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(Objects.equals(requireStringDesignator("string=", car(args)), requireStringDesignator("string=", cadr(args)))); } },
+        sSEq("string=", Features.HAVE_STRING, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringEq(car(args), cadr(args))); } },
         sStringToList("string->list", Features.HAVE_STRING, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
         sListToString("list->string", Features.HAVE_STRING, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToString(car(args), cadr(args) != null); } },
 
@@ -3743,6 +3744,7 @@ public class LambdaJ {
 
     static void printHash(WriteConsumer out, Map<?,?> map, boolean escapeAtoms) {
         if (map instanceof EqlMap) out.print("#H(eql");
+        else if (map instanceof EqualMap) out.print("#H(equal");
         else if (map instanceof IdentityHashMap) out.print("#H(eq");
         else out.print("#H(t");
         for (Map.Entry<?,?> entry: map.entrySet()) {
@@ -4128,6 +4130,14 @@ public class LambdaJ {
         return false;
     }
 
+    static boolean equal(Object o1, Object o2) {
+        if (eql(o1, o2)) return true;
+        if (stringp(o1) && stringp(o2)) return stringEq(o1, o2);
+        if (bitvectorp(o1) && bitvectorp(o2)) return bvEq(o1, o2);
+        return consp(o1) && consp(o2) && equal(car(o1), car(o2)) && equal(cdr(o1), cdr(o2));
+    }
+
+
 
     /// conses and lists
 
@@ -4333,6 +4343,13 @@ public class LambdaJ {
             for (boolean b: contents) add(b);
         }
 
+        static Bitvector of(Object o) {
+            if (o instanceof Bitvector) return (Bitvector)o;
+            if (o instanceof boolean[]) return new Bitvector((boolean[])o);
+            throw new SimpleTypeError("not a bitvector: %s", LambdaJ.printSEx(o));
+        }
+
+        @Override public boolean equals(Object other) { return other instanceof Bitvector && bitSet.equals(((Bitvector)other).bitSet); }
         int size() { return size; }
         @Override public Iterator<Long> iterator() { return new Iter(); }
         long add(boolean value) { if (value) bitSet.set(size); size++; return size - 1; }
@@ -4529,6 +4546,10 @@ public class LambdaJ {
         throw new SimpleTypeError("%s: expected a string argument but got %s", "sset", printSEx(maybeString));
     }
 
+    private static boolean stringEq(Object o1, Object o2) {
+        return Objects.equals(requireStringDesignator("string=", o1), requireStringDesignator("string=", o2));
+    }
+
     final Object stringToList(Object maybeString) {
         final CountingListBuilder ret = new CountingListBuilder();
         if (maybeString instanceof char[]) {
@@ -4684,19 +4705,63 @@ public class LambdaJ {
     static final int DEFAULT_HASH_SIZE = 24; // will give capacity==32
     static final Object NO_DEFAULT_VALUE = new Object();
 
-    static class EqlMap extends HashMap<Object, Object> {
-        EqlMap(int expectedMaxSize) { super((int)(expectedMaxSize/0.75f), 0.75f); }
-        @Override public Object put(Object key, Object value) { return super.put(eqlKey(key), value); }
-        private static Object eqlKey(Object key) {
-            if (key instanceof Number || key instanceof Character) return key;
-            return new Object() { @Override public boolean equals(Object other) { return key == other; }
-                                  @Override public int hashCode() { return key.hashCode(); }
-                                  @Override public String toString() { return key.toString(); } };
+    static class EqlMap extends TreeMap<Object, Object> {
+        EqlMap() { super(EqlMap::compare); }
+        private static int compare(Object o1, Object o2) {
+            if (o1 == o2) return 0;
+            if (o1 == null) return -1;
+            if (o2 == null) return 1;
+            if (o1 instanceof Long && o2 instanceof Long) { return ((Long)o1).compareTo((Long)o2); }
+            if (o1 instanceof Double && o2 instanceof Double) { return ((Double)o1).compareTo((Double)o2); }
+            // todo BigDecimal, BigInteger, am besten compareNumbers rausrefactoren, oder bestehendes LambdaJ#compare nutzen?!?
+            if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
+            return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
+        }
+    }
+
+    static class EqualMap extends TreeMap<Object, Object> {
+        EqualMap() { super(EqualMap::compare); }
+        private static int compare(Object o1, Object o2) {
+            if (o1 == o2) return 0;
+            if (o1 == null) return -1; 
+            if (o2 == null) return 1; 
+            if (o1 instanceof Long && o2 instanceof Long) { return ((Long)o1).compareTo((Long)o2); }
+            if (o1 instanceof Double && o2 instanceof Double) { return ((Double)o1).compareTo((Double)o2); }
+            if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
+            if (o1 instanceof String && o2 instanceof String) { return ((String)o1).compareTo((String)o2); }
+            if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
+            if (bitvectorp(o1) && bitvectorp(o2)) {
+                final Bitvector b1 = Bitvector.of(o1);
+                final Bitvector b2 = Bitvector.of(o2);
+
+                final int len1 = b1.size();
+                final int len2 = b2.size();
+                final int lim = Math.min(len1, len2);
+
+                int k = 0;
+                while (k < lim) {
+                    final int c1 = (int)b1.get(k);
+                    final int c2 = (int)b2.get(k);
+                    if (c1 != c2) {
+                        return c1 - c2;
+                    }
+                    k++;
+                }
+                return len1 - len2;
+            }
+            if (consp(o1) && consp(o2)) {
+                final ConsCell c1 = (ConsCell)o1;
+                final ConsCell c2 = (ConsCell)o2;
+                final int compareCar = compare(car(c1), car(c2));
+                if (compareCar != 0) return compareCar;
+                return compare(cdr(c1), cdr(c2));
+            }
+            return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
         }
     }
 
     static Map<Object,Object> hash(SymbolTable symtab, ConsCell testAndPairs) {
-        if (testAndPairs == null) return new EqlMap(DEFAULT_HASH_SIZE);
+        if (testAndPairs == null) return new EqlMap();
         final Map<Object,Object> ret = makeHashTable(symtab, car(testAndPairs), DEFAULT_HASH_SIZE);
         final ConsCell pairs = requireList("hash", testAndPairs.cdr());
         if (pairs == null) return ret;
@@ -4711,9 +4776,10 @@ public class LambdaJ {
 
     static Map<Object,Object> makeHashTable(SymbolTable st, Object test, int size) {
         if (test == sT) return new HashMap<>((int)(size/0.75f), 0.75f);
-        if (test == null || test == st.intern("eql")) return new EqlMap(size);
+        if (test == null || test == st.intern("eql")) return new EqlMap();
+        if (test == st.intern("equal")) return new EqualMap();
         if (test == st.intern("eq")) return new IdentityHashMap<>(size);
-        throw errorInternal("only t, eq and eql are implemented as 'test', got " + printSEx(test)); // todo type-error?
+        throw new SimpleTypeError("only t, eq, eql and equal are implemented as 'test', got " + printSEx(test));
     }
 
     static Object[] hashref(Object hash, Object key, Object def) {
@@ -7057,6 +7123,9 @@ public class LambdaJ {
         public final Object _eql       (Object... args) { twoArgs("eql",         args.length);        return bool(LambdaJ.eql(args[0], args[1])); }
         public final Object _eql(Object o1, Object o2)  { return bool(LambdaJ.eql(o1, o2)); }
 
+        public final Object _equal     (Object... args) { twoArgs("equal",       args.length);        return bool(LambdaJ.equal(args[0], args[1])); }
+        public final Object _equal(Object o1, Object o2) { return bool(LambdaJ.equal(o1, o2)); }
+
         public final Object _consp     (Object... args) { oneArg("consp",        args.length);        return bool(consp(args[0])); }
         public final Object _consp     (Object    arg)  {                                             return bool(consp(arg)); }
         public final Object _atom      (Object... args) { oneArg("atom",         args.length);        return bool(atom(args[0])); }
@@ -7948,6 +8017,7 @@ public class LambdaJ {
             // logic, predicates
             case "eq": return (CompilerPrimitive)this::_eq;
             case "eql": return (CompilerPrimitive)this::_eql;
+            case "equal": return (CompilerPrimitive)this::_equal;
 
             case "consp": return (CompilerPrimitive)this::_consp;
             case "atom": return (CompilerPrimitive)this::_atom;
@@ -8264,7 +8334,7 @@ public class LambdaJ {
         };
         private static final String[] primitives = {
         "car", "cdr", "cons", "rplaca", "rplacd",
-        /*"apply",*/ "eval", "eq", "eql", "null", "read", "write", "writeln", "lnwrite",
+        /*"apply",*/ "eval", "eq", "eql", "equal", "null", "read", "write", "writeln", "lnwrite",
         "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp", "typep",
         "assoc", "assq", "list", "vector", "seqref", "seqset", "svref", "svset", "svlength", "slength", "sref", "sset", "bvref", "bvset", "bvlength",
         "append", "values",

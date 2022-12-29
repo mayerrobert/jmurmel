@@ -41,7 +41,6 @@
 ;;; - numbers, characters
 ;;;     - [abs](#function-abs), [min](#function-min), [max](#function-max), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
 ;;;     - [char=](#function-char), [char](#function-char-1), [bit](#function-bit)
-;;;     - [equal](#function-equal)
 ;;;     - [parse](#function-parse), [parse-integer](#function-parse-integer)
 
 ;;; - sequences
@@ -1289,22 +1288,22 @@
   `(bvref ,bv ,n))
 
 
-;;; = Function: equal
-;;;     (equal a b) -> boolean
-;;;
-;;; Since: 1.1
-;;;
-;;; Return `t` if any of the following is true:
-;;;
-;;; - `a` and `b` are `eql`
-;;; - `a` and `b` are strings that have the same text value
-;;; - `a` and `b` are bitvectors whose elements are eql
-;;; - `a` and `b` are conses whose car and cdr are `equal` respectively
-(defun equal (a b)
-  (or (eql a b)
-      (and (stringp a) (stringp b) (string= a b))
-      (and (bit-vector-p a) (bit-vector-p b) (bv= a b))
-      (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
+; ;;; = Function: equal
+; ;;;     (equal a b) -> boolean
+; ;;;
+; ;;; Since: 1.1
+; ;;;
+; ;;; Return `t` if any of the following is true:
+; ;;;
+; ;;; - `a` and `b` are `eql`
+; ;;; - `a` and `b` are strings that have the same text value
+; ;;; - `a` and `b` are bitvectors whose elements are eql
+; ;;; - `a` and `b` are conses whose car and cdr are `equal` respectively
+; (defun equal (a b)
+;   (or (eql a b)
+;       (and (stringp a) (stringp b) (string= a b))
+;       (and (bit-vector-p a) (bit-vector-p b) (bv= a b))
+;       (and (consp a)   (consp b)   (equal (car a) (car b)) (equal (cdr a) (cdr b)))))
 
 
 ;;; = Function: parse

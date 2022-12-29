@@ -7,8 +7,6 @@ mlib: ggf. nth und nthcdr vermehrt einsetzen statt cdddr usw.,
       cXr (und ggf. print, ... weitere?) vielleicht in ein eigenes CL compatibility file auslagern?!
 
 
-equal von mlib nach murmel schieben, damit man hashmaps mit strings machen kann #H(equal "eins" 1 "zwei" 2)
-
 static initializer koennen langsam sein, siehe https://pangin.pro/posts/computation-in-static-initializer
 -> startup profilern, ggf. helperklassen statt static{} sections
 

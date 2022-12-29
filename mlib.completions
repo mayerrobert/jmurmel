@@ -72,7 +72,6 @@ member
 complement
 constantly
 identity
-equal
 char
 char=
 oddp

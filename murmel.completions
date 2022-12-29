@@ -91,6 +91,7 @@ list*
 append
 assq
 assoc
+equal
 
 1+
 1-
