@@ -4387,6 +4387,7 @@ public class LambdaJ {
         }
 
         @Override public boolean equals(Object other) { return other instanceof Bitvector && bitSet.equals(((Bitvector)other).bitSet); }
+        @Override public int hashCode() { return bitSet.hashCode(); }
         int size() { return size; }
         @Override public Iterator<Long> iterator() { return new Iter(); }
         long add(boolean value) { if (value) bitSet.set(size); size++; return size - 1; }
@@ -7325,7 +7326,7 @@ public class LambdaJ {
         public final long      _slength(Object... args) { values = null; oneArg("slength", args.length); return slength(args[0]); }
         public final char      _sref   (Object... args) { values = null; twoArgs("sref", args.length);   return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
         public final char      _sset   (Object... args) { values = null; threeArgs("sset", args.length); return LambdaJ.sset(args[0], toArrayIndex(args[1]), LambdaJ.requireChar("sset", args[2])); }
-        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(Objects.equals(LambdaJ.requireStringDesignator("string=", args[0]), LambdaJ.requireStringDesignator("string=", args[1]))); }
+        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(LambdaJ.stringEq(args[0], args[1])); }
         public final Object   stringToList (Object... args) {
             values = null; oneArg("string->list", args.length);
             final Object maybeString = args[0];
