@@ -1897,12 +1897,12 @@ public class LambdaJ {
         sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(), intp.haveIO(), args); } },
 
         // misc
-        sValues("values", Features.HAVE_XTRA, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
-        sGensym("gensym", Features.HAVE_XTRA, 0, 1)             { @Override Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
-        sTrace("trace", Features.HAVE_XTRA, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
-        sUntrace("untrace", Features.HAVE_XTRA, -1)             { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
-        sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.macroexpand1(args); } },
-        sError("error", Features.HAVE_UTIL, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.getSymbolTable(), car(args), listToArray(cdr(args))); return null; } },
+        sValues("values", Features.HAVE_XTRA, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
+        sGensym("gensym", Features.HAVE_XTRA, 0, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
+        sTrace("trace", Features.HAVE_XTRA, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
+        sUntrace("untrace", Features.HAVE_XTRA, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
+        sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.macroexpand1(args); } },
+        sError("error", Features.HAVE_UTIL, 1, -1)                  { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.getSymbolTable(), car(args), listToArray(cdr(args))); return null; } },
 
         // time
         sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
@@ -1913,8 +1913,8 @@ public class LambdaJ {
         sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { @Override Object apply(LambdaJ intp, ConsCell args) { return getDecodedTime(intp.new CountingListBuilder(), intp::boolResult); } },
 
         // Java FFI
-        sJmethod("jmethod", Features.HAVE_FFI, 2, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
-        sJproxy("jproxy",   Features.HAVE_FFI, 3, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeProxy(intp, intp.compiledProgram, args); } },
+        sJmethod("jmethod", Features.HAVE_FFI, 2, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
+        sJproxy("jproxy",   Features.HAVE_FFI, 3, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return makeProxy(intp, intp.compiledProgram, args); } },
         ;
 
         final WellknownSymbolKind kind;
@@ -2028,9 +2028,11 @@ public class LambdaJ {
     }
 
     ObjectReader init(ObjectReader inReader, ObjectWriter outWriter, ConsCell customEnv) {
+        speed = 1;
         resetCounters();
         clearMacros();
         modules.clear();
+        handlers = null;
         setReaderPrinter(inReader, outWriter);
         topEnv = customEnv;
         featuresEnvEntry.rplacd(makeFeatureList(symtab));
@@ -2047,7 +2049,7 @@ public class LambdaJ {
     }
 
     final Set<Object> modules = new HashSet<>();
-    int speed = 1; // changed by (declaim (optimize (speed...
+    short speed = 1; // changed by (declaim (optimize (speed...
 
 
     /// ###  eval - the heart of most if not all Lisp interpreters
@@ -2784,7 +2786,7 @@ public class LambdaJ {
     }
 
     private Object evalRequire(ConsCell arguments) {
-        varargs1_2("require", arguments);
+        varargs1_2("require", arguments); // todo in expandForm checken
         if (!stringp(car(arguments))) errorMalformed("require", "a string argument", arguments);
         final Object modName = car(arguments);
         if (!modules.contains(modName)) {
@@ -2798,7 +2800,7 @@ public class LambdaJ {
     }
 
     private Object evalProvide(ConsCell arguments) {
-        oneArg("provide", arguments);
+        oneArg("provide", arguments); // todo in expandForm checken
         if (!stringp(car(arguments))) errorMalformed("provide", "a string argument", arguments);
         final Object modName = car(arguments);
         modules.add(modName);
@@ -2813,7 +2815,7 @@ public class LambdaJ {
             if (speedCons != null) {
                 final Object speed = cadr(speedCons);
                 if (!numberp(speed)) throw new ProgramError("declaim: argument to optimize must be a number, found %s", speed);
-                this.speed = ((Number)speed).intValue();
+                this.speed = ((Number)speed).shortValue();
             }
         }
         return null;
@@ -8428,7 +8430,7 @@ public class LambdaJ {
             final StringBuilder globals = new StringBuilder();
 
             /// first pass: emit toplevel define/ defun forms
-            final int prevSpeed = intp.speed;
+            final short prevSpeed = intp.speed;
             passTwo = false;
             implicitDecl = new HashSet<>();
             globalDecl = new HashSet<>();
