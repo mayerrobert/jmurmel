@@ -4106,35 +4106,72 @@ public class LambdaJ {
 
     /// Runtime for Lisp programs, i.e. an environment with primitives and predefined global symbols
 
-    static boolean eql(Object o1, Object o2) {
-        if (o1 == o2) return true;
-        if (characterp(o1) && characterp(o2)) return Objects.equals(o1, o2);
-        if (numberp(o1) && numberp(o2)) {
-            if (Objects.equals(o1, o2)) return true;
+    enum CompareMode { NUMBER, EQL, EQUAL }
 
-            if (o1 instanceof BigInteger)
-                return !(o2 instanceof BigInteger) && integerp(o2) && ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue()))) == 0;
-            if (o2 instanceof BigInteger)
-                return integerp(o1) && ((BigInteger)o2).compareTo(new BigInteger(String.valueOf(((Number)o1).longValue()))) == 0;
+    /** compare two objects. {@code mode} determines which types are compared by their value and which are compared by their identity.
+     * 
+     *  <p>Implementation note: this relies on the hope that {@link System#identityHashCode(Object)} will return different values for different objects that are not numbers.
+     *  This is strongly suggested but not guaranteed by the Java spec:
+     *  "As much as is reasonably practical, the hashCode method defined by class {@code Object}
+     *  does return distinct integers for distinct objects." */
+    static int compare(Object o1, Object o2, CompareMode mode) {
+        if (o1 == o2) return 0;
+        if (o1 == null) return -1;
+        if (o2 == null) return 1;
 
-            /*if (o1 instanceof BigDecimal)
-                return !(o2 instanceof BigDecimal) && floatp(o2) && ((BigDecimal)o1).compareTo(new BigDecimal(String.valueOf(((Number)o2).doubleValue()))) == 0;
-            if (o2 instanceof BigDecimal)
-                return floatp(o1) && ((BigDecimal)o2).compareTo(new BigDecimal(String.valueOf(((Number)o1).doubleValue()))) == 0;*/
-
-            if (integerp(o1) && integerp(o2))
-                return ((Number)o1).longValue() == ((Number)o2).longValue();
-            /*if (floatp(o1) && floatp(o2))
-                return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue()) == 0;*/
+        if (integerp(o1) && integerp(o2)) {
+            if (o1 instanceof BigInteger && o2 instanceof BigInteger) return ((BigInteger)o1).compareTo((BigInteger)o2);
+            if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue())));
+            if (o2 instanceof BigInteger)                             return -((BigInteger)o2).compareTo(new BigInteger(String.valueOf(((Number)o1).longValue())));
+            return Long.compare(((Number)o1).longValue(), ((Number)o2).longValue());
         }
-        return false;
+
+        if (floatp(o1) && floatp(o2)) {
+            if (o1.getClass() != o2.getClass()) return System.identityHashCode(o1) - System.identityHashCode(o2);
+            if (o1 instanceof BigDecimal && o2 instanceof BigDecimal) return ((BigDecimal)o1).compareTo((BigDecimal)o2);
+            return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue());
+        }
+        if (mode == CompareMode.NUMBER) return System.identityHashCode(o1) - System.identityHashCode(o2);
+
+        if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
+        if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
+
+        if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
+        if (bitvectorp(o1) && bitvectorp(o2)) {
+            final Bitvector b1 = Bitvector.of(o1);
+            final Bitvector b2 = Bitvector.of(o2);
+
+            final int len1 = b1.size();
+            final int len2 = b2.size();
+            final int lim = Math.min(len1, len2);
+
+            int k = 0;
+            while (k < lim) {
+                final int c1 = (int)b1.get(k);
+                final int c2 = (int)b2.get(k);
+                if (c1 != c2) {
+                    return c1 - c2;
+                }
+                k++;
+            }
+            return len1 - len2;
+        }
+        if (consp(o1) && consp(o2)) {
+            final ConsCell c1 = (ConsCell)o1;
+            final ConsCell c2 = (ConsCell)o2;
+            final int compareCar = compare(car(c1), car(c2), CompareMode.EQUAL);
+            if (compareCar != 0) return compareCar;
+            return compare(cdr(c1), cdr(c2), CompareMode.EQUAL);
+        }
+        return System.identityHashCode(o1) - System.identityHashCode(o2);
+    }
+
+    static boolean eql(Object o1, Object o2) {
+        return compare(o1, o2, CompareMode.EQL) == 0;
     }
 
     static boolean equal(Object o1, Object o2) {
-        if (eql(o1, o2)) return true;
-        if (stringp(o1) && stringp(o2)) return stringEq(o1, o2);
-        if (bitvectorp(o1) && bitvectorp(o2)) return bvEq(o1, o2);
-        return consp(o1) && consp(o2) && equal(car(o1), car(o2)) && equal(cdr(o1), cdr(o2));
+        return compare(o1, o2, CompareMode.EQUAL) == 0;
     }
 
 
@@ -4708,55 +4745,14 @@ public class LambdaJ {
     static class EqlMap extends TreeMap<Object, Object> {
         EqlMap() { super(EqlMap::compare); }
         private static int compare(Object o1, Object o2) {
-            if (o1 == o2) return 0;
-            if (o1 == null) return -1;
-            if (o2 == null) return 1;
-            if (o1 instanceof Long && o2 instanceof Long) { return ((Long)o1).compareTo((Long)o2); }
-            if (o1 instanceof Double && o2 instanceof Double) { return ((Double)o1).compareTo((Double)o2); }
-            // todo BigDecimal, BigInteger, am besten compareNumbers rausrefactoren, oder bestehendes LambdaJ#compare nutzen?!?
-            if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
-            return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
+            return LambdaJ.compare(o1, o2, CompareMode.EQL);
         }
     }
 
     static class EqualMap extends TreeMap<Object, Object> {
         EqualMap() { super(EqualMap::compare); }
         private static int compare(Object o1, Object o2) {
-            if (o1 == o2) return 0;
-            if (o1 == null) return -1; 
-            if (o2 == null) return 1; 
-            if (o1 instanceof Long && o2 instanceof Long) { return ((Long)o1).compareTo((Long)o2); }
-            if (o1 instanceof Double && o2 instanceof Double) { return ((Double)o1).compareTo((Double)o2); }
-            if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
-            if (o1 instanceof String && o2 instanceof String) { return ((String)o1).compareTo((String)o2); }
-            if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
-            if (bitvectorp(o1) && bitvectorp(o2)) {
-                final Bitvector b1 = Bitvector.of(o1);
-                final Bitvector b2 = Bitvector.of(o2);
-
-                final int len1 = b1.size();
-                final int len2 = b2.size();
-                final int lim = Math.min(len1, len2);
-
-                int k = 0;
-                while (k < lim) {
-                    final int c1 = (int)b1.get(k);
-                    final int c2 = (int)b2.get(k);
-                    if (c1 != c2) {
-                        return c1 - c2;
-                    }
-                    k++;
-                }
-                return len1 - len2;
-            }
-            if (consp(o1) && consp(o2)) {
-                final ConsCell c1 = (ConsCell)o1;
-                final ConsCell c2 = (ConsCell)o2;
-                final int compareCar = compare(car(c1), car(c2));
-                if (compareCar != 0) return compareCar;
-                return compare(cdr(c1), cdr(c2));
-            }
-            return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
+            return LambdaJ.compare(o1, o2, CompareMode.EQUAL);
         }
     }
 
