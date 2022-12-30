@@ -1,5 +1,7 @@
 package io.github.jmurmel;
 
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.properties.HasName;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -20,20 +22,39 @@ public class ArchitectureTest {
     @Test
     public void checkMurmel() {
 
-        // LambdaJ.Cli is only used by LambdaJ (main() to be exact)
         checkUsers(LambdaJ.Cli.class, LambdaJ.class);
 
-        // MurmelJavaCompiler uses JavaCompilerHelper uses JavaSourceFromString
         checkUsers(JavaCompilerHelper.class, LambdaJ.MurmelJavaCompiler.class);
         checkUsers(JavaSourceFromString.class, JavaCompilerHelper.class);
         checkUsers(MurmelClassLoader.class, JavaCompilerHelper.class);
-
-        // Utility classes whose methods are leafs in the call hierarchy, i.e. don't use any other Murmel code
-        noClasses().that().belongToAnyOf(EolUtil.class)
-                   .should().accessClassesThat(HasName.Predicates.nameStartingWith("io")).check(murmelClasses);
     }
 
-    private static void checkUsers(Class<?> clazz, Class<?>... users) {
-        theClass(clazz).should().onlyHaveDependentClassesThat().belongToAnyOf(users).check(murmelClasses);
+    /** Utility classes whose methods are leafs in the call hierarchy, i.e. don't use any other Murmel classes (other than *Error) */
+    @Test
+    public void checkLeafClasses() {
+        // toplevel classes
+        checkLeaf("EolUtil");
+        //checkLeaf("JavaCompilerHelper"); // uses JavaSourceFromString, MurmelClassLoader
+        checkLeaf("JavaSourceFromString");
+        // LambdaJ uses various
+        checkLeaf("MurmelClassLoader");
+        checkLeaf("TurtleFrame");
+        //checkLeaf("UnixToAnyEol"); uses LambdaJ.WriteConsumer.print()
+        checkLeaf("WrappingWriter");
+    }
+
+    /** check that {@code clazz} is only used by {@code allowedUsers} */
+    private static void checkUsers(Class<?> clazz, Class<?>... allowedUsers) {
+        theClass(clazz).should().onlyHaveDependentClassesThat().belongToAnyOf(allowedUsers).check(murmelClasses);
+    }
+
+    /** check that the class {@code className} only uses itself, nested classes and *Error classes */
+    private static void checkLeaf(String className) {
+        final DescribedPredicate<? super JavaClass> forbidden = DescribedPredicate.and(HasName.Predicates.nameStartingWith("io"),
+                                                                                       DescribedPredicate.not(HasName.Predicates.nameContaining(className)),
+                                                                                       DescribedPredicate.not(HasName.Predicates.nameEndingWith("Error")));
+        noClasses().that().haveSimpleName(className).should()
+                   .accessClassesThat(forbidden)
+                   .check(murmelClasses);
     }
 }
