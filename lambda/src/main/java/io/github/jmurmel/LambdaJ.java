@@ -1126,9 +1126,11 @@ public class LambdaJ {
                 }
                 return c;
             } catch (CharacterCodingException e) {
-                throw errorReaderError("characterset conversion error in SExpressionReader: %s", e.toString());
+                errorReaderError("characterset conversion error in SExpressionReader: %s", e.toString());
+                return -2; // notreached
             } catch (Exception e) {
-                throw errorReaderError("I/O error in SExpressionReader: %s", e.toString());
+                errorReaderError("I/O error in SExpressionReader: %s", e.toString());
+                return -2; // notreached
             }
         }
 
@@ -1155,7 +1157,7 @@ public class LambdaJ {
                 for (int i = 0; i < CTRL.length; i++) {
                     if (CTRL[i].equals(charOrCharactername)) return (char)i;
                 }
-                throw errorReaderError("unrecognized character name %s", charOrCharactername);
+                errorReaderError("unrecognized character name %s", charOrCharactername);
 
             // #| ... multiline comment ending with |#
             // or #! ... !# to make hashbang scripts possible
@@ -1223,7 +1225,8 @@ public class LambdaJ {
 
             default:
                 look = getchar();
-                throw errorReaderError("no dispatch function defined for %s", printChar(sub_char));
+                errorReaderError("no dispatch function defined for %s", printChar(sub_char));
+                return null; // notreached
             }
         }
 
@@ -1374,7 +1377,8 @@ public class LambdaJ {
             try {
                 return Long.valueOf(s, radix);
             } catch (NumberFormatException e) {
-                throw errorReaderError("'%s' is not a valid number", s);
+                errorReaderError("'%s' is not a valid number", s);
+                return null; // notreached
             }
         }
 
@@ -1382,7 +1386,8 @@ public class LambdaJ {
             try {
                 return Double.valueOf(s);
             } catch (NumberFormatException e) {
-                throw errorReaderError("'%s' is not a valid number", s);
+                errorReaderError("'%s' is not a valid number", s);
+                return null; // notreached
             }
         }
 
@@ -3139,7 +3144,8 @@ public class LambdaJ {
             throw wrap(re);
         }
         catch (IOException e) {
-            throw errorReaderError("load: error reading file '%s': ", e.getMessage());
+            errorReaderError("load: error reading file '%s': ", e.getMessage());
+            return null; // notreached
         }
         finally {
             currentSource = prev;
@@ -3760,12 +3766,12 @@ public class LambdaJ {
 
     /// ##  Error "handlers"
 
-    static RuntimeException errorReaderError(String msg) {
-        return wrap(new ReaderError(msg));
+    static void errorReaderError(String msg) {
+        wrap(new ReaderError(msg));
     }
 
-    static RuntimeException errorReaderError(String msg, Object... args) {
-        return wrap(new ReaderError(msg, args));
+    static void errorReaderError(String msg, Object... args) {
+        wrap(new ReaderError(msg, args));
     }
 
     static RuntimeException errorNotImplemented(String msg, Object... args) {
@@ -3824,7 +3830,7 @@ public class LambdaJ {
         throw new SimpleTypeError("%s: expected a bitvector argument but got %s", func, printSEx(n));
     }
 
-    static RuntimeException errorNotASequence(String func, Object n) {
+    static void errorNotASequence(String func, Object n) {
         throw new SimpleTypeError("%s: expected a list or vector argument but got %s", func, printSEx(n));
     }
 
@@ -5221,6 +5227,7 @@ public class LambdaJ {
         throw new SimpleTypeError("error: unknown condition type " + printSEx(datum) + ": " + msg);
     }
 
+    /** possibly wrap {@code t} in a {@link LambdaJError} and throw, wrap doesn't return */ 
     static RuntimeException wrap(Throwable t) {
         if (t instanceof RuntimeException) throw (RuntimeException)t;
         throw new LambdaJError(t, t.getMessage());
@@ -7767,7 +7774,7 @@ public class LambdaJ {
         /** TCO trampoline, used for function calls, and also for let, labels, progn */
         public final Object funcall(MurmelFunction fn, Object... args) {
             ConsCell cleanups = null;
-            Object r = null;
+            Object r;
             try {
                 values = null;
                 r = fn.apply(args);
