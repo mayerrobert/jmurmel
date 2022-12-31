@@ -146,6 +146,11 @@
 '(a b c)              ; ==> (a b c)
 
 
+; = Hashtables
+
+#H(eql k1 v1 k2 v2 k3 v3)
+
+
 ;;; == Comments =======================
 
 ; One line comments are started with `;`, i.e. everything between a semicolon
@@ -1083,23 +1088,29 @@ pi ; ==> 3.141592653589793
 
 ; = hash-table-p, hash, make-hash-table, hashref, hashset,<br/>hash-table-count, clrhash, hash-table-remove
 ;
-;     (hash-table-p hash) -> boolean
+;     (hash-table-p hash-table) -> boolean
 ;     (hash [test [key1 value1 key2 value2...]]) -> hash-table
-;     (make-hash-table [key [size]]) -> hash-table
-;     (hashref hash key [default]) -> value, present-p
-;     (hashset hash key value) -> value
+;     (make-hash-table [test [size]]) -> hash-table
+;     (hashref hash-table key [default]) -> value, was-present-p
+;     (hashset hash-table key value) -> value
 ;     (hashset generator value) -> value
-;     (hash-table-count hash) -> number-of-entries
-;     (clrhash hash) -> hash-table
-;     (hash-table-remove hash key) -> was-present-p 
+;     (hash-table-count hash-table) -> number-of-entries
+;     (clrhash hash-table) -> hash-table
+;     (hash-table-remove hash-table key) -> was-present-p 
 ;     (hash-table-remove generator) -> was-present-p 
 ;
 ; Since: 1.4
 ;
-; `test` defaults to `eql` and is currently limited to `nil, t, eq, eql`.
-;
 ; `hash-table-p, make-hash-table, hash-table-count, clrhash`
 ; are similar to CL's functions with the same name.
+;
+; `test` defaults to `eql` and is currently limited to `nil, t, eq, eql, equal`.
+; When `t` is specified as `key` then object comparisons are done using
+; Java's `Object.equals()` method.
+;
+; Implementation note: hashtables with `eql` or `equal` are actually implemented
+; as trees, so operations will be O(log n).
+; hashtables with `eq` or `t` are real hashtables, so operations will be O(n).
 
 ; = scan-hash-table
 ;
