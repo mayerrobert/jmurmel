@@ -3751,8 +3751,8 @@ public class LambdaJ {
     }
 
     static void printHash(WriteConsumer out, Map<?,?> map, boolean escapeAtoms) {
-        if (map instanceof EqlMap) out.print("#H(eql");
-        else if (map instanceof EqualMap) out.print("#H(equal");
+        if (map instanceof EqlTreeMap) out.print("#H(compare-eql");
+        else if (map instanceof EqualTreeMap) out.print("#H(compare-equal");
         else if (map instanceof IdentityHashMap) out.print("#H(eq");
         else out.print("#H(t");
         for (Map.Entry<?,?> entry: map.entrySet()) {
@@ -4751,22 +4751,123 @@ public class LambdaJ {
     static final int DEFAULT_HASH_SIZE = 24; // will give capacity==32
     static final Object NO_DEFAULT_VALUE = new Object();
 
-    static class EqlMap extends TreeMap<Object, Object> {
-        EqlMap() { super(EqlMap::compare); }
+    /** a hash function that is compatible with equal(o1, o1) aka compare(o1, o2, CompareMode.EQUAL):
+     *  two objects that are equal will have the same hash, two objects that are not equal may or may not have the same hash */
+    static int sxhash(Object o) {
+        if (o == null) return 0;
+
+        if (integerp(o)) return o.hashCode(); // byte..BigInteger have compatible hash codes
+        if (numberp(o)) return o.hashCode();
+        if (characterp(o)) return o.hashCode();
+
+        if (o instanceof String) return o.hashCode();
+        if (o instanceof StringBuilder) return o.toString().hashCode();
+        if (o instanceof StringBuffer) return o.toString().hashCode();
+        if (o instanceof char[]) return String.valueOf(((char[])o)).hashCode();
+
+        if (o instanceof Bitvector) return o.hashCode();
+        if (o instanceof boolean[]) return Bitvector.of(o).hashCode();
+
+        if (o instanceof ConsCell) return sxhash(o, 5);
+
+        return o.hashCode();
+    }
+
+    /** avoid endless recursion in case of circular lists or lists with embedded circles */
+    static int sxhash(Object o, int rec) {
+        if (!consp(o)) return sxhash(o);
+        rec--;
+        final ConsCell c = (ConsCell)o;
+        if (rec >= 0) return sxhash(car(c), rec) ^ sxhash(cdr(c), rec);
+        return 0;
+    }
+
+    static final class EqlKey implements Comparable<Object> {
+        final Object key;
+        EqlKey(Object key) { this.key = key; }
+
+        static Object of(Object key) {
+            if (key instanceof Float || key instanceof Double || key instanceof BigDecimal) return key;
+            return new EqlKey(key);
+        }
+        @Override public int compareTo(Object o) { if (o instanceof EqlKey) return LambdaJ.compare(this.key, ((EqlKey)o).key, CompareMode.EQL);
+                                                   else return LambdaJ.compare(this.key, o, CompareMode.EQL); }
+        @Override public int hashCode() { return sxhash(key); }
+        @Override public boolean equals(Object o) { if (o instanceof EqlKey) return LambdaJ.compare(this.key, ((EqlKey)o).key, CompareMode.EQL) == 0;
+                                                    else return LambdaJ.compare(this.key, o, CompareMode.EQL) == 0; }
+    }
+
+    static final class EqualKey implements Comparable<Object> {
+        final Object key;
+        EqualKey(Object key) { this.key = key; }
+
+        static Object of(Object key) {
+            if (key instanceof Float || key instanceof Double || key instanceof BigDecimal) return key;
+            return new EqualKey(key);
+        }
+        @Override public int compareTo(Object o) { if (o instanceof EqualKey) return LambdaJ.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL);
+                                                   else return LambdaJ.compare(this.key, o, CompareMode.EQUAL); }
+        @Override public int hashCode() { return sxhash(key); }
+        @Override public boolean equals(Object o) { if (o instanceof EqualKey) return LambdaJ.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL) == 0;
+                                                    else return LambdaJ.compare(this.key, o, CompareMode.EQUAL) == 0; }
+    }
+
+    /** Note: getEntrySet(), getKeySet() and maybe more Map methods will NOT work as expected! */
+    abstract static class MurmelMap extends HashMap<Object, Object> implements Writeable {
+        MurmelMap(int size) { super((int)(size / 0.75f)); }
+
+        abstract String pfx();
+        abstract Object makeKey(Object key);
+        abstract Object getKey(Map.Entry<?,?> entry);
+
+        @Override public Object put(Object key, Object value) { return super.put(makeKey(key), value); }
+        @Override public Object get(Object key) { return super.get(makeKey(key)); }
+        @Override public boolean containsKey(Object key) { return super.containsKey(makeKey(key)); }
+        @Override public Object remove(Object key) { return super.remove(makeKey(key)); }
+
+        @Override
+        public void printSEx(WriteConsumer out, boolean escapeAtoms) {
+            out.print(pfx());
+            for (Map.Entry<?,?> entry: super.entrySet()) {
+                out.print(" ");  LambdaJ.printSEx(out, getKey(entry), escapeAtoms);
+                out.print(" ");  LambdaJ.printSEx(out, entry.getValue(), escapeAtoms);
+            }
+            out.print(")");
+        }
+    }
+    
+    static class EqlMap extends MurmelMap {
+        EqlMap(int size) { super(size); }
+
+        String pfx() { return "#H(eql"; }
+        Object makeKey(Object key) { return EqlKey.of(key); }
+        Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqlKey) return ((EqlKey)entry.getKey()).key; return entry.getKey(); }
+    }
+
+    static class EqualMap extends MurmelMap {
+        EqualMap(int size) { super(size); }
+
+        String pfx() { return "#H(equal"; }
+        Object makeKey(Object key) { return EqualKey.of(key); }
+        Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqualKey) return ((EqualKey)entry.getKey()).key; return entry.getKey(); }
+    }
+
+    static class EqlTreeMap extends TreeMap<Object, Object> {
+        EqlTreeMap() { super(EqlTreeMap::compare); }
         private static int compare(Object o1, Object o2) {
             return LambdaJ.compare(o1, o2, CompareMode.EQL);
         }
     }
 
-    static class EqualMap extends TreeMap<Object, Object> {
-        EqualMap() { super(EqualMap::compare); }
+    static class EqualTreeMap extends TreeMap<Object, Object> {
+        EqualTreeMap() { super(EqualTreeMap::compare); }
         private static int compare(Object o1, Object o2) {
             return LambdaJ.compare(o1, o2, CompareMode.EQUAL);
         }
     }
 
     static Map<Object,Object> hash(SymbolTable symtab, ConsCell testAndPairs) {
-        if (testAndPairs == null) return new EqlMap();
+        if (testAndPairs == null) return new EqlMap(DEFAULT_HASH_SIZE);
         final Map<Object,Object> ret = makeHashTable(symtab, car(testAndPairs), DEFAULT_HASH_SIZE);
         final ConsCell pairs = requireList("hash", testAndPairs.cdr());
         if (pairs == null) return ret;
@@ -4781,10 +4882,12 @@ public class LambdaJ {
 
     static Map<Object,Object> makeHashTable(SymbolTable st, Object test, int size) {
         if (test == sT) return new HashMap<>((int)(size/0.75f), 0.75f);
-        if (test == null || test == st.intern("eql")) return new EqlMap();
-        if (test == st.intern("equal")) return new EqualMap();
+        if (test == null || test == st.intern("eql")) return new EqlMap(size);
+        if (test == st.intern("compare-eql")) return new EqlTreeMap();
+        if (test == st.intern("equal")) return new EqualMap(size);
+        if (test == st.intern("compare-equal")) return new EqualTreeMap();
         if (test == st.intern("eq")) return new IdentityHashMap<>(size);
-        throw new SimpleTypeError("only t, eq, eql and equal are implemented as 'test', got " + printSEx(test));
+        throw new SimpleTypeError("only nil, eq, eql, compare-eql, equal, compare-eql and t are implemented as 'test', got " + printSEx(test));
     }
 
     static Object[] hashref(Object hash, Object key, Object def) {
@@ -4841,15 +4944,20 @@ public class LambdaJ {
     interface InterpreterIteratorGenerator extends IteratorGenerator, Primitive {}
 
     final Object scanHash(Object hash) {
-        final Iterator<Map.Entry<Object,Object>> it = requireHash("scan-hash-table", hash).entrySet().iterator();
+        final Map<Object, Object> map = requireHash("scan-hash-table", hash);
+        final Function<Map.Entry<?,?>, Object> getKey;
+        if (map instanceof MurmelMap) getKey = ((MurmelMap)map)::getKey;
+        else getKey = Map.Entry::getKey;
+
+        final Iterator<Map.Entry<Object,Object>> it = map.entrySet().iterator();
         if (it.hasNext()) return new InterpreterIteratorGenerator() {
             private Map.Entry<Object,Object> entry;
             @Override public Object applyPrimitive(ConsCell args) {
-                if (it.hasNext()) { entry = it.next(); final ConsCell tuple = cons(entry.getKey(), entry.getValue()); values = cons(tuple, cons(sT, null)); return tuple; }
+                if (it.hasNext()) { entry = it.next(); final ConsCell tuple = cons(getKey.apply(entry), entry.getValue()); values = cons(tuple, cons(sT, null)); return tuple; }
                 else { entry = null;  values = cons(null, cons(null, null));  return null; }
             }
             @Override public Object set(Object value) { if (entry != null) { entry.setValue(value); return value; } else throw new SimpleError("no such element"); }
-            @Override public boolean remove() { it.remove(); return true; }
+            @Override public boolean remove() { it.remove(); entry = null; return true; }
             @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
         };
         else return new InterpreterIteratorGenerator() { @Override public Object applyPrimitive(ConsCell args) { values = cons(null, cons(null, null));  return null; }
@@ -7407,16 +7515,21 @@ public class LambdaJ {
 
         interface CompilerIteratorGenerator extends IteratorGenerator, CompilerPrimitive {}
 
-        private Object scanHashCompiler(Object hash) {
-            final Iterator<Map.Entry<Object,Object>> it = requireHash("scan-hash-table", hash).entrySet().iterator();
+        private CompilerIteratorGenerator scanHashCompiler(Object hash) {
+            final Map<Object, Object> map = requireHash("scan-hash-table", hash);
+            final Function<Map.Entry<?,?>, Object> getKey;
+            if (map instanceof MurmelMap) getKey = ((MurmelMap)map)::getKey;
+            else getKey = Map.Entry::getKey;
+
+            final Iterator<Map.Entry<Object,Object>> it = map.entrySet().iterator();
             if (it.hasNext()) return new CompilerIteratorGenerator() {
                 private Map.Entry<Object,Object> entry;
                 @Override public Object applyCompilerPrimitive(Object... args) {
-                    if (it.hasNext()) { entry = it.next(); final ConsCell tuple = ConsCell.cons(entry.getKey(), entry.getValue()); values = new Object[] { tuple, sT }; return tuple; }
+                    if (it.hasNext()) { entry = it.next(); final ConsCell tuple = ConsCell.cons(getKey.apply(entry), entry.getValue()); values = new Object[] { tuple, sT }; return tuple; }
                     else { entry = null;  values = new Object[] { null, null };  return null; }
                 }
                 @Override public Object set(Object value) { if (entry != null) { entry.setValue(value); return value; } else throw new SimpleError("no such element"); }
-                @Override public boolean remove() { it.remove(); return true; }
+                @Override public boolean remove() { it.remove(); entry = null; return true; }
                 @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
             };
             else return new CompilerIteratorGenerator() { @Override public Object applyCompilerPrimitive(Object... args) { values = new Object[] { null, null };  return null; }
@@ -9859,11 +9972,20 @@ public class LambdaJ {
 
             qsb.append("hash((ConsCell)new ListBuilder()\n        .append(");
             if (form instanceof EqlMap)               qsb.append("intern(\"eql\")");
+            else if (form instanceof EqlTreeMap)      qsb.append("intern(\"compare-eql\")");
+            else if (form instanceof EqualMap)        qsb.append("intern(\"equal\")");
+            else if (form instanceof EqualTreeMap)    qsb.append("intern(\"compare-equal\")");
             else if (form instanceof IdentityHashMap) qsb.append("intern(\"eq\")");
             else if (form instanceof HashMap)         qsb.append("_t");
             else errorInternal("emitHashLiteral: hash-table type %s is not implemented", form.toString());
             qsb.append(')');
-            for (Map.Entry<?,?> entry: ((Map<?,?>)form).entrySet()) {
+            if (form instanceof MurmelMap) {
+                final MurmelMap map = (MurmelMap)form;
+                for (Map.Entry<?,?> entry: map.entrySet()) {
+                    qsb.append("\n        .append(");  emitQuotedForm(qsb, map.getKey(entry), true);  qsb.append(')');
+                    qsb.append("\n        .append(");  emitQuotedForm(qsb, entry.getValue(), true);  qsb.append(')');
+                }
+            } else for (Map.Entry<?,?> entry: ((Map<?,?>)form).entrySet()) {
                 qsb.append("\n        .append(");  emitQuotedForm(qsb, entry.getKey(), true);  qsb.append(')');
                 qsb.append("\n        .append(");  emitQuotedForm(qsb, entry.getValue(), true);  qsb.append(')');
             }

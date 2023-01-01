@@ -1101,13 +1101,14 @@ Since: 1.4
 `hash-table-p, make-hash-table, hash-table-count, clrhash`
 are similar to CL's functions with the same name.
 
-`test` defaults to `eql` and is currently limited to `nil, t, eq, eql, equal`.
+`test` defaults to `eql` and is currently limited to
+`nil, t, eq, eql, compare-eql, equal, compare-equal`.
 When `t` is specified as `key` then object comparisons are done using
 Java's `Object.equals()` method.
 
-Implementation note: hashtables with `eql` or `equal` are actually implemented
-as trees, so operations will be O(log n).
-hashtables with `eq` or `t` are real hashtables, so operations will be O(n).
+Implementation note: hashtables with `compare-eql` or `compare-equal`
+are actually implemented as trees, so operations will be O(log n).
+hashtables with `eq, eql, equal` or `t` are real hashtables, so operations will be O(n).
 
 ### scan-hash-table
 

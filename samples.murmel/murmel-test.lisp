@@ -1124,7 +1124,7 @@ multiline comment
 
 #+murmel
 (deftest scanhash.1
-  (let* ((h (hash 'eql 1 11 2 22 3 33))
+  (let* ((h (hash 'compare-eql 1 11 2 22 3 33))
          (g (scan-hash-table h))
          (result nil))
     (setq result (cons (g) result))
@@ -1136,7 +1136,7 @@ multiline comment
 
 #+murmel
 (deftest scanhash.2
-  (let* ((h (hash 'eql 1 11 2 22 3 33))
+  (let* ((h (hash 'compare-eql 1 11 2 22 3 33))
          (g (scan-hash-table h))
          (result nil))
     (setq result (cons (g) result))                    ; (1 . 11)
