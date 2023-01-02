@@ -6393,6 +6393,7 @@ public class LambdaJ {
         private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, boolean echo, List<Object> prevHistory, String[] args) {
             final LambdaJSymbol cmdQuit   = interpreter.intern(":q");
             final LambdaJSymbol cmdHelp   = interpreter.intern(":h");
+            final LambdaJSymbol cmdDis    = interpreter.intern(":dis");
             final LambdaJSymbol cmdEcho   = interpreter.intern(":echo");
             final LambdaJSymbol cmdNoEcho = interpreter.intern(":noecho");
             final LambdaJSymbol cmdEnv    = interpreter.intern(":env");
@@ -6470,9 +6471,29 @@ public class LambdaJ {
                         if (exp == eof
                             || exp == cmdQuit) { System.out.println("bye."); System.out.println();  throw EXIT_SUCCESS; }
                         if (exp == cmdHelp)   { showHelp();  continue; }
-                        if (exp == cmdEcho)   { echo = true; parser.setInput(echoingSupplier, null);continue; }
+                        if (exp == cmdDis)    { final Object name = parser.readObj(eof);  if (name == eof) continue;
+                                                final ConsCell envEntry = interpreter.lookupEnvEntry(name, null);
+                                                if (envEntry == null) {
+                                                    System.out.println(name + " is not bound"); continue;
+                                                }
+                                                final LambdaJSymbol symbol = (LambdaJSymbol)car(envEntry);
+                                                if (symbol.macro != null) {
+                                                    final LambdaJ.Closure closure = symbol.macro;
+                                                    final ConsCell form = ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params, closure.body));
+                                                    System.out.println("macro " + symbol + ":");
+                                                    System.out.println(LambdaJ.printSEx(form));
+                                                }
+                                                if (cdr(envEntry) instanceof LambdaJ.Closure) {
+                                                    final LambdaJ.Closure closure = (LambdaJ.Closure)cdr(envEntry);
+                                                    final ConsCell form = ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params, closure.body));
+                                                    System.out.println("function " + symbol + ":");
+                                                    System.out.println(LambdaJ.printSEx(form));
+                                                }
+                                                System.out.println(LambdaJ.printSEx(cdr(envEntry), true));
+                                                continue; }
+                        if (exp == cmdEcho)   { echo = true; parser.setInput(echoingSupplier, null); continue; }
                         if (exp == cmdNoEcho) { echo = false; parser.setInput(nonechoingSupplier, null); continue; }
-                        if (exp == cmdRes)    { isInit = false; history.clear();  continue; }
+                        if (exp == cmdRes)    { isInit = false; history.clear(); continue; }
                         if (exp == cmdList)   { listHistory(history); continue; }
                         if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false)); continue; }
                         if (exp == cmdJava)   { compileToJava(consoleCharset, interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
@@ -6793,6 +6814,7 @@ public class LambdaJ {
                                + "  :echo .......................... print forms to screen before eval'ing\n"
                                + "  :noecho ........................ don't print forms\n"
                                + "  :env ........................... list current global environment\n"
+                               + "  :dis <symbol> .................. display interpreter data about <symbol>\n"
                                + "  :macros ........................ list currently defined macros\n"
                                + "  :res ........................... 'CTRL-ALT-DEL' the REPL, i.e. reset global environment, clear history\n"
                                + "\n"
