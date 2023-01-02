@@ -2021,24 +2021,27 @@ public class LambdaJ {
 
 
     /// ### Global environment - define'd symbols go into this list
-    private ConsCell topEnv;
+    private final Map<Object, ConsCell> gcache = new IdentityHashMap<>(100);
 
     private ConsCell lookupEnvEntry(Object symbol, ConsCell lexenv) {
         final ConsCell lexEntry = fastassq(symbol, lexenv);
         if (lexEntry != null) return lexEntry;
-        return fastassq(symbol, topEnv);
+        return gcache.get(symbol);
     }
 
     private void setTopEnv(ConsCell env) {
-        topEnv = env;
+        gcache.clear();
+        if (env != null) for (Object o: env) {
+            gcache.put(car(o), (ConsCell)o);
+        }
     }
 
     final void extendTopenv(Object sym, Object value) {
-        topEnv = acons(sym, value, topEnv);
+        gcache.put(sym, cons(sym, value));
     }
 
     private void extendTopenv(ConsCell envEntry) {
-        topEnv = cons(envEntry, topEnv);
+        gcache.put(car(envEntry), envEntry);
     }
 
     private static final ConsCell DYNAMIC_ENV = new ListConsCell(null, null);
@@ -2972,7 +2975,7 @@ public class LambdaJ {
     Object evalMacro(Object operator, final Closure macroClosure, final ConsCell arguments) {
         if (traceFunc)  tracer.println(pfx(0, 0) + " #<macro " + operator + "> " + printSEx(arguments));
 
-        final ConsCell menv = zip(macroClosure.params, arguments, topEnv, true);
+        final ConsCell menv = zip(macroClosure.params, arguments, null, true);
         Object expansion = null;
         if (macroClosure.body != null) for (Object macroform: macroClosure.body) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, 0, 0, 0);
@@ -5811,7 +5814,7 @@ public class LambdaJ {
 
     /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
-        if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
+        if (gcache.isEmpty()) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
         final ConsCell envEntry = lookupEnvEntry(intern(globalSymbol), null);
         if (envEntry != null) return cdr(envEntry);
         throw new UnboundVariable("%s: '%s' is not bound", "getValue", globalSymbol);
@@ -5819,14 +5822,11 @@ public class LambdaJ {
 
     private class CallLambda implements MurmelFunction {
         private final Closure lambda;
-        private final ConsCell env;
-        CallLambda(Closure lambda, ConsCell topEnv) { this.lambda = lambda; this.env = topEnv; }
-        @Override public Object apply(Object... args) { return applyClosure(lambda, args); }
-
-        private Object applyClosure(Closure closure, Object[] args) {
-            if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed"); // todo brauchts diesen check? weglassen?
-            return eval(cons(closure, arraySlice(args, 0)), null, 0, 0, 0);
+        CallLambda(Closure lambda) { this.lambda = lambda; }
+        @Override public Object apply(Object... args) {
+            return eval(cons(lambda, arraySlice(args, 0)), null, 0, 0, 0);
         }
+
     }
 
     /** <p>embed API: Return the function {@code funcName}
@@ -5845,7 +5845,7 @@ public class LambdaJ {
     private static MurmelFunction getFunction(LambdaJ intp, String funcName, Object function) {
         if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return ((MurmelJavaProgram.CompilerPrimitive)function)::applyCompilerPrimitive; }
         if (function instanceof Primitive)                            { return ((Primitive)function)::applyPrimitiveVarargs; }
-        if (function instanceof Closure)                              { return intp.new CallLambda((Closure)function, intp.topEnv); }
+        if (function instanceof Closure)                              { return intp.new CallLambda((Closure)function); }
         if (function instanceof MurmelFunction)                       { return args -> intp.compiledProgram.funcall((MurmelFunction)function, args); /* must use the TCO trampoline */ }
 
         throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(function));
@@ -5855,7 +5855,7 @@ public class LambdaJ {
         final String funcName = printSEx(function);
         if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType(funcName, ((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args), returnType); }
         if (function instanceof Primitive)                            { return args -> convertReturnType(funcName, ((Primitive)function).applyPrimitiveVarargs(args), returnType); }
-        if (function instanceof Closure && intp != null)              { final CallLambda callLambda = intp.new CallLambda((Closure)function, intp.topEnv);
+        if (function instanceof Closure && intp != null)              { final CallLambda callLambda = intp.new CallLambda((Closure)function);
                                                                         return args -> convertReturnType(funcName, callLambda.apply(args), returnType); }
         if (function instanceof MurmelFunction && program != null)    { return args -> convertReturnType(funcName, program.funcall((MurmelFunction)function, args), returnType); /* must use the TCO trampoline */ }
 
@@ -5931,9 +5931,8 @@ public class LambdaJ {
      *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
     public Object evalScript(Reader program, Reader in, Writer out) {
-        if (topEnv == null) {
+        if (gcache.isEmpty()) {
             lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in::read, null);
-            assert topEnv == null;
             environment();
         }
         final ObjectReader scriptParser = lispReader;
@@ -6481,8 +6480,8 @@ public class LambdaJ {
                         if (exp == cmdJar)    { compileToJar(interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
                         //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); continue; }
                         if (exp == cmdEnv)    {
-                            if (interpreter.topEnv != null) for (Object entry: interpreter.topEnv) System.out.println(entry);
-                            System.out.println("env length: " + listLength(interpreter.topEnv));  System.out.println(); continue; }
+                            for (Map.Entry<Object, ConsCell> entry: interpreter.gcache.entrySet()) System.out.println(entry.getValue());
+                            System.out.println("env length: " + interpreter.gcache.size());  System.out.println(); continue; }
                         if (exp == cmdMacros) {
                             final ArrayList<LambdaJSymbol> names = new ArrayList<>();
                             for (LambdaJSymbol entry: interpreter.getSymbolTable()) {
@@ -6762,8 +6761,6 @@ public class LambdaJ {
         }
 
         private static void injectCommandlineArgs(LambdaJ intp, String[] args) {
-            if (intp.topEnv == null) return; // empty environment probably because of commandline argument --lambda
-
             int n = 0;
             for (String arg: args) {
                 n++;
