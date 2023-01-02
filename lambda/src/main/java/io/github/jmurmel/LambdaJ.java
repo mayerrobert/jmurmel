@@ -2022,6 +2022,25 @@ public class LambdaJ {
 
     /// ### Global environment - define'd symbols go into this list
     private ConsCell topEnv;
+
+    private ConsCell lookupEnvEntry(Object symbol, ConsCell lexenv) {
+        final ConsCell lexEntry = fastassq(symbol, lexenv);
+        if (lexEntry != null) return lexEntry;
+        return fastassq(symbol, topEnv);
+    }
+
+    private void setTopEnv(ConsCell env) {
+        topEnv = env;
+    }
+
+    final void extendTopenv(Object sym, Object value) {
+        topEnv = acons(sym, value, topEnv);
+    }
+
+    private void extendTopenv(ConsCell envEntry) {
+        topEnv = cons(envEntry, topEnv);
+    }
+
     private static final ConsCell DYNAMIC_ENV = new ListConsCell(null, null);
 
     /** Build environment, setup Lisp reader and writer.
@@ -2039,7 +2058,7 @@ public class LambdaJ {
         modules.clear();
         handlers = null;
         setReaderPrinter(inReader, outWriter);
-        topEnv = customEnv;
+        setTopEnv(customEnv);
         featuresEnvEntry.rplacd(makeFeatureList(symtab));
         conditionHandlerEnvEntry.rplacd(null);
         environment();
@@ -2130,8 +2149,8 @@ public class LambdaJ {
                     final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
                     values = NO_VALUES;
 
-                    final ConsCell prevEnvEntry = fastassq(symbol, topEnv);
-                    if (prevEnvEntry == null) insertFrontTopEnv(symbol, value);
+                    final ConsCell prevEnvEntry = lookupEnvEntry(symbol, null);
+                    if (prevEnvEntry == null) extendTopenv(symbol, value);
                     else prevEnvEntry.rplacd(value);
 
                     return result = symbol;
@@ -2145,8 +2164,8 @@ public class LambdaJ {
                     final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
                     selfEnvEntry.rplacd(closure);
 
-                    final ConsCell prevEnvEntry = fastassq(symbol, topEnv);
-                    if (prevEnvEntry == null) insertFrontTopEnv(symbol, closure);
+                    final ConsCell prevEnvEntry = lookupEnvEntry(symbol, null);
+                    if (prevEnvEntry == null) extendTopenv(symbol, closure);
                     else prevEnvEntry.rplacd(closure);
 
                     return result = symbol;
@@ -2339,11 +2358,11 @@ public class LambdaJ {
                     else if (operator == ocEval) {
                         varargs1_2("eval", ccArguments);
                         form = expandForm(car(ccArguments));
-                        if (cdr(ccArguments) == null) env = topEnv; // todo unterschied zu kompiliertem eval: topEnv sind ALLE globals, kompiliertes eval sieht nur predefined globals
+                        if (cdr(ccArguments) == null) env = null;
                         else {
                             final Object additionalEnv = cadr(ccArguments);
                             if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
-                            env = append2((ConsCell)additionalEnv, topEnv);
+                            env = (ConsCell)additionalEnv;
                         }
                         isTc = true; continue tailcall;
                     }
@@ -2478,7 +2497,7 @@ public class LambdaJ {
     }
 
     final Object eval(Object form, ConsCell env) {
-        return eval(form, env != null ? append2(env, topEnv) : topEnv, 0, 0, 0);
+        return eval(form, env, 0, 0, 0);
     }
 
     final Object expandAndEval(Object form, ConsCell env) {
@@ -2586,7 +2605,7 @@ public class LambdaJ {
                         if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
                         final Object params = cadr(ccArgs);
                         checkLambdaList("defmacro", params);
-                        sym1.macro = makeClosure(params, (ConsCell)cddr(ccArgs), topEnv);
+                        sym1.macro = makeClosure(params, (ConsCell)cddr(ccArgs), null);
                     }
                     return ccForm;
 
@@ -2759,12 +2778,12 @@ public class LambdaJ {
         return symbol;
     }
 
-    private static Object evalSymbol(Object form, ConsCell env) {
+    private Object evalSymbol(Object form, ConsCell env) {
         if (form == null || form == sNil) return null;
         else if (form == sT) return sT;
         else {
             final Object value;
-            final ConsCell envEntry = fastassq(form, env);
+            final ConsCell envEntry = lookupEnvEntry(form, env);
             if (envEntry != null) {
                 value = cdr(envEntry);
                 if (value == UNASSIGNED) throw new UnboundVariable("%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
@@ -2778,7 +2797,7 @@ public class LambdaJ {
         Object res = null;
         while (pairs != null) {
             final LambdaJSymbol symbol = (LambdaJSymbol)car(pairs);
-            final ConsCell envEntry = fastassq(symbol, env);
+            final ConsCell envEntry = lookupEnvEntry(symbol, env);
 
             pairs = (ConsCell) cdr(pairs);
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
@@ -2884,7 +2903,7 @@ public class LambdaJ {
                 final Object bindingForm = cadr(binding);
 
                 ConsCell newBinding = null;
-                if (letDynamic) newBinding = fastassq(sym, topEnv);
+                if (letDynamic) newBinding = lookupEnvEntry(sym, null);
                 else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
@@ -2969,10 +2988,6 @@ public class LambdaJ {
         env.rplaca(symbolEntry);
         env.rplacd(cons(oldCar, oldCdr));
         return symbolEntry;
-    }
-
-    void insertFrontTopEnv(Object symbol, Object value) {
-        insertFront(topEnv, symbol, value);
     }
 
     /** build an extended environment for a function invocation:<pre>
@@ -3180,7 +3195,7 @@ public class LambdaJ {
             if (((LambdaJSymbol)sym).specialForm()) {
                 throw new ProgramError("trace: can't trace %s: it is a special form", printSEx(sym));
             }
-            final ConsCell envEntry = fastassq(sym, topEnv);
+            final ConsCell envEntry = lookupEnvEntry(sym, null);
             if (envEntry == null) throw new UndefinedFunction("trace: can't trace %s: not bound", printSEx(sym));
             traced.put(cdr(envEntry), (LambdaJSymbol) sym);
         }
@@ -3193,7 +3208,7 @@ public class LambdaJ {
         if (traced != null) {
             for (Object sym: symbols) {
                 if (symbolp(sym)) {
-                    final ConsCell envEntry = fastassq(sym, topEnv);
+                    final ConsCell envEntry = lookupEnvEntry(sym, null);
                     if (envEntry != null) {
                         final boolean wasTraced = traced.remove(cdr(envEntry)) != null;
                         if (wasTraced) ret = cons(sym, ret);
@@ -3210,7 +3225,7 @@ public class LambdaJ {
         if (traced == null) return traceStack;
         if (op instanceof LambdaJSymbol) {
             if (((LambdaJSymbol)op).specialForm()) return traceStack;
-            final ConsCell entry = fastassq(op, topEnv);
+            final ConsCell entry = lookupEnvEntry(op, null);
             if (entry == null) return traceStack;
             op = cdr(entry);
         }
@@ -5711,25 +5726,25 @@ public class LambdaJ {
         if (haveApply()) {
             final LambdaJSymbol sApply = intern("apply");
             ocApply = new OpenCodedPrimitive(sApply);
-            addBuiltin(sApply, ocApply);
+            extendTopenv(sApply, ocApply);
         }
 
         if (haveXtra()) {
-            addBuiltin(sDynamic, sDynamic);
+            extendTopenv(sDynamic, sDynamic);
 
             final LambdaJSymbol sEval = intern("eval");
             ocEval = new OpenCodedPrimitive(sEval);
-            addBuiltin(sEval, ocEval);
+            extendTopenv(sEval, ocEval);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_XTRA.bits(), this::addBuiltin);
         }
 
         if (haveT()) {
-            addBuiltin(sT, sT);
+            extendTopenv(sT, sT);
         }
 
         if (haveNil()) {
-            addBuiltin(sNil, null);
+            extendTopenv(sNil, null);
         }
 
         if (haveVector()) {
@@ -5743,8 +5758,8 @@ public class LambdaJ {
         }
 
         if (haveUtil()) {
-            topEnv = cons(featuresEnvEntry, topEnv);
-            topEnv = cons(conditionHandlerEnvEntry, topEnv);
+            extendTopenv(featuresEnvEntry);
+            extendTopenv(conditionHandlerEnvEntry);
             addBuiltin("internal-time-units-per-second", (long)1e9);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_UTIL.bits(), this::addBuiltin);
@@ -5776,15 +5791,11 @@ public class LambdaJ {
     }
 
     private void addBuiltin(final String sym, final Object value) {
-        topEnv = acons(intern(sym), value, topEnv);
-    }
-
-    private void addBuiltin(final LambdaJSymbol sym, final Object value) {
-        topEnv = acons(sym, value, topEnv);
+        extendTopenv(intern(sym), value);
     }
 
     private void addBuiltin(WellknownSymbol w) {
-        topEnv = acons(intern(w.sym), (Primitive) a -> w.applyPrimitive(this, a), topEnv);
+        extendTopenv(intern(w.sym), (Primitive) a -> w.applyPrimitive(this, a));
     }
 
 
@@ -5801,7 +5812,7 @@ public class LambdaJ {
     /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
         if (topEnv == null) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
-        final ConsCell envEntry = fastassq(intern(globalSymbol), topEnv);
+        final ConsCell envEntry = lookupEnvEntry(intern(globalSymbol), null);
         if (envEntry != null) return cdr(envEntry);
         throw new UnboundVariable("%s: '%s' is not bound", "getValue", globalSymbol);
     }
@@ -5810,12 +5821,12 @@ public class LambdaJ {
         private final Closure lambda;
         private final ConsCell env;
         CallLambda(Closure lambda, ConsCell topEnv) { this.lambda = lambda; this.env = topEnv; }
-        @Override public Object apply(Object... args) { return applyClosure(lambda, args, env); }
-    }
+        @Override public Object apply(Object... args) { return applyClosure(lambda, args); }
 
-    Object applyClosure(Closure closure, Object[] args, ConsCell originalTopEnv) {
-        if (originalTopEnv != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed");
-        return eval(cons(closure, arraySlice(args, 0)), originalTopEnv, 0, 0, 0);
+        private Object applyClosure(Closure closure, Object[] args) {
+            if (env != topEnv) throw new LambdaJError("MurmelFunction.apply: stale function object, global environment has changed"); // todo brauchts diesen check? weglassen?
+            return eval(cons(closure, arraySlice(args, 0)), null, 0, 0, 0);
+        }
     }
 
     /** <p>embed API: Return the function {@code funcName}
@@ -5901,7 +5912,9 @@ public class LambdaJ {
         @Override public Object getValue(String globalSymbol) { return LambdaJ.this.getValue(globalSymbol); }
         @Override public MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
 
-        @Override public void setCommandlineArgumentList(ConsCell args) { insertFrontTopEnv(intern("*command-line-argument-list*"), args); }
+        @Override public void setCommandlineArgumentList(ConsCell args) {
+            extendTopenv(intern("*command-line-argument-list*"), args);
+        }
         @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
         @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
         @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { LambdaJ.this.setReaderPrinter(reader, writer); }
@@ -5920,7 +5933,7 @@ public class LambdaJ {
     public Object evalScript(Reader program, Reader in, Writer out) {
         if (topEnv == null) {
             lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in::read, null);
-            topEnv = null;
+            assert topEnv == null;
             environment();
         }
         final ObjectReader scriptParser = lispReader;
@@ -6757,7 +6770,7 @@ public class LambdaJ {
                 if ("--".equals(arg)) break;
             }
 
-            intp.insertFrontTopEnv(intp.intern("*command-line-argument-list*"), arraySlice(args, n));
+            intp.extendTopenv(intp.intern("*command-line-argument-list*"), arraySlice(args, n));
         }
 
         private static void injectCommandlineArgs(MurmelProgram prg, String[] args) {
@@ -7125,7 +7138,7 @@ public class LambdaJ {
                 intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, null);
                 intp.compiledProgram = this;
                 intp.init(lispReader, lispPrinter, null);
-                intp.insertFrontTopEnv(intern("*command-line-argument-list*"), commandlineArgumentList);
+                intp.extendTopenv(intern("*command-line-argument-list*"), commandlineArgumentList);
             }
             else {
                 intp.setReaderPrinter(lispReader, lispPrinter);
