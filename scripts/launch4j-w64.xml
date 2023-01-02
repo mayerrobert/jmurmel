@@ -54,7 +54,7 @@ jmurmel.exe will end up in scripts/target
       <productVersion>1.4.0.0</productVersion>
       <txtProductVersion>1.4</txtProductVersion>
 
-      <copyright>Copyright (C) 2020-2022 by Robert Mayer</copyright>
+      <copyright>Copyright (C) 2020-2023 by Robert Mayer</copyright>
 
       <internalName>jmurmel.jar</internalName>
       <originalFilename>jmurmel.exe</originalFilename>
