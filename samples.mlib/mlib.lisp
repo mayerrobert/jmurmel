@@ -484,25 +484,27 @@
   (let* outer ((outer-lists lists)
                (result (car outer-lists)))
     (if outer-lists
-      (typecase result
-        (cons
+      (cond
+        ((consp result)
          (let ((splice result))
            (let* inner ((inner-lists (cdr outer-lists))
                         (ele (car inner-lists)))
                (if inner-lists
-                 (typecase ele
-                   (cons (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
-                   (null (rplacd (last splice) ())  (inner (cdr inner-lists) (cadr inner-lists)))
-                   (atom (if (cdr inner-lists)
-                               (error "nconc - not a list: %s" ele)
-                           (rplacd (last splice) ele)))))))
+                 (cond
+                   ((consp ele) (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
+                   ((null ele) (rplacd (last splice) ())  (inner (cdr inner-lists) (cadr inner-lists)))
+                   ((atom ele) (if (cdr inner-lists)
+                                     (error "nconc - not a list: %s" ele)
+                                 (rplacd (last splice) ele)))))))
            result)
 
-        (null (outer (cdr outer-lists) (cadr outer-lists)))
+        ((null result)
+         (outer (cdr outer-lists) (cadr outer-lists)))
 
-        (atom (if (cdr outer-lists)
-                    (error "nconc - not a list: %s" result)
-                result))))))
+        ((atom result)
+         (if (cdr outer-lists)
+               (error "nconc - not a list: %s" result)
+           result))))))
 
 
 ;;; = Function: revappend, nreconc
@@ -828,11 +830,11 @@
         (limit (gensym))
         (loop (gensym)))
     `(let* ((,vec ,vectorform)
-            (,acc (typecase ,vec
-                    (simple-vector svref)
-                    (string sref)
-                    (bit-vector bvref)
-                    (vector seqref)
+            (,acc (cond
+                    ((simple-vector-p ,vec) svref)
+                    ((stringp ,vec) sref)
+                    ((bit-vector-p ,vec) bvref)
+                    ((vectorp ,vec) seqref)
                     (t (error "dovector - not a vector: %s" ,vec))))
             (,limit (vector-length ,vec)))
        (let ,loop ((,idx 0))
@@ -1587,10 +1589,10 @@
 ;;; that has the same actual array element type as `sequence`.
 ;;; If `sequence` is a list, the result is a fresh list.
 (defun copy-seq (seq)
-  (typecase seq
-    (null)
-    (cons   (copy-list seq))
-    (vector (vector-copy seq))
+  (cond
+    ((null seq))
+    ((consp seq)   (copy-list seq))
+    ((vectorp seq) (vector-copy seq))
     (t      (error "copy-seq - %s is not a sequence" seq))))
 
 
@@ -1627,14 +1629,14 @@
                  (loop (1+ from-idx) (1- to-idx))))
              to))
 
-    (typecase seq
-      (null)
-      (cons              (reverse/list seq ()))
-      (string            (reverse/vector seq (make-array (vector-length seq) 'character) sref sset))
-      (simple-vector     (reverse/vector seq (make-array (vector-length seq)) svref svset))
-      (bit-vector        (reverse/vector seq (make-array (vector-length seq) 'bit) bvref bvset))
-      (vector            (reverse/vector seq (make-array (vector-length seq)) seqref seqset))
-      (t                 (error "reverse - %s is not a sequence" seq)))))
+    (cond
+      ((null seq))
+      ((consp seq)              (reverse/list seq ()))
+      ((stringp seq)            (reverse/vector seq (make-array (vector-length seq) 'character) sref sset))
+      ((simple-vector-p seq)    (reverse/vector seq (make-array (vector-length seq)) svref svset))
+      ((bit-vector-p seq)       (reverse/vector seq (make-array (vector-length seq) 'bit) bvref bvset))
+      ((vectorp seq)            (reverse/vector seq (make-array (vector-length seq)) seqref seqset))
+      (t                        (error "reverse - %s is not a sequence" seq)))))
 
 
 ;;; = Function: nreverse
@@ -1664,13 +1666,13 @@
                    (setter vector right-index left)
                    (loop (1+ left-index) (1- right-index)))))))
 
-    (typecase seq
-      (null)
-      (cons              (nreverse/list seq))
-      (string            (nreverse/vector seq sref sset))
-      (simple-vector     (nreverse/vector seq svref svset))
-      (bit-vector        (nreverse/vector seq bvref bvset))
-      (vector            (nreverse/vector seq seqref seqset))
+    (cond
+      ((null seq))
+      ((consp seq)              (nreverse/list seq))
+      ((stringp seq)            (nreverse/vector seq sref sset))
+      ((simple-vector-p seq)    (nreverse/vector seq svref svset))
+      ((bit-vector-p seq)       (nreverse/vector seq bvref bvset))
+      ((vectorp seq)            (nreverse/vector seq seqref seqset))
       (t (error "nreverse - %s is not a sequence" seq)))))
 
 
@@ -1701,13 +1703,13 @@
                  (unless (pred (setq tmp (seqref vec i)))
                    (setq append-to (cdr (rplacd append-to (cons tmp ())))))))))
 
-    (typecase seq
-          (null)
-          (cons              (remove-if/list seq))
-          (string            (list->string            (remove-if/vector seq)))
-          (simple-vector     (list->simple-vector     (remove-if/vector seq)))
-          (simple-bit-vector (list->bit-vector        (remove-if/vector seq)))
-          (vector            (list->simple-vector     (remove-if/vector seq)))
+    (cond
+          ((null seq))
+          ((consp seq)               (remove-if/list seq))
+          ((stringp seq)             (list->string            (remove-if/vector seq)))
+          ((simple-vector-p seq)     (list->simple-vector     (remove-if/vector seq)))
+          ((simple-bit-vector-p seq) (list->bit-vector        (remove-if/vector seq)))
+          ((vectorp seq)             (list->simple-vector     (remove-if/vector seq)))
           (t (error "remove-if - %s is not a sequence" seq)))))
 
 
@@ -1789,14 +1791,14 @@
 (defun map-into (result func . sequences)
   (when result
     (let (result-cursor set-result has-next-result result-length seq len)
-      (typecase result
-        (cons (setq result-cursor result)
-              (setq set-result (lambda (elem) (rplaca result-cursor elem) (setq result-cursor (cdr result-cursor))))
-              (setq has-next-result (lambda () result-cursor)))
-        (vector (setq result-cursor 0)
-                (setq set-result (lambda (elem) (seqset result result-cursor elem) (setq result-cursor (1+ result-cursor))))
-                (setq has-next-result (lambda () (< result-cursor result-length)))
-                (setq result-length (vector-length result)))
+      (cond
+        ((consp result) (setq result-cursor result)
+                        (setq set-result (lambda (elem) (rplaca result-cursor elem) (setq result-cursor (cdr result-cursor))))
+                        (setq has-next-result (lambda () result-cursor)))
+        ((vectorp result) (setq result-cursor 0)
+                          (setq set-result (lambda (elem) (seqset result result-cursor elem) (setq result-cursor (1+ result-cursor))))
+                          (setq has-next-result (lambda () (< result-cursor result-length)))
+                          (setq result-length (vector-length result)))
         (t (error "map-into: not a sequence: %s" result)))
 
       (if (cdr sequences)
@@ -1810,17 +1812,17 @@
 
         (if sequences
               ; 1 sequence given
-              (typecase (setq seq (car sequences))
-                (null)
-                (cons (let loop ((l seq))
-                           (when (and (has-next-result) l)
-                             (set-result (func (car l)))
-                             (loop (cdr l)))))
-                (vector (setq len (vector-length seq))
-                        (let loop ((i 0))
-                          (when (and (has-next-result) (< i len))
-                            (set-result (func (seqref seq i)))
-                            (loop (1+ i)))))
+              (cond
+                ((null (setq seq (car sequences))))
+                ((consp seq) (let loop ((l seq))
+                               (when (and (has-next-result) l)
+                               (set-result (func (car l)))
+                               (loop (cdr l)))))
+                ((vectorp seq) (setq len (vector-length seq))
+                               (let loop ((i 0))
+                                 (when (and (has-next-result) (< i len))
+                                   (set-result (func (seqref seq i)))
+                                   (loop (1+ i)))))
                 (t (error "map-into: not a sequence: %s" seq)))
 
           ; 0 sequences given
