@@ -753,28 +753,7 @@ public class LambdaJ {
 
     final int features;
 
-    private boolean have(Features feature) { return (features & feature.bits()) != 0; }
-
-    private boolean haveLabels()    { return (features & Features.HAVE_LABELS.bits())    != 0; }
-    private boolean haveNil()       { return (features & Features.HAVE_NIL.bits())       != 0; }
-    private boolean haveT()         { return (features & Features.HAVE_T.bits())         != 0; }
-    private boolean haveXtra()      { return (features & Features.HAVE_XTRA.bits())      != 0; }
-    private boolean haveFFI()       { return (features & Features.HAVE_FFI.bits())       != 0; }
-    private boolean haveNumbers()   { return (features & Features.HAVE_NUMBERS.bits())   != 0; }
-    private boolean haveString()    { return (features & Features.HAVE_STRING.bits())    != 0; }
-    private boolean haveIO()        { return (features & Features.HAVE_IO.bits())        != 0; }
-    private boolean haveGui()       { return (features & Features.HAVE_GUI.bits())       != 0; }
-    private boolean haveUtil()      { return (features & Features.HAVE_UTIL.bits())      != 0; }
-    private boolean haveApply()     { return (features & Features.HAVE_APPLY.bits())     != 0; }
-    private boolean haveCons()      { return (features & Features.HAVE_CONS.bits())      != 0; }
-    private boolean haveVector()    { return (features & Features.HAVE_VECTOR.bits())    != 0; }
-    private boolean haveHash()      { return (features & Features.HAVE_HASH.bits())      != 0; }
-    private boolean haveCond()      { return (features & Features.HAVE_COND.bits())      != 0; }
-    private boolean haveAtom()      { return (features & Features.HAVE_ATOM.bits())      != 0; }
-    private boolean haveEq()        { return (features & Features.HAVE_EQ.bits())        != 0; }
-    private boolean haveQuote()     { return (features & Features.HAVE_QUOTE.bits())     != 0; }
-    private boolean haveLexC()      { return (features & Features.HAVE_LEXC.bits())      != 0; }
-    private boolean haveOldLambda() { return (features & Features.HAVE_OLDLAMBDA.bits()) != 0; }
+    final boolean have(Features feature) { return (features & feature.bits()) != 0; }
 
     /** constructor with all features, no tracing */
     public LambdaJ() {
@@ -808,17 +787,17 @@ public class LambdaJ {
         this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : cons(intern("*features*"), makeFeatureList(symtab));
         this.conditionHandlerEnvEntry = conditionHandlerEnvEntry != null ? conditionHandlerEnvEntry : cons(intern("*condition-handler*"), null);
 
-        if (haveT()) symtab.intern(sT);
-        if (haveNil()) symtab.intern(sNil);
+        if (have(Features.HAVE_T)) symtab.intern(sT);
+        if (have(Features.HAVE_NIL)) symtab.intern(sNil);
         symtab.intern(sLambda);
 
-        if (haveQuote())  { internWellknown("quote"); }
-        if (haveCond())   { internWellknown("cond"); }
-        if (haveLabels()) { internWellknown("labels"); }
+        if (have(Features.HAVE_QUOTE))  { internWellknown("quote"); }
+        if (have(Features.HAVE_COND))   { internWellknown("cond"); }
+        if (have(Features.HAVE_LABELS)) { internWellknown("labels"); }
 
         if (have(Features.HAVE_DEFINE)) internWellknown("define");
 
-        if (haveXtra())   {
+        if (have(Features.HAVE_XTRA))   {
             sDynamic = intern("dynamic");
 
             internWellknown("defun");
@@ -849,7 +828,7 @@ public class LambdaJ {
         }
         else sDynamic = sConditionHandler = null;
 
-        if (haveVector()) {
+        if (have(Features.HAVE_VECTOR)) {
             sBit = intern("bit");
             sCharacter = intern("character");
         }
@@ -1908,8 +1887,8 @@ public class LambdaJ {
         sWrite("write", Features.HAVE_IO, 1, 2)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 2)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(), args, cdr(args) == null || cadr(args) != null); } },
-        sFormat("format", Features.HAVE_UTIL, 2, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.getLispPrinter(), intp.haveIO(), args); } },
-        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(), intp.haveIO(), args); } },
+        sFormat("format", Features.HAVE_UTIL, 2, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.getLispPrinter(), intp.have(Features.HAVE_IO), args); } },
+        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(), intp.have(Features.HAVE_IO), args); } },
 
         // misc
         sValues("values", Features.HAVE_XTRA, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
@@ -2003,8 +1982,8 @@ public class LambdaJ {
     private Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
-        if (haveT()) return sT; // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-        else if (haveQuote()) return cons(intern("quote"), cons(sT, null));
+        if (have(Features.HAVE_T)) return sT; // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
+        else if (have(Features.HAVE_QUOTE)) return cons(intern("quote"), cons(sT, null));
         else throw new UnboundVariable("truthiness needs support for 't' or 'quote'");
     }
 
@@ -2433,7 +2412,7 @@ public class LambdaJ {
                        would end up here. That was legal in CLtL1 and was made illegal in Common Lisp, and wouldn't work in compiled Murmel,
                        nor would something similar work in Common Lisp (see "Issue FUNCTION-TYPE Writeup" http://www.lispworks.com/documentation/lw71/CLHS/Issues/iss175_w.htm).
                      */
-                    else if (haveOldLambda() && consp(func) && car(func) == sLambda) {
+                    else if (have(Features.HAVE_OLDLAMBDA) && consp(func) && car(func) == sLambda) {
                         final Object paramsAndBody = cdr(func);
                         env = zip(car(paramsAndBody), argList, env, true);
 
@@ -3110,7 +3089,7 @@ public class LambdaJ {
     /** make a lexical closure (if enabled) or lambda */
     private Closure makeClosure(Object params, ConsCell body, ConsCell env) {
         nCells++;
-        return new Closure(params, body, haveLexC() ? env : DYNAMIC_ENV);
+        return new Closure(params, body, have(Features.HAVE_LEXC) ? env : DYNAMIC_ENV);
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
@@ -3431,7 +3410,7 @@ public class LambdaJ {
     static boolean hashtablep(Object o) { return o instanceof Map; }
 
     final  boolean functionp(Object o)   { return functionp0(o)
-                                                  || (haveOldLambda() && consp(o) && car(o) == sLambda); }
+                                                  || (have(Features.HAVE_OLDLAMBDA) && consp(o) && car(o) == sLambda); }
     static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure
                                                   || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction; }
 
@@ -5678,11 +5657,11 @@ public class LambdaJ {
     /** build an environment by prepending the previous environment {@code env} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@link #symtab} on the fly */
     private void environment() {
-        if (haveIO()) {
+        if (have(Features.HAVE_IO)) {
             WellknownSymbol.forAllPrimitives(Features.HAVE_IO.bits(), this::addBuiltin);
         }
 
-        if (haveGui()) {
+        if (have(Features.HAVE_GUI)) {
             final Primitive makeFrame = a -> {
                 varargsMinMax("make-frame", a, 1, 4);
                 final String title = requireString("make-frame", car(a));
@@ -5734,17 +5713,17 @@ public class LambdaJ {
                                                                                        toFloat("hsb-to-pixel", caddr(a)));  });
         }
 
-        if (haveString()) {
+        if (have(Features.HAVE_STRING)) {
             WellknownSymbol.forAllPrimitives(Features.HAVE_STRING.bits(), this::addBuiltin);
         }
 
-        if (haveApply()) {
+        if (have(Features.HAVE_APPLY)) {
             final LambdaJSymbol sApply = intern("apply");
             ocApply = new OpenCodedPrimitive(sApply);
             extendTopenv(sApply, ocApply);
         }
 
-        if (haveXtra()) {
+        if (have(Features.HAVE_XTRA)) {
             extendTopenv(sDynamic, sDynamic);
 
             final LambdaJSymbol sEval = intern("eval");
@@ -5754,37 +5733,37 @@ public class LambdaJ {
             WellknownSymbol.forAllPrimitives(Features.HAVE_XTRA.bits(), this::addBuiltin);
         }
 
-        if (haveT()) {
+        if (have(Features.HAVE_T)) {
             extendTopenv(sT, sT);
         }
 
-        if (haveNil()) {
+        if (have(Features.HAVE_NIL)) {
             extendTopenv(sNil, null);
         }
 
-        if (haveVector()) {
+        if (have(Features.HAVE_VECTOR)) {
             addBuiltin("array-dimension-limit", MAX_ARRAY_SIZE);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_VECTOR.bits(), this::addBuiltin);
         }
 
-        if (haveHash()) {
+        if (have(Features.HAVE_HASH)) {
             WellknownSymbol.forAllPrimitives(Features.HAVE_HASH.bits(), this::addBuiltin);
         }
 
-        if (haveUtil()) {
+        if (have(Features.HAVE_UTIL)) {
             extendTopenv(featuresEnvEntry);
-            extendTopenv(conditionHandlerEnvEntry);
+            extendTopenv(conditionHandlerEnvEntry); // todo das sollte nach XTRA?!? und alle condition special forms in feature flags dokumentieren
             addBuiltin("internal-time-units-per-second", (long)1e9);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_UTIL.bits(), this::addBuiltin);
         }
 
-        if (haveFFI()) {
+        if (have(Features.HAVE_FFI)) {
             WellknownSymbol.forAllPrimitives(Features.HAVE_FFI.bits(), this::addBuiltin);
         }
 
-        if (haveNumbers()) {
+        if (have(Features.HAVE_NUMBERS)) {
             addBuiltin("pi", Math.PI);
             addBuiltin("most-positive-fixnum", MOST_POSITIVE_FIXNUM);
             addBuiltin("most-negative-fixnum", MOST_NEGATIVE_FIXNUM);
@@ -5792,15 +5771,15 @@ public class LambdaJ {
             WellknownSymbol.forAllPrimitives(Features.HAVE_NUMBERS.bits(), this::addBuiltin);
         }
 
-        if (haveAtom()) {
+        if (have(Features.HAVE_ATOM)) {
             WellknownSymbol.forAllPrimitives(Features.HAVE_ATOM.bits(), this::addBuiltin);
         }
 
-        if (haveEq()) {
+        if (have(Features.HAVE_EQ)) {
             WellknownSymbol.forAllPrimitives(Features.HAVE_EQ.bits(), this::addBuiltin);
         }
 
-        if (haveCons()) {
+        if (have(Features.HAVE_CONS)) {
             WellknownSymbol.forAllPrimitives(Features.HAVE_CONS.bits(), this::addBuiltin);
         }
     }
@@ -6439,8 +6418,7 @@ public class LambdaJ {
             final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != EOF) System.out.print((char)c); return c; };
             final ReadSupplier nonechoingSupplier = consoleReader::read;
 
-            final boolean replVars = (interpreter.features & Features.HAVE_XTRA.bits()) != 0
-                                     && (interpreter.features & Features.HAVE_DEFINE.bits()) != 0;
+            final boolean replVars = interpreter.have(Features.HAVE_XTRA) && interpreter.have(Features.HAVE_DEFINE);
             final Object bye = new Object();
             final Runnable initReplVars = () -> {
                 for (Object v: new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3}) {

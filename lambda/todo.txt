@@ -1,4 +1,7 @@
 try koennte noch abzufangende exceptions uebernehmen, default ist "alles"
+checken, wie try, error, *condition-handler* usw mit feature flags auf/ abgedreht werden können
+-> scheint UTIL und XTRA gemischt zu sein
+   vielleicht error in UTIL lassen, alles andere condition zeugs bekommt ein neues flag
 
 current_frame zw. interpreter und compiler hintri/firi kopieren?
 -> current_frame, values, *features*, lispReader, lispPrinter sollten wsl. ThreadLocals sein
@@ -17,7 +20,7 @@ Primitive, CompilerPrimitive und MurmelFunction könnten alle auch
 und ggf. weitere "Standard FunctionalInterfaces" unterstützen
 -> die methode des jeweiligen interface würde als default methode implementiert, und wenn die arity der tatsächlichen methode anders ist dann krachts zur laufzeit so wie bei jproxy
 -> würde die meisten jproxy aufrufe ersetzen
--> jproxy sollte wsl erkennen ob ein interface imlementiert werden soll das bereits implementiert ist und dann das argument unverändert zurückgeben,
+-> jproxy sollte wsl erkennen ob ein interface implementiert werden soll das bereits implementiert ist und dann das argument unverändert zurückgeben,
    bzw. der compiler braucht keinen code zu erzeugen
 -> oder bleiben lassen, weil wenn ein verbessertes makeProxy() bekannte interfaces ohne reflection/ dynamic proxy implementiert, macht vielleicht HotSpot-inlining den rest
 
