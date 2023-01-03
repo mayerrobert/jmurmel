@@ -50,7 +50,7 @@ cp ../mlib.html              $DESTDIR/jmurmel/.
 # configure application class data sharing, see https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing
 
 # run jmurmel to create a classlist
-echo '(load "../samples.murmel/murmel-test")' | $DESTDIR/jmurmel/lib/runtime/bin/java -Xshare:off  -XX:DumpLoadedClassList=target/hello.classlist -cp $DESTDIR/jmurmel/lib/app/jmurmel.jar io.github.jmurmel.LambdaJ
+echo '(load "../samples.murmel/murmel-test")' | $DESTDIR/jmurmel/lib/runtime/bin/java -Xshare:off  -XX:DumpLoadedClassList=target/jmurmel.classlist -cp $DESTDIR/jmurmel/lib/app/jmurmel.jar io.github.jmurmel.LambdaJ
 
 # create classes.jsa from classlist
-$DESTDIR/jmurmel/lib/runtime/bin/java -Xshare:dump -XX:SharedClassListFile=target/hello.classlist -XX:SharedArchiveFile=$DESTDIR/jmurmel/lib/runtime/lib/server/classes.jsa -cp $DESTDIR/jmurmel/lib/app/jmurmel.jar
+$DESTDIR/jmurmel/lib/runtime/bin/java -Xshare:dump -XX:SharedClassListFile=target/jmurmel.classlist -XX:SharedArchiveFile=$DESTDIR/jmurmel/lib/runtime/lib/server/classes.jsa -cp $DESTDIR/jmurmel/lib/app/jmurmel.jar
