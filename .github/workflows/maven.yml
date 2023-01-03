@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ '8', '17', '19', '20-ea' ]
+        java: [ '8', '17', '19', '20-ea', '21-ea' ]
     name: Java ${{ matrix.Java }} CI
 
     steps:
@@ -36,7 +36,7 @@ jobs:
       uses: actions/setup-java@v3
       with:
         java-version: ${{ matrix.java }}
-        distribution: 'zulu'
+        distribution: 'openjdk'
     - name: Cache Maven packages
       uses: actions/cache@v3
       with:
@@ -50,14 +50,14 @@ jobs:
     - name: Upload Jar
       uses: actions/upload-artifact@v3
       with:
-        name: jmurmel-Java${{ matrix.java }}
+        name: jmurmel-openjdk-${{ matrix.java }}
         path: |
           lambda/target/jmurmel.jar
 
     - name: Upload docs
       uses: actions/upload-artifact@v3
       with:
-        name: jmurmel-Java${{ matrix.java }}
+        name: jmurmel-openjdk-${{ matrix.java }}
         path: |
           murmel-langref.md
           mlib.md
@@ -68,6 +68,6 @@ jobs:
     - name: Upload mlib
       uses: actions/upload-artifact@v3
       with:
-        name: jmurmel-Java${{ matrix.java }}
+        name: jmurmel-openjdk-${{ matrix.java }}
         path: |
           samples.mlib/mlib.lisp
