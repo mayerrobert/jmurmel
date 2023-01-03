@@ -582,8 +582,8 @@
 
 
 (defmacro m%notany-null (lst)
-  (let ((loop (gensym))
-        (l (gensym)))
+  (let ((loop (gensym "loop"))
+        (l (gensym "lst")))
     `(let ,loop ((,l ,lst))
        (if ,l (and (car ,l) (,loop (cdr ,l)))
          t))))
