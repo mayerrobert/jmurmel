@@ -423,6 +423,8 @@ public class LambdaJ {
     public static final class ListBuilder extends AbstractListBuilder<ListBuilder> {
         @Override ConsCell newCell(Object car) { return new ListConsCell(car, null); }
 
+        // todo siehe auch LambdaJ.list(Object...), vielleicht list und listStar nach ConsCell schieben, dort gibts auch cons, und list und listStar sollten ConsCell.cons nutzen
+        // ggf braucht ListBuilder dann nicht mehr public sein
         public static ConsCell list(Object... elems) {
             if (elems == null || elems.length == 0) return null;
             if (elems.length == 1) return new ListConsCell(elems[0], null);
