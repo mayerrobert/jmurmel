@@ -33,9 +33,19 @@ public class HashTest {
     public void testInteger() {
         final int byteHash = sxhash((byte)97);
 
-        Assert.assertEquals(byteHash, sxhash((short)97));
-        Assert.assertEquals(byteHash, sxhash((int)97));
-        Assert.assertEquals(byteHash, sxhash((long)97));
-        Assert.assertEquals(byteHash, sxhash(new BigInteger("97")));
+        Assert.assertEquals(sxhash((short)97), byteHash);
+        Assert.assertEquals(sxhash((int)97), byteHash);
+        Assert.assertEquals(sxhash((long)97), byteHash);
+        Assert.assertEquals(sxhash(new BigInteger("97")), byteHash);
+    }
+
+    @Test
+    public void testNegInteger() {
+        final int byteHash = sxhash((byte)-97);
+
+        Assert.assertEquals(sxhash((short)-97), byteHash);
+        Assert.assertEquals(sxhash((int)-97), byteHash);
+        Assert.assertEquals(sxhash((long)-97), byteHash);
+        Assert.assertEquals(sxhash(new BigInteger("-97")), byteHash);
     }
 }

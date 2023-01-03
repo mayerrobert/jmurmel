@@ -4779,7 +4779,7 @@ public class LambdaJ {
     static int sxhash(Object o) {
         if (o == null) return 0;
 
-        if (integerp(o)) return o.hashCode(); // byte..BigInteger have compatible hash codes
+        if (integerp(o)) return Long.hashCode(((Number)o).longValue()); // byte..BigInteger have different hash codes for negative numbers
         if (numberp(o)) return o.hashCode();
         if (characterp(o)) return o.hashCode();
 
