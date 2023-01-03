@@ -122,6 +122,7 @@ und nur die subtrees die kein environment nutzen zur macroexpansion time expandi
          -> doch ein problem, weil macro oder nicht hängt am LambdaJSymbol dran (macroclosure)
             müsste das lokale macroenvironment eine alist symbol->macroclosure werden bzw. symbol->LOCAL wenn ein macro geshadowed werden soll
             und macroexpand benutzt nur bei globalen symbolen aus der hashmap die LambdaJSymbol.macroClosure
+-> (macro-function symbol lexenv) waere machbar: symbol in lexenv suchen, fallback auf "globales environment" aka LambdaJSymbol.macro
 
 
 
