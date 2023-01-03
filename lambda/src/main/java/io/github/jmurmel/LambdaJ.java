@@ -4770,7 +4770,8 @@ public class LambdaJ {
     static final Object NO_DEFAULT_VALUE = new Object();
 
     /** a hash function that is compatible with equal(o1, o1) aka compare(o1, o2, CompareMode.EQUAL):
-     *  two objects that are equal will have the same hash, two objects that are not equal may or may not have the same hash */
+     *  two objects that are equal will have the same hash, two objects that are not equal may or may not have the same hash.
+     *  Objects with (possibly embedded) loops should be handled as well. */
     static int sxhash(Object o) {
         if (o == null) return 0;
 
@@ -4786,17 +4787,18 @@ public class LambdaJ {
         if (o instanceof Bitvector) return o.hashCode();
         if (o instanceof boolean[]) return Bitvector.of(o).hashCode();
 
-        if (o instanceof ConsCell) return sxhash(o, 5);
+        if (o instanceof ConsCell) return sxhash(o, 100);
 
         return o.hashCode();
     }
 
     /** avoid endless recursion in case of circular lists or lists with embedded circles */
-    static int sxhash(Object o, int rec) {
+    // todo nach ConsCell schieben, dann kann das in ArraySlice ueberladen werden mit loop statt rekursion
+    private static int sxhash(Object o, int rec) {
         if (!consp(o)) return sxhash(o);
         rec--;
         final ConsCell c = (ConsCell)o;
-        if (rec >= 0) return sxhash(car(c), rec) ^ sxhash(cdr(c), rec);
+        if (rec >= 0) return 31 * sxhash(car(c), rec) + sxhash(cdr(c), rec);
         return 0;
     }
 
