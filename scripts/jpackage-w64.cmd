@@ -10,6 +10,7 @@ that contains everything needed to run JMurmel
 including a Java runtime.
 
 The end result will be the directory "jmurmel" in "target".
+Use ...\jmurmel\jmurmel.exe to launch a REPL.
 
 :start
 
