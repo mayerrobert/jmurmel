@@ -45,6 +45,8 @@ jpackage %JLINK% --type app-image -i target\jpackage-input -d %DESTDIR% -n jmurm
 
 copy ..\samples.mlib\mlib.lisp %DESTDIR%\jmurmel\app\.
 copy ..\LICENSE                %DESTDIR%\jmurmel\.
+copy ..\murmel-langref.md      %DESTDIR%\jmurmel\.
+copy ..\mlib.md                %DESTDIR%\jmurmel\.
 copy ..\murmel-langref.html    %DESTDIR%\jmurmel\.
 copy ..\mlib.html              %DESTDIR%\jmurmel\.
 

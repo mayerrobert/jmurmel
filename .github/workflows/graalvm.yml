@@ -49,6 +49,8 @@ jobs:
           path: |
             jmurmel
             jmurmel.exe
+            murmel-langref.md
+            mlib.md
             murmel-langref.html
             mlib.html
             LICENSE
