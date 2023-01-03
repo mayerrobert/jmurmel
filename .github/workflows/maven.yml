@@ -27,7 +27,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        java: [ '8', '17', '19', '20-ea', '21-ea' ]
+        java: [ '8', '17', '19', '20-ea' ]
     name: Java ${{ matrix.Java }} CI
 
     steps:
