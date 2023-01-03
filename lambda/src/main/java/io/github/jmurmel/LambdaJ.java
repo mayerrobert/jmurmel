@@ -718,6 +718,7 @@ public class LambdaJ {
         HAVE_NIL, HAVE_T,    // use () and (quote t) instead. printObj will print nil regardless
 
         HAVE_XTRA,           // extra special forms such as if
+        HAVE_DEFINE,         // special form define
 
         HAVE_FFI,            // jmethod and jproxy
 
@@ -739,7 +740,7 @@ public class LambdaJ {
         HAVE_LAMBDA     { @Override public int bits() { return HAVE_LEXC.bits(); } },
         HAVE_LAMBDAPLUS { @Override public int bits() { return HAVE_LAMBDA.bits() | HAVE_QUOTE.bits() | HAVE_ATOM.bits() | HAVE_EQ.bits(); } },
         HAVE_MIN        { @Override public int bits() { return HAVE_LAMBDAPLUS.bits() | HAVE_CONS.bits() | HAVE_COND.bits(); } },
-        HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits() | HAVE_NIL.bits() | HAVE_T.bits(); } },
+        HAVE_MINPLUS    { @Override public int bits() { return HAVE_MIN.bits() | HAVE_APPLY.bits() | HAVE_LABELS.bits() | HAVE_NIL.bits() | HAVE_T.bits() | HAVE_DEFINE.bits(); } },
         HAVE_ALL_DYN    { @Override public int bits() { return (HAVE_MINPLUS.bits() | HAVE_XTRA.bits() | HAVE_FFI.bits()
                                                                 | HAVE_NUMBERS.bits()| HAVE_DOUBLE.bits() | HAVE_LONG.bits() | HAVE_VECTOR.bits() | HAVE_HASH.bits()
                                                                 | HAVE_STRING.bits() | HAVE_IO.bits() | HAVE_GUI.bits() | HAVE_UTIL.bits())
@@ -751,6 +752,8 @@ public class LambdaJ {
     }
 
     final int features;
+
+    private boolean have(Features feature) { return (features & feature.bits()) != 0; }
 
     private boolean haveLabels()    { return (features & Features.HAVE_LABELS.bits())    != 0; }
     private boolean haveNil()       { return (features & Features.HAVE_NIL.bits())       != 0; }
@@ -813,10 +816,11 @@ public class LambdaJ {
         if (haveCond())   { internWellknown("cond"); }
         if (haveLabels()) { internWellknown("labels"); }
 
+        if (have(Features.HAVE_DEFINE)) internWellknown("define");
+
         if (haveXtra())   {
             sDynamic = intern("dynamic");
 
-            symtab.intern(sDefine);
             internWellknown("defun");
             internWellknown("defmacro");
             internWellknown("if");
@@ -1740,7 +1744,7 @@ public class LambdaJ {
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
      *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
     static final LambdaJSymbol sT = new LambdaJSymbol("t", true), sNil = new LambdaJSymbol("nil", true),
-                               sLambda = new LambdaJSymbol("lambda", true), sDefine = new LambdaJSymbol("define", true), sProgn = new LambdaJSymbol("progn", true);
+                               sLambda = new LambdaJSymbol("lambda", true), sProgn = new LambdaJSymbol("progn", true);
 
     /** some more well known symbols. These symbols are not reserved, the LambdaJSymbol objects could be used to store a macro closure, so the symbols must be instance members of LambdaJ. */
     final LambdaJSymbol sDynamic, sBit, sCharacter, sConditionHandler;
@@ -6401,7 +6405,7 @@ public class LambdaJ {
         private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, boolean echo, List<Object> prevHistory, String[] args) {
             final LambdaJSymbol cmdQuit   = interpreter.intern(":q");
             final LambdaJSymbol cmdHelp   = interpreter.intern(":h");
-            final LambdaJSymbol cmdDis    = interpreter.intern(":dis");
+            final LambdaJSymbol cmdDesc   = interpreter.intern(":desc");
             final LambdaJSymbol cmdEcho   = interpreter.intern(":echo");
             final LambdaJSymbol cmdNoEcho = interpreter.intern(":noecho");
             final LambdaJSymbol cmdEnv    = interpreter.intern(":env");
@@ -6435,7 +6439,8 @@ public class LambdaJ {
             final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != EOF) System.out.print((char)c); return c; };
             final ReadSupplier nonechoingSupplier = consoleReader::read;
 
-            final boolean replVars = (interpreter.features & Features.HAVE_XTRA.bits()) != 0;
+            final boolean replVars = (interpreter.features & Features.HAVE_XTRA.bits()) != 0
+                                     && (interpreter.features & Features.HAVE_DEFINE.bits()) != 0;
             final Object bye = new Object();
             final Runnable initReplVars = () -> {
                 for (Object v: new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3}) {
@@ -6479,7 +6484,7 @@ public class LambdaJ {
                         if (exp == eof
                             || exp == cmdQuit) { System.out.println("bye."); System.out.println();  throw EXIT_SUCCESS; }
                         if (exp == cmdHelp)   { showHelp();  continue; }
-                        if (exp == cmdDis)    { final Object name = parser.readObj(eof);  if (name == eof) continue;
+                        if (exp == cmdDesc)   { final Object name = parser.readObj(eof);  if (name == eof) continue;
                                                 if (!symbolp(name)) { System.out.println(name + " is not a symbol"); continue; }
                                                 final LambdaJSymbol symbol = (LambdaJSymbol)name;
                                                 final ConsCell envEntry = interpreter.lookupEnvEntry(name, null);
@@ -6722,6 +6727,7 @@ public class LambdaJ {
             if (hasFlag("--no-gui", args))      features &= ~Features.HAVE_GUI.bits();
             if (hasFlag("--no-util", args))     features &= ~Features.HAVE_UTIL.bits();
 
+            if (hasFlag("--no-define", args))   features &= ~Features.HAVE_DEFINE.bits();
             if (hasFlag("--no-labels", args))   features &= ~Features.HAVE_LABELS.bits();
             if (hasFlag("--no-cons", args))     features &= ~Features.HAVE_CONS.bits();
             if (hasFlag("--no-cond", args))     features &= ~Features.HAVE_COND.bits();
@@ -6828,7 +6834,7 @@ public class LambdaJ {
                                + "  :echo .......................... print forms to screen before eval'ing\n"
                                + "  :noecho ........................ don't print forms\n"
                                + "  :env ........................... list current global environment\n"
-                               + "  :dis <symbol> .................. display interpreter data about <symbol>\n"
+                               + "  :desc <symbol> ................. display interpreter data about <symbol>\n"
                                + "  :macros ........................ list currently defined macros\n"
                                + "  :res ........................... 'CTRL-ALT-DEL' the REPL, i.e. reset global environment, clear history\n"
                                + "\n"
@@ -6932,7 +6938,7 @@ public class LambdaJ {
                                + "\n"
                                + "--no-ffi ......  no functions 'jmethod' or 'jproxy'\n"
                                + "--no-gui ......  no turtle or bitmap graphics\n"
-                               + "--no-extra ....  no special forms if, define, defun, defmacro,\n"
+                               + "--no-extra ....  no special forms if, defun, defmacro,\n"
                                + "                 let, let*, letrec, progn, setq,\n"
                                + "                 multiple-value-call, multiple-value-bind,\n"
                                + "                 load, require, provide, declaim\n"
@@ -6948,11 +6954,11 @@ public class LambdaJ {
                                + "                 no time related primitives\n"
                                + "\n"
                                + "--min+ ........  turn off all above features, leaving a Lisp\n"
-                               + "                 with 10 special forms and primitives:\n"
+                               + "                 with 11 special forms and primitives:\n"
                                + "                   S-expressions\n"
                                + "                   symbols and cons-cells (i.e. lists)\n"
                                + "                   function application\n"
-                               + "                   the special forms quote, lambda, cond, labels\n"
+                               + "                   the special forms quote, lambda, cond, labels, define\n"
                                + "                   the primitive functions atom, eq, cons, car, cdr, apply\n"
                                + "                   the symbols nil, t\n"
                                + "\n"
@@ -6960,6 +6966,7 @@ public class LambdaJ {
                                + "--no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)\n"
                                + "--no-apply ....  no function 'apply'\n"
                                + "--no-labels ...  no special form 'labels' (hint: use Y-combinator instead)\n"
+                               + "--no-define ...  no special form 'define'\n"
                                + "\n"
                                + "--min .........  turn off all above features, leaving a Lisp with\n"
                                + "                 8 special forms and primitives:\n"
@@ -7148,7 +7155,6 @@ public class LambdaJ {
             symtab.intern(LambdaJ.sT);
             symtab.intern(LambdaJ.sNil);
             symtab.intern(LambdaJ.sLambda);
-            symtab.intern(LambdaJ.sDefine);
             symtab.intern(LambdaJ.sProgn);
             for (WellknownSymbol ws: WellknownSymbol.values()) {
                 symtab.intern(new LambdaJSymbol(ws.sym, true));

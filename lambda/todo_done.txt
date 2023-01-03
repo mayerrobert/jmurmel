@@ -2389,3 +2389,12 @@ Serapeum hat dict und erweitert den printer:
 Das wiedereinlesen ist aber wsl. nicht dasselbe wie ein readermacro, der reader list halt einen aufruf von dict, der dann irgendwann wirklich passiert
 
 equal von mlib nach murmel schieben, damit man hashmaps mit strings machen kann #H(equal "eins" 1 "zwei" 2)
+
+
+define (aka globales environment) könnte ein eigenes feature flag bekommen statt mit EXTRA zusammen
+-> --min++ könnte sein:
+   --min+
+   --io
+   --define
+-> oder lambda++
+-> jedenfalls sollten IO und define wsl erst viel "später" abgedreht werden, apply vielleicht auch

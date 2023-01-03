@@ -69,7 +69,7 @@ Feature flags:
 
 --no-ffi ......  no functions 'jmethod' or 'jproxy'
 --no-gui ......  no turtle or bitmap graphics
---no-extra ....  no special forms if, define, defun, defmacro,
+--no-extra ....  no special forms if, defun, defmacro,
                  let, let*, letrec, progn, setq,
                  multiple-value-call, multiple-value-bind,
                  load, require, provide, declaim
@@ -85,11 +85,11 @@ Feature flags:
                  no time related primitives
 
 --min+ ........  turn off all above features, leaving a Lisp
-                 with 10 special forms and primitives:
+                 with 11 special forms and primitives:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application
-                   the special forms quote, lambda, cond, labels
+                   the special forms quote, lambda, cond, labels, define
                    the primitive functions atom, eq, cons, car, cdr, apply
                    the symbols nil, t
 
@@ -97,6 +97,7 @@ Feature flags:
 --no-t ........  don't predefine symbol t (hint: use '(quote t)' instead)
 --no-apply ....  no function 'apply'
 --no-labels ...  no special form 'labels' (hint: use Y-combinator instead)
+--no-define ...  no special form 'define'
 
 --min .........  turn off all above features, leaving a Lisp with
                  8 special forms and primitives:

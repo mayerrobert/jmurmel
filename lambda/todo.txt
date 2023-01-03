@@ -1,12 +1,3 @@
-define (aka globales environment) könnte ein eigenes feature flag bekommen statt mit EXTRA zusammen
--> --min++ könnte sein:
-   --min+
-   --io
-   --define
--> oder lambda++
--> jedenfalls sollten IO und define wsl erst viel "später" abgedreht werden, apply vielleicht auch
-
-
 try koennte noch abzufangende exceptions uebernehmen, default ist "alles"
 
 current_frame zw. interpreter und compiler hintri/firi kopieren?
@@ -1426,7 +1417,7 @@ re:  What is the “minimal” set of primitives needed for...  https://news.yco
 (define (car c) (c (lambda (a b) a)))
 (define (cdr c) (c (lambda (a b) b)))
 
-c:\> jm --no-ffi --no-gui --no-number --no-string --no-vector --no-hash --no-util --no-io --no-cons --no-cond
+c:\> jm --min+ --no-cons
 JMurmel> (define cons (lambda (a b) (lambda (f) (f a b))))
 ==> cons
 JMurmel> (define car-er (lambda (car-value cdr-value) car-value))
