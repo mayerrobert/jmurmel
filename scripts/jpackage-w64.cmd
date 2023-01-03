@@ -1,9 +1,9 @@
 @echo off
 goto :start
 
-jpackage-w64 - create JMurmel app-image
+jpackage-w64 - create JMurmel app-image with a Windows .exe launcher
 
-Needs jpackage which is included in Java16 and above.
+Needs jpackage, jlink & friends which are included in Java16 and above.
 
 This will create an "app-image" aka a directory hierachy
 that contains everything needed to run JMurmel
@@ -24,6 +24,8 @@ set MODULES=--add-modules java.base,java.desktop,jdk.compiler,jdk.zipfs,jdk.jfr,
 
 REM Java options that will be used at runtime
 set JOPTIONS=--java-options -Xmx1G --java-options -Xss2m --java-options -XX:+UseParallelGC
+REM enable class loading debugging for CDS testing
+REM set JOPTIONS=%JOPTIONS% --java-options -Xshare:on --java-options -Xlog:class+load
 
 REM end config
 
@@ -35,9 +37,21 @@ rd /s /q target\jpackage-input
 md target\jpackage-input
 copy ..\lambda\target\jmurmel.jar target\jpackage-input
 
-jpackage --type app-image -i target\jpackage-input -d %DESTDIR% -n jmurmel --main-class io.github.jmurmel.LambdaJ --main-jar jmurmel.jar --win-console %MODULES% %JOPTIONS%
+set JLINK=--jlink-options --strip-native-commands --jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files
+set JLINK=--jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files
 
-copy ..\samples.mlib\mlib.lisp %DESTDIR%\jmurmel
-copy ..\LICENSE                %DESTDIR%\jmurmel
-copy ..\murmel-langref.html    %DESTDIR%\jmurmel
-copy ..\mlib.html              %DESTDIR%\jmurmel
+jpackage %JLINK% --type app-image -i target\jpackage-input -d %DESTDIR% -n jmurmel --main-class io.github.jmurmel.LambdaJ --main-jar jmurmel.jar --win-console %MODULES% %JOPTIONS%
+
+copy ..\samples.mlib\mlib.lisp %DESTDIR%\jmurmel\app\.
+copy ..\LICENSE                %DESTDIR%\jmurmel\.
+copy ..\murmel-langref.html    %DESTDIR%\jmurmel\.
+copy ..\mlib.html              %DESTDIR%\jmurmel\.
+
+
+REM configure application class data sharing, see https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing
+
+REM run jmurmel to create a classlist
+echo (load "../samples.murmel/murmel-test")| %DESTDIR%\jmurmel\runtime\bin\java -Xshare:off  -XX:DumpLoadedClassList=target\hello.classlist -cp %DESTDIR%\jmurmel\app\jmurmel.jar io.github.jmurmel.LambdaJ
+
+REM create classes.jsa from classlist
+%DESTDIR%\jmurmel\runtime\bin\java -Xshare:dump -XX:SharedClassListFile=target\hello.classlist -XX:SharedArchiveFile=%DESTDIR%\jmurmel\runtime\bin\server\classes.jsa -cp %DESTDIR%\jmurmel\app\jmurmel.jar
