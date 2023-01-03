@@ -50,14 +50,14 @@ jobs:
     - name: Upload Jar
       uses: actions/upload-artifact@v3
       with:
-        name: jmurmel-openjdk-${{ matrix.java }}
+        name: jmurmel-zulu-${{ matrix.java }}
         path: |
           lambda/target/jmurmel.jar
 
     - name: Upload docs
       uses: actions/upload-artifact@v3
       with:
-        name: jmurmel-openjdk-${{ matrix.java }}
+        name: jmurmel-zulu-${{ matrix.java }}
         path: |
           murmel-langref.md
           mlib.md
@@ -68,6 +68,6 @@ jobs:
     - name: Upload mlib
       uses: actions/upload-artifact@v3
       with:
-        name: jmurmel-openjdk-${{ matrix.java }}
+        name: jmurmel-zulu-${{ matrix.java }}
         path: |
           samples.mlib/mlib.lisp
