@@ -1541,6 +1541,10 @@ public class LambdaJ {
                 appendTo = newCell;
 
                 newCell.rplaca(readObject(carStartLine, carStartChar, eof));
+                if (newCell instanceof SExpConsCell && newCell.car() instanceof SExpConsCell) {
+                    final SExpConsCell se = (SExpConsCell)newCell.car;
+                    newCell.adjustEnd(se.lineNo, se.charNo);
+                }
                 skipWs();
                 listStartLine = lineNo; listStartChar = charNo;
             }
@@ -6474,22 +6478,19 @@ public class LambdaJ {
                             || exp == cmdQuit) { System.out.println("bye."); System.out.println();  throw EXIT_SUCCESS; }
                         if (exp == cmdHelp)   { showHelp();  continue; }
                         if (exp == cmdDis)    { final Object name = parser.readObj(eof);  if (name == eof) continue;
+                                                if (!symbolp(name)) { System.out.println(name + " is not a symbol"); continue; }
+                                                final LambdaJSymbol symbol = (LambdaJSymbol)name;
                                                 final ConsCell envEntry = interpreter.lookupEnvEntry(name, null);
-                                                if (envEntry == null) {
+                                                if (envEntry == null && symbol.macro == null) {
                                                     System.out.println(name + " is not bound"); continue;
                                                 }
-                                                final LambdaJSymbol symbol = (LambdaJSymbol)car(envEntry);
                                                 if (symbol.macro != null) {
-                                                    final LambdaJ.Closure closure = symbol.macro;
-                                                    final ConsCell form = ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params, closure.body));
                                                     System.out.println("macro " + symbol + ":");
-                                                    System.out.println(LambdaJ.printSEx(form));
+                                                    printClosureInfo(symbol.macro);
                                                 }
                                                 if (cdr(envEntry) instanceof LambdaJ.Closure) {
-                                                    final LambdaJ.Closure closure = (LambdaJ.Closure)cdr(envEntry);
-                                                    final ConsCell form = ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params, closure.body));
                                                     System.out.println("function " + symbol + ":");
-                                                    System.out.println(LambdaJ.printSEx(form));
+                                                    printClosureInfo((Closure)cdr(envEntry));
                                                 }
                                                 System.out.println(LambdaJ.printSEx(cdr(envEntry), true));
                                                 continue; }
@@ -6575,6 +6576,15 @@ public class LambdaJ {
                     else errorExit(e);
                 }
             }
+        }
+
+        private static void printClosureInfo(Closure closure) {
+            final ConsCell form = ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params, closure.body));
+            if (closure.body instanceof SExpConsCell) {
+                final String info = ((SExpConsCell)closure.body).lineInfo();
+                if (!info.isEmpty()) System.out.println(info);
+            }
+            System.out.println(LambdaJ.printSEx(form));
         }
 
         private static void errorContinue(Exception e) {
