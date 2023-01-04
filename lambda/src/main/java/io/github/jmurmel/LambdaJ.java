@@ -289,9 +289,27 @@ public class LambdaJ {
         public LambdaJError(Throwable cause, String msg)                                   { super(msg, getMurmelCause(cause)); }
         public LambdaJError(Throwable cause, Object errorForm)                             { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
 
-        public String typeName() { return conditionTypeName(this); }
+        public String conditionName() {
+            if (getCause() instanceof LambdaJError) return ((LambdaJError)getCause()).conditionName();
 
-        @Override public String toString() { return typeName() + " - " + getMessage(); }
+            if (getCause() != null) {
+                final Throwable t = getCause();
+                if (t instanceof ArithmeticException) return "arithmetic-error";
+                if (t instanceof SimpleTypeError) return "simple-type-error";
+                if (t instanceof IndexOutOfBoundsException) return "invalid-index-error";
+                if (t instanceof ClassCastException) return "type-error";
+                if (t instanceof InvalidPathException) return "file-error";
+                if (t instanceof EOFException) return "end-of-file";
+                if (t instanceof ReaderError) return "reader-error";
+                if (t instanceof IOException) return "stream-error";
+                if (t instanceof LambdaJError) return "(murmel-error)";
+                if (t instanceof Exception) return "error";
+            }
+            return "condition";
+        }
+
+
+        @Override public String toString() { return conditionName() + " - " + getMessage(); }
 
         private static String getErrorExp(Object[] params) {
             final Object exp;
@@ -308,27 +326,27 @@ public class LambdaJ {
 
     public static class SimpleError extends LambdaJError    { public SimpleError(String msg, Object... params) { super(true, msg, params); }
                                                               public SimpleError(String msg) { super(msg); }
-                                                              @Override public String typeName() { return "simple-error"; } }
+                                                              @Override public String conditionName() { return "simple-error"; } }
 
     public static class CellError extends LambdaJError      { public CellError(String msg, Object... params) { super(true, msg, params); }
                                                               public CellError(String msg) { super(msg); }
-                                                              @Override public String typeName() { return "cell-error"; } }
+                                                              @Override public String conditionName() { return "cell-error"; } }
     public static class UnboundVariable extends CellError   { public UnboundVariable(String msg, Object... params) { super(msg, params); }
                                                               public UnboundVariable(String msg) { super(msg); }
-                                                              @Override public String typeName() { return "unbound-variable"; } }
+                                                              @Override public String conditionName() { return "unbound-variable"; } }
     public static class UndefinedFunction extends CellError { public UndefinedFunction(String msg, Object... params) { super(msg, params); }
                                                               public UndefinedFunction(String msg) { super(msg); }
-                                                              @Override public String typeName() { return "undefined-function"; } }
+                                                              @Override public String conditionName() { return "undefined-function"; } }
 
     public static class ControlError extends LambdaJError   { public ControlError(String msg, Object... params) { super(true, msg, params); }
                                                               public ControlError(String msg) { super(msg); } }
 
     public static class ProgramError extends LambdaJError   { public ProgramError(String msg, Object... params) { super(true, msg, params); }
                                                               public ProgramError(String msg) { super(msg); }
-                                                              @Override public String typeName() { return "program-error"; } }
+                                                              @Override public String conditionName() { return "program-error"; } }
 
     public static class ParseError extends LambdaJError     { public ParseError(String msg, Object... args) { super(true, msg, args); }
-                                                              @Override public String typeName() { return "parse-error"; } }
+                                                              @Override public String conditionName() { return "parse-error"; } }
 
     // artithmetic-error... java.lang.ArithmeticException
     // type-error...        java.lang.ClassCastException
@@ -3488,24 +3506,6 @@ public class LambdaJ {
         if (typespec == st.intern("condition")) return o instanceof Throwable;
 
         throw new SimpleError("typep: unknown type specifier %s", printSEx(typespec));
-    }
-
-    private static String conditionTypeName(Throwable t) {
-        if (t instanceof LambdaJError && t.getCause() instanceof LambdaJError) return ((LambdaJError)t.getCause()).typeName();
-
-        if (t instanceof LambdaJError && t.getCause() != null) t = t.getCause();
-
-        if (t instanceof ArithmeticException) return "arithmetic-error";
-        if (t instanceof SimpleTypeError) return "simple-type-error";
-        if (t instanceof IndexOutOfBoundsException) return "invalid-index-error";
-        if (t instanceof ClassCastException) return "type-error";
-        if (t instanceof InvalidPathException) return "file-error";
-        if (t instanceof EOFException) return "end-of-file";
-        if (t instanceof ReaderError) return "reader-error";
-        if (t instanceof IOException) return "stream-error";
-        if (t instanceof LambdaJError) return "(murmel-error)";
-        if (t instanceof Exception) return "error";
-        return "condition";
     }
 
 
