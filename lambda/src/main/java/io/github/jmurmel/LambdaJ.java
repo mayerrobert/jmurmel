@@ -1982,9 +1982,10 @@ public class LambdaJ {
         return symtab.intern(sym);
     }
 
-    final void internWellknown(String sym) {
+    final LambdaJSymbol internWellknown(String sym) {
         final LambdaJSymbol ret = symtab.intern(new LambdaJSymbol(sym, true));
         assert ret.wellknownSymbol != WellknownSymbol.interned : "cannot intern wellknown symbol " + sym + ": was already interned as regular symbol";
+        return ret;
     }
 
     private static class OpenCodedPrimitive implements Primitive {
@@ -2023,6 +2024,11 @@ public class LambdaJ {
     private void extendTopenv(ConsCell envEntry) {
         gcache.put(car(envEntry), envEntry);
     }
+
+    private void extendTopenv(String sym, Object value) {
+        extendTopenv(intern(sym), value);
+    }
+
 
     private static final ConsCell DYNAMIC_ENV = new ListConsCell(null, null);
 
@@ -5650,9 +5656,11 @@ public class LambdaJ {
     /** build an environment by prepending the previous environment {@code env} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@link #symtab} on the fly */
     private void environment() {
-        if (have(Features.HAVE_IO)) {
-            WellknownSymbol.forAllPrimitives(Features.HAVE_IO.bits(), this::addBuiltin);
-        }
+        WellknownSymbol.forAllPrimitives(features, w -> extendTopenv(internWellknown(w.sym), (Primitive)a -> w.applyPrimitive(this, a)));
+
+        if (have(Features.HAVE_T)) extendTopenv(sT, sT);
+        if (have(Features.HAVE_NIL)) extendTopenv(sNil, null);
+        if (have(Features.HAVE_VECTOR)) extendTopenv("array-dimension-limit", MAX_ARRAY_SIZE);
 
         if (have(Features.HAVE_GUI)) {
             final Primitive makeFrame = a -> {
@@ -5662,52 +5670,48 @@ public class LambdaJ {
                 current_frame = ret;
                 return ret;
             };
-            addBuiltin("make-frame",    makeFrame);
-            addBuiltin("open-frame",    (Primitive) a -> { varargs0_1("open-frame",    a); return requireFrame("open-frame",    car(a)).open();    });
-            addBuiltin("close-frame",   (Primitive) a -> { varargs0_1("close-frame",   a); return requireFrame("close-frame",   car(a)).close();   });
-            addBuiltin("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",   a); return requireFrame("reset-frame",   car(a)).reset();   });
-            addBuiltin("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",   a); return requireFrame("clear-frame",   car(a)).clear();   });
-            addBuiltin("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame", a); return requireFrame("repaint-frame", car(a)).repaint(); });
-            addBuiltin("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",   a); return requireFrame("flush-frame",   car(a)).flush();   });
+            extendTopenv("make-frame",    makeFrame);
+            extendTopenv("open-frame",    (Primitive) a -> { varargs0_1("open-frame",    a); return requireFrame("open-frame",    car(a)).open();    });
+            extendTopenv("close-frame",   (Primitive) a -> { varargs0_1("close-frame",   a); return requireFrame("close-frame",   car(a)).close();   });
+            extendTopenv("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",   a); return requireFrame("reset-frame",   car(a)).reset();   });
+            extendTopenv("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",   a); return requireFrame("clear-frame",   car(a)).clear();   });
+            extendTopenv("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame", a); return requireFrame("repaint-frame", car(a)).repaint(); });
+            extendTopenv("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",   a); return requireFrame("flush-frame",   car(a)).flush();   });
 
             // set new current frame, return previous frame
-            addBuiltin("current-frame", (Primitive) a -> { varargs0_1("current-frame", a); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; });
+            extendTopenv("current-frame", (Primitive) a -> { varargs0_1("current-frame", a); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; });
 
-            addBuiltin("push-pos",      (Primitive) a -> { varargs0_1("push-pos", a); return requireFrame("push-pos",car(a)).pushPos(); });
-            addBuiltin("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",  a); return requireFrame("pop-pos", car(a)).popPos();  });
+            extendTopenv("push-pos",      (Primitive) a -> { varargs0_1("push-pos", a); return requireFrame("push-pos",car(a)).pushPos(); });
+            extendTopenv("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",  a); return requireFrame("pop-pos", car(a)).popPos();  });
 
-            addBuiltin("pen-up",        (Primitive) a -> { varargs0_1("pen-up",   a); return requireFrame("pen-up",   car(a)).penUp();   });
-            addBuiltin("pen-down",      (Primitive) a -> { varargs0_1("pen-down", a); return requireFrame("pen-down", car(a)).penDown(); });
+            extendTopenv("pen-up",        (Primitive) a -> { varargs0_1("pen-up",   a); return requireFrame("pen-up",   car(a)).penUp();   });
+            extendTopenv("pen-down",      (Primitive) a -> { varargs0_1("pen-down", a); return requireFrame("pen-down", car(a)).penDown(); });
 
-            addBuiltin("color",         (Primitive) a -> { varargs1_2("color",   a); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); });
-            addBuiltin("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor", a); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); });
+            extendTopenv("color",         (Primitive) a -> { varargs1_2("color",   a); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); });
+            extendTopenv("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor", a); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); });
 
-            addBuiltin("text",          (Primitive) a -> { varargs1_2("text",    a); return requireFrame("text",    cadr(a)).text   (car(a).toString()); });
+            extendTopenv("text",          (Primitive) a -> { varargs1_2("text",    a); return requireFrame("text",    cadr(a)).text   (car(a).toString()); });
 
-            addBuiltin("right",         (Primitive) a -> { varargs1_2("right",   a); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); });
-            addBuiltin("left",          (Primitive) a -> { varargs1_2("left",    a); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); });
-            addBuiltin("forward",       (Primitive) a -> { varargs1_2("forward", a); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); });
+            extendTopenv("right",         (Primitive) a -> { varargs1_2("right",   a); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); });
+            extendTopenv("left",          (Primitive) a -> { varargs1_2("left",    a); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); });
+            extendTopenv("forward",       (Primitive) a -> { varargs1_2("forward", a); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); });
 
-            addBuiltin("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  });
-            addBuiltin("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  });
-            addBuiltin("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); });
-            addBuiltin("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); });
+            extendTopenv("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  });
+            extendTopenv("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  });
+            extendTopenv("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); });
+            extendTopenv("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); });
 
-            addBuiltin("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); });
-            addBuiltin("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap",    a);       return requireFrame("discard-bitmap", car(a)).discardBitmap(); });
-            addBuiltin("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  });
-            addBuiltin("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",   a);
-                                                           return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
-                                                                              | toInt("rgb-to-pixel", cadr(a)) << 8
-                                                                              | toInt("rgb-to-pixel", caddr(a))); });
-            addBuiltin("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",   a);
-                                                           return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
-                                                                                       toFloat("hsb-to-pixel", cadr(a)),
-                                                                                       toFloat("hsb-to-pixel", caddr(a)));  });
-        }
-
-        if (have(Features.HAVE_STRING)) {
-            WellknownSymbol.forAllPrimitives(Features.HAVE_STRING.bits(), this::addBuiltin);
+            extendTopenv("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); });
+            extendTopenv("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap",    a);       return requireFrame("discard-bitmap", car(a)).discardBitmap(); });
+            extendTopenv("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  });
+            extendTopenv("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",   a);
+                                                             return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
+                                                                                | toInt("rgb-to-pixel", cadr(a)) << 8
+                                                                                | toInt("rgb-to-pixel", caddr(a))); });
+            extendTopenv("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",   a);
+                                                             return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
+                                                                                         toFloat("hsb-to-pixel", cadr(a)),
+                                                                                         toFloat("hsb-to-pixel", caddr(a)));  });
         }
 
         if (have(Features.HAVE_APPLY)) {
@@ -5722,69 +5726,20 @@ public class LambdaJ {
             final LambdaJSymbol sEval = intern("eval");
             ocEval = new OpenCodedPrimitive(sEval);
             extendTopenv(sEval, ocEval);
-
-            WellknownSymbol.forAllPrimitives(Features.HAVE_XTRA.bits(), this::addBuiltin);
-        }
-
-        if (have(Features.HAVE_T)) {
-            extendTopenv(sT, sT);
-        }
-
-        if (have(Features.HAVE_NIL)) {
-            extendTopenv(sNil, null);
-        }
-
-        if (have(Features.HAVE_VECTOR)) {
-            addBuiltin("array-dimension-limit", MAX_ARRAY_SIZE);
-
-            WellknownSymbol.forAllPrimitives(Features.HAVE_VECTOR.bits(), this::addBuiltin);
-        }
-
-        if (have(Features.HAVE_HASH)) {
-            WellknownSymbol.forAllPrimitives(Features.HAVE_HASH.bits(), this::addBuiltin);
         }
 
         if (have(Features.HAVE_UTIL)) {
             extendTopenv(featuresEnvEntry);
             extendTopenv(conditionHandlerEnvEntry);
-            addBuiltin("internal-time-units-per-second", (long)1e9);
-
-            WellknownSymbol.forAllPrimitives(Features.HAVE_UTIL.bits(), this::addBuiltin);
-        }
-
-        if (have(Features.HAVE_FFI)) {
-            WellknownSymbol.forAllPrimitives(Features.HAVE_FFI.bits(), this::addBuiltin);
+            extendTopenv("internal-time-units-per-second", (long)1e9);
         }
 
         if (have(Features.HAVE_NUMBERS)) {
-            addBuiltin("pi", Math.PI);
-            addBuiltin("most-positive-fixnum", MOST_POSITIVE_FIXNUM);
-            addBuiltin("most-negative-fixnum", MOST_NEGATIVE_FIXNUM);
-
-            WellknownSymbol.forAllPrimitives(Features.HAVE_NUMBERS.bits(), this::addBuiltin);
-        }
-
-        if (have(Features.HAVE_ATOM)) {
-            WellknownSymbol.forAllPrimitives(Features.HAVE_ATOM.bits(), this::addBuiltin);
-        }
-
-        if (have(Features.HAVE_EQ)) {
-            WellknownSymbol.forAllPrimitives(Features.HAVE_EQ.bits(), this::addBuiltin);
-        }
-
-        if (have(Features.HAVE_CONS)) {
-            WellknownSymbol.forAllPrimitives(Features.HAVE_CONS.bits(), this::addBuiltin);
+            extendTopenv("pi", Math.PI);
+            extendTopenv("most-positive-fixnum", MOST_POSITIVE_FIXNUM);
+            extendTopenv("most-negative-fixnum", MOST_NEGATIVE_FIXNUM);
         }
     }
-
-    private void addBuiltin(final String sym, final Object value) {
-        extendTopenv(intern(sym), value);
-    }
-
-    private void addBuiltin(WellknownSymbol w) {
-        extendTopenv(intern(w.sym), (Primitive) a -> w.applyPrimitive(this, a));
-    }
-
 
 
     ///
