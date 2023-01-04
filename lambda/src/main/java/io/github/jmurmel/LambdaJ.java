@@ -923,8 +923,8 @@ public class LambdaJ {
         @Override public Iterator<LambdaJSymbol> iterator() { return new Iter(symbols.iterator()); }
     }
 
-    public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable(), null); }
-    public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry); }
+    public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable(), null, null); }
+    public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry, null); }
     final SExpressionReader makeReader(ReadSupplier in, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
 
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
@@ -1004,10 +1004,6 @@ public class LambdaJ {
          *            {@code InputStream::read} won't work because that supplies bytes but not (Unicode-) characters,
          *            {@code Reader::read} will work
          */
-        SExpressionReader(ReadSupplier in, SymbolTable st, ConsCell featuresEnvEntry) {
-            this(in, st, featuresEnvEntry, null);
-        }
-
         SExpressionReader(ReadSupplier in, SymbolTable st, ConsCell featuresEnvEntry, Path filePath) {
             this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, st, featuresEnvEntry, in, filePath);
         }
@@ -1019,7 +1015,8 @@ public class LambdaJ {
          *
          */
         SExpressionReader(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable st, ConsCell featuresEnvEntry, ReadSupplier in, Path filePath) {
-            this.features = features; this.trace = trace; this.tracer = tracer;
+            this.features = features;
+            this.trace = trace; this.tracer = tracer;
             this.st = st;
             this.in = in;
             this.filePath = filePath;
@@ -1028,16 +1025,16 @@ public class LambdaJ {
             sUnquote        = "unquote";
             sUnquote_splice = "unquote-splice";
 
-            sNot          = intern("not");
-            sAnd          = intern("and");
-            sOr           = intern("or");
+            sNot          = st.intern("not");
+            sAnd          = st.intern("and");
+            sOr           = st.intern("or");
 
-            sQuote          = intern("quote");
-            sAppend         = intern("append");
-            sList           = intern("list");
-            sListStar       = intern("list*");
-            sCons           = intern("cons");
-            sNil            = intern("nil");
+            sQuote          = st.intern("quote");
+            sAppend         = st.intern("append");
+            sList           = st.intern("list");
+            sListStar       = st.intern("list*");
+            sCons           = st.intern("cons");
+            sNil            = st.intern("nil");
 
             this.featuresEnvEntry = featuresEnvEntry;
         }
@@ -1045,10 +1042,7 @@ public class LambdaJ {
         // this is really only useful for the repl. If parser.charNo != 0 the next thing the parser reads is the lineseparator following the previous sexp that was not consumed.
         void resetPos() { lineNo = charNo == 0 ? 1 : 0;  charNo = 0; }
 
-        private boolean haveDouble()  { return (features & Features.HAVE_DOUBLE.bits())  != 0; }
-        private boolean haveLong()    { return (features & Features.HAVE_LONG.bits())    != 0; }
-        private boolean haveString()  { return (features & Features.HAVE_STRING.bits())  != 0; }
-        private boolean haveNil()     { return (features & Features.HAVE_NIL.bits())     != 0; }
+        private boolean have(Features features) { return (this.features & features.bits()) != 0; }
 
         @Override public void setInput(ReadSupplier input, Path filePath) { in = input; this.filePath = filePath; lineNo = 1; charNo = 0; }
 
@@ -1286,7 +1280,7 @@ public class LambdaJ {
                 }
 
                 if (isBar(look)) {
-                    tok = intern(readBarSymbol());
+                    tok = st.intern(readBarSymbol());
                 } else if (isSyntax(look)) {
                     switch (look) {
                     case '(':  tok = Token.LP; break;
@@ -1297,7 +1291,7 @@ public class LambdaJ {
                     default: throw new ParseError("internal error - unexpected syntax character %c", (char)look);
                     }
                     look = getchar();
-                } else if (haveString() && isDQuote(look)) {
+                } else if (have(Features.HAVE_STRING) && isDQuote(look)) {
                     int index = 0;
                     do {
                         if (index < TOKEN_MAX) token[index++] = (char) look;
@@ -1324,19 +1318,19 @@ public class LambdaJ {
                     String s = tokenToString(token, 0, index);
                     if (!tokEscape && ".".equals(s)) {
                         tok = Token.DOT;
-                    } else if (!escapeSeen && haveDouble() && isDouble(s)) {
+                    } else if (!escapeSeen && have(Features.HAVE_DOUBLE) && isDouble(s)) {
                         tok = parseDouble(s);
-                    } else if (!escapeSeen && haveLong() && isLong(s)) {
+                    } else if (!escapeSeen && have(Features.HAVE_LONG) && isLong(s)) {
                         tok = parseLong(s, 10);
-                    } else if (!escapeSeen && haveDouble() && isLong(s)) {
+                    } else if (!escapeSeen && have(Features.HAVE_DOUBLE) && isLong(s)) {
                         tok = parseDouble(s);
-                    } else if (!escapeSeen && (haveDouble() || haveLong()) && isCLDecimalLong(s)) {
+                    } else if (!escapeSeen && (have(Features.HAVE_DOUBLE) || have(Features.HAVE_LONG)) && isCLDecimalLong(s)) {
                         // reject CL-style 123. for "123 in radix 10" - Murmel doesn't support changing reader radix,
                         // and non-lispers may think digits followed by a dot are floating point numbers (as is the case in most programming languages)
                         throw new ParseError("digits followed by '.' to indicate 'integer in radix' 10 is not supported. Digits followed by '.' without decimal numbers to indicate 'floating point' also is not supported.");
                     } else {
                         if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
-                        tok = intern(s);
+                        tok = st.intern(s);
                     }
                 }
 
@@ -1383,11 +1377,6 @@ public class LambdaJ {
         }
 
 
-        private LambdaJSymbol intern(String sym) {
-            return st.intern(sym);
-        }
-
-
         /// S-expression parser
         /** Record line and char numbers in the conses */
         @Override
@@ -1428,7 +1417,7 @@ public class LambdaJ {
             }
             if (tok == sNil) {
                 if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol nil");
-                if (haveNil()) return null;
+                if (have(Features.HAVE_NIL)) return null;
                 else return tok;
             }
             if (symbolp(tok)) {
@@ -3140,7 +3129,7 @@ public class LambdaJ {
         final Path p = findFile(func, argument);
         currentSource = p;
         try (Reader r = Files.newBufferedReader(p)) {
-            final SExpressionReader parser = new SExpressionReader(r::read, symtab, featuresEnvEntry, p);
+            final SExpressionReader parser = makeReader(r::read, p);
             final Object eof = "EOF";
             Object result = null;
             for (;;) {
@@ -5933,7 +5922,7 @@ public class LambdaJ {
         final ObjectReader scriptParser = lispReader;
         scriptParser.setInput(program::read, null);
         currentSource = null;
-        setReaderPrinter(new SExpressionReader(in::read, symtab, featuresEnvEntry), new SExpressionWriter(new WrappingWriter(out)::append));
+        setReaderPrinter(makeReader(in::read, null), new SExpressionWriter(new WrappingWriter(out)::append));
         final Object eof = "EOF";
         Object result = null;
         Object exp;
@@ -7152,7 +7141,7 @@ public class LambdaJ {
             featuresEnvEntry = ConsCell.cons(intern("*features*"), __42_features_42_.get());
             conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), __42_condition_45_handler_42_.get());
 
-            lispReader = new SExpressionReader(System.in::read, symtab, featuresEnvEntry, null);
+            lispReader = LambdaJ.makeReader(System.in::read, symtab, featuresEnvEntry);
             lispPrinter = LambdaJ.makeWriter(System.out::print);
         }
 
