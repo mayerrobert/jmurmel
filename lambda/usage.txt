@@ -72,7 +72,8 @@ Feature flags:
 --no-extra ....  no special forms if, defun, defmacro,
                  let, let*, letrec, progn, setq,
                  multiple-value-call, multiple-value-bind,
-                 load, require, provide, declaim
+                 load, require, provide, declaim,
+                 catch, throw, unwind-protect, try
                  no primitive functions eval, rplaca, rplacd, trace, untrace,
                  values, macroexpand-1
 --no-number ...  no number support
@@ -80,9 +81,10 @@ Feature flags:
 --no-vector ...  no vector support
 --no-hash .....  no hash-table support
 --no-io .......  no primitive functions read, write, writeln, lnwrite,
---no-util .....  no primitive functions consp, symbolp, listp, null,
+--no-util .....  no primitive functions consp, symbolp, listp, null, error,
                  append, assoc, assq, list, list*, format, format-locale,
-                 no time related primitives
+                 no time related primitives or symbols
+                 no symbols *features*, *condition-handler*
 
 --min+ ........  turn off all above features, leaving a Lisp
                  with 11 special forms and primitives:
@@ -130,7 +132,7 @@ Feature flags:
                    the special form lambda
 
 
---XX-oldlambda   Lists whose car is 'lambda' are (anonymous) functions, too. 
+--XX-oldlambda   Lists whose car is 'lambda' are (anonymous) functions, too.
 --XX-dyn ......  Use dynamic environments instead of Murmel's
                  lexical closures with dynamic global environment.
                  WARNING: This flag is for experimentation purposes only

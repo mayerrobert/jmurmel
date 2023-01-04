@@ -785,7 +785,9 @@ public class LambdaJ {
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
 
         this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : cons(intern("*features*"), makeFeatureList(symtab));
-        this.conditionHandlerEnvEntry = conditionHandlerEnvEntry != null ? conditionHandlerEnvEntry : cons(intern("*condition-handler*"), null);
+
+        sConditionHandler = intern("*condition-handler*");
+        this.conditionHandlerEnvEntry = conditionHandlerEnvEntry != null ? conditionHandlerEnvEntry : cons(sConditionHandler, null);
 
         if (have(Features.HAVE_T)) symtab.intern(sT);
         if (have(Features.HAVE_NIL)) symtab.intern(sNil);
@@ -814,7 +816,6 @@ public class LambdaJ {
             internWellknown("catch");
             internWellknown("throw");
             internWellknown("try");
-            sConditionHandler = intern("*condition-handler*");
 
             internWellknown("setq");
 
@@ -826,7 +827,7 @@ public class LambdaJ {
 
             internWellknown("declaim");
         }
-        else sDynamic = sConditionHandler = null;
+        else sDynamic = null;
 
         if (have(Features.HAVE_VECTOR)) {
             sBit = intern("bit");
@@ -2443,16 +2444,18 @@ public class LambdaJ {
             return result = nonlocalReturn(re, localCatchTags);
         }
         catch (Exception e) {
-            final Object handler = cdr(conditionHandlerEnvEntry);
-            conditionHandlerEnvEntry.rplacd(prev());
-            try {
-                if (functionp(handler)) eval(list(handler, e), env);
+            if (have(Features.HAVE_UTIL)) {
+                final Object handler = cdr(conditionHandlerEnvEntry);
+                conditionHandlerEnvEntry.rplacd(prev());
+                try {
+                    if (functionp(handler)) eval(list(handler, e), env);
+                }
+                catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
+                finally {
+                    conditionHandlerEnvEntry.rplacd(handler);
+                }
             }
-            catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
-            finally {
-                conditionHandlerEnvEntry.rplacd(handler);
-            }
-            if (e instanceof InterruptedException) Thread.currentThread().interrupt(); // todo wenn der conditionhandler ein nonlocal return macht, geht das verschütt
+            if (e instanceof InterruptedException) Thread.currentThread().interrupt(); // wenn der conditionhandler ein nonlocal return macht, geht das verschütt
             throw new LambdaJError(e, false, e.getMessage(), form);
         }
         finally {
@@ -5753,7 +5756,7 @@ public class LambdaJ {
 
         if (have(Features.HAVE_UTIL)) {
             extendTopenv(featuresEnvEntry);
-            extendTopenv(conditionHandlerEnvEntry); // todo das sollte nach XTRA?!? und alle condition special forms in feature flags dokumentieren
+            extendTopenv(conditionHandlerEnvEntry);
             addBuiltin("internal-time-units-per-second", (long)1e9);
 
             WellknownSymbol.forAllPrimitives(Features.HAVE_UTIL.bits(), this::addBuiltin);
@@ -6919,7 +6922,8 @@ public class LambdaJ {
                                + "--no-extra ....  no special forms if, defun, defmacro,\n"
                                + "                 let, let*, letrec, progn, setq,\n"
                                + "                 multiple-value-call, multiple-value-bind,\n"
-                               + "                 load, require, provide, declaim\n"
+                               + "                 load, require, provide, declaim,\n"
+                               + "                 catch, throw, unwind-protect, try\n"
                                + "                 no primitive functions eval, rplaca, rplacd, trace, untrace,\n"
                                + "                 values, macroexpand-1\n"
                                + "--no-number ...  no number support\n"
@@ -6927,9 +6931,10 @@ public class LambdaJ {
                                + "--no-vector ...  no vector support\n"
                                + "--no-hash .....  no hash-table support\n"
                                + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"
-                               + "--no-util .....  no primitive functions consp, symbolp, listp, null,\n"
-                               + "                 append, assoc, assq, list, list*, format, format-locale\n"
-                               + "                 no time related primitives\n"
+                               + "--no-util .....  no primitive functions consp, symbolp, listp, null, error,\n"
+                               + "                 append, assoc, assq, list, list*, format, format-locale,\n"
+                               + "                 no time related primitives or symbols\n"
+                               + "                 no symbols *features*, *condition-handler*\n"
                                + "\n"
                                + "--min+ ........  turn off all above features, leaving a Lisp\n"
                                + "                 with 11 special forms and primitives:\n"

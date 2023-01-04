@@ -1,7 +1,4 @@
 try koennte noch abzufangende exceptions uebernehmen, default ist "alles"
-checken, wie try, error, *condition-handler* usw mit feature flags auf/ abgedreht werden können
--> scheint UTIL und XTRA gemischt zu sein
-   vielleicht error in UTIL lassen, alles andere condition zeugs bekommt ein neues flag
 
 current_frame zw. interpreter und compiler hintri/firi kopieren?
 -> current_frame, values, *features*, lispReader, lispPrinter sollten wsl. ThreadLocals sein
