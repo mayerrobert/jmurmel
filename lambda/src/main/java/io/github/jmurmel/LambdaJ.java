@@ -389,7 +389,7 @@ public class LambdaJ {
         }
     }
 
-    private abstract static class AbstractListBuilder<T extends AbstractListBuilder<T>> {
+    public abstract static class AbstractListBuilder<T extends AbstractListBuilder<T>> {
         private Object first;
         private Object last;
 
@@ -788,7 +788,7 @@ public class LambdaJ {
     }
 
     /** constructor */
-    public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable symtab, ConsCell featuresEnvEntry, ConsCell conditionHandlerEnvEntry, Path libDir) {
+    LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable symtab, ConsCell featuresEnvEntry, ConsCell conditionHandlerEnvEntry, Path libDir) {
         this.features = features;
 
         this.trace = trace;
