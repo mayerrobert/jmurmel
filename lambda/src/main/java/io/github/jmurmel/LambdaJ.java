@@ -1144,6 +1144,7 @@ public class LambdaJ {
                     if (CTRL[i].equals(charOrCharactername)) return (char)i;
                 }
                 errorReaderError("unrecognized character name %s", charOrCharactername);
+                //NOTREACHED
 
             // #| ... multiline comment ending with |#
             // or #! ... !# to make hashbang scripts possible
@@ -4140,7 +4141,7 @@ public class LambdaJ {
         if (integerp(o1) && integerp(o2)) {
             if (o1 instanceof BigInteger && o2 instanceof BigInteger) return ((BigInteger)o1).compareTo((BigInteger)o2);
             if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue())));
-            if (o2 instanceof BigInteger)                             return -((BigInteger)o2).compareTo(new BigInteger(String.valueOf(((Number)o1).longValue())));
+            if (o2 instanceof BigInteger)                             return new BigInteger(String.valueOf(((Number)o1).longValue())).compareTo((BigInteger)o2);
             return Long.compare(((Number)o1).longValue(), ((Number)o2).longValue());
         }
 
