@@ -1039,10 +1039,6 @@ public class LambdaJ {
             this.in = in;
             this.filePath = filePath;
 
-            sQuasiquote     = "quasiquote";
-            sUnquote        = "unquote";
-            sUnquote_splice = "unquote-splice";
-
             sNot          = st.intern("not");
             sAnd          = st.intern("and");
             sOr           = st.intern("or");
@@ -1068,7 +1064,6 @@ public class LambdaJ {
         private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
         private boolean isDQuote(int x) { return !escape && x == '"'; }
         private boolean isBar(int x)    { return !escape && x == '|'; }
-        private boolean isHash(int x)   { return !escape && x == '#'; }
 
         private boolean isSyntax(int x) { return !escape && isSExSyntax(x); }
 
@@ -1297,35 +1292,42 @@ public class LambdaJ {
                     return;
                 }
 
-                if (isBar(look)) {
-                    tok = st.intern(readBarSymbol());
-                } else if (isSyntax(look)) {
+                if (!escape) {
                     switch (look) {
-                    case '(':  tok = Token.LP; break;
-                    case ')':  tok = Token.RP; break;
-                    case '\'': tok = Token.SQ; break;
-                    case '`':  tok = Token.BQ; break;
-                    case ',':  tok = Token.COMMA; break;
-                    default: throw new ParseError("internal error - unexpected syntax character %c", (char)look);
-                    }
-                    look = getchar();
-                } else if (have(Features.HAVE_STRING) && isDQuote(look)) {
-                    int index = 0;
-                    do {
-                        if (index < TOKEN_MAX) token[index++] = (char) look;
+                    case '|':  { tok = st.intern(readBarSymbol()); break; }
+
+                    case '(':  { tok = Token.LP;    look = getchar(); break; }
+                    case ')':  { tok = Token.RP;    look = getchar(); break; }
+                    case '\'': { tok = Token.SQ;    look = getchar(); break; }
+                    case '`':  { tok = Token.BQ;    look = getchar(); break; }
+                    case ',':  { tok = Token.COMMA; look = getchar(); break; }
+
+                    case '"':
+                        if (have(Features.HAVE_STRING)) {
+                            int index = 0;
+                            do {
+                                if (index < TOKEN_MAX) token[index++] = (char) look;
+                                look = getchar(false);
+                            } while (look != eof && !isDQuote(look));
+                            if (look == eof)
+                                throw new EOFException("string literal is missing closing \"");
+                            look = getchar(); // consume trailing "
+                            tok = tokenToString(token, 1, index).intern();
+                            break;
+                        }
+
+                    case '#': {
                         look = getchar(false);
-                    } while (look != eof && !isDQuote(look));
-                    if (look == eof)
-                        throw new EOFException("string literal is missing closing \"");
-                    look = getchar(); // consume trailing "
-                    tok = tokenToString(token, 1, index).intern();
-                } else if (isHash(look)) {
-                    look = getchar(false);
-                    final int subChar;
-                    if (escape) subChar = '\\';
-                    else { subChar = look; look = getchar(false); }
-                    tok = readerMacro(subChar);
-                } else {
+                        final int subChar;
+                        if (escape) subChar = '\\';
+                        else { subChar = look; look = getchar(false); }
+                        tok = readerMacro(subChar);
+                        break;
+                    }
+                    }
+                }
+
+                if (tok == null) {
                     int index = 0;
                     boolean escapeSeen = false;
                     while (look != eof && !isSpace(look) && !isSyntax(look)) {
@@ -1425,8 +1427,8 @@ public class LambdaJ {
             }
         }
 
-        private final Object sQuote, sQuasiquote, sUnquote, sUnquote_splice;
-        private final Object sAppend, sList, sListStar, sCons, sNil;
+        private static final Object sQuasiquote = "quasiquote", sUnquote = "unquote", sUnquote_splice = "unquote-splice";
+        private final Object sQuote, sAppend, sList, sListStar, sCons, sNil;
 
         private Object readObject(int startLine, int startChar, Object eof) throws IOException {
             if (tok == null) {
