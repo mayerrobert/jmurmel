@@ -120,6 +120,9 @@ und nur die subtrees die kein environment nutzen zur macroexpansion time expandi
             und macroexpand benutzt nur bei globalen symbolen aus der hashmap die LambdaJSymbol.macroClosure
 -> (macro-function symbol lexenv) waere machbar: symbol in lexenv suchen, fallback auf "globales environment" aka LambdaJSymbol.macro
 
+defmacro ggf. ersetzen durch set-macro-function/ macro-function, und defmacro durch ein macro in mlib ersetzen
+-> vielleicht auch set-macro-symbol/ macro-symbol dazu
+
 
 
 #n= und #n# syntax ist unter "CLtL2 22.1.4. Standard Dispatching Macro Character Syntax" beschrieben,
