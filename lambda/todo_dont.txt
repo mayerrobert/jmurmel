@@ -128,3 +128,9 @@ BOOLEAN names a type-specifier:
 -> bit sollte ggf. java.lang.byte sein statt boolean, Lisp boolean könnte Java boolean sein
    -> dann brauchen die bitoperationen kein ?: mehr, und JFFI könnte besser angebunden werden
 -> oder weglassen, CLtL hat kein boolean
+
+in CL nehmen provide und require stringdesignator (und ausserdem sinds funktionen)
+-> in Murmel sinds special forms und nehmen nur string
+   -> sollten wsl. special forms bleiben aber stringdesignator akzeptieren, d.h. string + symbol + character
+-> besser so lassen. effektiv nehmen Murmel load und require nur stringliterale (weil load und require special forms sind und das argument nicht evaluieren)
+   und bei stringliteralen macht eval oder nicht keinen unterschied, aber z.B. bei symbolen würd quoten oder nicht einen unterschied machen
