@@ -3,6 +3,7 @@
 # 
 # jpackage-linux - create JMurmel app-image with a linux launcher
 # 
+# Must be run from within the .../scripts directory.
 # Needs jpackage, jlink & friends which are included in Java16 and above.
 # 
 # This will create an "app-image" aka a directory hierachy
@@ -30,18 +31,31 @@ export JOPTIONS="--java-options -Xmx1G --java-options -Xss2m --java-options -XX:
 
 
 
+if ! [ -x "$(command -v java)" ]; then
+    echo "java could not be found. Make sure Java16 or higher is installed and on the PATH."  >&2
+    exit 1
+fi
+
+if ! [ -x "$(command -v jpackage)" ]; then
+    echo "jpackage could not be found. Make sure Java16 or higher is installed and on the PATH."  >&2
+    exit 1
+fi
+
+
+
 rm -rf $DESTDIR/jmurmel
 rm -rf target/jpackage-input
 
 mkdir target/jpackage-input
-cp ../lambda/target/jmurmel.jar target/jpackage-input
+cp ../lambda/target/jmurmel.jar target/jpackage-input/.
+cp ../samples.mlib/mlib.lisp    target/jpackage-input/.
 
-export JLINK="--jlink-options --strip-native-commands --jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files"
-export JLINK="--jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files"
+#export JLINK="--jlink-options --strip-native-commands --jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files"
+export JLINK="--jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files --jlink-options --compress=2"
 
+# create a directory with jlinked JDK, Murmel files and launcher .exe, see https://docs.oracle.com/en/java/javase/17/docs/specs/man/jpackage.html
 jpackage $JLINK --type app-image -i target/jpackage-input -d $DESTDIR -n jmurmel --main-class io.github.jmurmel.LambdaJ --main-jar jmurmel.jar $MODULES $JOPTIONS
 
-cp ../samples.mlib/mlib.lisp $DESTDIR/jmurmel/lib/app/.
 cp ../LICENSE                $DESTDIR/jmurmel/.
 cp ../murmel-langref.md      $DESTDIR/jmurmel/.
 cp ../mlib.md                $DESTDIR/jmurmel/.
@@ -56,3 +70,13 @@ echo '(load "../samples.murmel/murmel-test")' | $DESTDIR/jmurmel/lib/runtime/bin
 
 # create classes.jsa from classlist
 $DESTDIR/jmurmel/lib/runtime/bin/java -Xshare:dump -XX:SharedClassListFile=target/jmurmel.classlist -XX:SharedArchiveFile=$DESTDIR/jmurmel/lib/runtime/lib/server/classes.jsa -cp $DESTDIR/jmurmel/lib/app/jmurmel.jar
+
+# java, javac & friends are no longer needed
+for file in java javac jfr keytool serialver; do
+  rm $DESTDIR/jmurmel/lib/runtime/bin/$file;
+done
+
+# we don't care if this succeeds or fails e.g. if the directory was not empty
+rmdir $DESTDIR/jmurmel/lib/runtime/bin/ 2>&1 > /dev/null
+
+exit 0

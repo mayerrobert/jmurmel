@@ -3,6 +3,7 @@ goto :start
 
 jpackage-w64 - create JMurmel app-image with a Windows .exe launcher
 
+Must be run from within the .../scripts directory.
 Needs jpackage, jlink & friends which are included in Java16 and above.
 
 This will create an "app-image" aka a directory hierachy
@@ -36,14 +37,15 @@ rd /s /q %DESTDIR%\jmurmel
 rd /s /q target\jpackage-input
 
 md target\jpackage-input
-copy ..\lambda\target\jmurmel.jar target\jpackage-input
+copy ..\lambda\target\jmurmel.jar target\jpackage-input\.
+copy ..\samples.mlib\mlib.lisp    target\jpackage-input\.
 
-set JLINK=--jlink-options --strip-native-commands --jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files
-set JLINK=--jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files
+REM set JLINK=--jlink-options --strip-native-commands --jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files
+set JLINK=--jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files --jlink-options --compress=2
 
+REM create a directory with jlinked JDK, Murmel files and launcher .exe, see https://docs.oracle.com/en/java/javase/17/docs/specs/man/jpackage.html
 jpackage %JLINK% --type app-image -i target\jpackage-input -d %DESTDIR% -n jmurmel --main-class io.github.jmurmel.LambdaJ --main-jar jmurmel.jar --win-console %MODULES% %JOPTIONS%
 
-copy ..\samples.mlib\mlib.lisp %DESTDIR%\jmurmel\app\.
 copy ..\LICENSE                %DESTDIR%\jmurmel\.
 copy ..\murmel-langref.md      %DESTDIR%\jmurmel\.
 copy ..\mlib.md                %DESTDIR%\jmurmel\.
@@ -58,3 +60,6 @@ echo (load "../samples.murmel/murmel-test")| %DESTDIR%\jmurmel\runtime\bin\java 
 
 REM create classes.jsa from classlist
 %DESTDIR%\jmurmel\runtime\bin\java -Xshare:dump -XX:SharedClassListFile=target\jmurmel.classlist -XX:SharedArchiveFile=%DESTDIR%\jmurmel\runtime\bin\server\classes.jsa -cp %DESTDIR%\jmurmel\app\jmurmel.jar
+
+# java, javac & friends are no longer needed
+for %%f in (java.exe javac.exe javaw.exe jfr.exe keytool.exe serialver.exe) do del %DESTDIR%\jmurmel\runtime\bin\%%f
