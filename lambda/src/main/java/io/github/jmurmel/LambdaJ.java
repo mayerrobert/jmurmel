@@ -981,8 +981,8 @@ public class LambdaJ {
     private static final Pattern DOUBLE_PATTERN = Pattern.compile(
     "[-+]?"                                // optional-sign
     + "("                                  // either
-    + "(([0-9]+\\.[0-9]+)"                 //   zero-or-more-digits  '.' one-or-more-digits
-    + "([eE][-+]?[0-9]+)?)"                //   optional: e-or-E optional-sign one-or-more-digits
+    + "(([0-9]*\\.[0-9]+)"                 //   zero-or-more-digits  '.' one-or-more-digits
+    + "([eE][-+]?[0-9]+)?)"                //   optionally followed by: e-or-E optional-sign one-or-more-digits
     + "|"                                  // or
     + "([0-9]+[eE][-+]?[0-9]+)"            //   one-or-more-digits e-or-E optional-sign one-or-more-digits
     + ")");
