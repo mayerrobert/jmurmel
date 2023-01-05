@@ -3121,6 +3121,8 @@ public class LambdaJ {
     /** in case compiled code calls "(eval)" */
     private Object applyCompilerPrimitive(MurmelJavaProgram.CompilerPrimitive primfn, ConsCell args, int stack, int level) {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<compiler primitive> " + printSEx(args));
+        assert compiledProgram != null;
+        assert values == NO_VALUES;
         try {
             final Object ret = primfn.applyCompilerPrimitive(listToArray(args));
             synchMultipleValues();
@@ -3136,7 +3138,7 @@ public class LambdaJ {
         assert compiledProgram != null;
         assert values == NO_VALUES;
         try {
-            final Object ret = fn.apply(listToArray(args));
+            final Object ret = compiledProgram.funcall(fn, listToArray(args));
             synchMultipleValues();
             return ret;
         }
