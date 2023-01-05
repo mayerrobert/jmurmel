@@ -9,6 +9,10 @@ on:
       - "**.completions"
       - "scribbles/**"
 
+env:
+  JAVA_VERSION: 17
+  GRAAL_VERSION: 22.3.0
+
 jobs:
   build:
     name: JMurmel Native on ${{ matrix.os }}
@@ -21,8 +25,8 @@ jobs:
 
       - uses: graalvm/setup-graalvm@v1
         with:
-          version: '22.3.0'
-          java-version: '17'
+          version: ${{ env.GRAAL_VERSION }}
+          java-version: ${{ env.JAVA_VERSION }}
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
@@ -38,7 +42,7 @@ jobs:
       - name: Build and run JMurmel
         run: |
           java --version
-          mvn -B clean package -pl lambda "-Djavac.target=17" -DskipTests
+          mvn -B clean package -pl lambda "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
           native-image --report-unsupported-elements-at-runtime -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./lambda/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./lambda/src/main/graalvm/proxyconfig -jar lambda/target/jmurmel.jar
           ./jmurmel --version
 
