@@ -1148,7 +1148,7 @@ public class LambdaJ {
                     }
                 }
                 for (int i = 0; i < CTRL.length; i++) {
-                    if (CTRL[i].equals(charOrCharactername)) return (char)i;
+                    if (CTRL[i].equalsIgnoreCase(charOrCharactername)) return (char)i;
                 }
                 errorReaderError("unrecognized character name %s", charOrCharactername);
                 //NOTREACHED
