@@ -10,7 +10,7 @@ import static io.github.jmurmel.LambdaJ.sxhash;
 public class HashTest {
 
     @Test
-    public void testSxhashString() {
+    public void testString() {
         final int stringHash = sxhash("abc");
         Assert.assertEquals(sxhash(new StringBuilder("abc")), stringHash);
         Assert.assertEquals(sxhash(new StringBuffer("abc")), stringHash);
@@ -18,12 +18,12 @@ public class HashTest {
     }
 
     @Test
-    public void testSxhashList() {
-        final LambdaJ.ConsCell list = (LambdaJ.ConsCell)new LambdaJ.ListBuilder().appendElements(1, 2, 3, 4, 5).first();
-        final LambdaJ.ConsCell arry = LambdaJ.arraySlice(1, 2, 3, 4, 5);
+    public void testList() {
+        final LambdaJ.ConsCell list = (LambdaJ.ConsCell)new LambdaJ.ListBuilder().appendElements(1, 2, 3, 4, 5, 6, 7, 8).first();
+        final LambdaJ.ConsCell arry = LambdaJ.arraySlice(1, 2, 3, 4, 5, 6, 7, 8);
         final LambdaJ.ConsCell mixed = (LambdaJ.ConsCell)new LambdaJ.ListBuilder()
                                                          .appendElements(1, 2, 3)
-                                                         .appendLast(LambdaJ.arraySlice(4, 5)).first();    
+                                                         .appendLast(LambdaJ.arraySlice(4, 5, 6, 7, 8)).first();    
 
         Assert.assertEquals(sxhash(list), sxhash(arry));
         Assert.assertEquals(sxhash(list), sxhash(mixed));
@@ -44,8 +44,20 @@ public class HashTest {
         final int byteHash = sxhash((byte)-97);
 
         Assert.assertEquals(sxhash((short)-97), byteHash);
+        Assert.assertTrue(sxhash((short)-97) > 0);
+
         Assert.assertEquals(sxhash((int)-97), byteHash);
+        Assert.assertTrue(sxhash((int)-97) > 0);
+
         Assert.assertEquals(sxhash((long)-97), byteHash);
+
         Assert.assertEquals(sxhash(new BigInteger("-97")), byteHash);
+    }
+    
+    @Test
+    public void testBitvector() {
+        final boolean[] bv = new boolean[] { false, true, true, false };
+        final int bvhash = sxhash(bv);
+        Assert.assertEquals(sxhash(LambdaJ.Bitvector.of(bv)), bvhash);
     }
 }
