@@ -522,12 +522,16 @@ public class LambdaJ {
 
         void adjustEnd(int endLineNo, int endCharNo) {}
 
-        /** avoid endless recursion in case of circular lists or lists with embedded circles */
-        // todo rekursion in loop umwandeln, bei ArraySlice abbiegen
+        /** avoid endless loop in case of circular lists or lists with embedded circles */
         int sxhashSigned(int rec) {
-            if (0 == --rec) return 0;
-            return 31 * (car() instanceof ConsCell ? ((ConsCell)car()).sxhashSigned(rec) : sxhash(car()))
-                   + (cdr() instanceof ConsCell ? ((ConsCell)cdr()).sxhashSigned(rec) : sxhash(cdr()));
+            int ret = 0;
+            for (Object lst = this; lst != null && --rec > 0; lst = LambdaJ.cdr(lst)) {
+                if (lst instanceof ArraySlice) return ret + ((ArraySlice)lst).sxhashSigned(rec+1);
+                if (!(lst instanceof ConsCell)) return ret + 31 * LambdaJ.sxhashSigned(lst);
+                final Object nextCar = LambdaJ.car(lst);
+                ret += 31 * (nextCar instanceof ConsCell ? ((ConsCell)nextCar).sxhashSigned(rec) : LambdaJ.sxhashSigned(nextCar));
+            }
+            return ret;
         }
     }
 
@@ -672,9 +676,8 @@ public class LambdaJ {
             int ret = 0;
             for (int i = offset; i < arry.length && --rec > 0; i++) {
                 final Object nextCar = arry[i];
-                ret += 31 * (nextCar instanceof ConsCell ? ((ConsCell)nextCar).sxhashSigned(rec) : sxhash(nextCar));
+                ret += 31 * (nextCar instanceof ConsCell ? ((ConsCell)nextCar).sxhashSigned(rec) : LambdaJ.sxhashSigned(nextCar));
             }
-            if (rec > 0) ret += sxhash(null);
             return ret;
         }
     }
@@ -4790,22 +4793,16 @@ public class LambdaJ {
         return Math.abs(sxhashSigned(o));
     }
 
-    private static int sxhashSigned(Object o) {
+    static int sxhashSigned(Object o) {
         if (o == null) return 97;
 
         if (integerp(o)) return Long.hashCode(((Number)o).longValue()); // byte..BigInteger have different hash codes for negative numbers
-        //if (numberp(o)) return o.hashCode();
-        //if (characterp(o)) return o.hashCode();
 
-        //if (o instanceof String) return o.hashCode();
         if (o instanceof StringBuilder) return o.toString().hashCode();
         if (o instanceof StringBuffer) return o.toString().hashCode();
         if (o instanceof char[]) return String.valueOf(((char[])o)).hashCode();
 
-        //if (o instanceof Bitvector) return o.hashCode();
         if (o instanceof boolean[]) return Bitvector.of(o).hashCode();
-
-        //if (o instanceof ConsCell) return ConsCell.sxhashSigned(o, 100);
 
         return o.hashCode();
     }

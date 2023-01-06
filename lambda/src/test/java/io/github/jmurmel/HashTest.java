@@ -44,6 +44,13 @@ public class HashTest {
     }
 
     @Test
+    public void testDottedList() {
+        final LambdaJ.ConsCell list = (LambdaJ.ConsCell)new LambdaJ.ListBuilder().appendElements(1, 2).appendLast(3).first();;
+
+        Assert.assertNotEquals(sxhash(list), 0); // make sure it doesn't crash with a CCE or something
+    }
+
+    @Test
     public void testInteger() {
         final int byteHash = sxhash((byte)97);
 
