@@ -75,11 +75,13 @@ jobs:
         path: |
           samples.mlib/mlib.lisp
 
+
     - name: Create W64 launcher
       if: ${{ matrix.java == '8' }}
       run: mvn -B package -pl scripts -Dlaunch4j.skip=false
 
     - name: Upload launch4j exe
+      if: ${{ matrix.java == '8' }}
       uses: actions/upload-artifact@v3
       with:
         name: jmurmel-w64-slim
@@ -87,6 +89,7 @@ jobs:
           scripts/target/jmurmel.exe
 
     - name: Upload launch4j mlib
+      if: ${{ matrix.java == '8' }}
       uses: actions/upload-artifact@v3
       with:
         name: jmurmel-w64-slim
@@ -94,6 +97,7 @@ jobs:
           samples.mlib/mlib.lisp
 
     - name: Upload launch4j docs
+      if: ${{ matrix.java == '8' }}
       uses: actions/upload-artifact@v3
       with:
         name: jmurmel-w64-slim
