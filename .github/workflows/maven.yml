@@ -32,11 +32,13 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Set up JDK ${{ matrix.Java }}
       uses: actions/setup-java@v3
       with:
         java-version: ${{ matrix.java }}
         distribution: 'zulu'
+
     - name: Cache Maven packages
       uses: actions/cache@v3
       with:
@@ -44,6 +46,7 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
         restore-keys: |
           ${{ runner.os }}-maven-
+
     - name: Build with Maven
       run: mvn -B clean install site --file pom.xml -Djdk.console=jdk.jshell -Djavac.target=`echo "${{ matrix.java }}" | sed -e "s/-ea//g"`
 
@@ -71,3 +74,32 @@ jobs:
         name: jmurmel-zulu-${{ matrix.java }}
         path: |
           samples.mlib/mlib.lisp
+
+    - name: Create W64 launcher
+      if: ${{ matrix.java == '8' }}
+      run: mvn -B package -pl scripts -Dlaunch4j.skip=false
+
+    - name: Upload launch4j exe
+      uses: actions/upload-artifact@v3
+      with:
+        name: jmurmel-w64-slim
+        path: |
+          scripts/target/jmurmel.exe
+
+    - name: Upload launch4j mlib
+      uses: actions/upload-artifact@v3
+      with:
+        name: jmurmel-w64-slim
+        path: |
+          samples.mlib/mlib.lisp
+
+    - name: Upload launch4j docs
+      uses: actions/upload-artifact@v3
+      with:
+        name: jmurmel-w64-slim
+        path: |
+          murmel-langref.md
+          mlib.md
+          murmel-langref.html
+          mlib.html
+          LICENSE

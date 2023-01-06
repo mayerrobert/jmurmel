@@ -66,8 +66,12 @@
         <spotbugs.version>4.7.3</spotbugs.version>
         <pitest-maven-plugin.version>1.10.4</pitest-maven-plugin.version>
         <pitest-testng-plugin.version>1.0.0</pitest-testng-plugin.version>
+
         <jacoco-maven-plugin.version>0.8.8</jacoco-maven-plugin.version>
         <argLine />
+
+        <launch4j-maven-plugin.version>2.2.0</launch4j-maven-plugin.version>
+        <launch4j.skip>true</launch4j.skip>
 
         <!-- report maven plugins -->
         <maven-site-plugin.version>3.12.1</maven-site-plugin.version>

@@ -35,7 +35,7 @@ jmurmel.exe will end up in scripts/target
         <requiresJdk>false</requiresJdk>
         <requires64Bit>true</requires64Bit>
         <minVersion>1.8</minVersion>
-        <maxVersion>20</maxVersion>
+        <maxVersion>21</maxVersion>
         <!--
         <initialHeapSize>MB</initialHeapSize>
         <initialHeapPercent>%</initialHeapPercent>
