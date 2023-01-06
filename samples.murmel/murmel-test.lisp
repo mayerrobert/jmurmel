@@ -1122,6 +1122,15 @@ multiline comment
           (hash-table-count (clrhash h))))
   '(t nil 0))
 
+
+;;; test sxhash
+(deftest sxhash.1
+  (= (sxhash 123) (sxhash 123)) t)
+
+(deftest sxhash.2
+  (= (sxhash (list 'list "ab")) (sxhash (list 'list "ab")))   t)
+
+
 #+murmel
 (deftest scanhash.1
   (let* ((h (hash 'compare-eql 1 11 2 22 3 33))

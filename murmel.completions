@@ -152,6 +152,7 @@ hashset
 hash-table-count
 clrhash
 hash-table-remove
+sxhash
 scan-hash-table
 
 values

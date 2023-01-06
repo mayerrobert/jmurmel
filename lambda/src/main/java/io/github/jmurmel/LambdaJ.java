@@ -1885,6 +1885,7 @@ public class LambdaJ {
         sHashTableCount("hash-table-count", Features.HAVE_HASH, 1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashTableCount(car(args)); } },
         sClrHash("clrhash", Features.HAVE_HASH, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return clrhash(car(args)); } },
         sHashRemove("hash-table-remove", Features.HAVE_HASH, 1, 2)     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashRemove(args)); } },
+        sSxHash("sxhash", Features.HAVE_HASH, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.sxhash(car(args)); } },
         sScanHash("scan-hash-table", Features.HAVE_HASH, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.scanHash(car(args)); } },
 
         // I/O
@@ -4765,6 +4766,10 @@ public class LambdaJ {
      *  two objects that are equal will have the same hash, two objects that are not equal may or may not have the same hash.
      *  Objects with (possibly embedded) loops should be handled as well. */
     static int sxhash(Object o) {
+        return Math.abs(sxhashSigned(o));
+    }
+
+    private static int sxhashSigned(Object o) {
         if (o == null) return 0;
 
         if (integerp(o)) return Long.hashCode(((Number)o).longValue()); // byte..BigInteger have different hash codes for negative numbers
@@ -4779,18 +4784,18 @@ public class LambdaJ {
         if (o instanceof Bitvector) return o.hashCode();
         if (o instanceof boolean[]) return Bitvector.of(o).hashCode();
 
-        if (o instanceof ConsCell) return sxhash(o, 100);
+        if (o instanceof ConsCell) return sxhashSigned(o, 100);
 
         return o.hashCode();
     }
 
     /** avoid endless recursion in case of circular lists or lists with embedded circles */
     // todo nach ConsCell schieben, dann kann das in ArraySlice ueberladen werden mit loop statt rekursion
-    private static int sxhash(Object o, int rec) {
-        if (!consp(o)) return sxhash(o);
+    private static int sxhashSigned(Object o, int rec) {
+        if (!consp(o)) return sxhashSigned(o);
         rec--;
         final ConsCell c = (ConsCell)o;
-        if (rec >= 0) return 31 * sxhash(car(c), rec) + sxhash(cdr(c), rec);
+        if (rec >= 0) return 31 * sxhashSigned(car(c), rec) + sxhashSigned(cdr(c), rec);
         return 0;
     }
 
@@ -7494,7 +7499,9 @@ public class LambdaJ {
         public final Object _hashset      (Object... args)      { values = null; varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
         public final Object hashTableCount(Object... args)      { values = null; oneArg("hash-table-count", args.length);      return LambdaJ.hashTableCount(args[0]); }
         public final Object _clrhash      (Object... args)      { values = null; oneArg("clrhash", args.length);               return LambdaJ.clrhash(args[0]); }
-        public final Object hashRemove    (Object... args)      { varargs1_2("hash-table-remove", args.length); return bool(LambdaJ.hashRemove(arraySlice(args))); }
+        public final Object hashRemove    (Object... args)      { varargs1_2("hash-table-remove", args.length);                return bool(LambdaJ.hashRemove(arraySlice(args))); }
+        public final Object _sxhash       (Object... args)      { values = null; oneArg("sxhash", args.length);                return LambdaJ.sxhash(args[0]); }
+        public final Object _sxhash       (Object    obj)       { values = null;                                               return LambdaJ.sxhash(obj); }
         public final Object scanHash      (Object... args)      { values = null; oneArg("scan-hash-table", args.length);       return scanHashCompiler(args[0]); }
 
         interface CompilerIteratorGenerator extends IteratorGenerator, CompilerPrimitive {}
@@ -8239,6 +8246,7 @@ public class LambdaJ {
             case "hash-table-count": return (CompilerPrimitive)this::hashTableCount;
             case "clrhash": return (CompilerPrimitive)this::_clrhash;
             case "hash-table-remove": return (CompilerPrimitive)this::hashRemove;
+            case "sxhash": return (CompilerPrimitive)this::_sxhash;
             case "scan-hash-table": return (CompilerPrimitive)this::scanHash;
 
             // I/O
@@ -8461,7 +8469,7 @@ public class LambdaJ {
         {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
         {"bit-vector-p", "bitvectorp"}, {"bv=", "bvEq"}, {"simple-bit-vector-p", "sbitvectorp"}, {"hash-table-p", "hashtablep"}, {"make-array", "makeArray"},
         {"hash", "_hash"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
-        {"hash-table-count", "hashTableCount"}, {"clrhash", "_clrhash"}, {"hash-table-remove", "hashRemove"}, {"scan-hash-table", "scanHash"},
+        {"hash-table-count", "hashTableCount"}, {"clrhash", "_clrhash"}, {"hash-table-remove", "hashRemove"}, {"sxhash", "_sxhash"}, {"scan-hash-table", "scanHash"},
 
         {"list*", "listStar"},
         //{ "macroexpand-1", "macroexpand1" },

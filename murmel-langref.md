@@ -1110,6 +1110,14 @@ Implementation note: hashtables with `compare-eql` or `compare-equal`
 are actually implemented as trees, so operations will be O(log n).
 hashtables with `eq, eql, equal` or `t` are real hashtables, so operations will be O(n).
 
+### sxhash
+
+    (sxhash obj) -> hash-code
+
+Since: 1.4
+
+For two objects that are `equal` `sxhash` will return the same hash-code.
+
 ### scan-hash-table
 
     (scan-hash-table hash) -> key-value-generator
