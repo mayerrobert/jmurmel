@@ -1,3 +1,5 @@
+sxhash sollte eine looperkennung bekommen ähnlich wie length
+
 #5(1 2 3) gibt einen vector der länge 5, es wird ggf. mit dem letzten element aufgefüllt
 #5*01: bitvector, sonst w.o.
 
