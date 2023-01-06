@@ -19,14 +19,28 @@ public class HashTest {
 
     @Test
     public void testList() {
-        final LambdaJ.ConsCell list = (LambdaJ.ConsCell)new LambdaJ.ListBuilder().appendElements(1, 2, 3, 4, 5, 6, 7, 8).first();
-        final LambdaJ.ConsCell arry = LambdaJ.arraySlice(1, 2, 3, 4, 5, 6, 7, 8);
+        final LambdaJ.ConsCell list = (LambdaJ.ConsCell)new LambdaJ.ListBuilder().appendElements(1, 2, 3, 4, 5, 6).first();
+        final LambdaJ.ConsCell arry = LambdaJ.arraySlice(1, 2, 3, 4, 5, 6);
         final LambdaJ.ConsCell mixed = (LambdaJ.ConsCell)new LambdaJ.ListBuilder()
                                                          .appendElements(1, 2, 3)
-                                                         .appendLast(LambdaJ.arraySlice(4, 5, 6, 7, 8)).first();    
+                                                         .appendLast(LambdaJ.arraySlice(4, 5, 6)).first();
 
-        Assert.assertEquals(sxhash(list), sxhash(arry));
-        Assert.assertEquals(sxhash(list), sxhash(mixed));
+        final int sxhashList = sxhash(list);
+        final int sxhashArry = sxhash(arry);
+        Assert.assertEquals(sxhashList, sxhashArry);
+
+        final int sxhashMixed = sxhash(mixed);
+        Assert.assertEquals(sxhashList, sxhashMixed);
+    }
+
+    @Test
+    public void testEmptyList() {
+        final LambdaJ.ConsCell list = null;
+        final LambdaJ.ConsCell arry = LambdaJ.arraySlice();
+
+        final int sxhashList = sxhash(list);
+        final int sxhashArry = sxhash(arry);
+        Assert.assertEquals(sxhashList, sxhashArry);
     }
 
     @Test

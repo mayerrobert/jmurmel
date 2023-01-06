@@ -159,6 +159,9 @@ public class LambdaJ {
 
         /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
         String lineInfo() { return ""; }
+
+        @Override public int hashCode() { return sxhashSigned(100); }
+        abstract int sxhashSigned(int rec);
     }
 
     /** A murmel symbol name */
@@ -518,6 +521,14 @@ public class LambdaJ {
         @Override public ConsCell rplacd(Object cdr) { this.cdr = cdr; return this; }
 
         void adjustEnd(int endLineNo, int endCharNo) {}
+
+        /** avoid endless recursion in case of circular lists or lists with embedded circles */
+        // todo rekursion in loop umwandeln, bei ArraySlice abbiegen
+        int sxhashSigned(int rec) {
+            if (0 == --rec) return 0;
+            return 31 * (car() instanceof ConsCell ? ((ConsCell)car()).sxhashSigned(rec) : sxhash(car()))
+                   + (cdr() instanceof ConsCell ? ((ConsCell)cdr()).sxhashSigned(rec) : sxhash(cdr()));
+        }
     }
 
     private static final class ListConsCell extends AbstractConsCell {
@@ -654,6 +665,16 @@ public class LambdaJ {
                 else if (one.equals(o)) ret[i] = true;
                 else throw new SimpleTypeError("not a valid value for bitvector: %s", o);
             }
+            return ret;
+        }
+
+        int sxhashSigned(int rec) {
+            int ret = 0;
+            for (int i = offset; i < arry.length && --rec > 0; i++) {
+                final Object nextCar = arry[i];
+                ret += 31 * (nextCar instanceof ConsCell ? ((ConsCell)nextCar).sxhashSigned(rec) : sxhash(nextCar));
+            }
+            if (rec > 0) ret += sxhash(null);
             return ret;
         }
     }
@@ -4770,33 +4791,23 @@ public class LambdaJ {
     }
 
     private static int sxhashSigned(Object o) {
-        if (o == null) return 0;
+        if (o == null) return 97;
 
         if (integerp(o)) return Long.hashCode(((Number)o).longValue()); // byte..BigInteger have different hash codes for negative numbers
-        if (numberp(o)) return o.hashCode();
-        if (characterp(o)) return o.hashCode();
+        //if (numberp(o)) return o.hashCode();
+        //if (characterp(o)) return o.hashCode();
 
-        if (o instanceof String) return o.hashCode();
+        //if (o instanceof String) return o.hashCode();
         if (o instanceof StringBuilder) return o.toString().hashCode();
         if (o instanceof StringBuffer) return o.toString().hashCode();
         if (o instanceof char[]) return String.valueOf(((char[])o)).hashCode();
 
-        if (o instanceof Bitvector) return o.hashCode();
+        //if (o instanceof Bitvector) return o.hashCode();
         if (o instanceof boolean[]) return Bitvector.of(o).hashCode();
 
-        if (o instanceof ConsCell) return sxhashSigned(o, 100);
+        //if (o instanceof ConsCell) return ConsCell.sxhashSigned(o, 100);
 
         return o.hashCode();
-    }
-
-    /** avoid endless recursion in case of circular lists or lists with embedded circles */
-    // todo nach ConsCell schieben, dann kann das in ArraySlice ueberladen werden mit loop statt rekursion
-    private static int sxhashSigned(Object o, int rec) {
-        if (!consp(o)) return sxhashSigned(o);
-        rec--;
-        final ConsCell c = (ConsCell)o;
-        if (rec >= 0) return 31 * sxhashSigned(car(c), rec) + sxhashSigned(cdr(c), rec);
-        return 0;
     }
 
     static final class EqlKey implements Comparable<Object> {
