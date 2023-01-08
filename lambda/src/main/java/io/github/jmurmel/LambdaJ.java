@@ -42,7 +42,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.*;
 import java.util.jar.Attributes;
 import java.util.jar.Manifest;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -160,6 +159,7 @@ public class LambdaJ {
         /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
         String lineInfo() { return ""; }
 
+        @Override public boolean equals(Object other) { return other instanceof ConsCell && compare(this, other, CompareMode.EQUAL) == 0; }
         @Override public int hashCode() { return sxhashSigned(100); }
         abstract int sxhashSigned(int rec);
     }
@@ -243,7 +243,7 @@ public class LambdaJ {
 
     public interface SymbolTable extends Iterable<LambdaJSymbol> {
         LambdaJSymbol intern(LambdaJSymbol symbol);
-        Iterator<LambdaJSymbol> iterator();
+        @Override Iterator<LambdaJSymbol> iterator();
         default LambdaJSymbol intern(String symbolName) { return intern(new LambdaJSymbol(symbolName)); }
     }
 
@@ -520,10 +520,10 @@ public class LambdaJ {
         @Override public Object cdr() { return cdr; }
         @Override public ConsCell rplacd(Object cdr) { this.cdr = cdr; return this; }
 
-        void adjustEnd(int endLineNo, int endCharNo) {}
+        void adjustEnd(int endLineNo, int endCharNo) { /* default is: no-op */ }
 
         /** avoid endless loop in case of circular lists or lists with embedded circles */
-        int sxhashSigned(int rec) {
+        @Override int sxhashSigned(int rec) {
             int ret = 0;
             for (Object lst = this; lst != null && --rec > 0; lst = LambdaJ.cdr(lst)) {
                 if (lst instanceof ArraySlice) return ret + ((ArraySlice)lst).sxhashSigned(rec+1);
@@ -672,7 +672,7 @@ public class LambdaJ {
             return ret;
         }
 
-        int sxhashSigned(int rec) {
+        @Override int sxhashSigned(int rec) {
             int ret = 0;
             for (int i = offset; i < arry.length && --rec > 0; i++) {
                 final Object nextCar = arry[i];
@@ -1086,7 +1086,7 @@ public class LambdaJ {
         while (idx < len && Character.isDigit(s.charAt(idx))) {
             idx++;
         }
-        return (idx == len);
+        return idx == len;
     }
 
     /** This class will read and parse S-Expressions (while generating symbol table entries)
@@ -3281,7 +3281,7 @@ public class LambdaJ {
         if (!stringp(argument)) errorMalformed(func, "a string argument", printSEx(argument));
         final String filename = (String)argument;
         final Path path;
-        if (filename.toLowerCase().endsWith(".lisp")) path = Paths.get(filename);
+        if (filename.toLowerCase(Locale.ENGLISH).endsWith(".lisp")) path = Paths.get(filename);
         else path = Paths.get(filename + ".lisp");
         if (path.isAbsolute()) return path;
 
@@ -3528,7 +3528,7 @@ public class LambdaJ {
     static boolean hashtablep(Object o) { return o instanceof Map; }
 
     final  boolean functionp(Object o)   { return functionp0(o)
-                                                  || (have(Features.HAVE_OLDLAMBDA) && consp(o) && car(o) == sLambda); }
+                                                  || have(Features.HAVE_OLDLAMBDA) && consp(o) && car(o) == sLambda; }
     static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure
                                                   || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction; }
 
@@ -3826,12 +3826,12 @@ public class LambdaJ {
             return;
         }
         if (vector instanceof char[]) {
-            if (escapeAtoms) sb.print("\"" + escapeString(new String(((char[])vector))) + "\"");
-            else             sb.print(new String(((char[])vector)));
+            if (escapeAtoms) sb.print("\"" + escapeString(new String((char[])vector)) + "\"");
+            else             sb.print(new String((char[])vector));
             return;
         }
         if (vector instanceof CharSequence) {
-            if (escapeAtoms) sb.print("\"" + escapeString(((CharSequence)vector)) + "\"");
+            if (escapeAtoms) sb.print("\"" + escapeString((CharSequence)vector) + "\"");
             else             sb.print(((CharSequence)vector).toString());
             return;
         }
@@ -4276,7 +4276,7 @@ public class LambdaJ {
             final ConsCell c2 = (ConsCell)o2;
             final int compareCar = compare(car(c1), car(c2), CompareMode.EQUAL);
             if (compareCar != 0) return compareCar;
-            return compare(cdr(c1), cdr(c2), CompareMode.EQUAL);
+            return compare(cdr(c1), cdr(c2), CompareMode.EQUAL); // todo das kann sehr tiefe rekursionen ergeben. Besser: ConsCell.compareEqual mittels loop implementieren, in ArraySlice spezialisieren
         }
         return System.identityHashCode(o1) - System.identityHashCode(o2);
     }
@@ -4607,10 +4607,10 @@ public class LambdaJ {
         }
         else { start = 0; end = length; }
 
-        if (vector instanceof Object[])      { Arrays.fill(((Object[])vector), start, end, value); return vector; }
-        if (vector instanceof boolean[])     { Arrays.fill(((boolean[])vector), start, end, requireBit("vector-fill", value)); return vector; }
+        if (vector instanceof Object[])      { Arrays.fill((Object[])vector, start, end, value); return vector; }
+        if (vector instanceof boolean[])     { Arrays.fill((boolean[])vector, start, end, requireBit("vector-fill", value)); return vector; }
         if (vector instanceof Bitvector)     { ((Bitvector)vector).fill(requireBit("vector-fill", value)); return vector; }
-        if (vector instanceof char[])        { Arrays.fill(((char[])vector), start, end, requireChar("vector-fill", value)); return vector; }
+        if (vector instanceof char[])        { Arrays.fill((char[])vector, start, end, requireChar("vector-fill", value)); return vector; }
         if (vector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)vector; final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
         if (vector instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)vector;   final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
         if (vector instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)vector; for (int i = start; i < end; i++) list.set(i, value); return vector; }
@@ -4872,7 +4872,7 @@ public class LambdaJ {
 
         if (o instanceof StringBuilder) return o.toString().hashCode();
         if (o instanceof StringBuffer) return o.toString().hashCode();
-        if (o instanceof char[]) return String.valueOf(((char[])o)).hashCode();
+        if (o instanceof char[]) return String.valueOf((char[])o).hashCode();
 
         if (o instanceof boolean[]) return Bitvector.of(o).hashCode();
 
@@ -4936,29 +4936,29 @@ public class LambdaJ {
     static class EqlMap extends MurmelMap {
         EqlMap(int size) { super(size); }
 
-        String pfx() { return "#H(eql"; }
-        Object makeKey(Object key) { return EqlKey.of(key); }
-        Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqlKey) return ((EqlKey)entry.getKey()).key; return entry.getKey(); }
+        @Override String pfx() { return "#H(eql"; }
+        @Override Object makeKey(Object key) { return EqlKey.of(key); }
+        @Override Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqlKey) return ((EqlKey)entry.getKey()).key; return entry.getKey(); }
     }
 
     static class EqualMap extends MurmelMap {
         EqualMap(int size) { super(size); }
 
-        String pfx() { return "#H(equal"; }
-        Object makeKey(Object key) { return EqualKey.of(key); }
-        Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqualKey) return ((EqualKey)entry.getKey()).key; return entry.getKey(); }
+        @Override String pfx() { return "#H(equal"; }
+        @Override Object makeKey(Object key) { return EqualKey.of(key); }
+        @Override Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqualKey) return ((EqualKey)entry.getKey()).key; return entry.getKey(); }
     }
 
     static class EqlTreeMap extends TreeMap<Object, Object> {
-        EqlTreeMap() { super(EqlTreeMap::compare); }
-        private static int compare(Object o1, Object o2) {
+        EqlTreeMap() { super(EqlTreeMap::doCompare); }
+        private static int doCompare(Object o1, Object o2) {
             return LambdaJ.compare(o1, o2, CompareMode.EQL);
         }
     }
 
     static class EqualTreeMap extends TreeMap<Object, Object> {
-        EqualTreeMap() { super(EqualTreeMap::compare); }
-        private static int compare(Object o1, Object o2) {
+        EqualTreeMap() { super(EqualTreeMap::doCompare); }
+        private static int doCompare(Object o1, Object o2) {
             return LambdaJ.compare(o1, o2, CompareMode.EQUAL);
         }
     }
@@ -5179,10 +5179,10 @@ public class LambdaJ {
         else if (seq instanceof Iterable) it = ((Iterable<Object>)seq).iterator(); // covers ConCell and adjustable array which are ArrayLists
         else throw new SimpleTypeError("expected a sequence of strings bit got %s", printSEx(seq));
         final Path p = Paths.get(fileName);
-        try (final Writer w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
-                                                      appendp
-                                                      ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
-                                                      : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
+        try (Writer w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
+                                                appendp
+                                                ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
+                                                : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
             final String eol = System.lineSeparator();
             while (it.hasNext()) {
                 final String line = requireString("write-textfile-lines", it.next());
@@ -5212,10 +5212,10 @@ public class LambdaJ {
             if (args != null) cs = requireString("write-textfile", car(args));
         }
         final Path p = Paths.get(fileName);
-        try (final BufferedWriter w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
-                                                              appendp
-                                                              ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
-                                                              : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
+        try (BufferedWriter w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
+                                                        appendp
+                                                        ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
+                                                        : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
             final String eol = System.lineSeparator();
             if ("\n".equals(eol))
                 w.append(charSeq);
@@ -9856,7 +9856,7 @@ public class LambdaJ {
 
         /** barf if form cannot eval to a number */
         private void checkNonNumber(String func, Object form) {
-            if (form == null || form instanceof Character || vectorp(form) || (consp(form) && symbolEq(car(form), "quote"))) errorNotANumber(func, form);
+            if (form == null || form instanceof Character || vectorp(form) || consp(form) && symbolEq(car(form), "quote")) errorNotANumber(func, form);
         }
 
         /** argCount is number of arguments at compiletime if known or -1 for check at runtime */
