@@ -1002,6 +1002,7 @@ public class LambdaJ {
         return isLong(s, lenMinus1);
     }
 
+    /*
     private static final Pattern DOUBLE_PATTERN = Pattern.compile(
     "[-+]?"                                // optional-sign
     + "("                                  // either
@@ -1015,6 +1016,77 @@ public class LambdaJ {
         assert !s.isEmpty() : "tokens should not be the empty string";
 
         return DOUBLE_PATTERN.matcher(s).matches();
+    }
+    */
+
+    static boolean isDouble(String s) {
+        assert s != null : "tokens should not be null";
+        assert !s.isEmpty() : "tokens should not be the empty string";
+
+        final int len;
+        if ((len = s.length()) < 2) return false;
+
+        int idx = 1;
+        char c = s.charAt(0);
+        if (c == '+' || c == '-') {
+            if (len < 3) return false;
+            idx = 2;
+            c = s.charAt(1);
+        }
+
+        if (c == '.') {
+            // s starts with [+-]?\.
+            // must be followed by at least one digit
+            if (!Character.isDigit(s.charAt(idx++))) return false;
+
+            // s starts with [+-]?\.\d
+            // eat additional digits and then there must be [eE] or end-of-string
+            while (idx < len && Character.isDigit(s.charAt(idx))) {
+                idx++;
+            }
+            if (idx == len) return true;
+        }
+        else if (Character.isDigit(c)) {
+            // s starts with [+-]?[0-9]
+            // eat additional digits and then there must be [.eE]
+            while (idx < len && Character.isDigit(s.charAt(idx))) {
+                idx++;
+            }
+            if (idx == len) return false;
+
+            if (s.charAt(idx) == '.') {
+                idx++;
+                if (!Character.isDigit(s.charAt(idx++))) return false;
+
+                while (idx < len && Character.isDigit(s.charAt(idx))) {
+                    idx++;
+                }
+                if (idx == len) return true;
+            }
+        }
+        else return false;
+
+        c = s.charAt(idx++);
+        if (c != 'e' && c != 'E') return false;
+
+        // s starts with [+-]?\.\d+[eE]
+        // must be followed by [+-]?\d+
+        c = s.charAt(idx++);
+        if (c == '+' || c == '-') {
+            if (idx == len) return false;
+            c = s.charAt(idx++);
+        }
+
+        // s starts with [+-]?\.\d+[eE][+-]?
+        // must be followed by one or more digits
+        if (!Character.isDigit(c)) return false;
+
+        // s starts with [+-]?\.\d+[eE][+-]?\d
+        // eat additional digits and then there must be end-of-string
+        while (idx < len && Character.isDigit(s.charAt(idx))) {
+            idx++;
+        }
+        return (idx == len);
     }
 
     /** This class will read and parse S-Expressions (while generating symbol table entries)

@@ -244,4 +244,28 @@ public class ScannerTest {
     public void testListDotListShort2() {
         LambdaJTest.runErrorTest("dotted list short", "'(a b . c d)", "illegal end of dotted list: (c d)\nerror occurred in line 1:2..1:12");
     }
+    
+    @Test
+    public void testIsDouble2() {
+        Assert.assertTrue(LambdaJ.isDouble("+.0"));
+        Assert.assertTrue(LambdaJ.isDouble("-.0"));
+        Assert.assertTrue(LambdaJ.isDouble(".0"));
+        Assert.assertTrue(LambdaJ.isDouble(".0123"));
+        Assert.assertTrue(LambdaJ.isDouble(".0123e5"));
+        Assert.assertTrue(LambdaJ.isDouble(".0123e556"));
+        Assert.assertTrue(LambdaJ.isDouble(".0123e+556"));
+
+        Assert.assertTrue(LambdaJ.isDouble("+1.0"));
+        Assert.assertTrue(LambdaJ.isDouble("-1.0"));
+        Assert.assertTrue(LambdaJ.isDouble("1.0"));
+        Assert.assertTrue(LambdaJ.isDouble("123.0"));
+        Assert.assertTrue(LambdaJ.isDouble("1.0123"));
+        Assert.assertTrue(LambdaJ.isDouble("123.0123"));
+        Assert.assertTrue(LambdaJ.isDouble("1.0123e5"));
+        Assert.assertTrue(LambdaJ.isDouble("1.0123e556"));
+        Assert.assertTrue(LambdaJ.isDouble("1.0123e+556"));
+
+        Assert.assertFalse(LambdaJ.isDouble("+.0 "));
+        Assert.assertFalse(LambdaJ.isDouble("+.0d0"));
+    }
 }
