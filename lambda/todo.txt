@@ -1,4 +1,33 @@
+immutable sequences (conses, lists, vectors)
+wsl sollte man unterscheiden: darf man elemente ändern vs. darf man hinzufügen
+-> sollen alle kombinationen zulässig sein?
+   oder nur           mutable -> nonappendable -> immutable
+   vgl. adjustablep = t       -> nil           -> 'immutable 
+-> immutability ala Clojure ist was anderes. in Clojure gibts viele funktionen die das argument nicht mutieren, sondern eine kopie mit structural sharing/ copy-on-write(?) erzeugen
+   könnte man ggf. zusätzlich machen: funktionen wie remove liefern bei immutable argumenten keine vollständige kopie sondern machen structural sharing
+
+immutable vectors wären einfach:
+adjustablep=nil gibt einen simple-vector, simple-vector deckt den fall ab: man darf/ kann nicht appenden, d.h. vector-add gibt fehler
+adjustablep='immutable könnte einen vector erzeugen, wo vector-add und seqset fehler geben
+
+conscells: unterscheiden ob rplaca und/ oder rplacd einen fehler werfen
+-> rplacd verboten würde "adjustablep=nil" entsprechen
+-> rplaca verboten würde "adjustablep='immutable entsprechen
+-> hat auswirkungen zumindest auf cons, list, list*: adjustablep muss iwie in Murmel angebunden werden, dafür gibts optimierungsmöglichkeiten wie z.B.: eine liste kann als arrayslice umgesetzt werden
+   ggf. (xcons adjustablep car [cdr]), (xlist adjustablep obj . more-objects*), (xlist* adjustablep obj . more-objects*)
+   und/ oder eine funktion "immutable" und der compiler erkennt pattern wie "(immutable (cons a b))", oder "(immutable (append l1 l2))" wird durch was besseres ersetzt?
+-> ArraySlice wäre derzeit adjustable=nil. wenns das konzept "nonappendable list" gibt, könnte die varargs-liste wieder ein ArraySlice sein, im compiler in liste umwandeln könnte man sich sparen
+   wenn die vararg liste ein arrayslice wäre, würde cdr arrayslice objekte erzeugen.
+   aber wsl geht man selten mehr als 1x über die liste drüber,
+   d.h. alt: werden in jedem fall conscells erzeugt, neu: bei nutzung von cdr werden arrayslices erzeugt, bei cadr/ nth/ elt wird nix allokiert
+
+
 sxhash sollte eine looperkennung bekommen ähnlich wie length
+-> der trick von list-length geht nicht, weil sxhash muss trees können, list-length braucht das nicht
+-> für sxhash ist ein zähler wsl ok
+-> equal sollte ggf. eine richtige looperkennung bekommen?
+   müsste aber wsl mit identityhash gemacht werden, damit loops auch in trees erkannt werden
+   vielleicht eigene xequal funktion (xequal o1 o2 [detectcirclep=t])
 
 #5(1 2 3) gibt einen vector der länge 5, es wird ggf. mit dem letzten element aufgefüllt
 #5*01: bitvector, sonst w.o.
