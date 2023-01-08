@@ -1,0 +1,55 @@
+# This workflow will build a Java project with Maven
+# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
+
+# When a tag is pushed then also create a release,
+# see https://github.com/softprops/action-gh-release
+
+name: Create release
+
+on:
+  push:
+    tags: "jmurmel-all*"
+
+env:
+  JAVA_VERSION: 8
+  JAVA_TARGET: 8
+
+jobs:
+  build:
+
+    runs-on: ubuntu-latest
+    name: Release
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - name: Set up JDK ${{ env.JAVA_VERSION }}
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'zulu'
+
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
+
+    - name: Build with Maven
+      run: mvn -B clean package -pl lambda,scripts -Dlaunch4j.skip=false -DskipTests=true -Djavac.target=${{ env.JAVA_TARGET }}
+
+    - name: Create Jar zipfile
+      run: zip -j ${{ github.ref_name }}-jar.zip      LICENSE lambda/target/jmurmel.jar  samples.mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html
+
+    - name: Create slim zipfile
+      run: zip -j ${{ github.ref_name }}-w64-slim.zip LICENSE scripts/target/jmurmel.exe samples.mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html
+
+    - name: Create release and upload files
+      uses: softprops/action-gh-release@v1
+      with:
+        prerelease: true
+        files: |
+          ${{ github.ref_name }}-jar.zip
+          ${{ github.ref_name }}-w64-slim.zip
