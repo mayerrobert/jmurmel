@@ -140,6 +140,9 @@ public class LambdaJ {
     /** Max length of string literals */
     public static final int TOKEN_MAX = 2000;
 
+    interface ConsIterator extends Iterator<Object> {
+        boolean wasDotted();
+    }
 
     /** Main building block for Lisp-lists */
     public abstract static class ConsCell implements Iterable<Object>, Serializable {
@@ -161,7 +164,22 @@ public class LambdaJ {
 
         @Override public boolean equals(Object other) { return other instanceof ConsCell && compare(this, other, CompareMode.EQUAL) == 0; }
         @Override public int hashCode() { return sxhashSigned(100); }
+        @Override public abstract ConsIterator iterator();
         abstract int sxhashSigned(int rec);
+
+        final int compareToEqual(ConsCell c2) {
+            final ConsIterator me = iterator();
+            final ConsIterator other = c2.iterator();
+            while (me.hasNext() && other.hasNext()) {
+                final int compareCar = compare(me.next(), other.next(), CompareMode.EQUAL);
+                if (compareCar != 0) return compareCar;
+            }
+            if (me.hasNext()) return 1;
+            else if (other.hasNext()) return -1;
+            else if (me.wasDotted() && !other.wasDotted()) return -1;
+            else if (!me.wasDotted() && other.wasDotted()) return 1;
+            else return 0;
+        }
     }
 
     /** A murmel symbol name */
@@ -470,10 +488,11 @@ public class LambdaJ {
     }
 
     private abstract static class AbstractConsCell extends ConsCell {
-        private static class ListConsCellIterator implements Iterator<Object> {
+        private static class ListConsCellIterator implements ConsIterator {
             private final AbstractConsCell coll;
-            private Iterator<Object> delegate;
+            private ConsIterator delegate;
             private Object cursor;
+            private boolean wasDotted;
 
             private ListConsCellIterator(AbstractConsCell coll) { this.coll = coll; cursor = coll; }
             @Override public boolean hasNext() {
@@ -481,8 +500,7 @@ public class LambdaJ {
                 return cursor != null;
             }
 
-            @Override
-            public Object next() {
+            @Override public Object next() {
                 if (delegate != null) return delegate.next();
                 final Object _cursor;
                 if ((_cursor = cursor) == null) throw new NoSuchElementException();
@@ -496,11 +514,17 @@ public class LambdaJ {
                 if (_cursor instanceof AbstractConsCell) {
                     final AbstractConsCell list = (AbstractConsCell)_cursor;
                     if (list.cdr() == coll) cursor = null; // circle detected, stop here
-                    else cursor = list.cdr();
+                    else { cursor = list.cdr(); wasDotted = cursor != null; }
                     return list.car();
                 }
                 cursor = null;
                 return _cursor;  // last element of dotted list
+            }
+
+            @Override public boolean wasDotted() {
+                assert !hasNext() : "wasDotted was called when not at end (hasNext() == true)";
+                if (delegate != null) return delegate.wasDotted();
+                return wasDotted;
             }
         }
 
@@ -510,7 +534,7 @@ public class LambdaJ {
 
         private AbstractConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
         @Override public String toString() { return printSEx(this, false); }
-        @Override public Iterator<Object> iterator() { return new ListConsCellIterator(this); }
+        @Override public ConsIterator iterator() { return new ListConsCellIterator(this); }
 
         @Override public Object shallowCopyCdr() { if (consp(cdr)) cdr = ((ConsCell)cdr).copy(); return cdr; }
 
@@ -523,7 +547,7 @@ public class LambdaJ {
         void adjustEnd(int endLineNo, int endCharNo) { /* default is: no-op */ }
 
         /** avoid endless loop in case of circular lists or lists with embedded circles */
-        @Override int sxhashSigned(int rec) {
+        @Override final int sxhashSigned(int rec) {
             int ret = 0;
             for (Object lst = this; lst != null && --rec > 0; lst = LambdaJ.cdr(lst)) {
                 if (lst instanceof ArraySlice) return ret + ((ArraySlice)lst).sxhashSigned(rec+1);
@@ -575,7 +599,7 @@ public class LambdaJ {
     }
 
     private static class ArraySlice extends ConsCell {
-        private static class ArraySliceIterator implements Iterator<Object> {
+        private static class ArraySliceIterator implements ConsIterator {
             private final Object[] arry;
             private final int len;
             private int cursor;
@@ -583,13 +607,14 @@ public class LambdaJ {
             private ArraySliceIterator(Object[] arry, int offset) { this.arry = arry; this.len = arry.length; this.cursor = offset; }
             @Override public boolean hasNext() { return cursor != -1; }
 
-            @Override
-            public Object next() {
+            @Override public Object next() {
                 if (cursor == -1) throw new NoSuchElementException();
                 final Object ret = arry[cursor++];
                 if (cursor == len)  cursor = -1;
                 return ret;
             }
+
+            @Override public boolean wasDotted() { return false; }
         }
 
         private static final long serialVersionUID = 1L;
@@ -630,7 +655,7 @@ public class LambdaJ {
         private int length() { return arry.length - offset; }
 
         @Override public String toString() { return printSEx(true, false); }
-        @Override public Iterator<Object> iterator() { return new ArraySliceIterator(this.arry, this.offset); }
+        @Override public ConsIterator iterator() { return new ArraySliceIterator(this.arry, this.offset); }
 
         String printSEx(boolean headOfList, boolean escapeAtoms) {
             final Object[] arry = this.arry;
@@ -4272,11 +4297,8 @@ public class LambdaJ {
             return len1 - len2;
         }
         if (consp(o1) && consp(o2)) {
-            final ConsCell c1 = (ConsCell)o1;
-            final ConsCell c2 = (ConsCell)o2;
-            final int compareCar = compare(car(c1), car(c2), CompareMode.EQUAL);
-            if (compareCar != 0) return compareCar;
-            return compare(cdr(c1), cdr(c2), CompareMode.EQUAL); // todo das kann sehr tiefe rekursionen ergeben. Besser: ConsCell.compareEqual mittels loop implementieren, in ArraySlice spezialisieren
+            int ret = ((ConsCell)o1).compareToEqual((ConsCell)o2);
+            return ret;
         }
         return System.identityHashCode(o1) - System.identityHashCode(o2);
     }
