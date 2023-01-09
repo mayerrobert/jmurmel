@@ -4297,8 +4297,7 @@ public class LambdaJ {
             return len1 - len2;
         }
         if (consp(o1) && consp(o2)) {
-            int ret = ((ConsCell)o1).compareToEqual((ConsCell)o2);
-            return ret;
+            return ((ConsCell)o1).compareToEqual((ConsCell)o2);
         }
         return System.identityHashCode(o1) - System.identityHashCode(o2);
     }

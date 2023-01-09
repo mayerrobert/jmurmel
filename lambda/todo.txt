@@ -1,3 +1,10 @@
+3rd party lizenzen in einen ordner, in die zips dazupacken
+
+try koennte noch abzufangende exceptions uebernehmen, default ist "alles"
+
+CTRL-C aka sigint handlen/ umlenken?
+
+
 immutable sequences (conses, lists, vectors)
 wsl sollte man unterscheiden: darf man elemente ändern vs. darf man hinzufügen
 -> sollen alle kombinationen zulässig sein?
@@ -31,8 +38,6 @@ sxhash sollte eine looperkennung bekommen ähnlich wie length
 
 #5(1 2 3) gibt einen vector der länge 5, es wird ggf. mit dem letzten element aufgefüllt
 #5*01: bitvector, sonst w.o.
-
-try koennte noch abzufangende exceptions uebernehmen, default ist "alles"
 
 current_frame zw. interpreter und compiler hintri/firi kopieren?
 -> current_frame, values, *features*, lispReader, lispPrinter sollten wsl. ThreadLocals sein
