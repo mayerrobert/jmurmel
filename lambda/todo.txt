@@ -32,12 +32,13 @@ conscells: unterscheiden ob rplaca und/ oder rplacd einen fehler werfen
 sxhash sollte eine looperkennung bekommen ähnlich wie length
 -> der trick von list-length geht nicht, weil sxhash muss trees können, list-length braucht das nicht
 -> für sxhash ist ein zähler wsl ok
--> equal sollte ggf. eine richtige looperkennung bekommen?
-   müsste aber wsl mit identityhash gemacht werden, damit loops auch in trees erkannt werden
+-> equal sollte ggf. eine richtige looperkennung bekommen? compare-equal auch?
+   müsste aber wsl mit identityhash gemacht werden, damit loops auch in trees erkannt werden.
+   -> oder mit einem flag "visited" in ConsCells, muss dann synchronized sein, muss 2x alles traversieren, am ende wieder alles auf 0 setzen
    vielleicht eigene xequal funktion (xequal o1 o2 [detectcirclep=t])
+   ein problem gibts eigentlich nur, wenn beide argumente von equal circular lists und equal sind, alles andere geht und terminiert
+   -> das problem tritt also auf, wenn eine circular list als key einer equal map verwendet wird (und compare-equal map?)
 
-#5(1 2 3) gibt einen vector der länge 5, es wird ggf. mit dem letzten element aufgefüllt
-#5*01: bitvector, sonst w.o.
 
 current_frame zw. interpreter und compiler hintri/firi kopieren?
 -> current_frame, values, *features*, lispReader, lispPrinter sollten wsl. ThreadLocals sein

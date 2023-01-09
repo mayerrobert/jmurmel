@@ -2398,3 +2398,7 @@ define (aka globales environment) könnte ein eigenes feature flag bekommen stat
    --define
 -> oder lambda++
 -> jedenfalls sollten IO und define wsl erst viel "später" abgedreht werden, apply vielleicht auch
+
+
+#5(1 2 3) gibt einen vector der länge 5, es wird ggf. mit dem letzten element aufgefüllt
+#5*01: bitvector, sonst w.o.

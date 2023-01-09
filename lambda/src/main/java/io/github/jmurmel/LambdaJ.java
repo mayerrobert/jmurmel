@@ -715,6 +715,7 @@ public class LambdaJ {
     static final WriteConsumer NULL_WRITECHARS = c -> {};
 
     static final Object[] EMPTY_ARRAY = new Object[0];
+    static final boolean[] EMPTY_BITVECTOR = new boolean[0];
 
     final ConsCell featuresEnvEntry, conditionHandlerEnvEntry;
 
@@ -1316,22 +1317,11 @@ public class LambdaJ {
                 return parseLong(readerMacroToken(), 16);
 
             case '(':
-                return listToArray(readList(lineNo, charNo, new Object()));
+                return LambdaJ.listToArray(readList(lineNo, charNo, new Object()));
 
             case '*':
                 final String bv = readerMacroToken();
-                boolean[] ret = new boolean[32];
-                int i = 0;
-                for (char c: bv.toCharArray()) {
-                    if (i == ret.length) ret = Arrays.copyOf(ret, ret.length * 2);
-                    switch (c) {
-                    case '0': break;
-                    case '1': ret[i] = true; break;
-                    default: errorReaderError("not a valid value for bitvector: %c", c);
-                    }
-                    i++;
-                }
-                return Arrays.copyOf(ret, i);
+                return stringToBitvector(bv, bv.length());
 
             case 'H':
                 if (look != '(') errorReaderError("expected '(' after '#H'");
@@ -1339,15 +1329,63 @@ public class LambdaJ {
                 return hash(st, readList(lineNo, charNo, new Object()));
 
             default:
+                if (Character.isDigit(sub_char)) {
+                    final String tok = readerMacroToken(true);
+                    if (!tok.isEmpty() && (tok.charAt(0) == '+' || tok.charAt(0) == '-' || !isLong(tok))) errorReaderError("no dispatch function defined for %s", printSEx(tok.charAt(0), true));
+                    final int len = Integer.parseInt((char)sub_char + tok);
+                    switch (look) {
+                    case '(': look = getchar(false); return listToArray(readList(lineNo, charNo, new Object()), len);
+                    case '*': look = getchar(false); final String bv2 = readerMacroToken(); return stringToBitvector(bv2, len);
+                    default: errorReaderError("no dispatch function defined for %s", printSEx((char)look, true));
+                    }
+                }
                 look = getchar();
                 errorReaderError("no dispatch function defined for %s", printChar(sub_char));
                 return null; // notreached
             }
         }
 
-        private String readerMacroToken() {
+        private static boolean[] stringToBitvector(String bv, int len) {
+            if (len < bv.length()) errorReaderError("too many bits in \"%s\": expected %d or fewer", bv, len);
+            if (bv.isEmpty()) {
+                if (len == 0) return EMPTY_BITVECTOR;
+                errorReaderError("#%d* requires at least 1 bit of input", len);
+            }
+            final boolean[] ret = new boolean[len];
+            int i = 0;
+            for (char c: bv.toCharArray()) {
+                switch (c) {
+                case '0': break;
+                case '1': ret[i] = true; break;
+                default: errorReaderError("not a valid value for bitvector: %c", c);
+                }
+                i++;
+            }
+            final boolean last = ret[i-1];
+            while (i < len) ret[i++] = last;
+            return ret;
+        }
+
+        private static Object[] listToArray(ConsCell lst, int len) {
+            if (lst == null) {
+                if (len == 0) return EMPTY_ARRAY;
+                errorReaderError("vector of length %d cannot be initialized from ()", len);
+            }
+            final Object[] ret = new Object[len];
+            int i = 0;
+            for (Object o: lst) {
+                if (i == len) errorReaderError("vector is longer than the specified length: #%d%s", len, printSEx(lst));
+                ret[i++] = o;
+            }
+            final Object last = ret[i-1];
+            while (i < len) ret[i++] = last;
+            return ret;
+        }
+
+        private String readerMacroToken() { return readerMacroToken(false); }
+        private String readerMacroToken(boolean stopAtStar) {
             int index = 0;
-            while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+            while ((!stopAtStar || look != '*') && look != EOF && !isSpace(look) && !isSyntax(look)) {
                 if (index < TOKEN_MAX) token[index++] = (char)look;
                 look = getchar(false);
             }
