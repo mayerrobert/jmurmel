@@ -6,6 +6,8 @@
     <version>1.4-SNAPSHOT</version>
     <packaging>pom</packaging>
 
+    <description>Murmel interpreter/ compiler</description>
+
     <distributionManagement>
         <repository>
             <id>github</id>
