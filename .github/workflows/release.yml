@@ -44,7 +44,7 @@ jobs:
       run: zip -j ${{ github.ref_name }}-jar.zip      LICENSE lambda/target/jmurmel.jar  samples.mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html
 
     - name: Create slim zipfile
-      run: zip -j ${{ github.ref_name }}-w64-slim.zip LICENSE scripts/target/jmurmel.exe samples.mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html
+      run: zip -j ${{ github.ref_name }}-w64-slim.zip LICENSE scripts/target/jmurmel.exe samples.mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html && zip -r ${{ github.ref_name }}-w64-slim.zip legal/launch4j/
 
     - name: Create release and upload files
       uses: softprops/action-gh-release@v1
