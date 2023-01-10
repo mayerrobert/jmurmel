@@ -1,5 +1,3 @@
-3rd party lizenzen in einen ordner, in die zips dazupacken
-
 try koennte noch abzufangende exceptions uebernehmen, default ist "alles"
 
 CTRL-C aka sigint handlen/ umlenken?

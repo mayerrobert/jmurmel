@@ -2402,3 +2402,5 @@ define (aka globales environment) könnte ein eigenes feature flag bekommen stat
 
 #5(1 2 3) gibt einen vector der länge 5, es wird ggf. mit dem letzten element aufgefüllt
 #5*01: bitvector, sonst w.o.
+
+3rd party lizenzen in einen ordner, in die zips dazupacken
