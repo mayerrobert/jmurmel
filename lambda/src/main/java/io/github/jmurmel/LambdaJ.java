@@ -1000,6 +1000,11 @@ public class LambdaJ {
         return c >= '0' && c <= '9'; // only accept ASCII digits, reject other Unicode digits
     }
 
+    static int digit(int c) {
+        //return Character.digit(c, 10);
+        return isDigit(c) ? c - '0' : -1;
+    }
+
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
@@ -1259,10 +1264,11 @@ public class LambdaJ {
         private static final Object CONTINUE = new Object();
 
         /** if we get here then we have already read '#' and look contains the character after #subchar */
-        private Object readerMacro(int sub_char) throws IOException {
+        private Object readerMacro(int sub_char, int arg) throws IOException {
             switch (sub_char) {
             // #:symbolname ... uninterned symbol
             case ':': return new LambdaJSymbol(isBar(look) ? readBarSymbol() : readerMacroToken());
+
             // #\ ... character literal
             case '\\':
                 final String charOrCharactername = readerMacroToken();
@@ -1322,11 +1328,12 @@ public class LambdaJ {
                 return parseLong(readerMacroToken(), 16);
 
             case '(':
-                return LambdaJ.listToArray(readList(lineNo, charNo, new Object()));
+                final ConsCell vec = readList(lineNo, charNo, new Object());
+                return arg >= 0 ? listToArray(vec, arg) : LambdaJ.listToArray(vec);
 
             case '*':
                 final String bv = readerMacroToken();
-                return stringToBitvector(bv, bv.length());
+                return stringToBitvector(bv, arg >= 0 ? arg : bv.length());
 
             case 'H':
                 if (look != '(') errorReaderError("expected '(' after '#H'");
@@ -1334,16 +1341,6 @@ public class LambdaJ {
                 return hash(st, readList(lineNo, charNo, new Object()));
 
             default:
-                if (isDigit(sub_char)) {
-                    final String tok = readerMacroToken(true);
-                    if (!tok.isEmpty() && (tok.charAt(0) == '+' || tok.charAt(0) == '-' || !isLong(tok))) errorReaderError("no dispatch function defined for %s", printSEx(tok.charAt(0), true));
-                    final int len = Integer.parseInt((char)sub_char + tok);
-                    switch (look) {
-                    case '(': look = getchar(false); return listToArray(readList(lineNo, charNo, new Object()), len);
-                    case '*': look = getchar(false); final String bv2 = readerMacroToken(); return stringToBitvector(bv2, len);
-                    default: errorReaderError("no dispatch function defined for %s", printSEx((char)look, true));
-                    }
-                }
                 look = getchar();
                 errorReaderError("no dispatch function defined for %s", printChar(sub_char));
                 return null; // notreached
@@ -1359,9 +1356,9 @@ public class LambdaJ {
             final boolean[] ret = new boolean[len];
             int i = 0;
             for (char c: bv.toCharArray()) {
-                switch (c) {
-                case '0': break;
-                case '1': ret[i] = true; break;
+                switch (digit(c)) {
+                case 0: break;
+                case 1: ret[i] = true; break;
                 default: errorReaderError("not a valid value for bitvector: %c", c);
                 }
                 i++;
@@ -1388,10 +1385,9 @@ public class LambdaJ {
             return ret;
         }
 
-        private String readerMacroToken() { return readerMacroToken(false); }
-        private String readerMacroToken(boolean stopAtStar) {
+        private String readerMacroToken() {
             int index = 0;
-            while ((!stopAtStar || look != '*') && look != EOF && !isSpace(look) && !isSyntax(look)) {
+            while (look != EOF && !isSpace(look) && !isSyntax(look)) {
                 if (index < TOKEN_MAX) token[index++] = (char)look;
                 look = getchar(false);
             }
@@ -1481,14 +1477,23 @@ public class LambdaJ {
                             break;
                         }
 
-                    case '#': {
+                    case '#':
                         look = getchar(false);
+                        int arg = -1, digit;
                         final int subChar;
                         if (escape) subChar = '\\';
-                        else { subChar = look; look = getchar(false); }
-                        tok = readerMacro(subChar);
+                        else {
+                            if ((digit = digit(look)) != -1) {
+                                arg = 0;
+                                do {
+                                    arg *= 10;  arg += digit;  look = getchar(false);
+                                } while ((digit = digit(look)) != -1);
+                            }
+                            subChar = look;
+                            look = getchar(false);
+                        }
+                        tok = readerMacro(subChar, arg);
                         break;
-                    }
                     }
                 }
 
