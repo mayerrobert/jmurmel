@@ -44,6 +44,7 @@ public class ScannerTest {
     private static String stringify(Object result) {
         if (result == null) return "nil";
         if (result instanceof String) return "\"" + result + "\"";
+        if (LambdaJ.vectorp(result)) return LambdaJ.printSEx(result, false);
         return String.valueOf(result);
     }
 
@@ -74,9 +75,57 @@ public class ScannerTest {
     }
 
     @Test
+    public void testVector() {
+        runTest("vector", "#(1 2 3)", "#(1 2 3)", null);
+        runTest("vector", "#5(1 2 3)", "#(1 2 3 3 3)", null);
+        runTest("vector", "#5(1 2 nil)", "#(1 2 nil nil nil)", null);
+        runTest("vector", "#0()", "#()", null);
+        LambdaJTest.runErrorTest("vector", "#0(1 2 3)", "vector is longer");
+        LambdaJTest.runErrorTest("vector", "#1()", "vector of length 1 cannot be initialized from ()");
+
+        runTest("char vector", "#(#\\a #\\b #\\c)", "#(a b c)", null);
+        runTest("char vector", "#3(#\\a #\\b #\\c)", "#(a b c)", null);
+
+        runTest("bitvector", "#*0101", "#*0101", null);
+        runTest("bitvector", "#10*0101", "#*0101111111", null);
+        runTest("bitvector", "#10*010", "#*0100000000", null);
+        runTest("bitvector", "#0*", "#*", null);
+        LambdaJTest.runErrorTest("bitvector", "#0*01", "too many bits");
+        LambdaJTest.runErrorTest("bitvector", "#1*", "#1* requires at least 1 bit of input");
+    }
+
+    @Test
+    public void testFeature() {
+        runTest("feature nil",   "#+nil 1 2", "2", null);
+        runTest("feature nil",   "#-nil 1 2", "1", null);
+        runTest("feature (and)", "#+(and) 1 2", "1", null);
+        runTest("feature (or)",  "#+(or) 1 2", "2", null);
+
+        LambdaJTest.runTest("+feature", "#+murmel 1.0 2.0", "1.0", null);
+        LambdaJTest.runTest("+feature", "#+xyxxy  1.0 2.0", "2.0", null);
+
+        LambdaJTest.runTest("-feature", "#-murmel 1.0 2.0", "2.0", null);
+        LambdaJTest.runTest("-feature", "#-xyxxy  1.0 2.0", "1.0", null);
+
+        LambdaJTest.runTest("and features", "#+(and murmel jvm)   1.0 2.0", "1.0", null);
+        LambdaJTest.runTest("and features", "#+(and murmel xyxxy) 1.0 2.0", "2.0", null);
+        LambdaJTest.runTest("or features",  "#+(or murmel xyxxy)  1.0 2.0", "1.0", null);
+        LambdaJTest.runTest("not features",  "#+(not murmel)  1.0 2.0", "2.0", null);
+        LambdaJTest.runTest("not features",  "#+(not xyxxy)   1.0 2.0", "1.0", null);
+
+        LambdaJTest.runErrorTest("not features",  "#+(not)   1.0 2.0", "feature expression not: not enough subexpressions");
+        LambdaJTest.runErrorTest("not features",  "#+(not murmel jvm)   1.0 2.0", "feature expression not: too many subexpressions");
+
+        LambdaJTest.runErrorTest("not features",  "#+1   1.0 2.0", "unsupported feature expression");
+        LambdaJTest.runErrorTest("not features",  "#+(bla)   1.0 2.0", "unsupported feature expression");
+    }
+
+    @Test
     public void testSymbol() {
         LambdaJTest.runTest("symbol starting with dbl quote", "'\\\"123", "|\"123|", null);
         LambdaJTest.runTest("symbol with embedded backslash", "'12\\34", "|1234|", null);
+        LambdaJTest.runTest("symbol with embedded bar", "'ab\\|cd", "ab\\|cd", null);
+        LambdaJTest.runTest("|-symbol with embedded bar", "'|ab\\|cd|", "ab\\|cd", null);
 
         LambdaJTest.runErrorTest("unclosed |quoted symbol", "'|123", "|-quoted symbol is missing closing |");
     }
@@ -101,6 +150,8 @@ public class ScannerTest {
 
     @Test
     public void testComment() {
+        runTest("comment", "; bla\nasdf", "asdf", null);
+
         LambdaJTest.runTest("multiline comment",           "#| one\ntwo|\nthree|#\n1.0", "1.0", null);
         LambdaJTest.runErrorTest("open multiline comment", "#| one\ntwo\nthree#\n1.0", "line 1:3: EOF in multiline comment\nerror occurred in line 4:3");
     }
@@ -133,6 +184,11 @@ public class ScannerTest {
     @Test
     public void testString() {
         runTest("cr-lf", "\"one\rtwo\nbla\r\nbla2\"", "\"one\ntwo\nbla\nbla2\"", null);
+        runTest("trailing stuff", "\"one\rtwo\nbla\r\nbla2\" 1 2 3", "\"one\ntwo\nbla\nbla2\"", null);
+        runTest("escaped quote", "\"one\rtwo\nbla \\\" bla\r\nbla2\" 1 2 3", "\"one\ntwo\nbla \" bla\nbla2\"", null);
+        runTest("embedded semi", "\"one\rtwo\nbla; \\\" bla\r\nbla2\" 1 2 3", "\"one\ntwo\nbla; \" bla\nbla2\"", null);
+
+        LambdaJTest.runErrorTest("unterminated string with semi", "\"blabla; asdf", "string literal is missing closing");
 
         LambdaJTest.runErrorTest("open string", "\"blabla", "string literal is missing closing");
         // check if different line ends mess up linenumbers in error messages
@@ -191,6 +247,28 @@ public class ScannerTest {
     @Test
     public void testTwoElemList() {
         LambdaJTest.runTest("list", "'(a b)", "(a b)", null);
+    }
+
+    @Test
+    public void testFunction() {
+        runTest("sharp apo", "#'func", "func", null);
+        runTest("sharp apo", "#'|123|", "123", null);
+    }
+
+    @Test
+    public void testNumbers() {
+        runTest("bin", "#b0101", "5", null);
+        runTest("bin", " #b 0101 ", "5", null);
+        runTest("oct", "#o42", "34", null);
+        runTest("oct", " #o 42 ", "34", null);
+        runTest("hex", "#xdead", "57005", null);
+        runTest("hex", " #x dead ", "57005", null);
+    }
+
+    @Test
+    public void testUninterned() {
+        runTest("uninterned", "#:qwer", "qwer", null);
+        runTest("uninterned", "#:|123|", "123", null);
     }
 
     @Test
