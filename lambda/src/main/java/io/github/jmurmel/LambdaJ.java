@@ -1362,7 +1362,7 @@ public class LambdaJ {
                 i++;
             }
             final boolean last = ret[i-1];
-            while (i < len) ret[i++] = last;
+            if (last) Arrays.fill(ret, i, len, last);
             return ret;
         }
 
@@ -1370,6 +1370,7 @@ public class LambdaJ {
             if (lst == null) {
                 if (len == 0) return EMPTY_ARRAY;
                 errorReaderError("vector of length %d cannot be initialized from ()", len);
+                assert false; //notreached
             }
             final Object[] ret = new Object[len];
             int i = 0;
@@ -1378,7 +1379,7 @@ public class LambdaJ {
                 ret[i++] = o;
             }
             final Object last = ret[i-1];
-            while (i < len) ret[i++] = last;
+            if (last != null) Arrays.fill(ret, i, len, last);
             return ret;
         }
 
