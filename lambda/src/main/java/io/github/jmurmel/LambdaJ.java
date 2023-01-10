@@ -996,13 +996,13 @@ public class LambdaJ {
     final SExpressionReader makeReader(ReadSupplier in, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
 
     static boolean isDigit(int c) {
-        //return Character.isDigit(c);
-        return c >= '0' && c <= '9'; // only accept ASCII digits, reject other Unicode digits
+        return Character.isDigit(c);
+        //return c >= '0' && c <= '9'; // only accept ASCII digits, reject other Unicode digits
     }
 
     static int digit(int c) {
-        //return Character.digit(c, 10);
-        return isDigit(c) ? c - '0' : -1;
+        return Character.digit(c, 10);
+        //return isDigit(c) ? c - '0' : -1;
     }
 
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
