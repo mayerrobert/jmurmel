@@ -995,6 +995,11 @@ public class LambdaJ {
     public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry, null); }
     final SExpressionReader makeReader(ReadSupplier in, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
 
+    static boolean isDigit(int c) {
+        //return Character.isDigit(c);
+        return c >= '0' && c <= '9'; // only accept ASCII digits, reject other Unicode digits
+    }
+
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
@@ -1012,8 +1017,8 @@ public class LambdaJ {
         if (first == '+' || first == '-') {
             if (len == 1) return false;
         }
-        else if (!Character.isDigit(first)) return false;
-        for (int i = 1; i < len; i++) if (!Character.isDigit(s.charAt(i))) return false;
+        else if (!isDigit(first)) return false;
+        for (int i = 1; i < len; i++) if (!isDigit(s.charAt(i))) return false;
         return true;
     }
 
@@ -1063,28 +1068,28 @@ public class LambdaJ {
         if (c == '.') {
             // s starts with [+-]?\.
             // must be followed by at least one digit
-            if (!Character.isDigit(s.charAt(idx++))) return false;
+            if (!isDigit(s.charAt(idx++))) return false;
 
             // s starts with [+-]?\.\d
             // eat additional digits and then there must be [eE] or end-of-string
-            while (idx < len && Character.isDigit(s.charAt(idx))) {
+            while (idx < len && isDigit(s.charAt(idx))) {
                 idx++;
             }
             if (idx == len) return true;
         }
-        else if (Character.isDigit(c)) {
+        else if (isDigit(c)) {
             // s starts with [+-]?[0-9]
             // eat additional digits and then there must be [.eE]
-            while (idx < len && Character.isDigit(s.charAt(idx))) {
+            while (idx < len && isDigit(s.charAt(idx))) {
                 idx++;
             }
             if (idx == len) return false;
 
             if (s.charAt(idx) == '.') {
                 idx++;
-                if (!Character.isDigit(s.charAt(idx++))) return false;
+                if (!isDigit(s.charAt(idx++))) return false;
 
-                while (idx < len && Character.isDigit(s.charAt(idx))) {
+                while (idx < len && isDigit(s.charAt(idx))) {
                     idx++;
                 }
                 if (idx == len) return true;
@@ -1105,11 +1110,11 @@ public class LambdaJ {
 
         // s starts with [+-]?\.\d+[eE][+-]?
         // must be followed by one or more digits
-        if (!Character.isDigit(c)) return false;
+        if (!isDigit(c)) return false;
 
         // s starts with [+-]?\.\d+[eE][+-]?\d
         // eat additional digits and then there must be end-of-string
-        while (idx < len && Character.isDigit(s.charAt(idx))) {
+        while (idx < len && isDigit(s.charAt(idx))) {
             idx++;
         }
         return idx == len;
@@ -1329,7 +1334,7 @@ public class LambdaJ {
                 return hash(st, readList(lineNo, charNo, new Object()));
 
             default:
-                if (Character.isDigit(sub_char)) {
+                if (isDigit(sub_char)) {
                     final String tok = readerMacroToken(true);
                     if (!tok.isEmpty() && (tok.charAt(0) == '+' || tok.charAt(0) == '-' || !isLong(tok))) errorReaderError("no dispatch function defined for %s", printSEx(tok.charAt(0), true));
                     final int len = Integer.parseInt((char)sub_char + tok);
