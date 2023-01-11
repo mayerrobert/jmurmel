@@ -1381,7 +1381,7 @@ public class LambdaJ {
                 i++;
             }
             final boolean last = ret[i-1];
-            if (last) Arrays.fill(ret, i, len, last);
+            if (last) Arrays.fill(ret, i, len, true);
             return ret;
         }
 
@@ -5012,7 +5012,7 @@ public class LambdaJ {
         @Override
         public void printSEx(WriteConsumer out, boolean escapeAtoms) {
             out.print(pfx());
-            for (Map.Entry<?,?> entry: super.entrySet()) {
+            for (Map.Entry<?,?> entry: entrySet()) {
                 out.print(" ");  LambdaJ.printSEx(out, getKey(entry), escapeAtoms);
                 out.print(" ");  LambdaJ.printSEx(out, entry.getValue(), escapeAtoms);
             }
