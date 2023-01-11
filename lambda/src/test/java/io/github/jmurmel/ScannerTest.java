@@ -45,6 +45,7 @@ public class ScannerTest {
         if (result == null) return "nil";
         if (result instanceof String) return "\"" + result + "\"";
         if (LambdaJ.vectorp(result)) return LambdaJ.printSEx(result, false);
+        if (LambdaJ.hashtablep(result)) return LambdaJ.printSEx(result, false);
         return String.valueOf(result);
     }
 
@@ -92,6 +93,13 @@ public class ScannerTest {
         runTest("bitvector", "#0*", "#*", null);
         LambdaJTest.runErrorTest("bitvector", "#0*01", "too many bits");
         LambdaJTest.runErrorTest("bitvector", "#1*", "#1* requires at least 1 bit of input");
+        LambdaJTest.runErrorTest("bitvector", "#*012", "not a valid value for bitvector: 2");
+    }
+
+    @Test
+    public void testHashtable() {
+        runTest("hash", " #H(compare-eql 1.0 11.0 2.0 22.0 3.0 33.0)", "#H(compare-eql 1.0 11.0 2.0 22.0 3.0 33.0)", null);
+        LambdaJTest.runErrorTest("hash", " #H (compare-eql 1.0 11.0 2.0 22.0 3.0 33.0)", "expected '(' after '#H'");
     }
 
     @Test
@@ -151,6 +159,8 @@ public class ScannerTest {
     @Test
     public void testComment() {
         runTest("comment", "; bla\nasdf", "asdf", null);
+        runTest("comment", "(a ; bla\nasdf)", "(a asdf)", null);
+        LambdaJTest.runErrorTest("comment", "(a ; bla", "cannot read list. missing ')'");
 
         LambdaJTest.runTest("multiline comment",           "#| one\ntwo|\nthree|#\n1.0", "1.0", null);
         LambdaJTest.runErrorTest("open multiline comment", "#| one\ntwo\nthree#\n1.0", "line 1:3: EOF in multiline comment\nerror occurred in line 4:3");
