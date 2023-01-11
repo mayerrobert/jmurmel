@@ -168,8 +168,7 @@ public class LambdaJ {
         abstract int sxhashSigned(int rec);
 
         final int compareToEqual(ConsCell c2) {
-            final ConsIterator me = iterator();
-            final ConsIterator other = c2.iterator();
+            final ConsIterator me = iterator(), other = c2.iterator();
             while (me.hasNext() && other.hasNext()) {
                 final int compareCar = compare(me.next(), other.next(), CompareMode.EQUAL);
                 if (compareCar != 0) return compareCar;
@@ -179,6 +178,44 @@ public class LambdaJ {
             else if (me.wasDotted() && !other.wasDotted()) return -1;
             else if (!me.wasDotted() && other.wasDotted()) return 1;
             else return 0;
+        }
+
+        public static ConsCell list(Object... elems) {
+            if (elems == null || elems.length == 0) return null;
+            ConsCell ret = null, insertPos = null;
+            for (Object o: elems) {
+                if (ret == null) {
+                    ret = cons(o, null);
+                    insertPos = ret;
+                }
+                else {
+                    final ConsCell cons = cons(o, null);
+                    insertPos.rplacd(cons);
+                    insertPos = cons;
+                }
+            }
+            return ret;
+        }
+
+        public static Object listStar(Object... elems) {
+            assert elems != null && elems.length != 0;
+            if (elems.length == 1) return elems[0];
+            if (elems.length == 2) return cons(elems[0], elems[1]);
+            ConsCell ret = null, insertPos = null;
+            final int n = elems.length - 1;
+            for (int i = 0; i < n; i++) {
+                if (ret == null) {
+                    ret = cons(elems[i], null);
+                    insertPos = ret;
+                }
+                else {
+                    final ConsCell cons = cons(elems[i], null);
+                    insertPos.rplacd(cons);
+                    insertPos = cons;
+                }
+            }
+            insertPos.rplacd(elems[n]);
+            return ret;
         }
     }
 
@@ -460,27 +497,7 @@ public class LambdaJ {
 
     /** Builder class for constructing lists, also used by compiled Murmel */
     public static final class ListBuilder extends AbstractListBuilder<ListBuilder> {
-        @Override ConsCell newCell(Object car) { return new ListConsCell(car, null); }
-
-        // todo siehe auch LambdaJ.list(Object...), vielleicht list und listStar nach ConsCell schieben, dort gibts auch cons, und list und listStar sollten ConsCell.cons nutzen
-        // ggf braucht ListBuilder dann nicht mehr public sein
-        public static ConsCell list(Object... elems) {
-            if (elems == null || elems.length == 0) return null;
-            if (elems.length == 1) return new ListConsCell(elems[0], null);
-            return (ConsCell)new ListBuilder().appendElements(elems).first();
-        }
-
-        public static Object listStar(Object... elems) {
-            assert elems != null && elems.length != 0;
-            if (elems.length == 1) return elems[0];
-            if (elems.length == 2) return new ListConsCell(elems[0], elems[1]);
-
-            final ListBuilder ret = new ListBuilder();
-            ret.append(elems[0]);
-            final int n = elems.length - 1;
-            for (int i = 1; i < n; i++) ret.append(elems[i]);
-            return ret.appendLast(elems[n]).first();
-        }
+        @Override ConsCell newCell(Object car) { return ConsCell.cons(car, null); }
     }
 
     private final class CountingListBuilder extends AbstractListBuilder<CountingListBuilder> {
@@ -507,7 +524,7 @@ public class LambdaJ {
                 if (_cursor instanceof ArraySlice) {
                     // a ListConsCell based list can contain an ArraySlice as the last cdr
                     // (i.e. a list starts as conses and is continued by an ArraySlice.
-                    // An ArraySlice can not be continued by conses
+                    // An ArraySlice can not be continued by conses.
                     delegate = ((ArraySlice)_cursor).iterator();
                     return delegate.next();
                 }
@@ -3715,7 +3732,7 @@ public class LambdaJ {
                 insertPos = ret;
             }
             else {
-                final ListConsCell cons = cons(o, null);
+                final ConsCell cons = cons(o, null);
                 insertPos.rplacd(cons);
                 insertPos = cons;
             }
@@ -6528,12 +6545,12 @@ public class LambdaJ {
             final boolean replVars = interpreter.have(Features.HAVE_XTRA) && interpreter.have(Features.HAVE_DEFINE);
             final Object bye = new Object();
             final Runnable initReplVars = () -> {
-                for (Object v: new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3}) {
-                    interpreter.eval(ListBuilder.list(define, v, null), null);
+                for (Object v: new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3 }) {
+                    interpreter.eval(ConsCell.list(define, v, null), null);
                 }
-                interpreter.eval(ListBuilder.list(define,
-                                                  interpreter.intern("quit"),
-                                                  (Primitive) a -> { throw new ReturnException(bye, 0, (Object[])null); }),
+                interpreter.eval(ConsCell.list(define,
+                                               interpreter.intern("quit"),
+                                               (Primitive) a -> { throw new ReturnException(bye, 0, (Object[])null); }),
                                  null);
             };
 
@@ -6611,7 +6628,7 @@ public class LambdaJ {
                         }
                     }
 
-                    if (replVars) interpreter.eval(ListBuilder.list(setq, form0, ListBuilder.list(quote, exp)), null);
+                    if (replVars) interpreter.eval(ConsCell.list(setq, form0, ConsCell.list(quote, exp)), null);
 
                     interpreter.values = NO_VALUES;
                     final long tStart = System.nanoTime();
@@ -6622,17 +6639,17 @@ public class LambdaJ {
                     history.add(exp);
 
                     if (replVars) {
-                        interpreter.eval(ListBuilder.list(setq, form3, form2), null);
-                        interpreter.eval(ListBuilder.list(setq, form2, form1), null);
-                        interpreter.eval(ListBuilder.list(setq, form1, form0), null);
+                        interpreter.eval(ConsCell.list(setq, form3, form2), null);
+                        interpreter.eval(ConsCell.list(setq, form2, form1), null);
+                        interpreter.eval(ConsCell.list(setq, form1, form0), null);
 
-                        interpreter.eval(ListBuilder.list(setq, result3, result2), null);
-                        interpreter.eval(ListBuilder.list(setq, result2, result1), null);
-                        interpreter.eval(ListBuilder.list(setq, result1, ListBuilder.list(quote, result)), null);
+                        interpreter.eval(ConsCell.list(setq, result3, result2), null);
+                        interpreter.eval(ConsCell.list(setq, result2, result1), null);
+                        interpreter.eval(ConsCell.list(setq, result1, ConsCell.list(quote, result)), null);
 
-                        interpreter.eval(ListBuilder.list(setq, values3, values2), null);
-                        interpreter.eval(ListBuilder.list(setq, values2, values1), null);
-                        interpreter.eval(ListBuilder.list(setq, values1, ListBuilder.list(quote, resultMv == NO_VALUES ? ListBuilder.list(result) : resultMv)), null);
+                        interpreter.eval(ConsCell.list(setq, values3, values2), null);
+                        interpreter.eval(ConsCell.list(setq, values2, values1), null);
+                        interpreter.eval(ConsCell.list(setq, values1, ConsCell.list(quote, resultMv == NO_VALUES ? ConsCell.list(result) : resultMv)), null);
                     }
 
                     System.out.println();
@@ -7439,8 +7456,8 @@ public class LambdaJ {
         public final ConsCell _rplacd(Object l, Object newCdr)   { values = null; return LambdaJ.requireList("rplacd", l).rplacd(newCdr); }
         public final ConsCell _rplacd(ConsCell l, Object newCdr) { values = null; return l.rplacd(newCdr); }
 
-        public final ConsCell _list    (Object... args) { values = null; return ListBuilder.list(args); }
-        public final Object   listStar (Object... args) { values = null; varargs1("list*", args.length); return ListBuilder.listStar(args); }
+        public final ConsCell _list    (Object... args) { values = null; return ConsCell.list(args); }
+        public final Object   listStar (Object... args) { values = null; varargs1("list*", args.length); return ConsCell.listStar(args); }
         public final Object   _append  (Object... args) {
             values = null;
             int nArgs;
@@ -8953,7 +8970,7 @@ public class LambdaJ {
                         varargsMinMax("if", ccArguments, 2, 3);
                         if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                            final ConsCell transformed = ListBuilder.list(op, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
+                            final ConsCell transformed = ConsCell.list(op, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
                             emitForm(sb, transformed, env, topEnv, rsfx, isLast);
                             return;
                         }
@@ -9789,7 +9806,7 @@ public class LambdaJ {
                 if (cdr(args) == null) { // one arg
                     sb.append("_cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
                 }
-                sb.append("ListBuilder.list(");
+                sb.append("ConsCell.list(");
                 boolean first = true;
                 for (; args != null; args = (ConsCell)cdr(args)) {
                     if (first) first = false;
@@ -9805,7 +9822,7 @@ public class LambdaJ {
                 if (cddr(args) == null) {
                     sb.append("_cons("); emitForm(sb, car(args), env, topEnv, rsfx, false); sb.append(", "); emitForm(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return true;
                 }
-                sb.append("ListBuilder.listStar(");
+                sb.append("ConsCell.listStar(");
                 boolean first = true;
                 for (; args != null; args = (ConsCell)cdr(args)) {
                     if (first) first = false;
@@ -10976,7 +10993,6 @@ final class TurtleFrame {
                 for (Text text: texts) {
                     g.drawString(text.s, trX(fac, xoff, text.x), h - trY(fac, yoff, text.y));
                 }
-                //g.drawRect(padding, padding, w - 2*padding, h - 2*padding);
             }
         }
     }
