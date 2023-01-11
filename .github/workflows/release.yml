@@ -51,5 +51,14 @@ jobs:
       with:
         prerelease: true
         files: |
+          CHANGES
+          "GETTING STARTED.txt"
+          LICENSE
+          lambda/target/jmurmel.jar
+          mlib.lisp
+          mlib.md
+          mlib.html
+          murmel-langref.html
+          murmel-langref.md
           ${{ github.ref_name }}-jar.zip
           ${{ github.ref_name }}-w64-slim.zip
