@@ -70,7 +70,7 @@ ggf. lnwrite+print rauskicken und einheitlich zeilenumbruch am ende statt am anf
 
 CL hat write-to-string, princ-to-string, prin1-to-string
 -> intern und concatenate wär auch schön
--> und string-trim (entfernt leading und trailing whitespace)
+   -> string-join mit leerem delimiter geht auch statt concatenate
 
 einige CL funktionen akzeptieren "string-designator", das ist string oder symbol oder character
 -> in CL gibts string: 

@@ -111,6 +111,7 @@ parse
 parse-integer
 min
 max
+string-trim
 string-split
 string-join
 string-replace

@@ -93,7 +93,7 @@ as well as the following additional functions and macros:
 - generators
     - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat)
 - strings
-    - [string-split](#function-string-split), [string-join](#function-string-join)
+    - [string-trim](#function-string-trim), [string-replace](#function-string-replace), [string-split](#function-string-split), [string-join](#function-string-join)
 
 ## Description of functions and macros
 
@@ -998,6 +998,18 @@ Short circuiting thread-last
 
 Same as `->>` but if one function returns nil then the remaining
 functions are not called and the overall result is `nil`.
+
+### Function: string-trim
+    (string-trim str) -> result
+
+Since: 1.4
+
+Return a fresh immutable `simple-string`
+with leading and/ or trailing whitespace removed.
+
+Example usage:
+
+    (string-trim "  asdf   ") ; ==> "asdf"
 
 ### Function: string-replace
     (string-replace str srch replacement) -> result
