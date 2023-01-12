@@ -6153,7 +6153,7 @@ public class LambdaJ {
 
         private static class Exit extends RuntimeException {
             final int rc;
-            Exit(int rc) { super(null, null, true, true); this.rc = rc; }
+            Exit(int rc) { super(null, null, false, false); this.rc = rc; }
         }
 
         private static final Exit EXIT_SUCCESS =       new Exit(0);
