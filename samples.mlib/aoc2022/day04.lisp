@@ -54,7 +54,7 @@ In how many assignment pairs does one range fully contain the other?
 #-murmel (require 'uiop)
 #-murmel (progn
 
-(defun string-split (str sep)
+(defun string-split-list (str sep)
   (uiop:split-string str :separator sep))
 
 (defun read-lines (fname)
@@ -70,7 +70,7 @@ In how many assignment pairs does one range fully contain the other?
 
 ;; (string-split-list str regex) -> list
 (defun string-split-list (str sep)
-  (vector->list ((jmethod "java.lang.String" "split" "String") str sep)))
+  (vector->list (string-split str sep)))
 
 (defun read-lines (fname)
   (vector->list (read-textfile-lines fname)))
