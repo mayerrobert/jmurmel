@@ -52,10 +52,10 @@ jobs:
         prerelease: true
         files: |
           CHANGES
-          "GETTING STARTED.txt"
+          GETTING STARTED.txt
           LICENSE
           lambda/target/jmurmel.jar
-          mlib.lisp
+          samples.mlib/mlib.lisp
           mlib.md
           mlib.html
           murmel-langref.html
