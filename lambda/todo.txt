@@ -1454,9 +1454,9 @@ Anmerkung 3: intern() mit einer HashMap waer auch nicht schwer
 
 
 re:  What is the “minimal” set of primitives needed for...  https://news.ycombinator.com/item?id=8715655
-(define (cons a b) (lambda (f) (f a b)))
-(define (car c) (c (lambda (a b) a)))
-(define (cdr c) (c (lambda (a b) b)))
+(define cons (lambda (a b) (lambda (f) (f a b))))
+(define car  (lambda (c) (c (lambda (a b) a))))
+(define cdr  (lambda (c) (c (lambda (a b) b))))
 
 c:\> jm --min+ --no-cons
 JMurmel> (define cons (lambda (a b) (lambda (f) (f a b))))
