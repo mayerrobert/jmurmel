@@ -4949,21 +4949,21 @@ public class LambdaJ {
      *  two objects that are equal will have the same hash, two objects that are not equal may or may not have the same hash.
      *  Objects with (possibly embedded) loops should be handled as well. */
     static int sxhash(Object o) {
-        return Math.abs(sxhashSigned(o));
+        return sxhashSigned(o) & 0x7fffffff; // Math.abs() won't guarantee a nonnegative number: Math.abs(-2147483648) == -2147483648
     }
 
     static int sxhashSigned(Object o) {
         if (o == null) return 97;
 
         if (integerp(o)) return Long.hashCode(((Number)o).longValue()); // byte..BigInteger have different hash codes for negative numbers
-
         if (o instanceof StringBuilder) return o.toString().hashCode();
         if (o instanceof StringBuffer) return o.toString().hashCode();
         if (o instanceof char[]) return String.valueOf((char[])o).hashCode();
-
         if (o instanceof boolean[]) return Bitvector.of(o).hashCode();
 
-        return o.hashCode();
+        if (symbolp(o) || characterp(o) || numberp(o) || consp(o) || stringp(o) || bitvectorp(o)) return o.hashCode();
+
+        return o.getClass().getName().hashCode(); // see https://stackoverflow.com/questions/21126507/why-does-sxhash-return-a-constant-for-all-structs
     }
 
     static final class EqlKey implements Comparable<Object> {
@@ -4976,7 +4976,7 @@ public class LambdaJ {
         }
         @Override public int compareTo(Object o) { if (o instanceof EqlKey) return LambdaJ.compare(this.key, ((EqlKey)o).key, CompareMode.EQL);
                                                    else return LambdaJ.compare(this.key, o, CompareMode.EQL); }
-        @Override public int hashCode() { return sxhash(key); }
+        @Override public int hashCode() { return sxhashSigned(key); }
         @Override public boolean equals(Object o) { if (o instanceof EqlKey) return LambdaJ.compare(this.key, ((EqlKey)o).key, CompareMode.EQL) == 0;
                                                     else return LambdaJ.compare(this.key, o, CompareMode.EQL) == 0; }
     }
@@ -4991,7 +4991,7 @@ public class LambdaJ {
         }
         @Override public int compareTo(Object o) { if (o instanceof EqualKey) return LambdaJ.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL);
                                                    else return LambdaJ.compare(this.key, o, CompareMode.EQUAL); }
-        @Override public int hashCode() { return sxhash(key); }
+        @Override public int hashCode() { return sxhashSigned(key); }
         @Override public boolean equals(Object o) { if (o instanceof EqualKey) return LambdaJ.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL) == 0;
                                                     else return LambdaJ.compare(this.key, o, CompareMode.EQUAL) == 0; }
     }
