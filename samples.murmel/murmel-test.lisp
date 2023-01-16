@@ -1122,6 +1122,13 @@ multiline comment
           (hash-table-count (clrhash h))))
   '(t nil 0))
 
+#+murmel
+(deftest hash.5
+  (let ((h (hash 'compare-equal '(1) 'one '(1 2) 'onetwo)))
+    (list (hashref h (list 1 2))
+          (hashref h (list 1 2 3))))
+  '(onetwo nil))
+
 
 ;;; test sxhash
 (deftest sxhash.1
