@@ -1,3 +1,5 @@
+CL sxhash scheint trees nicht zu traversieren: https://stackoverflow.com/questions/69949627/common-lisp-sxhash-and-nested-lists
+
 try koennte noch abzufangende exceptions uebernehmen, default ist "alles"
 
 CTRL-C aka sigint handlen/ umlenken?
