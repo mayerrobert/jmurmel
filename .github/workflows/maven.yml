@@ -88,6 +88,14 @@ jobs:
         path: |
           scripts/target/jmurmel.exe
 
+    - name: Upload launch4j jar
+      if: ${{ matrix.java == '8' }}
+      uses: actions/upload-artifact@v3
+      with:
+        name: jmurmel-w64-slim
+        path: |
+          lambda/target/jmurmel.jar
+
     - name: Upload launch4j mlib
       if: ${{ matrix.java == '8' }}
       uses: actions/upload-artifact@v3

@@ -15,7 +15,7 @@ jmurmel.exe will end up in scripts/target
     <headerType>console</headerType>
     <outfile>target/jmurmel.exe</outfile>
     <jar>../lambda/target/jmurmel.jar</jar>
-    <dontWrapJar>false</dontWrapJar>
+    <dontWrapJar>true</dontWrapJar>
     <errTitle>JMurmel</errTitle>
     <downloadUrl>https://jdk.java.net/</downloadUrl>
     <supportUrl>https://jmurmel.github.io</supportUrl>
