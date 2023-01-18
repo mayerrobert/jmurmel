@@ -61,5 +61,5 @@ echo (load "../samples.murmel/murmel-test")| %DESTDIR%\jmurmel\runtime\bin\java 
 REM create classes.jsa from classlist
 %DESTDIR%\jmurmel\runtime\bin\java -Xshare:dump -XX:SharedClassListFile=target\jmurmel.classlist -XX:SharedArchiveFile=%DESTDIR%\jmurmel\runtime\bin\server\classes.jsa -cp %DESTDIR%\jmurmel\app\jmurmel.jar
 
-# java, javac & friends are no longer needed
+REM java, javac & friends are no longer needed
 for %%f in (java.exe javac.exe javaw.exe jfr.exe keytool.exe serialver.exe) do del %DESTDIR%\jmurmel\runtime\bin\%%f
