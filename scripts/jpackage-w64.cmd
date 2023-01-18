@@ -40,10 +40,9 @@ md target\jpackage-input
 copy ..\lambda\target\jmurmel.jar target\jpackage-input\.
 copy ..\samples.mlib\mlib.lisp    target\jpackage-input\.
 
-REM set JLINK=--jlink-options --strip-native-commands --jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files
-set JLINK=--jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files --jlink-options --compress=2
 
 REM create a directory with jlinked JDK, Murmel files and launcher .exe, see https://docs.oracle.com/en/java/javase/17/docs/specs/man/jpackage.html
+set JLINK=--jlink-options --strip-native-commands --jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files --jlink-options --compress=2
 jpackage %JLINK% --type app-image -i target\jpackage-input -d %DESTDIR% -n jmurmel --main-class io.github.jmurmel.LambdaJ --main-jar jmurmel.jar --win-console %MODULES% %JOPTIONS%
 
 copy ..\LICENSE                %DESTDIR%\jmurmel\.
@@ -55,11 +54,10 @@ copy ..\mlib.html              %DESTDIR%\jmurmel\.
 
 REM configure application class data sharing, see https://docs.oracle.com/en/java/javase/17/docs/specs/man/java.html#application-class-data-sharing
 
+set JAVACMD=java %MODULES%
+
 REM run jmurmel to create a classlist
-echo (load "../samples.murmel/murmel-test")| %DESTDIR%\jmurmel\runtime\bin\java -Xshare:off  -XX:DumpLoadedClassList=target\jmurmel.classlist -cp %DESTDIR%\jmurmel\app\jmurmel.jar io.github.jmurmel.LambdaJ
+echo (load "../samples.murmel/murmel-test")| %JAVACMD% -Xshare:off  -XX:DumpLoadedClassList=target\jmurmel.classlist -cp %DESTDIR%\jmurmel\app\jmurmel.jar io.github.jmurmel.LambdaJ
 
 REM create classes.jsa from classlist
-%DESTDIR%\jmurmel\runtime\bin\java -Xshare:dump -XX:SharedClassListFile=target\jmurmel.classlist -XX:SharedArchiveFile=%DESTDIR%\jmurmel\runtime\bin\server\classes.jsa -cp %DESTDIR%\jmurmel\app\jmurmel.jar
-
-REM java, javac & friends are no longer needed
-for %%f in (java.exe javac.exe javaw.exe jfr.exe keytool.exe serialver.exe) do del %DESTDIR%\jmurmel\runtime\bin\%%f
+%JAVACMD% -Xshare:dump -XX:SharedClassListFile=target\jmurmel.classlist -XX:SharedArchiveFile=%DESTDIR%\jmurmel\runtime\bin\server\classes.jsa -cp %DESTDIR%\jmurmel\app\jmurmel.jar
