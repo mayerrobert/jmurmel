@@ -14,7 +14,7 @@ jmurmel.exe will end up in scripts/target
 <launch4jConfig>
     <headerType>console</headerType>
     <outfile>target/jmurmel.exe</outfile>
-    <jar>../lambda/target/jmurmel.jar</jar>
+    <jar>jmurmel.jar</jar>
     <dontWrapJar>true</dontWrapJar>
     <errTitle>JMurmel</errTitle>
     <downloadUrl>https://jdk.java.net/</downloadUrl>
