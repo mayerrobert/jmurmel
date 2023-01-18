@@ -1,4 +1,5 @@
-;;;; AOC 2022 day 10 in Murmel, based on https://www.reddit.com/r/adventofcode/comments/zhjfo4/2022_day_10_solutions/izmspl7/
+;;;; AOC 2022 day 10 in Murmel, see https://adventofcode.com/2022/day/10
+;;; based on https://www.reddit.com/r/adventofcode/comments/zhjfo4/2022_day_10_solutions/izmspl7/
 
 #| (mostly) original Python:
 from itertools import accumulate

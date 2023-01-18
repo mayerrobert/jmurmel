@@ -1,4 +1,4 @@
-;;;; AOC 2022 day 13 in Murmel
+;;;; AOC 2022 day 13 in Murmel, see https://adventofcode.com/2022/day/13
 ;;;; translated from https://www.reddit.com/r/adventofcode/comments/zkmyh4/2022_day_13_solutions/j01i624/
 
 #|
@@ -21,7 +21,7 @@ for i, (l,r) in enumerate(map(eval, x.split()) for x in open('day13.txt').read()
 
 print(part1, _2*_6)
 
--> 5013 25038
+-> 13 140
 
 |#
 

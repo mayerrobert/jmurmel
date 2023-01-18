@@ -1,4 +1,4 @@
-;;;; AOC 2022 day 1
+;;;; AOC 2022 day 1, see https://adventofcode.com/2022/day/1
 
 (load "mlib")
 
