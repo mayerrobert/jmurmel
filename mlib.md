@@ -28,6 +28,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
     - [acons](#function-acons)
     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
+    - [multiple-value-list](#macro-multiple-value-list), [nth-value](#macro-nth-value)
 - iteration
     - [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
 - places
@@ -373,6 +374,14 @@ and will applied to subsequent tails of the given lists.
 
 All function application results will be concatenated to a list
 which is the return value of `mapcon`.
+
+### Macro: multiple-value-list
+
+Since: 1.4
+
+### Macro: nth-value
+
+Since: 1.4
 
 ### Macro: do, do*
     (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result

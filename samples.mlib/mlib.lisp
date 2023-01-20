@@ -28,6 +28,7 @@
 ;;;     - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
 ;;;     - [acons](#function-acons)
 ;;;     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
+;;;     - [multiple-value-list](#macro-multiple-value-list), [nth-value](#macro-nth-value)
 
 ;;; - iteration
 ;;;     - [do, do*](#macro-do-do), [dotimes](#macro-dotimes), [dolist](#macro-dolist)
@@ -712,6 +713,20 @@
 (defmacro m%mapx)
 (defmacro m%mapx-cons)
 (defmacro m%mapx-nconc)
+
+
+;;; = Macro: multiple-value-list
+;;;
+;;; Since: 1.4
+(defmacro multiple-value-list (value-form)
+  `(multiple-value-call list ,value-form))
+
+
+;;; = Macro: nth-value
+;;;
+;;; Since: 1.4
+(defmacro nth-value (n value-form)
+  `(nth ,n (multiple-value-list ,value-form)))
 
 
 ; iteration ***********************************************************
