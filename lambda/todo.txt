@@ -1,5 +1,3 @@
-CL sxhash scheint trees nicht zu traversieren: https://stackoverflow.com/questions/69949627/common-lisp-sxhash-and-nested-lists
-
 try koennte noch abzufangende exceptions uebernehmen, default ist "alles"
 
 CTRL-C aka sigint handlen/ umlenken?
@@ -31,6 +29,7 @@ conscells: unterscheiden ob rplaca und/ oder rplacd einen fehler werfen
 
 sxhash sollte eine looperkennung bekommen ähnlich wie length
 -> der trick von list-length geht nicht, weil sxhash muss trees können, list-length braucht das nicht
+   -> nein, CL sxhash scheint trees nicht zu traversieren: https://stackoverflow.com/questions/69949627/common-lisp-sxhash-and-nested-lists
 -> für sxhash ist ein zähler wsl ok
 -> equal sollte ggf. eine richtige looperkennung bekommen? compare-equal auch?
    müsste aber wsl mit identityhash gemacht werden, damit loops auch in trees erkannt werden.
@@ -674,9 +673,6 @@ errorMalformed könnte als ersten parameter ein enum Error übernehmen. das enum
 damit könnte errroMalformed zusatzinfo wie "see http://.../murmel-langref.md#let" ausgeben.
 
 
-im reader gibts every und some
--> woanders hin schieben?
--> every <-> and, some <-> or. kann man das woanders nutzen? in mlib?
 
 (with-reader-printer (string string) forms...)
 -> LambdaJ.pushReaderPrinter(Object, Object)/ popReaderPrinter() umsetzen
@@ -684,7 +680,6 @@ im reader gibts every und some
 -> man sollte wohl angeben können, ob appended wird
    (with-reader-printer (string string) forms...) ; für rewrite (default)
    (with-reader-printer ((string t) (string nil)) forms...) ; optionaler parameter appendp: t ist append, nil (default) ist rewrite
-interpreted eval: OpenCodedPrimitive sollte keine implementierung der methode apply brauchen, vgl apply
 
 APPLY Forms as Places http://clhs.lisp.se/Body/05_abe.htm
 
@@ -715,9 +710,6 @@ dann brauchts in funcall(Object) kein instanceof mehr?!?
    -> (interpreter-) Primitive ist anders, das hat parameter "ConsCell"
 
 
-
-Platform matrix und publishing
-https://github.com/actions/setup-java/blob/main/docs/advanced-usage.md#Testing-against-different-platforms
 
 oracle-actions/setup-java` GitHub action
 https://www.reddit.com/r/java/comments/tdy6lt/introducing_the_oracleactionssetupjava_github/
@@ -788,27 +780,10 @@ vielleicht müsste es auch sein:
  (f . l)     <=> (apply f l)
 
 
-müssen die compiler rt funktionen public sein oder reicht protected? geht static?
--> static würd gehen, protected nicht wg. Java compiler fehler
--> import io.github.jmurmel.LambdaJ;
-   in getValue(): case "sleep": return (CompilerPrimitive)this::sleep;
-                  -> case "sleep": return (CompilerPrimitive)MurmelJavaProgram::sleep;
-   in extenvprim(): rt() -> LambdaJ.MurmelJavaProgram
-
-die wellknown symbols (special forms wie let & co, und opencoded functions)
-werden static final und in eine static final liste gesteckt,
-eine neue symboltable fängt nicht bei nil an sondern bei eben dieser static final liste (nur die interned strings)
-damit kann der interpreter (und evalOpencode) auf switch umgestellt werden.
-weiterer vorteil: mehrere LambdaJ instanzen sharen die wellknown symbols
--> funkt aber nur mit LambdaJ symboltable, wenn man eine eigene nimmt, weiss die nix von diesen symbols
-
 feature headless und ggf gui
 -> nein, features sollten nicht erst zur laufzeit ermittelt werden?
    -> besser: funktion headlessp
 MAVEN_OPTS=-Djava.awt.headless=true und dann turtle-funktionen in murmel-langref wieder aufdrehen?
-
-Graalvm download: https://github.com/graalvm/graalvm-ce-builds/releases
-native executable bauen: https://github.com/clj-easy/graalvm-clojure/blob/master/doc/clojure-graalvm-native-binary.md
 
 Adopt OpenJDK 8u (alt): https://adoptopenjdk.net/upstream.html?variant=openjdk8&jvmVariant=hotspot
 Adoptium OpenJDK 8u (Nachfolger): https://adoptium.net/?variant=openjdk8&jvmVariant=hotspot
@@ -827,20 +802,6 @@ Class.forName() könnte auch absplitten des Compilers in eine andere Klasse erm�
 (asynclet threadpool-symbol ((sym form)...) forms)
 -> die binding-forms würden asynchron in threads laufen, sym wäre ein promise, innerhalb forms würde sym ggf. blockieren
 -> threadpool kann normale threads oder loom threads liefern, nil wäre irgendein defaultpool
-
-Lisp Quine: https://de.wikipedia.org/wiki/Quine_(Computerprogramm)
-JMurmel> ((lambda (x)
-  (list x (list (quote quote) x)))
- (quote
-    (lambda (x)
-      (list x (list (quote quote) x)))))
-
-==> ((lambda (x) (list x (list (quote quote) x))) (quote (lambda (x) (list x (list (quote quote) x)))))
-
-oder (stimmt nicht ganz): (define s "(define s %c%s%c) (format t s #\" s #\")") (format t s #\" s #\")
-ergebnis:                 (define s "(define s %c%s%c) (format t s #" s #")") (format t s #" s #")
-
-oder: (define s "(define s %c%s%c) (format t s (code-char 34) s (code-char 34))") (format t s (code-char 34) s (code-char 34))
 
 
 
@@ -880,8 +841,6 @@ warum ist assoc in jmurmel drin?
    symbol-plist wäre optional auch möglich (und get, getf, ...). get verarbeitet symbol plist, getf verarbeitet alleinstehende plists
 https://gigamonkeys.com/book/beyond-lists-other-uses-for-cons-cells.html
 
-sollte defmacro eine neue definition pushen und (defmacro n) die vorige wieder herstellen?
-
 alte define syntax zusätzlich unterstützen:
 (define ((a 1) (b 2))) ???
 
@@ -905,13 +864,6 @@ siehe auch https://github.com/hawkir/calispel
 https://github.com/stassats/swank-gauche ist ein swank server für gauche,
 kamma vielleicht einen swank server für jmurmel abkupfern?!?
 siehe auch https://github.com/astine/swank-client/blob/master/swank-description.markdown
-
-#. form
--> form wird zur read zeit ausgewertet
-
-https://github.com/sbcl/sbcl/blob/master/.github/workflows/windows.yml
--> sbcl baut bei jedem push einen windows installer, der liegt dann als artefact beim workflow run, z.b. auf 
-   https://github.com/sbcl/sbcl/actions/runs/1034569455
 
 mapXX vielleicht so umbauen, dass auch dotted lists erlaubt sind?
 -> oder zusätzlich mapXX*?
@@ -983,38 +935,6 @@ ein eigener macro namespace ist schlecht: zum ueberschreiben muss man wissen, ob
 -> gibts ein macro "m" dann hat "(defun m..." keine auswirkung
 -> vielleicht so lassen und defun für ein macro verbieten, so wie defun für special forms verboten ist?
 
-funktion error (und/ oder exit) wirft eine exception die am programmende den errorlevel bestimmt
-         fatal wirft eine exception die am programmende den errorlevel bestimmt plus fehlermeldung mit murmelstack
-mlib-test vervollständigen
-
-sollte mlib equal einen fallback nach Objects.equals() haben?
-
-
-
-einige samples:
-JMurmel> (->> (mapcar print 'abcde) reverse list->string)
-#\a
-#\b
-#\c
-#\d
-#\e
-==> "edcba"
-
-JMurmel> (->> '(0 1 2) print (mapcar 1+) print (mapcar (lambda (n)(expt n 2))) print (reduce +) round)
-(0 1 2)
-(1 2 3)
-(1.0 4.0 9.0)
-==> 14
-
-JMurmel> (mapcar (lambda (n) (prog1 (-> n princ (->> 1+ 1+) princ (expt 2) round princ) (terpri))) '(0 1 2 3 4 5))
-024
-139
-2416
-3525
-4636
-5749
-==> (4 9 16 25 36 49)
-
 
 
 http://www.ulisp.com/show?37VY hat ein einfaches objekt system
@@ -1030,48 +950,11 @@ siehe auch http://forum.ulisp.com/t/a-simple-object-system-for-ulisp/622
 
 
 
-https://www.reddit.com/r/lisp/comments/lxlyvb/why_does_cl_have_such_a_strange_way_of_obtaining/gpo0swr/
-it is undefined behavior according to the ANSI spec to redefine a standard function
--> car cdr cons koennten im interpreter open coded sein zwecks performance
-
 symbolhandling ist fishy
 -> symbole sollten nicht per stringvergleich sondern ueber identity verglichen werden
   -> dadurch wirkt sich der unterschied interned/ nicht interned nicht wie gewuenscht aus, und gensym funktioniert nicht richtig
 -> der reader sollte symbole auf UC stellen (ausser ||), symboltable sollte case sensitive sein
 (erl) -> compiler sollte nicht stringvergleich machen
-
-gensym im compiler (momentan gehts nur in macros)
-
-
-Macros im compiler
--> http://clhs.lisp.se/Body/m_defmac.htm:
--> If a defmacro form appears as a top level form... Users must ensure that the body of the macro can be evaluated at compile time if it is referenced within the file being compiled.
-
-
-
-...jdk-15\bin\jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,jdk.compiler,jdk.zipfs
--> das baut anscheinend ein ca. 30MB grosses JRE mit den Java Modulen, dies fuer JMurmel braucht
--> jdk.localedata noch dazu?
-
-obiges hab ich experimentell ermittelt, jdeps sollte exakte aussagen treffen;
-...\lambda>jdeps --print-module-deps target\jmurmel.jar
-java.base,java.compiler,java.desktop,java.management
--> jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,java.compiler,java.desktop,java.management
--> da ist aber kein compiler dabei
-
-Java 18:
-jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base
--> interpreter-only minimalversion, kein awt, swing, jfr, compiler, locale, 26MB
-
-jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,jdk.compiler,jdk.zipfs
--> ohne awt, swing, jfr, 38MB
-
-jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,java.desktop,jdk.compiler,jdk.zipfs,jdk.jfr
--> mit awt + swing + jfr, 52MB
--> ohne locale, (format-locale t "de-DE" "%g" pi) printet 3.12..., locale wird ignoriert
-
-jlink --output jm --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,java.desktop,jdk.compiler,jdk.zipfs,jdk.jfr,jdk.localedata
--> w.o. + locale, 61MB
 
 
 
@@ -1087,8 +970,6 @@ laesst sich dann auch sehr einfach auf Java packages/ klassennamen umlegen
 
 compiletojar, tojava, ... sollten eigentlich in der Sprache angeboten werden
 -> erst mit packages, weil dann brauchts weniger parameter
-
---srcjar option: die sourcen dazuzippen? oder extra srcjar?
 
 ConsCell: methoden rplaca und rplacd, jeweils fuer die subklassen geeignet umsetzen: rplacd bei zwei IntArraySlices koennte die arrays in ein groesseres hintereinanderkopieren
 -> erstmal nicht in der sprache anbieten, spart aber einige casts v.a. in den tests
@@ -1177,9 +1058,6 @@ Tracer bei JSR-223 nutzen.
 irgendwie mit maven von Murmel nach Java uebersetzen, dann kann man einen teil einer app in murmel schreiben und fast nahtlos von Java aufrufen
 -> https://stackoverflow.com/questions/2147115/generating-sources-by-running-a-projects-java-class-in-maven
 
-in C gibts #pragma line, das schreibt debug infos ins Object file. gibts in Java annotations und einen processor, der dasselbe macht?
--> debuggen von kompilierten murmel programmen
-
 anstatt letXX, cond im compiler auszuprogrammieren, kann man auch desugar programmieren, idealerweise als macroexpander
 -> desugar ist macroexpand mit zus. macros fuer let-> lambda usw.
 -> stattdessen kann man ggf. cons, car, cdr, +, - usw inlinen (aber erst schauen ob das was bringt)
@@ -1193,25 +1071,6 @@ JSR223 vielleicht in ein zweites jar verpacken?
 
 
 tests von lis.py verpacken
-
-eval, interpretExpressions & Co aendern:
-- einige init methoden die setzen in, out, environment, symboltable
-- eine methode eval(ConsCell progam), das ist ein wrapper um das bisherige eval, der wrapper schmeisst eine exception falls nicht
-  initialisiert.
-- die sprache ist ja eine liste von ConsCells, mit so einem API waers ggf. einfacher/ natuerlicher einen anderen Parser davor
-  zu schalten
-- das derzeitige eval kann nur eine expression, listen arbeiten repl() bzw. interpretExpressions() ab. Obiger eval wrapper
-  sollte auch listen koenen
-
-
-
-current-cc ist eigentlich immer cdr(form)
--> bzw. cons(cdr(form), current_cc) oder append?!?
-        -> und wie baut man das environment wieder ab?
-            -> statt cons-> cons3(cons3(cdr(form), current_cc, newScope), env)?
-        -> und wie uebersetzt man das nach java?
-   damit koennt ma continuations umsetzen, und eval waer ueberhaupt nicht mehr rekursiv, statt return-> form=current_cc; continue;
-   -> das waer dann "compile with continuations", continuations kann man muss aber nicht in der sprache anbinden
 
 
 
@@ -1291,18 +1150,8 @@ add(1, 2)
 
 
 
-ConsCell methoden double carAsDouble(), long carAsLong() einfuehren
--> und DoubleConsCell, LongConsCell, das hat zusaetzlich Java primitive datentypen als car und ueberlaedt die methoden
-
-
-
 printSEx: if (car(list) == sQuote) print "'" + printSex(cdr(list))
 der reader sollte wsl ' immer auf (quote... umsetzen, egal ob quote unterstuetzt wird oder nicht
-
-umbenennen:
-lispStdout -> lispPrinter
-ObjectReader -> LispReader, #readObj -> #read
-ObjectWriter -> LispPrinter, #printObj -> #print
 
 
 
@@ -1385,21 +1234,6 @@ ohne variablenzuweisungen braucht man eigentlich keinen gc und kein refcounting,
 
 einen debugger in eval einbauen? expression fuer expression? und/ oder eine special form break? :break symbol?
 
-flag ob die identifier auf UC umgestellt werden sollen
-flag fuer symbols:
---symbols=uc ... symbole werden beim lesen auf UC umgestellt
---symbols=ci ... symbole werden nicht umgestellt, aber case insensitive verglichen
---symbols=cs ... symbole werden as is verwendet, case sensitive verglichen
-
-
-
-
-
-Generic S-Expression reader/ writer: (<n>:<octets>)
-
-
-
-
 
 cadr, caddr, cadar, cddr, ... in eval verwenden und schauen, wieviel kleiner eval wird
 -> solche primitiven wuerden auch Lisp programme schneller machen weil weniger assoc aufrufe
@@ -1418,84 +1252,3 @@ cadr, caddr, cadar, cddr, ... in eval verwenden und schauen, wieviel kleiner eva
    cdr/cdr  -> cddr
    cdr/cdar -> cddar
    cdr/cddr -> cdddr
-
-
-LambdaJError extends RuntimeException   ... abstract
-Syntaxerror extends LambdaJError        ... nur eval
-RuntimeError extends LambdaJError       ... nur primitives
-
-k.a. wieviel die ConsCell casts bremsen
-Alternatives Objectmodell mit weniger casts:
-
-interface Value {
-    default car() { throw new Error("not a cons"); }
-    default cdr() { throw new Error("not a cons"); }
-    String toString();
-}
-
-interface Atom extends Value {
-    Object value;
-    String toString() { return value.toString(); }
-}
-
-class ConsCell extends Value {
-    Value car, cdr;
-}
-
-Value car(Value v) { return v.car(); }
-Value cdr(Value v) { return v.cdr(); }
-ConsCell cons(Value car, Value cdr) { return new ConsCell(car, cdr); }
-
-
-Doku: ein Custom Parser koennte statt parsen eine Liste liefern (koennte z.B. hardcodiert
-mit new ConsCell zusammengestoppelt werden) und intern() koennte mittels String.intern() umgesetzt werden.
-Anmerkung: Symbols sind Strings, Stringliterale in der o.a. Liste sind bereits mit String.intern() bearbeitet,
-  dazu passt die Umsetzung der Parsermethode intern() mittels String.intern()
-Anmerkung 2: Lisp Strings werden als LambdaJString repraesentiert
-Anmerkung 3: intern() mit einer HashMap waer auch nicht schwer
-
-
-re:  What is the “minimal” set of primitives needed for...  https://news.ycombinator.com/item?id=8715655
-(define cons (lambda (a b) (lambda (f) (f a b))))
-(define car  (lambda (c) (c (lambda (a b) a))))
-(define cdr  (lambda (c) (c (lambda (a b) b))))
-
-c:\> jm --min+ --no-cons
-JMurmel> (define cons (lambda (a b) (lambda (f) (f a b))))
-==> cons
-JMurmel> (define car-er (lambda (car-value cdr-value) car-value))
-==> car-er
-JMurmel> (define cdr-er (lambda (car-value cdr-value) cdr-value))
-==> cdr-er
-JMurmel> (define car (lambda (c) (c car-er)))
-==> car
-JMurmel> (define cdr (lambda (c) (c cdr-er)))
-==> cdr
-JMurmel> (car (cons 'a 'b))
-==> a
-JMurmel> (cdr (cons 'a 'b))
-==> b
-JMurmel>
-
-
-(defun true (a b) a)
-(defun false (a b) b)
-(defun my-if (a b c) (funcall a b c))
-
-;(write (my-if #'false one two)) ; -> (NIL NIL) aka two
-
-
-;(define and (lambda (p q) (if p q false)))    ; define?
-;(define or  (lambda (p q) (if p true  q)))    ; define?
-
-
-
-Multithreading waer eigentlich nicht so schwer: solange nix geschrieben werden kann, braucht eigentlich nur die
-Symboltable synchronized sein ?!?
--> und das environment?
-
-Methoden ConsCell toList(), toArray(), toMap(), iterator(), stream()??? map() flatMap()
--> damit bekommt man Ergebnis-Daten raus am Ende des Lisp Programms
--> Wenn man dem Interpreter eine read Funktion ins Environment mitgibt, bekommt man auch Daten rein (abgesehen vom
-Lesen von stdin). So eine read Funktion koennte z.B auch XML oder JSON nach ConsCells parsen
-    -> iterator ist erledigt
