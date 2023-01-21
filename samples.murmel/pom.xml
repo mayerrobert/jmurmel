@@ -276,6 +276,7 @@
                                 <argument>fizzbuzz.lisp</argument>
                                 <argument>hanoi.lisp</argument>
                                 <argument>factorize.lisp</argument>
+                                <argument>peano.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
@@ -299,6 +300,7 @@
                                 <argument>fizzbuzz.lisp</argument>
                                 <argument>hanoi.lisp</argument>
                                 <argument>factorize.lisp</argument>
+                                <argument>peano.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>

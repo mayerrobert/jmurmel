@@ -1478,42 +1478,6 @@ JMurmel> (cdr (cons 'a 'b))
 JMurmel>
 
 
-Doku: https://en.wikipedia.org/wiki/Peano_axioms enthaelt natuerliche Zahlen basierend auf Mengen,
-koennte eine Anleitung sein, wie man Zahlen in einem Lisp ohne Zahlen umsetzen kann
-0 = nil
-1 = succ(0) = '(0) = '(nil)
-2 = succ(1) = '(0 1) = '(nil (nil))
-3 = succ(2) = '(0 1 2) = '(nil (nil (nil)))
-
-addition:
-(add (a b) (if (null? b) a (add '(nil a) (cdr b))) ; oder so aehnlich
-
-multiplikation:
-(mul (a b) (if (null? b) nil (add a (mul a (cdr b)))) ; oder so aehnlich
-
-
-Clisp:
-(setf zero ())                                ; -> zero = NIL
-
-(defun succ (a) (cons zero a))                ; das geht
-
-(setf one (succ zero))                        ; -> one = (NIL)
-(setf two (succ (succ zero)))                 ; -> two = (NIL NIL)
-(setf three (succ (succ (succ zero))))        ; -> three = (NIL NIL NIL)
-(setf four (succ (succ (succ (succ zero)))))  ; -> four = (NIL NIL NIL NIL)
-
-(defun add (a b) (if (eq b zero)
-                     a
-                     (add (succ a) (cdr b))))
-
-(defun mul (a b) (if (eq b zero)
-                     zero
-                     (add a (mul a (cdr b)))))
-
-;(write (add two three)) ; -> (NIL NIL NIL NIL NIL) aka six
-;(write (mul four three)) ; -> (NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL NIL) aka twelve
-(write (mul zero three)) ; -> NIL aka zero
-
 (defun true (a b) a)
 (defun false (a b) b)
 (defun my-if (a b c) (funcall a b c))
