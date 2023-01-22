@@ -6243,13 +6243,13 @@ public class LambdaJ {
                     }
                 }
                 catch (IOException e) {
-                    System.err.println();
-                    System.err.println(e);
+                    System.err.println();  System.err.println(e);
                     throw EXIT_IO_ERROR;
                 }
+                interpreter.currentSource = null;
 
                 // repl() doesn't return
-                if (files.isEmpty() && istty || repl) repl(interpreter, !files.isEmpty(), istty, echo, history, args);
+                if (files.isEmpty() && istty || repl) repl(interpreter, !files.isEmpty() && action == Action.INTERPRET, istty, echo, history, args);
 
                 if (files.isEmpty()) {
                     final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
@@ -6303,6 +6303,7 @@ public class LambdaJ {
 
         /// functions to interpret, compile and/ or run files or input streams
         private static Object interpretStream(final LambdaJ interpreter, ReadSupplier prog, Path fileName, final boolean printResult, List<Object> history) {
+            final Path prev = interpreter.currentSource;
             try {
                 final ObjectReader reader = interpreter.getLispReader();
                 reader.setInput(prog, fileName);
@@ -6327,9 +6328,8 @@ public class LambdaJ {
                 }
                 return result;
             }
-            catch (Exception e) {
-                return errorExit(e);
-            }
+            catch (Exception e) { return errorExit(e); }
+            finally { interpreter.currentSource = prev; }
         }
 
         private static boolean compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) throws IOException {
