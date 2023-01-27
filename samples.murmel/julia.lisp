@@ -6,8 +6,8 @@
 
 ;(declaim (optimize (speed 0)))
 
-(define W 600)
-(define H 400)
+(define W 800)
+(define H 600)
 
 (define MAX_ITERATIONS 300)
 (define ZOOM 1)
@@ -67,23 +67,53 @@
 
 (open-frame)
 
-(define *start* (get-internal-cpu-time))
+(defun julia ()
+  (let ((*start* (get-internal-cpu-time)))
 
-(let xloop ((x 0))
-  (let yloop ((y 0))
-    (let* ((zx (+ (/ (* 1.5 (- x (/ w 2)))
-                     (* 0.5 ZOOM W))
-                  MOVE_X))
-           (zy (+ (/ (- y (/ H 2))
-                     (* 0.5 ZOOM H))
-                  MOVE_Y))
-           (iter (calc zx zy)))
-      (set-pixel x y (if (> iter 0) 
-                           (hsb-to-pixel (/ MAX_ITERATIONS iter) 1 1)
-                       0))
-      (if (< y (1- h)) (yloop (1+ y)))))
+  (let xloop ((x 0))
+    (let yloop ((y 0))
+      (let* ((zx (+ (/ (* 1.5 (- x (/ w 2)))
+                       (* 0.5 ZOOM W))
+                    MOVE_X))
+             (zy (+ (/ (- y (/ H 2))
+                       (* 0.5 ZOOM H))
+                    MOVE_Y))
+             (iter (calc zx zy)))
+        (set-pixel x y (if (> iter 0) 
+                             (hsb-to-pixel (/ MAX_ITERATIONS iter) 1 1)
+                         0))
+        (if (< y (1- h)) (yloop (1+ y)))))
+    (if (< x (1- w)) (xloop (1+ x))))
+  
   (flush-frame)
-  (if (< x (1- w)) (xloop (1+ x))))
+  (format t "CX: %g%nCX: %g%n" cx cy)
+  (format t "Used CPU: %g ms%n" (/ (- (get-internal-cpu-time) *start*)
+                                   (/ internal-time-units-per-second 1000)))))
 
-(format t "Used CPU: %g ms%n" (/ (- (get-internal-cpu-time) *start*)
-                                 (/ internal-time-units-per-second 1000)))
+(define *l* '((-0.7 . 0.27015)
+            (-0.156844471694257101941 . -0.649707745759247905171)
+            (-0.76 . 0.025) ; ..0.08
+            (-0.76 . 0.03)
+            (-0.76 . 0.04)
+            (-0.76 . 0.05)
+            (-0.76 . 0.06)
+            (-0.76 . 0.07)
+            (-0.76 . 0.08)
+            (-0.4 . 0.6)
+            (-0.758750 . 0.0696875)))
+
+
+(writeln)
+(writeln "Will loop forever, press CTRL-C to end." nil)
+(writeln)
+
+(let loop ((l *l*))
+  (if l (let* dynamic ((params (car l))
+                       (cx (car params))
+                       (cy (cdr params)))
+          (julia)
+          (sleep 5)
+          (loop (cdr l)))
+    (loop *l*)))
+
+nil
