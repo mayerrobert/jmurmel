@@ -199,7 +199,7 @@ Minimal "Hello, World!" example:
     @Test
     public void testMinimal() {
         Object result = new LambdaJ()
-            .interpretExpression(new StringReader("(cons 'Hello,\\ World! nil)")::read, s -> {});
+            .interpretExpression(new StringReader("(cons 'Hello\\,\\ World! nil)")::read, s -> {});
         assertEquals("(Hello, World!)", result.toString());
     }
 
@@ -248,6 +248,67 @@ including an example of how to hook up your own Lisp primitives written in Java.
 Or see `JSR223Test.java` for an example on how to use JMurmel through the
 [Java Scripting API](https://docs.oracle.com/javase/8/docs/technotes/guides/scripting/prog_guide/about.html)
 (setting/ accessing Java objects via JSR223 from Murmel code is not supported yet.)
+
+Or use `jshell` to interactively explore JMurmel's API,
+i.e. invoke JMurmel's Java API from Java's "REPL".
+A sample `jshell` session creating an interpreter,
+defining Murmel functions,
+calling Murmel functions from Java
+and using Java to `load` Murmel source files into the interpreter
+is given below:
+
+    C:\jmurmel>jshell --class-path lambda\target\jmurmel.jar
+    |  Welcome to JShell -- Version 17.0.2
+    |  For an introduction type: /help intro
+    
+    jshell> import io.github.jmurmel.*
+    
+    jshell> LambdaJ intp = new LambdaJ()
+    intp ==> io.github.jmurmel.LambdaJ@67b6d4ae
+    
+    jshell> LambdaJ.ReadSupplier in = () -> -1;
+    in ==> $Lambda$122/0x0000000800c3c000@436e852b
+    
+    jshell> LambdaJ.WriteConsumer out = System.out::print
+    out ==> $Lambda$123/0x0000000800c3c418@3e57cd70
+    
+    jshell> String lisp = "(defun add (n m) (+ n m)) (add 2 3)"
+    lisp ==> "(defun add (n m) (+ n m)) (add 2 3)"
+    
+    jshell> Object result = intp.interpretExpressions(new StringReader(lisp)::read, in, out)
+    result ==> 5.0
+    
+    jshell> LambdaJ.MurmelFunction add = intp.getFunction("add")
+    add ==> io.github.jmurmel.LambdaJ$CallLambda@77ec78b9
+    
+    jshell> result = add.apply(1, 2)
+    result ==> 3.0
+    
+    jshell> lisp = "(load \"samples.murmel/fibonacci.lisp\")"
+    lisp ==> "(load \"samples.murmel/fibonacci.lisp\")"
+    
+    jshell> Object result = intp.interpretExpressions(new StringReader(lisp)::read, in, out)
+    recursive-fibonacci 25: 75025.0, iterative-fibonacci 25: 75025.0, matrix-fibonacci 25: 75025.0
+    result ==> null
+    
+    jshell> LambdaJ.MurmelFunction fib = intp.getFunction("matrix-fibonacci")
+    fib ==> io.github.jmurmel.LambdaJ$CallLambda@1786f9d5
+    
+    jshell> fib.apply(25)
+    $28 ==> 75025.0
+    
+    jshell> LambdaJ.main(new String[] { "--tty"})
+    Enter a Murmel form or :command (or enter :h for command help or :q to exit):
+    
+    JMurmel> (* 1 2 3)
+    
+    ==> 6.0
+    JMurmel> :q
+    bye.
+    
+    
+    jshell>
+
 
 ## Examples
 A [Quine](http://rosettacode.org/wiki/Quine#Lisp)
