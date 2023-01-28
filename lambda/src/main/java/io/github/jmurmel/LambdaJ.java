@@ -2106,8 +2106,8 @@ public class LambdaJ {
         sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { @Override Object apply(LambdaJ intp, ConsCell args) { return getDecodedTime(intp.new CountingListBuilder(), intp::boolResult); } },
 
         // Java FFI
-        sJmethod("jmethod", Features.HAVE_FFI, 2, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
-        sJproxy("jproxy",   Features.HAVE_FFI, 3, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return makeProxy(intp, intp.compiledProgram, args); } },
+        sJmethod("jmethod", Features.HAVE_FFI, 2, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
+        sJproxy("jproxy",   Features.HAVE_FFI, 3, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.makeProxy(intp, intp.compiledProgram, args); } },
         ;
 
         final WellknownSymbolKind kind;
@@ -4786,7 +4786,7 @@ public class LambdaJ {
         throw new SimpleTypeError("%s: expected a string argument but got %s", "sset", printSEx(maybeString));
     }
 
-    private static boolean stringEq(Object o1, Object o2) {
+    static boolean stringEq(Object o1, Object o2) {
         return Objects.equals(requireStringDesignator("string=", o1), requireStringDesignator("string=", o2));
     }
 
@@ -5528,286 +5528,315 @@ public class LambdaJ {
 
 
     /// Murmel runtime support for Java FFI - Murmel calls Java
-    private static class JavaConstructor implements Primitive, MurmelJavaProgram.CompilerPrimitive {
-        private final Constructor<?> constructor;
-        private final UnaryOperator<Object>[] argConv;
+    static final class JFFI {
+        private JFFI() {}
 
-        private JavaConstructor(Constructor<?> constructor, Iterable<?> paramClassNames) {
-            this.constructor = constructor;
-            this.argConv = makeArgConv(paramClassNames, constructor.getParameterCount(), 0);
+        private static class JavaConstructor implements Primitive, MurmelJavaProgram.CompilerPrimitive {
+            private final Constructor<?> constructor;
+            private final UnaryOperator<Object>[] argConv;
+
+            private JavaConstructor(Constructor<?> constructor, Iterable<?> paramClassNames) {
+                this.constructor = constructor;
+                this.argConv = makeArgConv(paramClassNames, constructor.getParameterCount(), 0);
+            }
+
+            @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
+            @Override public String toString() { return "#<Java constructor: " + constructor.getName() + '>'; }
+
+            @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
+
+            @Override
+            public Object applyCompilerPrimitive(Object... args) {
+                final String name = "new " + constructor.getDeclaringClass().getName();
+                javaCallArgCheck(name, constructor, argConv, args);
+                try { return constructor.newInstance(args); }
+                catch (InvocationTargetException ite) { throw new LambdaJError(true, "%s: %s", name, ite.getTargetException().toString()); }
+                catch (Exception e)                   { throw new LambdaJError(true, "%s: %s", name, e.toString()); }
+            }
         }
-
-        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
-        @Override public String toString() { return "#<Java constructor: " + constructor.getName() + '>'; }
-
-        @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
-
-        @Override
-        public Object applyCompilerPrimitive(Object... args) {
-            final String name = "new " + constructor.getDeclaringClass().getName();
-            javaCallArgCheck(name, constructor, argConv, args);
-            try { return constructor.newInstance(args); }
-            catch (InvocationTargetException ite) { throw new LambdaJError(true, "%s: %s", name, ite.getTargetException().toString()); }
-            catch (Exception e)                   { throw new LambdaJError(true, "%s: %s", name, e.toString()); }
-        }
-    }
-
-    @SuppressWarnings("unchecked")
-    static UnaryOperator<Object>[] makeArgConv(Iterable<?> paramClassNames, int paramCount, int skipThis) {
-        final UnaryOperator<Object>[] argConv = new UnaryOperator[paramCount + skipThis];
-        int i = 0;
-        if (paramClassNames != null) for (Object paramClassName: paramClassNames) {
-            final String strParamClassName = (String)paramClassName;
-            final Object[] entry = classByName.get(strParamClassName);
-            if (entry != null) argConv[i+skipThis] = (UnaryOperator<Object>) entry[2];
-            i++;
-        }
-        return argConv;
-    }
-
-    private static class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
-        @FunctionalInterface private interface Invoker { Object invoke(Object... args) throws Throwable; }
-
-        private final Method method;
-        private final Invoker invoke;
-        private final UnaryOperator<Object>[] argConv;
 
         @SuppressWarnings("unchecked")
-        private JavaMethod(Method method, Iterable<?> paramClassNames) {
-            this.method = method;
-            int paramCount = method.getParameterCount();
-            final boolean isStatic = Modifier.isStatic(method.getModifiers());
-            if (!isStatic) paramCount++; // this + parameters
-
-            this.argConv = makeArgConv(paramClassNames, method.getParameterCount(), isStatic ? 0 : 1);
-            if (!isStatic) {
-                final String className = method.getDeclaringClass().getName();
-                final Object[] entry = classByName.get(className);
-                if (entry != null) argConv[0] = (UnaryOperator<Object>) entry[2];
+        static UnaryOperator<Object>[] makeArgConv(Iterable<?> paramClassNames, int paramCount, int skipThis) {
+            final UnaryOperator<Object>[] argConv = new UnaryOperator[paramCount + skipThis];
+            int i = 0;
+            if (paramClassNames != null) for (Object paramClassName: paramClassNames) {
+                final String strParamClassName = (String)paramClassName;
+                final Object[] entry = classByName.get(strParamClassName);
+                if (entry != null) argConv[i + skipThis] = (UnaryOperator<Object>)entry[2];
+                i++;
             }
+            return argConv;
+        }
 
-            try {
-                final MethodHandle mh = MethodHandles.publicLookup().unreflect(method);
-                if (method.isVarArgs()) invoke = mh::invokeWithArguments;
-                else switch (paramCount) {
-                case 0:  invoke = args -> mh.invoke();  break;
-                case 1:  invoke = args -> mh.invoke(args[0]);  break;
-                case 2:  invoke = args -> mh.invoke(args[0], args[1]);  break;
-                case 3:  invoke = args -> mh.invoke(args[0], args[1], args[2]);  break;
-                case 4:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3]);  break;
-                case 5:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4]);  break;
-                case 6:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5]);  break;
-                case 7:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);  break;
-                default: invoke = mh::invokeWithArguments; // that's slow
+        private static class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
+            @FunctionalInterface private interface Invoker { Object invoke(Object... args) throws Throwable; }
+
+            private final Method method;
+            private final Invoker invoke;
+            private final UnaryOperator<Object>[] argConv;
+
+            @SuppressWarnings("unchecked")
+            private JavaMethod(Method method, Iterable<?> paramClassNames) {
+                this.method = method;
+                int paramCount = method.getParameterCount();
+                final boolean isStatic = Modifier.isStatic(method.getModifiers());
+                if (!isStatic) paramCount++; // this + parameters
+
+                this.argConv = makeArgConv(paramClassNames, method.getParameterCount(), isStatic ? 0 : 1);
+                if (!isStatic) {
+                    final String className = method.getDeclaringClass().getName();
+                    final Object[] entry = classByName.get(className);
+                    if (entry != null) argConv[0] = (UnaryOperator<Object>)entry[2];
                 }
-            }
-            catch (IllegalAccessException iae) {
-                throw new LambdaJError(iae, false, "can not access " + method.getDeclaringClass().getSimpleName(), method.getName());
-            }
-        }
 
-        @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
-        @Override public String toString() { return "#<Java method: " + method.getDeclaringClass().getName() + '.' + method.getName() + '>'; }
-
-        @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
-
-        @Override
-        public Object applyCompilerPrimitive(Object... args) {
-            final Method method = this.method;
-            javaCallArgCheck(method.getName(), method, argConv, args);
-
-            if (!Modifier.isStatic(method.getModifiers()) && !method.getDeclaringClass().isInstance(args[0]))
-                throw new SimpleTypeError("jmethod: %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
-
-            try { return invoke.invoke(args); }
-            catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", method.getDeclaringClass().getName(), method.getName(), t.toString()); } // todo t sollte nicht verschluckt werden, damit z.b. eine CCE zu type-error wird
-        }
-    }
-
-    /** check the number of args vs. number of parameters, and then convert argument types from Murmel to Java */
-    static void javaCallArgCheck(String name, Executable method, UnaryOperator<Object>[] argConv, Object[] args) {
-        final int paramCount = argConv.length;
-        final int argCount = args == null ? 0 : args.length;
-        if (method.isVarArgs()) { if (argCount < paramCount - 1) errorVarargsCount(name, paramCount-1, argCount); }
-        else                    { if (paramCount != argCount) errorArgCount(name, paramCount, paramCount, argCount, null); }
-
-        UnaryOperator<Object> conv = null;
-        if (args != null) for (int i = 0; i < argCount; i++) {
-            if (i < argConv.length) conv = argConv[i];
-            if (conv != null) args[i] = conv.apply(args[i]);
-        }
-    }
-
-    private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class[0];
-    /** find a constructor, static or instance method from the given class with the given name and parameter classes if any. */
-    static Primitive findMethod(String className, String methodName, Iterable<?> paramClassNames) {
-        final ArrayList<Class<?>> paramClasses = new ArrayList<>(10);
-        if (paramClassNames != null) for (Object paramClassName: paramClassNames) {
-            final String strParamClassName = (String)paramClassName;
-            try { paramClasses.add(findClass(strParamClassName)); }
-            catch (ClassNotFoundException e) { throw new LambdaJError(true, "jmethod: exception finding parameter class %s: %s", strParamClassName, e.toString()); }
-        }
-        final Class<?>[] params = paramClasses.isEmpty() ? null : paramClasses.toArray(EMPTY_CLASS_ARRAY);
-        try {
-            final Class<?> clazz = findClass(className);
-            return "new".equals(methodName)
-                   ? new JavaConstructor(clazz.getDeclaredConstructor(params), paramClassNames)
-                   : new JavaMethod(clazz.getMethod(methodName, params), paramClassNames);
-        }
-        catch (LambdaJError le) { throw le; }
-        catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method %s.%s: %s", className, methodName, e.getMessage()); }
-    }
-
-    static final Map<String, Object[]> classByName = new HashMap<>(100, 0.75f);
-    static {
-        classByName.put("boolean",    new Object[] { boolean.class,   "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
-        classByName.put("byte",       new Object[] { byte.class,      "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
-        classByName.put("short",      new Object[] { short.class,     "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
-        classByName.put("int",        new Object[] { int.class,       "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
-        classByName.put("long",       new Object[] { long.class,      "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
-        classByName.put("float",      new Object[] { float.class,     "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
-        classByName.put("double",     new Object[] { double.class,    "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
-
-        classByName.put("char",       new Object[] { char.class,      "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
-
-        classByName.put("boolean...", new Object[] { boolean[].class, "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
-        classByName.put("byte...",    new Object[] { byte[].class,    "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
-        classByName.put("short...",   new Object[] { short[].class,   "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
-        classByName.put("int...",     new Object[] { int[].class,     "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
-        classByName.put("long...",    new Object[] { long[].class,    "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
-        classByName.put("float...",   new Object[] { float[].class,   "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
-        classByName.put("double...",  new Object[] { double[].class,  "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
-
-        classByName.put("char...",    new Object[] { char[].class,    "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
-
-
-        putWithAlias("Object",          new Object[] { Object.class,         "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });
-        putWithAlias("Object?",         new Object[] { Object.class,         null,                  null });
-        putWithAlias("Number",          new Object[] { Number.class,         "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });
-        putWithAlias("Number?",         new Object[] { Number.class,         "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) });
-        putWithAlias("Boolean",         new Object[] { Boolean.class,        "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
-        putWithAlias("Byte",            new Object[] { Byte.class,           "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });
-        putWithAlias("Short",           new Object[] { Short.class,          "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
-        putWithAlias("Integer",         new Object[] { Integer.class,        "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
-        putWithAlias("Long",            new Object[] { Long.class,           "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
-        putWithAlias("Float",           new Object[] { Float.class,          "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
-        putWithAlias("Double",          new Object[] { Double.class,         "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });
-
-        putWithAlias("Object...",       new Object[] { Object[].class,       "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });
-        putWithAlias("Object?...",      new Object[] { Object[].class,       null,                  null });
-        putWithAlias("Number...",       new Object[] { Number[].class,       "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });
-        putWithAlias("Number?...",      new Object[] { Number[].class,       "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) });
-        putWithAlias("Boolean...",      new Object[] { Boolean[].class,      "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
-        putWithAlias("Byte...",         new Object[] { Byte[].class,         "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });
-        putWithAlias("Short...",        new Object[] { Short[].class,        "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
-        putWithAlias("Integer...",      new Object[] { Integer[].class,      "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
-        putWithAlias("Long...",         new Object[] { Long[].class,         "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
-        putWithAlias("Float...",        new Object[] { Float[].class,        "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
-        putWithAlias("Double...",       new Object[] { Double[].class,       "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });
-
-        putWithAlias("Object?[]",       new Object[] { Object[].class,       "requireArray",        (UnaryOperator<Object>)(MurmelJavaProgram::requireArray) });
-
-
-        putWithAlias("Character",       new Object[] { Character.class,      "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
-        putWithAlias("CharSequence",    new Object[] { CharSequence.class,   "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) });
-        putWithAlias("String",          new Object[] { String.class,         "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });
-        putWithAlias("String?",         new Object[] { String.class,         "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) });
-
-        putWithAlias("Character...",    new Object[] { Character[].class,    "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
-        putWithAlias("CharSequence...", new Object[] { CharSequence[].class, "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) });
-        putWithAlias("String...",       new Object[] { String[].class,       "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });
-        putWithAlias("String?...",      new Object[] { String[].class,       "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) });
-    }
-
-    private static void putWithAlias(String clsName, Object[] entry) {
-        classByName.put(clsName, entry);
-        classByName.put("java.lang." + clsName, entry);
-    }
-
-    /** find and load the class given by the (possibly abbreviated) name {@code clsName} */
-    static Class<?> findClass(String clsName) throws ClassNotFoundException {
-        final Object[] entry = classByName.get(clsName);
-        if (entry != null) return (Class<?>)entry[0];
-        return Class.forName(clsName);
-    }
-
-    private static class DynamicProxy implements InvocationHandler {
-        private final Map<Method, MurmelFunction> methods;
-
-        DynamicProxy(Map<Method, MurmelFunction> methods) {
-            this.methods = methods;
-        }
-
-        @Override
-        public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
-            final MurmelFunction func = methods.get(method);
-            if (func == null) throw new UndefinedFunction("no function for method %s", method.getName());
-            if (args == null) return func.apply();
-            else return func.apply(args);
-        }
-
-    }
-
-    // todo ConsCell args umstellen auf Object... args?
-    static Object makeProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
-        final String intf = requireString("jproxy", car(args));
-        final String method = requireString("jproxy", cadr(args));
-        if ("java.util.Comparator".equals(intf) && "compare".equals(method)) {
-            return new Comparator<Object>() { final MurmelFunction f = getFunction(intp, program, caddr(args), int.class);
-                                              @Override public String toString() { return "#<Java proxy: java.util.Comparator>"; }
-                                              @Override public int compare(Object o1, Object o2) { try { return (int)f.apply(o1, o2); }
-                                                                                                   catch (Exception e) { throw wrap(e); } } };
-        }
-        else if ("java.lang.Runnable".equals(intf) && "run".equals(method)) {
-            return new Runnable() { final MurmelFunction f = getFunction(intp, program, caddr(args), void.class);
-                                    @Override public String toString() { return "#<Java proxy: java.lang.Runnable>"; }
-                                    @Override public void run() { try { f.apply(); }
-                                                                  catch (Exception e) { throw wrap(e); } } };
-        }
-        else return makeDynamicProxy(intp, program, args);
-    }
-
-    private static Object makeDynamicProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
-        final String intf = requireString("jproxy", car(args));
-        try {
-            final Class<?> clazz = findClass(intf);
-            final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>();
-            final Map<String, Method> nameToMethod = new HashMap<>();
-
-            final MurmelFunction notImplemented = a -> { throw new UndefinedFunction("method is not implemented"); };
-            for (Method m: Object.class.getMethods()) {
-                methodToMurmelFunction.put(m, notImplemented);
-                nameToMethod.put(m.getName(), m);
-            }
-            for (Method m: clazz.getMethods()) {
-                methodToMurmelFunction.put(m, notImplemented);
-                nameToMethod.put(m.getName(), m);
+                try {
+                    final MethodHandle mh = MethodHandles.publicLookup().unreflect(method);
+                    if (method.isVarArgs()) invoke = mh::invokeWithArguments;
+                    else switch (paramCount) {
+                    case 0:  invoke = args -> mh.invoke();  break;
+                    case 1:  invoke = args -> mh.invoke(args[0]);  break;
+                    case 2:  invoke = args -> mh.invoke(args[0], args[1]);  break;
+                    case 3:  invoke = args -> mh.invoke(args[0], args[1], args[2]);  break;
+                    case 4:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3]);  break;
+                    case 5:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4]);  break;
+                    case 6:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5]);  break;
+                    case 7:  invoke = args -> mh.invoke(args[0], args[1], args[2], args[3], args[4], args[5], args[6]);  break;
+                    default: invoke = mh::invokeWithArguments; // that's slow
+                    }
+                }
+                catch (IllegalAccessException iae) { throw new LambdaJError(iae, false, "can not access " + method.getDeclaringClass().getSimpleName(), method.getName()); }
             }
 
-            final String asString = "#<Java proxy: " + clazz.getName() + ">";
-            methodToMurmelFunction.put(nameToMethod.get("toString"), a -> asString);
-            methodToMurmelFunction.put(Writeable.class.getMethod("printSEx", WriteConsumer.class, boolean.class),
-                                       a -> { final WriteConsumer out = (WriteConsumer) a[0]; out.print(asString); return null; });
+            @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
+            @Override public String toString() { return "#<Java method: " + method.getDeclaringClass().getName() + '.' + method.getName() + '>'; }
 
-            for (ConsCell lst = requireList("jproxy", cdr(args)); lst != null; ) {
-                if (cdr(lst) == null) throw new ProgramError("jproxy: odd number of method/functions");
+            @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
 
-                final Object form = cadr(lst);
-                if (form == null) throw new UndefinedFunction("jproxy: not a function: nil");
+            @Override
+            public Object applyCompilerPrimitive(Object... args) {
+                final Method method = this.method;
+                javaCallArgCheck(method.getName(), method, argConv, args);
 
-                final String name = requireString("jproxy", car(lst));
-                final Method method = nameToMethod.get(name);
-                if (method == null) throw new UndefinedFunction("jproxy: method %s does not exist in interface %s or is not accessible", name, intf);
-                methodToMurmelFunction.put(method, getFunction(intp, program, form, method.getReturnType()));
+                if (!Modifier.isStatic(method.getModifiers()) && !method.getDeclaringClass().isInstance(args[0]))
+                    throw new SimpleTypeError("jmethod: %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
 
-                lst = (ConsCell)cddr(lst);
+                try { return invoke.invoke(args); }
+                catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", method.getDeclaringClass().getName(), method.getName(), t.toString()); } // todo t sollte nicht verschluckt werden, damit z.b. eine CCE zu type-error wird
             }
-            return Proxy.newProxyInstance(LambdaJ.class.getClassLoader(), new Class<?>[] { clazz, Writeable.class }, new DynamicProxy(methodToMurmelFunction));
         }
-        catch (ClassNotFoundException | NoSuchMethodException e) {
-            throw new LambdaJError(true, "exception loading class %s", intf);
+
+        /** check the number of args vs. number of parameters, and then convert argument types from Murmel to Java */
+        static void javaCallArgCheck(String name, Executable method, UnaryOperator<Object>[] argConv, Object[] args) {
+            final int paramCount = argConv.length;
+            final int argCount = args == null ? 0 : args.length;
+            if (method.isVarArgs()) { if (argCount < paramCount - 1) errorVarargsCount(name, paramCount-1, argCount); }
+            else                    { if (paramCount != argCount) errorArgCount(name, paramCount, paramCount, argCount, null); }
+
+            UnaryOperator<Object> conv = null;
+            if (args != null) for (int i = 0; i < argCount; i++) {
+                if (i < argConv.length) conv = argConv[i];
+                if (conv != null) args[i] = conv.apply(args[i]);
+            }
+        }
+
+        private static final Class<?>[] EMPTY_CLASS_ARRAY = new Class[0];
+        /** find a constructor, static or instance method from the given class with the given name and parameter classes if any. */
+        static Primitive findMethod(String className, String methodName, Iterable<?> paramClassNames) {
+            final ArrayList<Class<?>> paramClasses = new ArrayList<>(10);
+            if (paramClassNames != null) for (Object paramClassName: paramClassNames) {
+                final String strParamClassName = (String)paramClassName;
+                try { paramClasses.add(findClass(strParamClassName)); }
+                catch (ClassNotFoundException e) { throw new LambdaJError(true, "jmethod: exception finding parameter class %s: %s", strParamClassName, e.toString()); }
+            }
+            final Class<?>[] params = paramClasses.isEmpty() ? null : paramClasses.toArray(EMPTY_CLASS_ARRAY);
+            try {
+                final Class<?> clazz = findClass(className);
+                return "new".equals(methodName)
+                       ? new JavaConstructor(clazz.getDeclaredConstructor(params), paramClassNames)
+                       : new JavaMethod(clazz.getMethod(methodName, params), paramClassNames);
+            }
+            catch (LambdaJError le) { throw le; }
+            catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method %s.%s: %s", className, methodName, e.getMessage()); }
+        }
+
+        static final Map<String, Object[]> classByName = new HashMap<>(100, 0.75f);
+
+        static {
+            classByName.put("boolean",      new Object[] { boolean.class,        "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+            classByName.put("byte",         new Object[] { byte.class,           "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
+            classByName.put("short",        new Object[] { short.class,          "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+            classByName.put("int",          new Object[] { int.class,            "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+            classByName.put("long",         new Object[] { long.class,           "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+            classByName.put("float",        new Object[] { float.class,          "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+            classByName.put("double",       new Object[] { double.class,         "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
+
+            classByName.put("char",         new Object[] { char.class,           "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
+
+            classByName.put("boolean...",   new Object[] { boolean[].class,      "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+            classByName.put("byte...",      new Object[] { byte[].class,         "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte)});
+            classByName.put("short...",     new Object[] { short[].class,        "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+            classByName.put("int...",       new Object[] { int[].class,          "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+            classByName.put("long...",      new Object[] { long[].class,         "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+            classByName.put("float...",     new Object[] { float[].class,        "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+            classByName.put("double...",    new Object[] { double[].class,       "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble)});
+
+            classByName.put("char...",      new Object[] { char[].class,         "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
+
+
+            putWithAlias("Object",          new Object[] { Object.class,         "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });
+            putWithAlias("Object?",         new Object[] { Object.class,         null,                  null });
+            putWithAlias("Number",          new Object[] { Number.class,         "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });
+            putWithAlias("Number?",         new Object[] { Number.class,         "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) });
+            putWithAlias("Boolean",         new Object[] { Boolean.class,        "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+            putWithAlias("Byte",            new Object[] { Byte.class,           "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });
+            putWithAlias("Short",           new Object[] { Short.class,          "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+            putWithAlias("Integer",         new Object[] { Integer.class,        "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+            putWithAlias("Long",            new Object[] { Long.class,           "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+            putWithAlias("Float",           new Object[] { Float.class,          "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+            putWithAlias("Double",          new Object[] { Double.class,         "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });
+
+            putWithAlias("Object...",       new Object[] { Object[].class,       "requireNotNull",      (UnaryOperator<Object>)(MurmelJavaProgram::requireNotNull) });
+            putWithAlias("Object?...",      new Object[] { Object[].class,       null,                  null });
+            putWithAlias("Number...",       new Object[] { Number[].class,       "requireNumber",       (UnaryOperator<Object>)(MurmelJavaProgram::requireNumber) });
+            putWithAlias("Number?...",      new Object[] { Number[].class,       "requireNumberOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireNumberOrNull) });
+            putWithAlias("Boolean...",      new Object[] { Boolean[].class,      "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
+            putWithAlias("Byte...",         new Object[] { Byte[].class,         "toByte",              (UnaryOperator<Object>)(MurmelJavaProgram::toByte) });
+            putWithAlias("Short...",        new Object[] { Short[].class,        "toShort",             (UnaryOperator<Object>)(MurmelJavaProgram::toShort) });
+            putWithAlias("Integer...",      new Object[] { Integer[].class,      "toInt",               (UnaryOperator<Object>)(MurmelJavaProgram::toInt) });
+            putWithAlias("Long...",         new Object[] { Long[].class,         "toLong",              (UnaryOperator<Object>)(MurmelJavaProgram::toLong) });
+            putWithAlias("Float...",        new Object[] { Float[].class,        "toFloat",             (UnaryOperator<Object>)(MurmelJavaProgram::toFloat) });
+            putWithAlias("Double...",       new Object[] { Double[].class,       "toDouble",            (UnaryOperator<Object>)(MurmelJavaProgram::toDouble) });
+
+            putWithAlias("Object?[]",       new Object[] { Object[].class,       "requireArray",        (UnaryOperator<Object>)(MurmelJavaProgram::requireArray) });
+
+
+            putWithAlias("Character",       new Object[] { Character.class,      "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
+            putWithAlias("CharSequence",    new Object[] { CharSequence.class,   "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) });
+            putWithAlias("String",          new Object[] { String.class,         "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });
+            putWithAlias("String?",         new Object[] { String.class,         "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) });
+
+            putWithAlias("Character...",    new Object[] { Character[].class,    "requireChar",         (UnaryOperator<Object>)(MurmelJavaProgram::requireChar) });
+            putWithAlias("CharSequence...", new Object[] { CharSequence[].class, "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) });
+            putWithAlias("String...",       new Object[] { String[].class,       "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });
+            putWithAlias("String?...",      new Object[] { String[].class,       "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) });
+        }
+
+        private static void putWithAlias(String clsName, Object[] entry) { classByName.put(clsName, entry); classByName.put("java.lang." + clsName, entry); }
+
+        /** find and load the class given by the (possibly abbreviated) name {@code clsName} */
+        static Class<?> findClass(String clsName) throws ClassNotFoundException {
+            final Object[] entry = classByName.get(clsName);
+            if (entry != null) return (Class<?>)entry[0];
+            return Class.forName(clsName);
+        }
+
+        private static class DynamicProxy implements InvocationHandler {
+            private final Map<Method, MurmelFunction> methods;
+
+            DynamicProxy(Map<Method, MurmelFunction> methods) { this.methods = methods; }
+
+            @Override
+            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+                final MurmelFunction func = methods.get(method);
+                if (func == null) throw new UndefinedFunction("no function for method %s", method.getName());
+                if (args == null) return func.apply();
+                else return func.apply(args);
+            }
+
+        }
+
+        // todo ConsCell args umstellen auf Object... args?
+        static Object makeProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
+            final String intf = requireString("jproxy", car(args));
+            final String method = requireString("jproxy", cadr(args));
+            if ("java.util.Comparator".equals(intf) && "compare".equals(method)) {
+                return new Comparator<Object>() { private final MurmelFunction f = getFunction(intp, program, caddr(args), int.class);
+                                                  @Override public String toString() { return "#<Java proxy: java.util.Comparator>"; }
+                                                  @Override public int compare(Object o1, Object o2) { try { return (int)f.apply(o1, o2); }
+                                                                                                       catch (Exception e) { throw wrap(e); } } };
+            }
+            else if ("java.lang.Runnable".equals(intf) && "run".equals(method)) {
+                return new Runnable() { private final MurmelFunction f = getFunction(intp, program, caddr(args), void.class);
+                                        @Override public String toString() { return "#<Java proxy: java.lang.Runnable>"; }
+                                        @Override public void run() { try { f.apply(); }
+                                                                      catch (Exception e) { throw wrap(e); } } };
+            }
+            else return makeDynamicProxy(intp, program, args);
+        }
+
+        private static Object makeDynamicProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
+            final String intf = requireString("jproxy", car(args));
+            try {
+                final Class<?> clazz = findClass(intf);
+                final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>();
+                final Map<String, Method> nameToMethod = new HashMap<>();
+
+                final MurmelFunction notImplemented = a -> { throw new UndefinedFunction("method is not implemented"); };
+                for (Method m: Object.class.getMethods()) {
+                    methodToMurmelFunction.put(m, notImplemented);
+                    nameToMethod.put(m.getName(), m);
+                }
+                for (Method m: clazz.getMethods()) {
+                    methodToMurmelFunction.put(m, notImplemented);
+                    nameToMethod.put(m.getName(), m);
+                }
+
+                final String asString = "#<Java proxy: " + clazz.getName() + ">";
+                methodToMurmelFunction.put(nameToMethod.get("toString"), a -> asString);
+                methodToMurmelFunction.put(Writeable.class.getMethod("printSEx", WriteConsumer.class, boolean.class),
+                                           a -> { final WriteConsumer out = (WriteConsumer)a[0]; out.print(asString); return null; });
+
+                for (ConsCell lst = requireList("jproxy", cdr(args)); lst != null; ) {
+                    if (cdr(lst) == null) throw new ProgramError("jproxy: odd number of method/functions");
+
+                    final Object form = cadr(lst);
+                    if (form == null) throw new UndefinedFunction("jproxy: not a function: nil");
+
+                    final String name = requireString("jproxy", car(lst));
+                    final Method method = nameToMethod.get(name);
+                    if (method == null) throw new UndefinedFunction("jproxy: method %s does not exist in interface %s or is not accessible", name, intf);
+                    methodToMurmelFunction.put(method, getFunction(intp, program, form, method.getReturnType()));
+
+                    lst = (ConsCell)cddr(lst);
+                }
+                return Proxy.newProxyInstance(LambdaJ.class.getClassLoader(), new Class<?>[] { clazz, Writeable.class }, new DynamicProxy(methodToMurmelFunction));
+            }
+            catch (ClassNotFoundException | NoSuchMethodException e) {
+                throw new LambdaJError(true, "exception loading class %s", intf);
+            }
+        }
+
+        private static MurmelFunction getFunction(LambdaJ intp, MurmelJavaProgram program, Object function, Class<?> returnType) {
+            final String funcName = printSEx(function);
+            if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType(funcName, ((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args), returnType); }
+            if (function instanceof Primitive)                            { return args -> convertReturnType(funcName, ((Primitive)function).applyPrimitiveVarargs(args), returnType); }
+            if (function instanceof Closure && intp != null)              { final CallLambda callLambda = intp.new CallLambda((Closure)function);
+                                                                            return args -> convertReturnType(funcName, callLambda.apply(args), returnType); }
+            if (function instanceof MurmelFunction && program != null)    { return args -> convertReturnType(funcName, program.funcall((MurmelFunction)function, args), returnType); /* must use the TCO trampoline */ }
+
+            throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName);
+        }
+
+        private static Object convertReturnType(String func, Object value, Class<?> returnType) {
+            if (Boolean.class.equals(returnType)   || boolean.class.equals(returnType)) return value != null;
+            if (Byte.class.equals(returnType)      || byte.class.equals(returnType))    return requireIntegralNumber(func, value, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue();
+            if (Short.class.equals(returnType)     || short.class.equals(returnType))   return requireIntegralNumber(func, value, Short.MIN_VALUE, Short.MAX_VALUE).shortValue();
+            if (Integer.class.equals(returnType)   || int.class.equals(returnType))     return requireIntegralNumber(func, value, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
+            if (Long.class.equals(returnType)      || long.class.equals(returnType))    return requireIntegralNumber(func, value, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
+            if (Double.class.equals(returnType)    || double.class.equals(returnType))  return requireNumber(func, value).doubleValue();
+            if (Character.class.equals(returnType) || char.class.equals(returnType))    return requireChar(func, value);
+
+            if (Number.class.equals(returnType))       return requireNumber(func, value);
+            if (String.class.equals(returnType))       return requireString(func, value);
+            if (CharSequence.class.equals(returnType)) return requireCharsequence(func, value);
+            if (Void.class.equals(returnType))         return null;
+
+            // todo weitere typen und/ oder error oder converter aus der HashMap auslesen?
+            return value;
         }
     }
+
+
 
     ConsCell values = NO_VALUES;
 
@@ -5964,35 +5993,6 @@ public class LambdaJ {
         if (function instanceof MurmelFunction)                       { return args -> intp.compiledProgram.funcall((MurmelFunction)function, args); /* must use the TCO trampoline */ }
 
         throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(function));
-    }
-
-    private static MurmelFunction getFunction(LambdaJ intp, MurmelJavaProgram program, Object function, Class<?> returnType) {
-        final String funcName = printSEx(function);
-        if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType(funcName, ((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args), returnType); }
-        if (function instanceof Primitive)                            { return args -> convertReturnType(funcName, ((Primitive)function).applyPrimitiveVarargs(args), returnType); }
-        if (function instanceof Closure && intp != null)              { final CallLambda callLambda = intp.new CallLambda((Closure)function);
-                                                                        return args -> convertReturnType(funcName, callLambda.apply(args), returnType); }
-        if (function instanceof MurmelFunction && program != null)    { return args -> convertReturnType(funcName, program.funcall((MurmelFunction)function, args), returnType); /* must use the TCO trampoline */ }
-
-        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName);
-    }
-
-    private static Object convertReturnType(String func, Object value, Class<?> returnType) {
-        if (Boolean.class.equals(returnType)   || boolean.class.equals(returnType)) return value != null;
-        if (Byte.class.equals(returnType)      || byte.class.equals(returnType))    return requireIntegralNumber(func, value, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue();
-        if (Short.class.equals(returnType)     || short.class.equals(returnType))   return requireIntegralNumber(func, value, Short.MIN_VALUE, Short.MAX_VALUE).shortValue();
-        if (Integer.class.equals(returnType)   || int.class.equals(returnType))     return requireIntegralNumber(func, value, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
-        if (Long.class.equals(returnType)      || long.class.equals(returnType))    return requireIntegralNumber(func, value, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
-        if (Double.class.equals(returnType)    || double.class.equals(returnType))  return requireNumber(func, value).doubleValue();
-        if (Character.class.equals(returnType) || char.class.equals(returnType))    return requireChar(func, value);
-
-        if (Number.class.equals(returnType))       return requireNumber(func, value);
-        if (String.class.equals(returnType))       return requireString(func, value);
-        if (CharSequence.class.equals(returnType)) return requireCharsequence(func, value);
-        if (Void.class.equals(returnType))         return null;
-
-        // todo weitere typen und/ oder error oder converter aus der HashMap auslesen?
-        return value;
     }
 
     public interface MurmelProgram {
@@ -7732,15 +7732,15 @@ public class LambdaJ {
         // Java FFI
         public final Object _jmethod   (Object... args) {
             values = null; varargs2("jmethod", args.length);
-            return LambdaJ.findMethod(LambdaJ.requireString("jmethod", args[0]), LambdaJ.requireString("jmethod", args[1]), arraySlice(args, 2));
+            return JFFI.findMethod(LambdaJ.requireString("jmethod", args[0]), LambdaJ.requireString("jmethod", args[1]), arraySlice(args, 2));
         }
         public final Primitive findMethod(Object className, Object methodName, Object... paramClasses) {
             values = null;
-            return LambdaJ.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), arraySlice(paramClasses));
+            return JFFI.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), arraySlice(paramClasses));
         }
 
         // makeProxy kann auch interpretierte funktionen. wenn intp==null ist, kanns aber keine geben
-        public final Object _jproxy    (Object... args) { values = null; varargs3("jproxy", args.length); return makeProxy(intp, this, arraySlice(args)); }
+        public final Object _jproxy    (Object... args) { values = null; varargs3("jproxy", args.length); return JFFI.makeProxy(intp, this, arraySlice(args)); }
 
 
         // graphics
@@ -9959,14 +9959,14 @@ public class LambdaJ {
             // todo brauchts diesen check ueberhaupt wenn eh nur receiver/ parameter klassen aus classByName erlaubt sind?
             final Class<?> clazz;
             try {
-                clazz = findClass(((String) strClazz).replace('$', '.'));
+                clazz = JFFI.findClass(((String) strClazz).replace('$', '.'));
             }
             catch (ClassNotFoundException e) {
                 // todo warn re: performance
                 return false;
             }
 
-            if (!classByName.containsKey(strClazz)) return false; // todo warn re: performance
+            if (!JFFI.classByName.containsKey(strClazz)) return false; // todo warn re: performance
 
             // all parameter classes (if any) must be one of the classes that we know how to do Murmel->Java conversion else "return false"
             final ArrayList<Class<?>> paramTypes = new ArrayList<>();
@@ -9975,7 +9975,7 @@ public class LambdaJ {
                 final String paramType = (String)arg;
                 paramTypeNames.add(paramType);
 
-                final Object[] typeDesc = classByName.get(paramType);
+                final Object[] typeDesc = JFFI.classByName.get(paramType);
                 if (typeDesc == null) return false; // todo warn re: performance
                 final Class<?> paramClass = (Class<?>) typeDesc[0];
                 paramTypes.add(paramClass);
@@ -10005,7 +10005,7 @@ public class LambdaJ {
                     if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
                     else {
                         // instance method, first arg is the object
-                        final Object[] conv = classByName.get(strClazz);
+                        final Object[] conv = JFFI.classByName.get(strClazz);
                         assert conv != null : "unknown receiver class";
                         final String convReceiver = (String)conv[1];
                         if (convReceiver == null)
@@ -10026,7 +10026,7 @@ public class LambdaJ {
                     for (Object arg : ccArguments) {
                         if (first) first = false;
                         else sb.append("\n        , ");
-                        if (!m.isVarArgs() || i - startArg < paramTypeNames.size()) conv = (String) classByName.get(paramTypeNames.get(i-startArg))[1];
+                        if (!m.isVarArgs() || i - startArg < paramTypeNames.size()) conv = (String) JFFI.classByName.get(paramTypeNames.get(i-startArg))[1];
                         if (conv == null) emitForm(sb, arg, env, topEnv, rsfx, false);
                         else { sb.append(conv).append('(');  emitForm(sb, arg, env, topEnv, rsfx, false);  sb.append(')'); }
                         i++;
@@ -10044,7 +10044,7 @@ public class LambdaJ {
                 if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
                 else if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
                 else {
-                    final Object[] desc = classByName.get(strClazz);
+                    final Object[] desc = JFFI.classByName.get(strClazz);
                     if (desc != null && desc[1] != null) sb.append(desc[1]).append("(args[0]").append(").").append(strMethod);
                     else sb.append("((").append(strClazz).append(')').append("args[0]").append(").").append(strMethod);
                 }
@@ -10056,13 +10056,13 @@ public class LambdaJ {
                         for (int i = startArg; i < params.length + startArg - 1; i++) {
                             if (first) first = false;
                             else sb.append("\n        , ");
-                            final Object[] desc = classByName.get(paramTypeNames.get(i - startArg));
+                            final Object[] desc = JFFI.classByName.get(paramTypeNames.get(i - startArg));
                             if (desc == null) sb.append("args[").append(i).append(']');
                             else sb.append(desc[1]).append("(args[").append(i).append("])");
                         }
 
                         // handle last parameter which is vararg: pass an array of the appropriate type with the remaining args
-                        final Object[] desc = classByName.get(paramTypeNames.get(params.length-1));
+                        final Object[] desc = JFFI.classByName.get(paramTypeNames.get(params.length-1));
                         final int varargPos = params.length + startArg - 1;
                         final String conv = "(java.util.function.UnaryOperator<Object>)(MurmelJavaProgram::" + desc[1] + ")";
                         sb.append("\n        , toVarargs(args, " + varargPos + ", " + conv + ", new " + ((Class<?>)desc[0]).getComponentType().getCanonicalName() + "[args.length - " + varargPos + "])");
@@ -10071,7 +10071,7 @@ public class LambdaJ {
                         for (int i = startArg; i < params.length + startArg; i++) {
                             if (first) first = false;
                             else sb.append("\n        , ");
-                            final String conv = (String)classByName.get(paramTypeNames.get(i - startArg))[1];
+                            final String conv = (String)JFFI.classByName.get(paramTypeNames.get(i - startArg))[1];
                             if (conv == null) sb.append("args[").append(i).append(']');
                             else sb.append(conv).append("(args[").append(i).append("])");
                         }

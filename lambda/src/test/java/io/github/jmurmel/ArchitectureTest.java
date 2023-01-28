@@ -21,12 +21,13 @@ public class ArchitectureTest {
 
     @Test
     public void checkMurmel() {
-
         checkUsers(LambdaJ.Cli.class, LambdaJ.class);
 
         checkUsers(JavaCompilerHelper.class, LambdaJ.MurmelJavaCompiler.class);
         checkUsers(JavaSourceFromString.class, JavaCompilerHelper.class);
         checkUsers(MurmelClassLoader.class, JavaCompilerHelper.class);
+
+        checkUsers(LambdaJ.JFFI.class, LambdaJ.WellknownSymbol.class, LambdaJ.MurmelJavaCompiler.class, LambdaJ.MurmelJavaProgram.class);
     }
 
     /** Utility classes whose methods are leafs in the call hierarchy, i.e. don't use any other Murmel classes (other than *Error) */
@@ -43,9 +44,13 @@ public class ArchitectureTest {
         checkLeaf("WrappingWriter");
     }
 
-    /** check that {@code clazz} is only used by {@code allowedUsers} */
+    /** check that {@code clazz} is only used by nested classes inside {@code clazz} or {@code allowedUsers} */
     private static void checkUsers(Class<?> clazz, Class<?>... allowedUsers) {
-        theClass(clazz).should().onlyHaveDependentClassesThat().belongToAnyOf(allowedUsers).check(murmelClasses);
+        DescribedPredicate<? super JavaClass> allowed = HasName.Predicates.nameStartingWith(clazz.getName());
+        for (Class<?> c: allowedUsers) {
+            allowed = DescribedPredicate.or(allowed, HasName.Predicates.nameStartingWith(c.getName()));
+        }
+        theClass(clazz).should().onlyHaveDependentClassesThat(allowed).check(murmelClasses);
     }
 
     /** check that the class {@code className} only uses itself, nested classes and *Error classes */
