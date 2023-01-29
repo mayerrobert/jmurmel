@@ -94,6 +94,17 @@ public class ConsTest {
 
 
     @Test
+    public void testElt() {
+        final LambdaJ.ConsCell lst = LambdaJ.arraySlice(11, 22, 33);
+        assertEquals(lst.elt(2), 33);
+
+        final LambdaJ.ConsCell lst2 = (LambdaJ.ConsCell)LambdaJ.ConsCell.listStar(1, lst);
+        assertEquals(lst2.elt(2), 22);
+    }
+
+
+
+    @Test
     public void consNilNil() throws Exception {
         LambdaJTest.runTest("macro1.lisp", "(cons nil nil)", "(nil)", null);
     }

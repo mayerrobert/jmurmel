@@ -159,6 +159,9 @@ public class LambdaJ {
         public abstract Object cdr();
         public ConsCell rplacd(Object cdr) { throw new UnsupportedOperationException("rplacd not supported on " + getClass().getSimpleName()); }
 
+        public abstract Object elt(long idx);
+        public abstract Object eltset(Object newVal, long idx);
+
         /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
         String lineInfo() { return ""; }
 
@@ -227,19 +230,21 @@ public class LambdaJ {
         Closure macro;
 
         public LambdaJSymbol(String symbolName) {
-            name = Objects.requireNonNull(symbolName, "can't use null symbolname");
-            wellknownSymbol = WellknownSymbol.notInterned;
+            this(symbolName, WellknownSymbol.notInterned);
         }
 
         public LambdaJSymbol(boolean intern, String symbolName) {
-            name = Objects.requireNonNull(symbolName, "can't use null symbolname");
-            wellknownSymbol = intern ? WellknownSymbol.interned : WellknownSymbol.notInterned;
+            this(symbolName, intern ? WellknownSymbol.interned : WellknownSymbol.notInterned);
         }
 
-        public LambdaJSymbol(String symbolName, boolean wellknown) {
-            name = Objects.requireNonNull(symbolName, "can't use null symbolname");
-            wellknownSymbol = wellknown ? WellknownSymbol.of(symbolName) : WellknownSymbol.notInterned;
+        LambdaJSymbol(String symbolName, boolean wellknown) {
+            this(symbolName, wellknown ? WellknownSymbol.of(symbolName) : WellknownSymbol.notInterned);
             assert wellknownSymbol != null : "enum value for wellknown symbol " + symbolName + " not found";
+        }
+
+        private LambdaJSymbol(String symbolName, WellknownSymbol ws) {
+            name = Objects.requireNonNull(symbolName, "can't use null symbolname");
+            wellknownSymbol = ws;
         }
 
         public boolean wellknown() { return wellknownSymbol != WellknownSymbol.interned && wellknownSymbol != WellknownSymbol.notInterned; }
@@ -561,6 +566,29 @@ public class LambdaJ {
         @Override public Object cdr() { return cdr; }
         @Override public ConsCell rplacd(Object cdr) { this.cdr = cdr; return this; }
 
+        @Override public Object elt(long idx) {
+            long _idx = 0;
+            for (Object o: this) {
+                if (_idx == idx) return o;
+                _idx++;
+            }
+            throw errorIndexTooLarge(idx, _idx);
+        }
+
+        @Override
+        public Object eltset(Object newValue, long idx) {
+            long _idx = 0;
+            ConsCell lst = this;
+            Object cdr = this;
+            for (; consp(cdr); cdr = lst.cdr()) {
+                lst = (ConsCell)cdr;
+                if (_idx == idx) { lst.rplaca(newValue); return newValue; }
+                _idx++;
+            }
+            if (_idx == idx && cdr != null) { lst.rplacd(newValue); return newValue; }
+            throw errorIndexTooLarge(idx, cdr == null ? _idx : _idx + 1);
+        }
+
         void adjustEnd(int endLineNo, int endCharNo) { /* default is: no-op */ }
 
         /** avoid endless loop in case of circular lists or lists with embedded circles */
@@ -609,10 +637,7 @@ public class LambdaJ {
 
         private Closure(Object params, ConsCell body, ConsCell closure)    { this.params = params; this.body = body; this.closure = closure; }
 
-        @Override
-        public void printSEx(WriteConsumer out, boolean escapeAtoms) {
-            out.print("#<interpreted closure>");
-        }
+        @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { out.print("#<interpreted closure>"); }
     }
 
     private static class ArraySlice extends ConsCell {
@@ -656,17 +681,20 @@ public class LambdaJ {
 
         @Override public ArraySlice cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this); }
 
-        Object elt(long idx) {
-            if (idx < 0) throw new InvalidIndexError("elt: index must be >= 0");
-            if (idx >= length()) throw new InvalidIndexError("elt: index %d is too large for a list of length %d", idx, length());
+        @Override public Object elt(long idx) {
+            checkSequenceBounds(idx);
             return arry[(int)idx];
         }
 
-        Object eltset(Object newValue, long idx) {
-            if (idx < 0) throw new InvalidIndexError("eltset: index must be >= 0");
-            if (idx >= length()) throw new InvalidIndexError("eltset: index %d is too large for a list of length %d", idx, length());
+        @Override public Object eltset(Object newValue, long idx) {
+            checkSequenceBounds(idx);
             arry[(int)idx] = newValue;
             return newValue;
+        }
+
+        private void checkSequenceBounds(long idx) {
+            if (idx < 0) throw new InvalidIndexError("index must be >= 0");
+            if (idx >= length()) errorIndexTooLarge(idx, length());
         }
 
         private int length() { return arry.length - offset; }
@@ -970,8 +998,7 @@ public class LambdaJ {
         private ConsCell symbols;
 
         // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
-        @Override
-        public LambdaJSymbol intern(LambdaJSymbol sym) {
+        @Override public LambdaJSymbol intern(LambdaJSymbol sym) {
             final String symName = sym.name;
             for (ConsCell s = symbols; s != null; s = (ConsCell)cdr(s)) {
                 final LambdaJSymbol _s = (LambdaJSymbol) car(s);
@@ -984,8 +1011,7 @@ public class LambdaJ {
             return sym;
         }
 
-        @Override
-        public LambdaJSymbol intern(String symName) {
+        @Override public LambdaJSymbol intern(String symName) {
             for (ConsCell s = symbols; s != null; s = (ConsCell)cdr(s)) {
                 final LambdaJSymbol _s = (LambdaJSymbol) car(s);
                 if (_s.name.equalsIgnoreCase(symName))
@@ -1586,16 +1612,14 @@ public class LambdaJ {
 
         /// S-expression parser
         /** Record line and char numbers in the conses */
-        @Override
-        public Object readObj(boolean recordPos, Object eof) {
+        @Override public Object readObj(boolean recordPos, Object eof) {
             this.pos = recordPos;
             final Object ret = readObj(eof);
             this.pos = false;
             return ret;
         }
 
-        @Override
-        public Object readObj(Object eof) {
+        @Override public Object readObj(Object eof) {
             if (!init) {
                 prev = EOF;
                 lineNo = 1; charNo = 0;
@@ -4343,7 +4367,7 @@ public class LambdaJ {
         if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
 
         if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
-        if (bitvectorp(o1) && bitvectorp(o2)) {
+        if (bitvectorp(o1) && bitvectorp(o2)) { // todo nach Bitvector.compareTo() schieben?
             final Bitvector b1 = Bitvector.of(o1);
             final Bitvector b2 = Bitvector.of(o2);
 
@@ -4613,8 +4637,7 @@ public class LambdaJ {
             return ret;
         }
 
-        @Override
-        public void printSEx(WriteConsumer sb, boolean escapeAtoms) {
+        @Override public void printSEx(WriteConsumer sb, boolean escapeAtoms) {
             sb.print("#*");
             int idx = 0;
             for (; idx < bitSet.length(); idx++) sb.print(bitSet.get(idx) ? "1" : "0");
@@ -4883,60 +4906,44 @@ public class LambdaJ {
     /// sequences
 
     static Object seqref(Object maybeSeq, long idx) {
-        if (idx < 0) throw new InvalidIndexError("seqref: index must be >= 0");
-        if (maybeSeq == null) errorIndexTooLarge(idx, 0);
-        if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).elt(idx);
-        if (maybeSeq instanceof ConsCell) { // todo vielleicht in eine neue Methode ConsCell.nth() schieben, siehe auch ArraySlice.elt()
-            long _idx = 0;
-            for (Object o: (ConsCell)maybeSeq) {
-                if (_idx == idx) return o;
-                _idx++;
-            }
-            throw errorIndexTooLarge(idx, _idx);
-        }
-        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
-        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
-        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] ? 1L : 0L; }
-        if (maybeSeq instanceof Bitvector)    { final Bitvector bv = (Bitvector)maybeSeq;   if (idx >= bv.size()) errorIndexTooLarge(idx, bv.size()); return bv.get((int)idx); }
-        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
+        checkSequenceBounds(maybeSeq, idx);
+        if (maybeSeq instanceof ConsCell)     return ((ConsCell)maybeSeq).elt(idx);
+        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;      if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
+        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;        if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
+        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq;     if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] ? 1L : 0L; }
+        if (maybeSeq instanceof Bitvector)    { final Bitvector bv = (Bitvector)maybeSeq;       if (idx >= bv.size())   errorIndexTooLarge(idx, bv.size());   return bv.get((int)idx); }
+        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes")
+                                                final List list = (List)maybeSeq;               if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
         if (maybeSeq instanceof CharSequence) { final CharSequence cs = (CharSequence)maybeSeq; if (idx >= cs.length()) errorIndexTooLarge(idx, cs.length()); return cs.charAt((int)idx); }
         throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
     }
 
-    @SuppressWarnings("unchecked")
-    static Object seqset(Object maybeSeq, long idx, Object newValue) {
+    private static void checkSequenceBounds(Object maybeSeq, long idx) {
         if (idx < 0) throw new InvalidIndexError("seqref: index must be >= 0");
         if (maybeSeq == null) errorIndexTooLarge(idx, 0);
-        if (maybeSeq instanceof ArraySlice) return ((ArraySlice)maybeSeq).eltset(newValue, idx);
-        if (maybeSeq instanceof ConsCell) {
-            long _idx = 0;
-            ConsCell lst = (ConsCell)maybeSeq;
-            Object cdr = maybeSeq;
-            for (; consp(cdr); cdr = cdr((ConsCell)cdr)) {
-                lst = (ConsCell)cdr;
-                if (_idx == idx) { lst.rplaca(newValue); return newValue; }
-                _idx++;
-            }
-            if (_idx == idx && cdr != null) { lst.rplacd(newValue); return newValue; }
-            throw errorIndexTooLarge(idx, cdr == null ? _idx : _idx + 1);
-        }
-        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
-        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
-        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length);
-                                                final int newBit = requireIntegralNumber("seqset", newValue, 0, 1).intValue();
-                                                if (newBit == 0) { arry[(int)idx] = false; return 0L; }
-                                                if (newBit == 1) { arry[(int)idx] = true;  return 1L; }
-                                                throw errorNotABit("seqset", newValue); }
-        if (maybeSeq instanceof Bitvector)    { final Bitvector bv = (Bitvector)maybeSeq; if (idx >= bv.size()) errorIndexTooLarge(idx, bv.size()); bv.set((int)idx, requireBit("seqset", newValue));
+    }
+
+    @SuppressWarnings("unchecked")
+    static Object seqset(Object maybeSeq, long idx, Object newValue) {
+        checkSequenceBounds(maybeSeq, idx);
+        if (maybeSeq instanceof ConsCell)      return ((ConsCell)maybeSeq).eltset(newValue, idx);
+        if (maybeSeq instanceof Object[])      { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
+        if (maybeSeq instanceof char[])        { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
+        if (maybeSeq instanceof boolean[])     { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length);
+                                                 final int newBit = requireIntegralNumber("seqset", newValue, 0, 1).intValue();
+                                                 if (newBit == 0) { arry[(int)idx] = false; return 0L; }
+                                                 if (newBit == 1) { arry[(int)idx] = true;  return 1L; }
+                                                 throw errorNotABit("seqset", newValue); }
+        if (maybeSeq instanceof Bitvector)     { final Bitvector bv = (Bitvector)maybeSeq; if (idx >= bv.size()) errorIndexTooLarge(idx, bv.size()); bv.set((int)idx, requireBit("seqset", newValue));
                                                 return newValue; }
         if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
                                                  final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
                                                  return newValue; }
-        if (maybeSeq instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
-                                                final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
-                                                return newValue; }
-        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
-                                                return newValue; }
+        if (maybeSeq instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
+                                                 final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
+                                                 return newValue; }
+        if (maybeSeq instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
+                                                 return newValue; }
         throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
     }
 
@@ -5009,8 +5016,7 @@ public class LambdaJ {
         @Override public boolean containsKey(Object key) { return super.containsKey(makeKey(key)); }
         @Override public Object remove(Object key) { return super.remove(makeKey(key)); }
 
-        @Override
-        public void printSEx(WriteConsumer out, boolean escapeAtoms) {
+        @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) {
             out.print(pfx());
             for (Map.Entry<?,?> entry: entrySet()) {
                 out.print(" ");  LambdaJ.printSEx(out, getKey(entry), escapeAtoms);
@@ -5545,8 +5551,7 @@ public class LambdaJ {
 
             @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
 
-            @Override
-            public Object applyCompilerPrimitive(Object... args) {
+            @Override public Object applyCompilerPrimitive(Object... args) {
                 final String name = "new " + constructor.getDeclaringClass().getName();
                 javaCallArgCheck(name, constructor, argConv, args);
                 try { return constructor.newInstance(args); }
@@ -5612,8 +5617,7 @@ public class LambdaJ {
 
             @Override public Object applyPrimitive(ConsCell x) { return applyCompilerPrimitive(listToArray(x)); }
 
-            @Override
-            public Object applyCompilerPrimitive(Object... args) {
+            @Override public Object applyCompilerPrimitive(Object... args) {
                 final Method method = this.method;
                 javaCallArgCheck(method.getName(), method, argConv, args);
 
@@ -5735,8 +5739,7 @@ public class LambdaJ {
 
             DynamicProxy(Map<Method, MurmelFunction> methods) { this.methods = methods; }
 
-            @Override
-            public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+            @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 final MurmelFunction func = methods.get(method);
                 if (func == null) throw new UndefinedFunction("no function for method %s", method.getName());
                 if (args == null) return func.apply();
@@ -5970,7 +5973,6 @@ public class LambdaJ {
         @Override public Object apply(Object... args) {
             return eval(cons(lambda, arraySlice(args, 0)), null, 0, 0, 0);
         }
-
     }
 
     /** <p>embed API: Return the function {@code funcName}
@@ -7174,8 +7176,7 @@ public class LambdaJ {
                 intp.currentSource = p;
             }
 
-            @Override
-            public int read() throws IOException {
+            @Override public int read() throws IOException {
                 if (reader == null) {
                     if (paths.hasNext()) next();
                     else return EOF;
@@ -7296,8 +7297,7 @@ public class LambdaJ {
         @Override public final ObjectWriter getLispPrinter() { return lispPrinter; }
         @Override public final void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { lispReader = lispStdin; lispPrinter = lispStdout; }
 
-        @Override
-        public final MurmelFunction getFunction(String func) {
+        @Override public final MurmelFunction getFunction(String func) {
             final Object maybeFunction = getValue(func);
             if (maybeFunction instanceof MurmelFunction) {
                 return args -> funcall((MurmelFunction)maybeFunction, args);
@@ -7309,6 +7309,7 @@ public class LambdaJ {
         }
 
         protected abstract Object runbody() throws Exception;
+
         @Override public Object body() {
             try {
                 return runbody();
@@ -10470,8 +10471,7 @@ final class JavaSourceFromString extends SimpleJavaFileObject {
         this.code = code;
     }
 
-    @Override
-    public CharSequence getCharContent(boolean ignoreEncodingErrors) {
+    @Override public CharSequence getCharContent(boolean ignoreEncodingErrors) {
         return code;
     }
 }
