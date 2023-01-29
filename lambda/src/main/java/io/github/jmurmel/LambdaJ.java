@@ -4828,9 +4828,9 @@ public class LambdaJ {
     }
 
     static Object stringDesignatorToString(Object o) {
-        if (o instanceof char[]) return o;
+        if (o == null) return new char[] { 'n', 'i', 'l' };
         if (o instanceof String) return ((String)o).toCharArray();
-        if (o instanceof CharSequence) return o;
+        if (o instanceof char[] || o instanceof CharSequence) return o;
         if (o instanceof LambdaJSymbol) return ((LambdaJSymbol)o).name.toCharArray();
         if (o instanceof Character) return new char[] { ((char)o) };
         throw new SimpleTypeError("not a string designator: %s", printSEx(o));
