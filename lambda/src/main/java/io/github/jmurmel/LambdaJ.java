@@ -165,9 +165,10 @@ public class LambdaJ {
         /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
         String lineInfo() { return ""; }
 
+        @Override public abstract ConsIterator iterator();
+
         @Override public boolean equals(Object other) { return other instanceof ConsCell && compare(this, other, CompareMode.EQUAL) == 0; }
         @Override public int hashCode() { return sxhashSigned(100); }
-        @Override public abstract ConsIterator iterator();
         abstract int sxhashSigned(int rec);
 
         final int compareToEqual(ConsCell c2) {
@@ -4367,28 +4368,11 @@ public class LambdaJ {
         if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
 
         if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
-        if (bitvectorp(o1) && bitvectorp(o2)) { // todo nach Bitvector.compareTo() schieben?
-            final Bitvector b1 = Bitvector.of(o1);
-            final Bitvector b2 = Bitvector.of(o2);
 
-            final int len1 = b1.size();
-            final int len2 = b2.size();
-            final int lim = Math.min(len1, len2);
+        if (bitvectorp(o1) && bitvectorp(o2)) { return Bitvector.of(o1).compareTo(Bitvector.of(o2)); }
 
-            int k = 0;
-            while (k < lim) {
-                final int c1 = (int)b1.get(k);
-                final int c2 = (int)b2.get(k);
-                if (c1 != c2) {
-                    return c1 - c2;
-                }
-                k++;
-            }
-            return len1 - len2;
-        }
-        if (consp(o1) && consp(o2)) {
-            return ((ConsCell)o1).compareToEqual((ConsCell)o2);
-        }
+        if (consp(o1) && consp(o2)) { return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
+
         return System.identityHashCode(o1) - System.identityHashCode(o2);
     }
 
@@ -4585,7 +4569,7 @@ public class LambdaJ {
 
     /// vectors
 
-    static final class Bitvector implements Serializable, Writeable, Iterable<Long> {
+    static final class Bitvector implements Serializable, Writeable, Iterable<Long>, Comparable<Bitvector> {
         class Iter implements Iterator<Long> {
             private int cursor;
             @Override public boolean hasNext() { return cursor < size(); }
@@ -4612,10 +4596,27 @@ public class LambdaJ {
             throw new SimpleTypeError("not a bitvector: %s", LambdaJ.printSEx(o));
         }
 
+        @Override public Iterator<Long> iterator() { return new Iter(); }
+
         @Override public boolean equals(Object other) { return other instanceof Bitvector && bitSet.equals(((Bitvector)other).bitSet); }
         @Override public int hashCode() { return bitSet.hashCode(); }
+
+        @Override public int compareTo(Bitvector b2) {
+            final int len1 = size();
+            final int len2 = b2.size();
+            final int lim = Math.min(len1, len2);
+
+            for (int k = 0; k < lim; k++) {
+                final int c1 = (int)get(k);
+                final int c2 = (int)b2.get(k);
+                if (c1 != c2) {
+                    return c1 - c2;
+                }
+            }
+            return len1 - len2;
+        }
+
         int size() { return size; }
-        @Override public Iterator<Long> iterator() { return new Iter(); }
         long add(boolean value) { if (value) bitSet.set(size); size++; return size - 1; }
         long get(int idx) { return bitSet.get(idx) ? 1L : 0L; }
         void set(int idx, boolean val) { bitSet.set(idx, val); }
@@ -5745,7 +5746,6 @@ public class LambdaJ {
                 if (args == null) return func.apply();
                 else return func.apply(args);
             }
-
         }
 
         // todo ConsCell args umstellen auf Object... args?
