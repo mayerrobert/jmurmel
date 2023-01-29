@@ -252,8 +252,7 @@ public class LambdaJ {
         public boolean specialForm() { return wellknownSymbol.kind == WellknownSymbolKind.SF; }
         public boolean primitive() { return wellknownSymbol.kind == WellknownSymbolKind.PRIM; }
 
-        @Override
-        public void printSEx(WriteConsumer out, boolean escapeAtoms) {
+        @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) {
             final String name = this.name;
             if (!escapeAtoms) { out.print(name); return; }
 
@@ -576,8 +575,7 @@ public class LambdaJ {
             throw errorIndexTooLarge(idx, _idx);
         }
 
-        @Override
-        public Object eltset(Object newValue, long idx) {
+        @Override public Object eltset(Object newValue, long idx) {
             long _idx = 0;
             ConsCell lst = this;
             Object cdr = this;
@@ -2069,6 +2067,7 @@ public class LambdaJ {
         sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
         sVector("vector", Features.HAVE_VECTOR, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
 
+        sString("string", Features.HAVE_STRING, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return stringDesignatorToString(car(args)); } },
         sSLength("slength", Features.HAVE_STRING, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
         sSRef("sref", Features.HAVE_STRING, 2)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
         sSSet("sset", Features.HAVE_STRING, 3)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sset(car(args), toNonnegInt("sset", cadr(args)), requireChar("sset", caddr(args))); } },
@@ -4826,6 +4825,15 @@ public class LambdaJ {
         final int len = s.length();
         for (int i = 0; i < len; i++) ret.append(s.charAt(i));
         return ret.first();
+    }
+
+    static Object stringDesignatorToString(Object o) {
+        if (o instanceof char[]) return o;
+        if (o instanceof String) return ((String)o).toCharArray();
+        if (o instanceof CharSequence) return o;
+        if (o instanceof LambdaJSymbol) return ((LambdaJSymbol)o).name.toCharArray();
+        if (o instanceof Character) return new char[] { ((char)o) };
+        throw new SimpleTypeError("not a string designator: %s", printSEx(o));
     }
 
     static Object listToString(Object lst, boolean adjustablep) {
@@ -7597,6 +7605,7 @@ public class LambdaJ {
         public final Object listToSimpleVector(Object... args) { values = null; oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
         public final Object _vector  (Object... args) { values = null; return args; }
 
+        public final Object    _string (Object... args) { values = null; oneArg("string", args.length); return stringDesignatorToString(args[0]); }
         public final long      _slength(Object... args) { values = null; oneArg("slength", args.length); return slength(args[0]); }
         public final char      _sref   (Object... args) { values = null; twoArgs("sref", args.length);   return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
         public final char      _sset   (Object... args) { values = null; threeArgs("sset", args.length); return LambdaJ.sset(args[0], toArrayIndex(args[1]), LambdaJ.requireChar("sset", args[2])); }
@@ -8386,6 +8395,7 @@ public class LambdaJ {
             case "list->simple-vector": return (CompilerPrimitive)this::listToSimpleVector;
             case "vector": return (CompilerPrimitive)this::_vector;
 
+            case "string": return (CompilerPrimitive)this::_string;
             case "slength": return (CompilerPrimitive)this::_slength;
             case "sref": return (CompilerPrimitive)this::_sref;
             case "sset": return (CompilerPrimitive)this::_sset;
@@ -8615,7 +8625,7 @@ public class LambdaJ {
         "car", "cdr", "cons", "rplaca", "rplacd",
         /*"apply",*/ "eval", "eq", "eql", "equal", "null", "read", "write", "writeln", "lnwrite",
         "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp", "typep",
-        "assoc", "assq", "list", "vector", "seqref", "seqset", "svref", "svset", "svlength", "slength", "sref", "sset", "bvref", "bvset", "bvlength",
+        "assoc", "assq", "list", "vector", "seqref", "seqset", "svref", "svset", "svlength", "string", "slength", "sref", "sset", "bvref", "bvset", "bvlength",
         "append", "values",
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",
@@ -10481,8 +10491,7 @@ final class MurmelClassLoader extends ClassLoader {
 
     MurmelClassLoader(Path outPath) { this.outPath = outPath; }
 
-    @Override
-    public Class<?> findClass(String name) throws ClassNotFoundException {
+    @Override public Class<?> findClass(String name) throws ClassNotFoundException {
         try {
             final byte[] ba = getBytes(name);
             if (ba == null) return super.findClass(name);
@@ -10569,8 +10578,7 @@ final class UnixToAnyEol implements LambdaJ.WriteConsumer {
         this.eol = eol;
     }
 
-    @Override
-    public void print(String s) {
+    @Override public void print(String s) {
         if (s == null
             || s.isEmpty()
             || s.charAt(0) != '\n' && s.charAt(s.length() - 1) != '\n' && s.indexOf('\n') == -1) {
@@ -10610,32 +10618,27 @@ final class WrappingWriter extends Writer {
     public           WrappingWriter append(double d)       { write(String.valueOf(d)); return this; }
     public           WrappingWriter append(Object o)       { write(String.valueOf(o)); return this; }
 
-    @Override
-    public void write(String s) {
+    @Override public void write(String s) {
         try { wrapped.write(s); }
         catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
     }
 
-    @Override
-    public void write(String s, int off, int len) {
+    @Override public void write(String s, int off, int len) {
         try { wrapped.write(s, off, len); }
         catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
     }
 
-    @Override
-    public void write(char[] cbuf, int off, int len) {
+    @Override public void write(char[] cbuf, int off, int len) {
         try { wrapped.write(cbuf, off, len); }
         catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
     }
 
-    @Override
-    public void flush() {
+    @Override public void flush() {
         try { wrapped.flush(); }
         catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
     }
 
-    @Override
-    public void close() {
+    @Override public void close() {
         try { wrapped.close(); }
         catch (IOException e) { throw new LambdaJ.LambdaJError(e.getMessage()); }
     }
@@ -10699,8 +10702,7 @@ final class TurtleFrame {
     TurtleFrame(String title, Number width, Number height, Number padding) {
         f = new Frame(title);
         f.addWindowListener(new WindowAdapter() {
-            @Override
-            public void windowClosing(WindowEvent e) {
+            @Override public void windowClosing(WindowEvent e) {
                 close();
             }
         });
@@ -10720,8 +10722,7 @@ final class TurtleFrame {
         draw = true;
     }
 
-    @Override
-    public String toString() { return "#<frame \"" + f.getTitle() + "\">"; }
+    @Override public String toString() { return "#<frame \"" + f.getTitle() + "\">"; }
 
     TurtleFrame open() {
         if (open) { repaint(); return this; }
@@ -10942,8 +10943,7 @@ final class TurtleFrame {
             setPreferredSize(new Dimension(width, height));
         }
 
-        @Override
-        public void paint(Graphics g) {
+        @Override public void paint(Graphics g) {
             //System.out.println("paint x=" + g.getClipBounds().x + ", y=" + g.getClipBounds().y + ", w=" + g.getClipBounds().width + ", h=" + g.getClipBounds().height);
 
             final int w = getWidth();

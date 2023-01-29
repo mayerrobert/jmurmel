@@ -1022,6 +1022,19 @@ Example usage:
 
 Since: 1.3
 
+
+### string
+    (string X) -> string
+
+Since: 1.4.1
+
+`string` coerces X into a mutable string.
+If X is a mutable string, X is returned.
+If X is an immutable string, a fresh mutable simple string is returned.
+If X is a symbol, its name is returned.
+If X is a character then a one element string containing that character is returned.
+If X cannot be coerced into a string, an error occurs.
+
 ### slength, sref, sset
     (slength str) -> length
     (sref    str n) -> nth-character

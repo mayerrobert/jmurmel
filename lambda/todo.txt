@@ -69,23 +69,6 @@ evtl. auch mehrere methoden als anonyme klasse abgeleitet von der proxyklasse?
 ggf. lnwrite+print rauskicken und einheitlich zeilenumbruch am ende statt am anfang
 
 
-CL hat write-to-string, princ-to-string, prin1-to-string
--> intern und concatenate wär auch schön
-   -> string-join mit leerem delimiter geht auch statt concatenate
-
-einige CL funktionen akzeptieren "string-designator", das ist string oder symbol oder character
--> in CL gibts string: 
-   Coerces X into a string. If X is a string, X is returned. If X is a
-   symbol, its name is returned. If X is a character then a one element
-   string containing that character is returned. If X cannot be coerced
-   into a string, an error occurs.
-   -> und zwar: simple-type-error ... is not a string designator
--> string zusätzlich zu write-to-string einbauen?
-   -> aber "string" ist anders als list, vector, hash, ... kein "constructor" obwohls der name nahelegt
-   -> string sollte wsl. java.lang.String -> char[] (aka simple-string) wandeln, d.h. mutable strings liefern
-      praktisch für z.B. string-split und string-join die derzeit immutable strings liefern
-
-
 (vector-sort vec [comparator [from [to]]]) -> sorted-vector
 (list-sort lst [comparator [from [to]]])   -> sorted-list
 oder seqsort?

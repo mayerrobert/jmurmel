@@ -126,6 +126,7 @@ simple-vector->list
 list->simple-vector
 vector
 
+string
 slength
 sref
 sset
