@@ -2448,17 +2448,17 @@ public class LambdaJ {
                     break; // fall through to "eval a list of forms"
                 }
 
-                case sTry: { // todo das sollte eigentlich TCO werden, damit wuerde ein kuenftiger handler auch VOR dem stackabbau laufen
+                case sTry: {
                     final Object oldHandler = cdr(conditionHandlerEnvEntry);
                     conditionHandlerEnvEntry.rplacd(null);
                     try {
                         return result = eval(car(ccArguments), env, stack, level, traceLvl);
                     }
                     catch (ReturnException e) { throw e; }
-                    catch (Throwable e) {
-                        final Object errorObjOrHandler = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                        values = list(errorObjOrHandler, e);
-                        return result = errorObjOrHandler;
+                    catch (Exception e) {
+                        final Object errorObj = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                        values = list(errorObj, e);
+                        return result = errorObj;
                     }
                     finally { conditionHandlerEnvEntry.rplacd(oldHandler); }
                 }
@@ -7628,7 +7628,9 @@ public class LambdaJ {
         public final Object listToString(Object... args) { values = null; varargs1_2("list->string", args.length); return LambdaJ.listToString(args[0], args.length > 1 && args[1] != null); }
 
         public final long   charInt     (Object... args) { values = null; oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
+        public final long   charInt     (Object arg)     { values = null;                                       return (long) LambdaJ.requireChar("char-code", arg); }
         public final char   intChar     (Object... args) { values = null; oneArg("code-char",     args.length); return (char) toInt(args[0]); }
+        public final char   intChar     (Object arg)     { values = null;                                       return (char) toInt(arg); }
 
         public final  long  _bvlength   (Object... args) { values = null; oneArg("bvlength", args.length);      return bvlength(args[0]); }
         public final  long  _bvref      (Object... args) { twoArgs("bvref", args.length);        return _bvref(args[0], args[1]); }
@@ -8174,7 +8176,7 @@ public class LambdaJ {
                 return protectedForm.apply(NOARGS);
             }
             catch (ReturnException e) { throw e; }
-            catch (Throwable e) {
+            catch (Exception e) {
                 values = new Object[] { errorObj, e };
                 return errorObj;
             }
@@ -10990,9 +10992,7 @@ final class TurtleFrame {
                 }
 
                 g.setColor(Color.black);
-                for (Text text: texts) {
-                    g.drawString(text.s, trX(fac, xoff, text.x), h - trY(fac, yoff, text.y));
-                }
+                for (Text text: texts) g.drawString(text.s, trX(fac, xoff, text.x), h - trY(fac, yoff, text.y));
             }
         }
     }
