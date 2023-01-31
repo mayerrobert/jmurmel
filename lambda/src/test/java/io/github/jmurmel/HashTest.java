@@ -5,7 +5,7 @@ import org.testng.annotations.Test;
 
 import java.math.BigInteger;
 
-import static io.github.jmurmel.LambdaJ.sxhash;
+import static io.github.jmurmel.LambdaJ.Subr.sxhash;
 
 public class HashTest {
 
@@ -79,6 +79,6 @@ public class HashTest {
     public void testBitvector() {
         final boolean[] bv = new boolean[] { false, true, true, false };
         final int bvhash = sxhash(bv);
-        Assert.assertEquals(sxhash(LambdaJ.Bitvector.of(bv)), bvhash);
+        Assert.assertEquals(sxhash(LambdaJ.Subr.Bitvector.of(bv)), bvhash);
     }
 }

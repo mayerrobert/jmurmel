@@ -53,6 +53,8 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.SimpleJavaFileObject;
 
+import static io.github.jmurmel.LambdaJ.Subr.*;
+
 /// # JMurmel - Murmel interpreter/ compiler
 
 /** <p>Implementation of JMurmel, an interpreter for the Lisp-dialect Murmel.
@@ -2008,8 +2010,8 @@ public class LambdaJ {
         sRplacd("rplacd", Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
 
         sList("list", Features.HAVE_UTIL, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return args; } },
-        sListStar("list*", Features.HAVE_UTIL, 1, -1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.listStar(args); } },
-        sAppend("append", Features.HAVE_UTIL, -1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.append(args); } },
+        sListStar("list*", Features.HAVE_UTIL, 1, -1) { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.listStar(intp, args); } },
+        sAppend("append", Features.HAVE_UTIL, -1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.append(intp, args); } },
         sAssq("assq", Features.HAVE_UTIL, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
         sAssoc("assoc", Features.HAVE_UTIL, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
 
@@ -2019,12 +2021,12 @@ public class LambdaJ {
         sSub("-", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); } },
         sDiv("/", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); } },
 
-        sNeq("=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "=",  (d1, d2) -> d1 == d2); } },
-        sNe("/=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "/=", (d1, d2) -> d1 != d2); } },
-        sLt("<",  Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<",  (d1, d2) -> d1 <  d2); } },
-        sLe("<=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, "<=", (d1, d2) -> d1 <= d2); } },
-        sGe(">=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">=", (d1, d2) -> d1 >= d2); } },
-        sGt(">",  Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.compare(args, ">",  (d1, d2) -> d1 >  d2); } },
+        sNeq("=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(LambdaJ.Subr.compare(args, "=",  (d1, d2) -> d1 == d2)); } },
+        sNe("/=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(LambdaJ.Subr.compare(args, "/=", (d1, d2) -> d1 != d2)); } },
+        sLt("<",  Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(LambdaJ.Subr.compare(args, "<",  (d1, d2) -> d1 <  d2)); } },
+        sLe("<=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(LambdaJ.Subr.compare(args, "<=", (d1, d2) -> d1 <= d2)); } },
+        sGe(">=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(LambdaJ.Subr.compare(args, ">=", (d1, d2) -> d1 >= d2)); } },
+        sGt(">",  Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(LambdaJ.Subr.compare(args, ">",  (d1, d2) -> d1 >  d2)); } },
 
         sInc("1+", Features.HAVE_NUMBERS, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
         sDec("1-", Features.HAVE_NUMBERS, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
@@ -2057,13 +2059,13 @@ public class LambdaJ {
         sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
 
         sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
-        sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.vectorToList(car(args)); } },
+        sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.vectorToList(intp, car(args)); } },
         sListToVector("list->vector", Features.HAVE_VECTOR, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToVector(car(args), cadr(args) != null); } },
 
         sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
         sSvRef("svref", Features.HAVE_VECTOR, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
         sSvSet("svset", Features.HAVE_VECTOR, 3)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); } },
-        sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.simpleVectorToList(car(args)); } },
+        sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.simpleVectorToList(intp, car(args)); } },
         sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
         sVector("vector", Features.HAVE_VECTOR, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
 
@@ -2072,7 +2074,7 @@ public class LambdaJ {
         sSRef("sref", Features.HAVE_STRING, 2)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
         sSSet("sset", Features.HAVE_STRING, 3)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sset(car(args), toNonnegInt("sset", cadr(args)), requireChar("sset", caddr(args))); } },
         sSEq("string=", Features.HAVE_STRING, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringEq(car(args), cadr(args))); } },
-        sStringToList("string->list", Features.HAVE_STRING, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.stringToList(car(args)); } },
+        sStringToList("string->list", Features.HAVE_STRING, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.stringToList(intp, car(args)); } },
         sListToString("list->string", Features.HAVE_STRING, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToString(car(args), cadr(args) != null); } },
 
         sCharCode("char-code", Features.HAVE_STRING, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return (long) requireChar("char-code", car(args)); } },
@@ -2082,7 +2084,7 @@ public class LambdaJ {
         sBvRef("bvref", Features.HAVE_VECTOR, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return bvref(car(args), toNonnegInt("bvref", cadr(args))); } },
         sBvSet("bvset", Features.HAVE_VECTOR, 3)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).longValue()); } },
         sBvEq("bv=", Features.HAVE_VECTOR, 2)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
-        sBvToList("bit-vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.bitVectorToList(car(args)); } },
+        sBvToList("bit-vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.bitVectorToList(intp, car(args)); } },
         sListToBv("list->bit-vector", Features.HAVE_VECTOR, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToBitVector(car(args), cadr(args) != null); } },
 
         sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
@@ -2096,8 +2098,8 @@ public class LambdaJ {
         sHashTableCount("hash-table-count", Features.HAVE_HASH, 1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashTableCount(car(args)); } },
         sClrHash("clrhash", Features.HAVE_HASH, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return clrhash(car(args)); } },
         sHashRemove("hash-table-remove", Features.HAVE_HASH, 1, 2)     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashRemove(args)); } },
-        sSxHash("sxhash", Features.HAVE_HASH, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.sxhash(car(args)); } },
-        sScanHash("scan-hash-table", Features.HAVE_HASH, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.scanHash(car(args)); } },
+        sSxHash("sxhash", Features.HAVE_HASH, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.sxhash(car(args)); } },
+        sScanHash("scan-hash-table", Features.HAVE_HASH, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.scanHash(intp, car(args)); } },
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
@@ -2118,7 +2120,7 @@ public class LambdaJ {
         sGensym("gensym", Features.HAVE_XTRA, 0, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
         sTrace("trace", Features.HAVE_XTRA, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
-        sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.macroexpand1(args); } },
+        sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)       { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.macroexpand1(intp, args); } },
         sError("error", Features.HAVE_UTIL, 1, -1)                  { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.getSymbolTable(), car(args), listToArray(cdr(args))); return null; } },
 
         // time
@@ -2950,7 +2952,7 @@ public class LambdaJ {
 
                 // not a special form, must be a function or macro application
                 if (symOp.macro != null) {
-                    final Object expansion = macroexpandImpl(ccForm);
+                    final Object expansion = macroexpandImpl(this, ccForm);
                     assert cadr(values) != null : ccForm.lineInfo() + "macro " + symOp + " was not expanded - secondary value is nil, form was " + form;
                     assert expansion != ccForm : ccForm.lineInfo() + "macro " + symOp + " was not expanded - expansion == ccForm, form was " + form;
                     values = NO_VALUES;
@@ -3802,7 +3804,7 @@ public class LambdaJ {
         return null;
     }
 
-    /** Create a new list by copying lhs and appending rhs. Faster (?) 2 argument version of {@link #append(ConsCell)} for internal use. */
+    /** Create a new list by copying lhs and appending rhs. Faster (?) 2 argument version of {@link Subr#append} for internal use. */
     private ConsCell append2(ConsCell lhs, ConsCell rhs) {
         if (lhs == null) return rhs;
         if (rhs == null) return lhs;
@@ -4174,7 +4176,7 @@ public class LambdaJ {
     /// Additional error checking functions used by primitives only.
 
     /** at least one arg, the first arg must be a non-nil string */
-    private static void stringArg(String func, String arg, ConsCell a) {
+    static void stringArg(String func, String arg, ConsCell a) {
         if (!stringp(car(a)))
             throw new SimpleTypeError("%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
     }
@@ -4237,7 +4239,7 @@ public class LambdaJ {
         return (Character)c;
     }
 
-    private static boolean requireBit(String func, Object value) {
+    static boolean requireBit(String func, Object value) {
         return requireIntegralNumber(func, value, 0, 1).intValue() != 0;
     }
 
@@ -4332,642 +4334,6 @@ public class LambdaJ {
         return requireIntegralNumber(func, a, 0, Integer.MAX_VALUE).intValue();
     }
 
-
-
-    /// Runtime for Lisp programs, i.e. an environment with primitives and predefined global symbols
-
-    enum CompareMode { NUMBER, EQL, EQUAL }
-
-    /** compare two objects. {@code mode} determines which types are compared by their value and which are compared by their identity.
-     * 
-     *  <p>Implementation note: this relies on the hope that {@link System#identityHashCode(Object)} will return different values for different objects that are not numbers.
-     *  This is strongly suggested but not guaranteed by the Java spec:
-     *  "As much as is reasonably practical, the hashCode method defined by class {@code Object}
-     *  does return distinct integers for distinct objects." */
-    static int compare(Object o1, Object o2, CompareMode mode) {
-        if (o1 == o2) return 0;
-        if (o1 == null) return -1;
-        if (o2 == null) return 1;
-
-        if (integerp(o1) && integerp(o2)) {
-            if (o1 instanceof BigInteger && o2 instanceof BigInteger) return ((BigInteger)o1).compareTo((BigInteger)o2);
-            if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue())));
-            if (o2 instanceof BigInteger)                             return new BigInteger(String.valueOf(((Number)o1).longValue())).compareTo((BigInteger)o2);
-            return Long.compare(((Number)o1).longValue(), ((Number)o2).longValue());
-        }
-
-        if (floatp(o1) && floatp(o2)) {
-            if (o1.getClass() != o2.getClass()) return System.identityHashCode(o1) - System.identityHashCode(o2);
-            if (o1 instanceof BigDecimal && o2 instanceof BigDecimal) return ((BigDecimal)o1).compareTo((BigDecimal)o2);
-            return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue());
-        }
-        if (mode == CompareMode.NUMBER) return System.identityHashCode(o1) - System.identityHashCode(o2);
-
-        if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
-        if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
-
-        if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
-
-        if (bitvectorp(o1) && bitvectorp(o2)) { return Bitvector.of(o1).compareTo(Bitvector.of(o2)); }
-
-        if (consp(o1) && consp(o2)) { return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
-
-        return System.identityHashCode(o1) - System.identityHashCode(o2);
-    }
-
-    static boolean eql(Object o1, Object o2) {
-        return compare(o1, o2, CompareMode.EQL) == 0;
-    }
-
-    static boolean equal(Object o1, Object o2) {
-        return compare(o1, o2, CompareMode.EQUAL) == 0;
-    }
-
-
-
-    /// conses and lists
-
-    final Object listStar(ConsCell args) {
-        if (cdr(args) == null) return car(args);
-        if (cddr(args) == null) return cons(car(args), cadr(args));
-        final CountingListBuilder b = new CountingListBuilder();
-        for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
-            b.append(car(args));
-        }
-        b.appendLast(car(args));
-        return b.first();
-    }
-
-    /** append args non destructively, all args except the last are shallow copied (list structure is copied, contents is not),
-     *  all args except the last must be a list */
-    final Object append(ConsCell args) {
-        if (args == null) return null;
-        if (cdr(args) == null) return car(args);
-        if (!listp(car(args))) throw new SimpleTypeError("append: first argument %s is not a list", car(args));
-
-        while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
-
-        ConsCell current = args;
-        CountingListBuilder lb = null;
-        for (; cdr(current) != null; current = (ConsCell)cdr(current)) {
-            final Object o = car(current);
-            if (o == null) continue;
-            if (!consp(o)) throw new SimpleTypeError("append: argument is not a list: %s", printSEx(o));
-            if (lb == null) lb = new CountingListBuilder();
-            for (Object obj: (ConsCell)o) lb.append(obj);
-        }
-        if (lb == null) return car(args);
-        lb.appendLast(car(current));
-        return lb.first();
-    }
-
-    /** return the cons whose car is eql to {@code atom}
-     * @see #assq
-     */
-    static ConsCell assoc(Object atom, Object maybeList) {
-        if (maybeList == null) return null;
-        final ConsCell ccList = requireList("assoc", maybeList);
-        for (Object entry: ccList) {
-            if (entry != null) { // ignore null items
-                if (eql(atom, car(entry))) return (ConsCell)entry;
-            }
-        }
-        return null;
-    }
-
-
-    /// numbers
-
-    interface DoubleBiPred {
-        boolean test(double d1, double d2);
-    }
-
-    /** compare subsequent pairs of the given list of numbers with the given predicate */
-    final Object compare(ConsCell args, String opName, DoubleBiPred pred) {
-        Object prev = car(args);
-        for (ConsCell rest = (ConsCell)cdr(args); rest != null; rest = (ConsCell)cdr(rest)) {
-            final Object next = car(rest);
-            if (!pred.test(toDouble(opName, prev), toDouble(opName, next))) return null;
-            prev = next;
-        }
-        return expTrue.get();
-    }
-
-    /** operator for zero or more args */
-    static double addOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
-        if (car(_args) == null) return startVal;
-        ConsCell args = _args;
-        double result = toDouble(opName, car(args));
-
-        for (;;) {
-            final Object next = cdr(args);
-            if (!listp(next) || next == _args) // todo nested loop check
-                throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
-            args = (ConsCell) next;
-            if (args == null) break;
-            result = op.applyAsDouble(result, toDouble(opName, car(args)));
-        }
-        return result;
-    }
-
-    /** operator for one or more args */
-    static double subOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
-        ConsCell args = _args;
-        double result = toDouble(opName, car(args));
-
-        if (cdr(args) == null) return op.applyAsDouble(startVal, result);
-
-        for (;;) {
-            final Object next = cdr(args);
-            if (!listp(next) || next == args) // todo nested loop check
-                throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
-            args = (ConsCell) next;
-            if (args == null) break;
-            result = op.applyAsDouble(result, toDouble(opName, car(args)));
-        }
-        return result;
-    }
-
-    static double quot12(String func, ConsCell args) {
-        final double lhs = toDouble(func, car(args));
-        return cdr(args) == null ? lhs : lhs / toDouble(func, cadr(args));
-    }
-
-    static Number cl_signum(Object n) {
-        if (n instanceof Double)     { return Math.signum((Double)n); }
-        if (n instanceof Long)       { return (long)Long.signum((Long)n); }
-        if (n instanceof Byte)       { return (long)Integer.signum((int) (Byte)n); }
-        if (n instanceof Short)      { return (long)Integer.signum((int) (Short)n); }
-        if (n instanceof Integer)    { return (long)Integer.signum((Integer)n); }
-        if (n instanceof BigInteger) { return (long)((BigInteger)n).signum(); }
-        if (n instanceof BigDecimal) { return (double)((BigDecimal)n).signum(); }
-
-        return Math.signum(toDouble("signum", n));
-    }
-
-    /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
-     *  of the same sign as the mathematical quotient,
-     *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
-    static double cl_truncate(double d) {
-        return d < 0.0 ? Math.ceil(d) : Math.floor(d);
-    }
-
-    /** note that the Java modulo operator {@code %} works differently, see also https://en.wikipedia.org/wiki/Modulo_operation */
-    static double cl_mod(double x, double y) {
-        return x - Math.floor(x / y) * y;
-    }
-
-    static Number inc(Object n) {
-        if (n instanceof Double) return ((Double)n) + 1;
-        if (n instanceof Long) {
-            final long l;
-            if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
-            return l + 1;
-        }
-        if (n instanceof Byte) return ((Byte)n).longValue() + 1;
-        if (n instanceof Short) return ((Short)n).longValue() + 1;
-        if (n instanceof Integer) return ((Integer)n).longValue() + 1;
-        if (n instanceof BigInteger) {
-            final long l;
-            try {
-                l = ((BigInteger)n).longValueExact();
-            }
-            catch (ArithmeticException e) {
-                throw new ArithmeticException("1+: overflow, BigInteger argument does not fit in a fixnum");
-            }
-            if (l == MOST_POSITIVE_FIXNUM) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
-            return l + 1;
-        }
-        return toDouble("1+", n) + 1;
-    }
-
-    static Number dec(Object n) {
-        if (n instanceof Double) return ((Double)n) - 1;
-        if (n instanceof Long) {
-            final long l;
-            if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
-            return l - 1;
-        }
-        if (n instanceof Byte) return ((Byte)n).longValue() - 1;
-        if (n instanceof Short) return ((Short)n).longValue() - 1;
-        if (n instanceof Integer) return ((Integer)n).longValue() - 1;
-        if (n instanceof BigInteger) {
-            final long l;
-            try {
-                l = ((BigInteger)n).longValueExact();
-            }
-            catch (ArithmeticException e) {
-                throw new ArithmeticException("1-: underflow, BigInteger argument does not fit in a fixnum");
-            }
-            if (l == MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
-            return l - 1;
-        }
-        return toDouble("1-", n) - 1;
-    }
-
-
-    /// vectors
-
-    static final class Bitvector implements Serializable, Writeable, Iterable<Long>, Comparable<Bitvector> {
-        class Iter implements Iterator<Long> {
-            private int cursor;
-            @Override public boolean hasNext() { return cursor < size(); }
-            @Override public Long next() { if (cursor == size()) throw new NoSuchElementException(); return get(cursor++); }
-        }
-
-        private static final long serialVersionUID = 1L;
-        private final BitSet bitSet;
-        private int size;
-
-        Bitvector(int capacity, int size) {
-            bitSet = new BitSet(capacity);
-            this.size = size;
-        }
-
-        Bitvector(boolean[] contents) {
-            this(contents.length, 0);
-            for (boolean b: contents) add(b);
-        }
-
-        static Bitvector of(Object o) {
-            if (o instanceof Bitvector) return (Bitvector)o;
-            if (o instanceof boolean[]) return new Bitvector((boolean[])o);
-            throw new SimpleTypeError("not a bitvector: %s", LambdaJ.printSEx(o));
-        }
-
-        @Override public Iterator<Long> iterator() { return new Iter(); }
-
-        @Override public boolean equals(Object other) { return other instanceof Bitvector && bitSet.equals(((Bitvector)other).bitSet); }
-        @Override public int hashCode() { return bitSet.hashCode(); }
-
-        @Override public int compareTo(Bitvector b2) {
-            final int len1 = size();
-            final int len2 = b2.size();
-            final int lim = Math.min(len1, len2);
-
-            for (int k = 0; k < lim; k++) {
-                final int c1 = (int)get(k);
-                final int c2 = (int)b2.get(k);
-                if (c1 != c2) {
-                    return c1 - c2;
-                }
-            }
-            return len1 - len2;
-        }
-
-        int size() { return size; }
-        long add(boolean value) { if (value) bitSet.set(size); size++; return size - 1; }
-        long get(int idx) { return bitSet.get(idx) ? 1L : 0L; }
-        void set(int idx, boolean val) { bitSet.set(idx, val); }
-
-        void fill(boolean value) {
-            if (value) bitSet.set(0, size);
-            else bitSet.clear();
-        }
-
-        boolean[] toBooleanArray() {
-            final boolean[] ret = new boolean[size];
-            if (size == 0) return ret;
-
-            final BitSet bitSet = this.bitSet;
-            final int limit = bitSet.length();
-            for (int idx = 0; idx < limit; idx++) {
-                ret[idx] = bitSet.get(idx);
-            }
-            return ret;
-        }
-
-        @Override public void printSEx(WriteConsumer sb, boolean escapeAtoms) {
-            sb.print("#*");
-            int idx = 0;
-            for (; idx < bitSet.length(); idx++) sb.print(bitSet.get(idx) ? "1" : "0");
-            for (; idx < size; idx++) sb.print("0");
-        }
-    }
-
-    static Object makeArray(LambdaJSymbol sBit, LambdaJSymbol sCharacter, ConsCell a) {
-        final int size = toNonnegInt("make-array", car(a));
-        final Object type = cadr(a);
-        final Object cap = caddr(a);
-        final boolean adjustable = cap != null;
-        final int capacity;
-        if (adjustable && cap != sT) capacity = requireIntegralNumber("make-array", cap, size, MAX_ARRAY_SIZE).intValue();
-        else capacity = size;
-
-        if (cdr(a) == null || type == sT) {
-            if (adjustable) { final List<Object> ret = new ArrayList<>(capacity); for (int i = 0; i < size; i++) ret.add(null); return ret; }
-            return new Object[size];
-        }
-
-        if (type == sBit) {
-            if (adjustable) return new Bitvector(capacity, size);
-            return new boolean[size];
-        }
-
-        if (type == sCharacter) {
-            if (adjustable) { final StringBuilder ret = new StringBuilder(capacity); for (int i = 0; i < size; i++) ret.append('\0'); return ret; }
-            return new char[size];
-        }
-
-        throw new SimpleTypeError("make-array: unsupported or invalid type specification %s", printSEx(type)); // todo sbcl akzeptiert alles als :element-type
-    }
-
-
-    static long vectorLength(Object maybeVector) {
-        if (maybeVector instanceof Object[])     return ((Object[])maybeVector).length;
-        if (maybeVector instanceof boolean[])    return ((boolean[])maybeVector).length;
-        if (maybeVector instanceof Bitvector)    return ((Bitvector)maybeVector).size();
-        if (maybeVector instanceof char[])       return ((char[])maybeVector).length;
-        if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
-        if (maybeVector instanceof List)         return ((List<?>)maybeVector).size();
-        throw errorNotAVector("vector-length", maybeVector);
-    }
-
-    static Object vectorCopy(Object vector, boolean adjustablep) {
-        final int length = (int)vectorLength(vector);
-        if (adjustablep) {
-            if (vector instanceof Object[]) return new ArrayList<>(Arrays.asList((Object[])vector));
-            if (vector instanceof boolean[]) return new Bitvector((boolean[])vector);
-            if (vector instanceof Bitvector) return new Bitvector(((Bitvector)vector).toBooleanArray());
-            if (vector instanceof char[]) return new StringBuilder(String.valueOf((char[])vector));
-            if (vector instanceof CharSequence) return new StringBuilder((CharSequence)vector);
-            if (vector instanceof List<?>) return new ArrayList<>((List<?>)vector);
-        }
-        else {
-            if (vector instanceof Object[]) return Arrays.copyOf((Object[])vector, length);
-            if (vector instanceof boolean[]) return Arrays.copyOf((boolean[])vector, length);
-            if (vector instanceof Bitvector) return ((Bitvector)vector).toBooleanArray();
-            if (vector instanceof char[]) return Arrays.copyOf((char[])vector, length);
-            if (vector instanceof CharSequence) return vector.toString().toCharArray();
-            if (vector instanceof List<?>) return ((List<?>)vector).toArray(new Object[0]);
-        }
-        throw errorNotAVector("vector-copy", vector);
-    }
-
-    @SuppressWarnings("unchecked")
-    static Object vectorFill(Object vector, Object value, Object _start, Object _end) {
-        final int start, end;
-        final int length = (int)vectorLength(vector);
-        if (_start != null) {
-            start = requireIntegralNumber("vector-fill", _start, 0, length).intValue();
-            if (_end != null) {
-                end = requireIntegralNumber("vector-fill", _end, start+1, length).intValue();
-            }
-            else end = length;
-        }
-        else { start = 0; end = length; }
-
-        if (vector instanceof Object[])      { Arrays.fill((Object[])vector, start, end, value); return vector; }
-        if (vector instanceof boolean[])     { Arrays.fill((boolean[])vector, start, end, requireBit("vector-fill", value)); return vector; }
-        if (vector instanceof Bitvector)     { ((Bitvector)vector).fill(requireBit("vector-fill", value)); return vector; }
-        if (vector instanceof char[])        { Arrays.fill((char[])vector, start, end, requireChar("vector-fill", value)); return vector; }
-        if (vector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)vector; final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
-        if (vector instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)vector;   final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
-        if (vector instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)vector; for (int i = start; i < end; i++) list.set(i, value); return vector; }
-        throw errorNotAVector("vector-fill", vector);
-    }
-
-    @SuppressWarnings("unchecked")
-    static long vectorAdd(Object maybeVector, Object newValue) {
-        if (!adjustableArrayP(maybeVector)) throw new InvalidIndexError("vector-add: not an adjustable vector: %s", printSEx(maybeVector));
-        if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
-        if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
-        if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-add", newValue)); }
-        if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(newValue); return l.size() - 1; }
-        throw errorInternal("vector-add: unknown object type %s", maybeVector);
-    }
-
-    final Object vectorToList(Object maybeVector) {
-        if (svectorp(maybeVector)) return simpleVectorToList(maybeVector);
-        if (stringp(maybeVector)) return stringToList(maybeVector);
-        if (sbitvectorp(maybeVector)) return bitVectorToList(maybeVector);
-
-        if (maybeVector instanceof Bitvector || maybeVector instanceof List) {
-            final Iterator<?> it = ((Iterable<?>)maybeVector).iterator();
-            if (!it.hasNext()) return null;
-            final CountingListBuilder ret = new CountingListBuilder();
-            do { ret.append(it.next()); }
-            while (it.hasNext());
-            return ret.first();
-        }
-
-        throw errorNotAVector("vector->list", maybeVector);
-    }
-
-    static Object listToVector(Object lst, boolean adjustablep) {
-        if (lst == null) return adjustablep ? new ArrayList<>() : new Object[0];
-        if (adjustablep) {
-            final ConsCell l = requireList("list->vector", lst);
-            final ArrayList<Object> ret = new ArrayList<>();
-            for (Object o: l) ret.add(o);
-            return ret;
-        }
-        return listToArray(lst); 
-    }
-
-    static long svlength(Object maybeVector) {
-        if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
-        throw errorNotASimpleVector("svlength", maybeVector);
-    }
-
-    static Object svref(Object maybeVector, int idx) {
-        if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx];
-        throw errorNotASimpleVector("svref", maybeVector);
-    }
-
-    static Object svset(Object maybeVector, int idx, Object newValue) {
-        if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
-        throw errorNotASimpleVector("svset", maybeVector);
-    }
-
-    final Object simpleVectorToList(Object maybeVector) {
-        final Object[] s = requireSimpleVector("simple-vector->list", maybeVector);
-        if (s.length == 0) return null;
-        final CountingListBuilder ret = new CountingListBuilder();
-        final int len = s.length;
-        for (int i = 0; i < len; i++) ret.append(s[i]);
-        return ret.first();
-    }
-
-
-    static long slength(Object maybeVector) {
-        if (maybeVector instanceof char[])       return ((char[])maybeVector).length;
-        if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
-        throw errorNotAString("slength", maybeVector);
-    }
-
-    static char sref(Object maybeString, int idx) {
-        if (maybeString instanceof char[]) return ((char[])maybeString)[idx];
-        return requireCharsequence("sref", maybeString).charAt(idx);
-    }
-
-    static char sset(Object maybeString, int idx, char newValue) {
-        if (maybeString instanceof char[]) return ((char[])maybeString)[idx] = newValue;
-        if (maybeString instanceof StringBuilder) { ((StringBuilder)maybeString).setCharAt(idx, newValue); return newValue; }
-        if (maybeString instanceof StringBuffer) { ((StringBuffer)maybeString).setCharAt(idx, newValue); return newValue; }
-        if (maybeString instanceof String) { throw new SimpleTypeError("%s: cannot modify readonly string", "sset"); }
-        throw new SimpleTypeError("%s: expected a string argument but got %s", "sset", printSEx(maybeString));
-    }
-
-    static boolean stringEq(Object o1, Object o2) {
-        return Objects.equals(requireStringDesignator("string=", o1), requireStringDesignator("string=", o2));
-    }
-
-    final Object stringToList(Object maybeString) {
-        final CountingListBuilder ret = new CountingListBuilder();
-        if (maybeString instanceof char[]) {
-            final char[] carry = (char[])maybeString;
-            final int len = carry.length;
-            for (int i = 0; i < len; i++) ret.append(carry[i]);
-            return ret.first();
-        }
-        final CharSequence s = requireCharsequence("string->list", maybeString);
-        final int len = s.length();
-        for (int i = 0; i < len; i++) ret.append(s.charAt(i));
-        return ret.first();
-    }
-
-    static Object stringDesignatorToString(Object o) {
-        if (o == null) return new char[] { 'n', 'i', 'l' };
-        if (o instanceof String) return ((String)o).toCharArray();
-        if (o instanceof char[] || o instanceof CharSequence) return o;
-        if (o instanceof LambdaJSymbol) return ((LambdaJSymbol)o).name.toCharArray();
-        if (o instanceof Character) return new char[] { ((char)o) };
-        throw new SimpleTypeError("not a string designator: %s", printSEx(o));
-    }
-
-    static Object listToString(Object lst, boolean adjustablep) {
-        if (lst == null) return adjustablep ? new StringBuilder() : new char[0];
-        final ConsCell l = requireList("list->string", lst);
-        final StringBuilder ret = new StringBuilder();
-        for (Object c: l) ret.append(requireChar("list->string", c)); // todo cyclecheck
-        return adjustablep ? ret : ret.toString().toCharArray();
-    }
-
-
-    static long bvlength(Object maybeVector) {
-        if (maybeVector instanceof boolean[])    return ((boolean[])maybeVector).length;
-        if (maybeVector instanceof Bitvector)    return ((Bitvector)maybeVector).size();
-        throw errorNotABitVector("bvlength", maybeVector);
-    }
-
-    static long bvref(Object bv, int idx) {
-        if (bv instanceof boolean[]) return ((boolean[])bv)[idx] ? 1L : 0L;
-        if (bv instanceof Bitvector) { final Bitvector _bv = (Bitvector)bv;   if (idx >= _bv.size()) errorIndexTooLarge(idx, _bv.size()); return _bv.get(idx); }
-        throw errorNotABitVector("bvref", bv);
-    }
-
-    static long bvset(Object maybeVector, int idx, long newValue) {
-        if (maybeVector instanceof boolean[]) {
-            final boolean b;
-            if (newValue == 0) b = false;
-            else if (newValue == 1) b = true;
-            else throw errorNotABit("bvset", newValue);
-            ((boolean[])maybeVector)[idx] = b;
-            return newValue;
-        }
-        if (maybeVector instanceof Bitvector) { ((Bitvector)maybeVector).set(idx, requireBit("bvset", newValue)); return newValue; }
-        throw errorNotABitVector("bvset", maybeVector);
-    }
-
-    static boolean bvEq(Object maybeVector1, Object maybeVector2) {
-        if (sbitvectorp(maybeVector1) && sbitvectorp(maybeVector2)) return Arrays.equals((boolean[])maybeVector1, (boolean[])maybeVector2);
-        if (!bitvectorp(maybeVector1)) throw errorNotABitVector("bv=", maybeVector1);
-        if (!bitvectorp(maybeVector2)) throw errorNotABitVector("bv=", maybeVector2);
-        if (maybeVector1 == maybeVector2) return true;
-        if (vectorLength(maybeVector1) != vectorLength(maybeVector2)) return false;
-        for (int i = 0; i < vectorLength(maybeVector1); i++) {
-            if (seqref(maybeVector1, i) != seqref(maybeVector2, i)) return false;
-        }
-        return true;
-    }
-
-    final Object bitVectorToList(Object maybeVector) {
-        final CountingListBuilder ret;
-        if (maybeVector instanceof boolean[]) {
-            final boolean[] s = (boolean[])maybeVector;
-            final int len = s.length;
-            if (len == 0) return null;
-            ret = new CountingListBuilder();
-            for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
-        }
-        else if (maybeVector instanceof Bitvector) {
-            final Bitvector bv = (Bitvector)maybeVector;
-            if (bv.size() == 0) return null;
-            ret = new CountingListBuilder();
-            for (Object bit: bv) ret.append(bit);
-        }
-        else throw errorNotABitVector("bit-vector->list", maybeVector);
-        return ret.first();
-    }
-
-    static Object listToBitVector(Object o, boolean adjustablep) {
-        final ConsCell lst = requireList("list->bit-vector", o);
-        if (adjustablep) {
-            final Bitvector bv = new Bitvector(10, 0);
-            if (lst != null) for (Object bit: lst) bv.add(requireBit("list->bit-vector", bit));
-            return bv;
-        }
-        return listToBooleanArray(lst);
-    }
-
-
-    /// sequences
-
-    static Object seqref(Object maybeSeq, long idx) {
-        checkSequenceBounds(maybeSeq, idx);
-        if (maybeSeq instanceof ConsCell)     return ((ConsCell)maybeSeq).elt(idx);
-        if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;      if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
-        if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;        if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
-        if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq;     if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] ? 1L : 0L; }
-        if (maybeSeq instanceof Bitvector)    { final Bitvector bv = (Bitvector)maybeSeq;       if (idx >= bv.size())   errorIndexTooLarge(idx, bv.size());   return bv.get((int)idx); }
-        if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes")
-                                                final List list = (List)maybeSeq;               if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
-        if (maybeSeq instanceof CharSequence) { final CharSequence cs = (CharSequence)maybeSeq; if (idx >= cs.length()) errorIndexTooLarge(idx, cs.length()); return cs.charAt((int)idx); }
-        throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
-    }
-
-    private static void checkSequenceBounds(Object maybeSeq, long idx) {
-        if (idx < 0) throw new InvalidIndexError("seqref: index must be >= 0");
-        if (maybeSeq == null) errorIndexTooLarge(idx, 0);
-    }
-
-    @SuppressWarnings("unchecked")
-    static Object seqset(Object maybeSeq, long idx, Object newValue) {
-        checkSequenceBounds(maybeSeq, idx);
-        if (maybeSeq instanceof ConsCell)      return ((ConsCell)maybeSeq).eltset(newValue, idx);
-        if (maybeSeq instanceof Object[])      { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
-        if (maybeSeq instanceof char[])        { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
-        if (maybeSeq instanceof boolean[])     { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length);
-                                                 final int newBit = requireIntegralNumber("seqset", newValue, 0, 1).intValue();
-                                                 if (newBit == 0) { arry[(int)idx] = false; return 0L; }
-                                                 if (newBit == 1) { arry[(int)idx] = true;  return 1L; }
-                                                 throw errorNotABit("seqset", newValue); }
-        if (maybeSeq instanceof Bitvector)     { final Bitvector bv = (Bitvector)maybeSeq; if (idx >= bv.size()) errorIndexTooLarge(idx, bv.size()); bv.set((int)idx, requireBit("seqset", newValue));
-                                                return newValue; }
-        if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
-                                                 final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
-                                                 return newValue; }
-        if (maybeSeq instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
-                                                 final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
-                                                 return newValue; }
-        if (maybeSeq instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
-                                                 return newValue; }
-        throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
-    }
-
-
-    /// Hash tables
-    static final int DEFAULT_HASH_SIZE = 24; // will give capacity==32
-    static final Object NO_DEFAULT_VALUE = new Object();
-
-    /** a hash function that is compatible with equal(o1, o1) aka compare(o1, o2, CompareMode.EQUAL):
-     *  two objects that are equal will have the same hash, two objects that are not equal may or may not have the same hash.
-     *  Objects with (possibly embedded) loops should be handled as well. */
-    static int sxhash(Object o) {
-        return sxhashSigned(o) & 0x7fffffff; // Math.abs() won't guarantee a nonnegative number: Math.abs(-2147483648) == -2147483648
-    }
-
     static int sxhashSigned(Object o) {
         if (o == null) return 97;
 
@@ -4982,556 +4348,1190 @@ public class LambdaJ {
         return o.getClass().getName().hashCode(); // see https://stackoverflow.com/questions/21126507/why-does-sxhash-return-a-constant-for-all-structs
     }
 
-    static final class EqlKey implements Comparable<Object> {
-        final Object key;
-        EqlKey(Object key) { this.key = key; }
-
-        static Object of(Object key) {
-            if (key instanceof Float || key instanceof Double || key instanceof BigDecimal) return key;
-            return new EqlKey(key);
-        }
-        @Override public int compareTo(Object o) { if (o instanceof EqlKey) return LambdaJ.compare(this.key, ((EqlKey)o).key, CompareMode.EQL);
-                                                   else return LambdaJ.compare(this.key, o, CompareMode.EQL); }
-        @Override public int hashCode() { return sxhashSigned(key); }
-        @Override public boolean equals(Object o) { if (o instanceof EqlKey) return LambdaJ.compare(this.key, ((EqlKey)o).key, CompareMode.EQL) == 0;
-                                                    else return LambdaJ.compare(this.key, o, CompareMode.EQL) == 0; }
-    }
-
-    static final class EqualKey implements Comparable<Object> {
-        final Object key;
-        EqualKey(Object key) { this.key = key; }
-
-        static Object of(Object key) {
-            if (key instanceof Float || key instanceof Double || key instanceof BigDecimal) return key;
-            return new EqualKey(key);
-        }
-        @Override public int compareTo(Object o) { if (o instanceof EqualKey) return LambdaJ.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL);
-                                                   else return LambdaJ.compare(this.key, o, CompareMode.EQUAL); }
-        @Override public int hashCode() { return sxhashSigned(key); }
-        @Override public boolean equals(Object o) { if (o instanceof EqualKey) return LambdaJ.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL) == 0;
-                                                    else return LambdaJ.compare(this.key, o, CompareMode.EQUAL) == 0; }
-    }
-
-    /** Note: getEntrySet(), getKeySet() and maybe more Map methods will NOT work as expected! */
-    abstract static class MurmelMap extends HashMap<Object, Object> implements Writeable {
-        MurmelMap(int size) { super((int)(size / 0.75f)); }
-
-        abstract String pfx();
-        abstract Object makeKey(Object key);
-        abstract Object getKey(Map.Entry<?,?> entry);
-
-        @Override public Object put(Object key, Object value) { return super.put(makeKey(key), value); }
-        @Override public Object get(Object key) { return super.get(makeKey(key)); }
-        @Override public boolean containsKey(Object key) { return super.containsKey(makeKey(key)); }
-        @Override public Object remove(Object key) { return super.remove(makeKey(key)); }
-
-        @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) {
-            out.print(pfx());
-            for (Map.Entry<?,?> entry: entrySet()) {
-                out.print(" ");  LambdaJ.printSEx(out, getKey(entry), escapeAtoms);
-                out.print(" ");  LambdaJ.printSEx(out, entry.getValue(), escapeAtoms);
-            }
-            out.print(")");
-        }
-    }
-    
-    static class EqlMap extends MurmelMap {
-        EqlMap(int size) { super(size); }
-
-        @Override String pfx() { return "#H(eql"; }
-        @Override Object makeKey(Object key) { return EqlKey.of(key); }
-        @Override Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqlKey) return ((EqlKey)entry.getKey()).key; return entry.getKey(); }
-    }
-
-    static class EqualMap extends MurmelMap {
-        EqualMap(int size) { super(size); }
-
-        @Override String pfx() { return "#H(equal"; }
-        @Override Object makeKey(Object key) { return EqualKey.of(key); }
-        @Override Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqualKey) return ((EqualKey)entry.getKey()).key; return entry.getKey(); }
-    }
-
-    static class EqlTreeMap extends TreeMap<Object, Object> {
-        EqlTreeMap() { super(EqlTreeMap::doCompare); }
-        private static int doCompare(Object o1, Object o2) {
-            return LambdaJ.compare(o1, o2, CompareMode.EQL);
-        }
-    }
-
-    static class EqualTreeMap extends TreeMap<Object, Object> {
-        EqualTreeMap() { super(EqualTreeMap::doCompare); }
-        private static int doCompare(Object o1, Object o2) {
-            return LambdaJ.compare(o1, o2, CompareMode.EQUAL);
-        }
-    }
-
-    static Map<Object,Object> hash(SymbolTable symtab, ConsCell testAndPairs) {
-        if (testAndPairs == null) return new EqlMap(DEFAULT_HASH_SIZE);
-        final Map<Object,Object> ret = makeHashTable(symtab, car(testAndPairs), DEFAULT_HASH_SIZE);
-        final ConsCell pairs = requireList("hash", testAndPairs.cdr());
-        if (pairs == null) return ret;
-        final Iterator<?> i = pairs.iterator();
-        while (i.hasNext()) {
-            final Object key = i.next();
-            if (!i.hasNext()) errorMalformedFmt("hash", "last key/value pair is missing 'value'");
-            ret.put(key, i.next());
-        }
-        return ret;
-    }
-
-    static Map<Object,Object> makeHashTable(SymbolTable st, Object test, int size) {
-        if (test == sT) return new HashMap<>((int)(size/0.75f), 0.75f);
-        if (test == null || test == st.intern("eql")) return new EqlMap(size);
-        if (test == st.intern("compare-eql")) return new EqlTreeMap();
-        if (test == st.intern("equal")) return new EqualMap(size);
-        if (test == st.intern("compare-equal")) return new EqualTreeMap();
-        if (test == st.intern("eq")) return new IdentityHashMap<>(size);
-        throw new SimpleTypeError("only nil, eq, eql, compare-eql, equal, compare-eql and t are implemented as 'test', got " + printSEx(test));
-    }
-
-    static Object[] hashref(Object hash, Object key, Object def) {
-        final Map<?,Object> map = requireHash("hashref", hash);
-        if (map.containsKey(key)) {
-            final Object val = map.get(key);
-            return new Object[] { val, sT };
-        }
-        else if (def == NO_DEFAULT_VALUE) return new Object[] { null, null };
-        else return new Object[] { def, null };
-    }
-
-    static Object hashset(ConsCell args) {
-        final Object hashOrGen = car(args);
-        if (hashOrGen instanceof IteratorGenerator) return ((IteratorGenerator)hashOrGen).set(cadr(args));
-        if (cddr(args) == null) throw new ProgramError("hashset: when the first argument is a hash-table 3 arguments are required");
-        return hashset(hashOrGen, cadr(args), caddr(args));
-    }
-
-    static Object hashset(Object hash, Object key, Object value) {
-        final Map<Object,Object> map = requireHash("hashset", hash);
-        map.put(key, value);
-        return value;
-    }
-
-    static Object hashTableCount(Object hash) {
-        return requireHash("hash-table-count", hash).size();
-    }
-
-    static Object clrhash(Object hash) {
-        requireHash("clrhash", hash).clear();
-        return hash;
-    }
-
-    static boolean hashRemove(ConsCell args) {
-        final Object hashOrGen = car(args);
-        if (hashOrGen instanceof IteratorGenerator) return ((IteratorGenerator)hashOrGen).remove();
-        if (cdr(args) == null) throw new ProgramError("hash-table-remove: when the first argument is a hash-table 2 arguments are required");
-        return hashRemove(hashOrGen, cadr(args));
-    }
-
-    static boolean hashRemove(Object hash, Object key) {
-        final Map<?,Object> map = requireHash("hash-table-remove", hash);
-        final boolean ret = map.containsKey(key);
-        map.remove(key);
-        return ret;
-    }
-
-    interface IteratorGenerator {
-        default Object set(Object value) { throw new SimpleError("no such element - hash-table is empty"); }
-        default boolean remove() { return false; }
-    }
-
-    interface InterpreterIteratorGenerator extends IteratorGenerator, Primitive {}
-
-    final Object scanHash(Object hash) {
-        final Map<Object, Object> map = requireHash("scan-hash-table", hash);
-        final Function<Map.Entry<?,?>, Object> getKey;
-        if (map instanceof MurmelMap) getKey = ((MurmelMap)map)::getKey;
-        else getKey = Map.Entry::getKey;
-
-        final Iterator<Map.Entry<Object,Object>> it = map.entrySet().iterator();
-        if (it.hasNext()) return new InterpreterIteratorGenerator() {
-            private Map.Entry<Object,Object> entry;
-            @Override public Object applyPrimitive(ConsCell args) {
-                if (it.hasNext()) { entry = it.next(); final ConsCell tuple = cons(getKey.apply(entry), entry.getValue()); values = cons(tuple, cons(sT, null)); return tuple; }
-                else { entry = null;  values = cons(null, cons(null, null));  return null; }
-            }
-            @Override public Object set(Object value) { if (entry != null) { entry.setValue(value); return value; } else throw new SimpleError("no such element"); }
-            @Override public boolean remove() { it.remove(); entry = null; return true; }
-            @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
-        };
-        else return new InterpreterIteratorGenerator() { @Override public Object applyPrimitive(ConsCell args) { values = cons(null, cons(null, null));  return null; }
-                                                         @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
-    }
-
-
-    /// I/O
-
-    /** (read eof-obj?) -> result */
-    static Object read(ObjectReader lispReader, ConsCell a) {
-        if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
-        if (a == null) {
-            final Object eof = new Object();
-            final Object ret = lispReader.readObj(eof);
-            if (ret == eof) wrap(new EOFException("read: EOF"));
-            return ret;
-        }
-        else {
-            return lispReader.readObj(car(a));
-        }
-    }
-
-    /** (read-from-string str [eof-obj [start [end]]]) -> result, position */
-    static Object[] readFromString(ConsCell a) {
-        final String str = requireString("read-from-string", car(a));
-        final StringReader strReader = new StringReader(str);
-        a = (ConsCell)cdr(a);
-
-        final long[] count = new long[1];
-        final Object eof;
-        final long end;
-        if (a != null) {
-            eof = car(a);
-            a = (ConsCell)cdr(a);
-
-            if (a != null) {
-                final long start = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
-                if (start > str.length()) throw new InvalidIndexError("start must be <= string length");
-                try { count[0] = strReader.skip(start); } catch (IOException e) { wrap(e); }
-                a = (ConsCell)cdr(a);
-                
-                if (a != null) {
-                    end = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
-                    if (end < start) throw new InvalidIndexError("end must be >= start");
-                    if (end > str.length()) throw new InvalidIndexError("end must be <= string length");
-                }
-                else end = -1;
-            }
-            else end = -1;
-        }
-        else { eof = null; end = -1; }
-
-        final ObjectReader reader = makeReader(() -> { if (end != -1 && count[0] == end) return EOF; final int c = strReader.read(); if (c != EOF) count[0]++; return c; });
-        final Object ret;
-        if (eof == null) {
-            final Object myeof = new Object();
-            ret = reader.readObj(myeof);
-            if (ret == myeof) wrap(new EOFException("read-from-string: EOF"));
-        }
-        else {
-            ret = reader.readObj(eof);
-        }
-        return new Object[] { ret, count[0] };
-    }
-
-    /** (read-textfile-lines filenamestr [charset]) -> result-string-vector */
-    static Object readTextfileLines(ConsCell args) {
-        final String fileName = requireString("read-textfile-lines", car(args));
-        try {
-            final List<String> ret;
-            if (cdr(args) == null) ret = Files.readAllLines(Paths.get(fileName));
-            else ret = Files.readAllLines(Paths.get(fileName), Charset.forName(requireString("read-textfile-lines", cadr(args))));
-            return ret.toArray();
-        }
-        catch (Exception e) {
-            throw wrap(e);
-        }
-    }
-
-    /** (read-textfile filenamestr [charset]) -> result-string */
-    static Object readTextfile(ConsCell args) {
-        final String fileName = requireString("read-textfile", car(args));
-        args = (ConsCell)cdr(args);
-        try (BufferedReader reader
-             = args == null
-               ? Files.newBufferedReader(Paths.get(fileName))
-               : Files.newBufferedReader(Paths.get(fileName), Charset.forName(requireString("read-textfile", car(args))))){
-            final StringBuilder ret = new StringBuilder();
-            for (;;) {
-                final String line = reader.readLine();
-                if (line == null)
-                    break;
-                ret.append(line).append('\n');
-            }
-            return ret;
-        }
-        catch (Exception e) {
-            throw wrap(e);
-        }
-    }
-
-    /** (write-textfile-lines filenamestr string-sequence  [appendp [charset]]) -> nil */
-    @SuppressWarnings("unchecked")
-    static Object writeTextfileLines(ConsCell args) {
-        final String fileName = requireString("write-textfile-lines", car(args));
-        args = (ConsCell)cdr(args);
-
-        final Object seq = car(args);
-        if (!listp(seq) && !vectorp(seq)) errorNotASequence("write-textfile-lines", seq);
-        args = (ConsCell)cdr(args);
-
-        boolean appendp = false;
-        String cs = null;
-        if (args != null) {
-            if (car(args) != null) appendp = true;
-            args = (ConsCell)cdr(args);
-            if (args != null) cs = requireString("write-textfile-lines", car(args));
-        }
-        final Iterator<Object> it;
-        if (svectorp(seq)) it = Arrays.asList((Object[])seq).iterator();
-        else if (seq instanceof Iterable) it = ((Iterable<Object>)seq).iterator(); // covers ConCell and adjustable array which are ArrayLists
-        else throw new SimpleTypeError("expected a sequence of strings bit got %s", printSEx(seq));
-        final Path p = Paths.get(fileName);
-        try (Writer w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
-                                                appendp
-                                                ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
-                                                : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
-            final String eol = System.lineSeparator();
-            while (it.hasNext()) {
-                final String line = requireString("write-textfile-lines", it.next());
-                w.write(line);
-                w.write(eol);
-            }
-            return null;
-        }
-        catch (Exception e) {
-            throw wrap(e);
-        }
-    }
-
-    /** (write-textfile filenamestr string [appendp [charset]]) -> nil */
-    static Object writeTextfile(ConsCell args) {
-        final String fileName = requireString("write-textfile", car(args));
-        args = (ConsCell)cdr(args);
-
-        final CharSequence charSeq = requireCharsequence("write-textfile", car(args));
-        args = (ConsCell)cdr(args);
-
-        boolean appendp = false;
-        String cs = null;
-        if (args != null) {
-            if (car(args) != null) appendp = true;
-            args = (ConsCell)cdr(args);
-            if (args != null) cs = requireString("write-textfile", car(args));
-        }
-        final Path p = Paths.get(fileName);
-        try (BufferedWriter w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
-                                                        appendp
-                                                        ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
-                                                        : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
-            final String eol = System.lineSeparator();
-            if ("\n".equals(eol))
-                w.append(charSeq);
-            else for (int i = 0; i < charSeq.length(); i++) {
-                final char c = charSeq.charAt(i);
-                if (c == '\n') w.append(eol);
-                else w.append(c);
-            }
-            return null;
-        }
-        catch (Exception e) {
-            throw wrap(e);
-        }
-    }
-
-    static Object writeToString(Object arg, boolean printEscape) {
-        return printSEx(arg, printEscape);
-    }
-
-    static Object write(ObjectWriter lispPrinter, Object arg, boolean printEscape) {
-        if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
-        lispPrinter.printObj(arg, printEscape);
-        return arg;
-    }
-
-    static Object writeln(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
-        if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
-        if (arg != null) {
-            lispPrinter.printObj(car(arg), printEscape);
-        }
-        lispPrinter.printEol();
-        return car(arg);
-    }
-
-    static Object lnwrite(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
-        if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "lnwrite");
-        lispPrinter.printEol();
-        if (arg == null) return null;
-        final Object o;
-        lispPrinter.printObj(o = car(arg), printEscape);
-        lispPrinter.printString(" ");
-        return o;
-    }
-
-    static String format(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
-        return format(lispPrinter, haveIO, false, a);
-    }
-
-    static String formatLocale(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
-        return format(lispPrinter, haveIO, true, a);
-    }
-
-    private static String format(ObjectWriter lispPrinter, boolean haveIO, boolean locale, ConsCell a) {
-        final String func = locale ? "format-locale" : "format";
-        varargsMin(func, a, locale ? 3 : 2);
-        final boolean toString = car(a) == null;
-        a = (ConsCell) cdr(a);
-
-        final String locString;
-        if (locale) {
-            if (car(a) != null) {
-                stringArg(func, "first argument", a);
-                locString = (String)car(a);
-            } else locString = null;
-            a = (ConsCell)cdr(a);
-        }
-        else locString = null;
-
-        stringArg(func, locale ? "third argument" : "second argument", a);
-        final String s = (String) car(a);
-        final Object[] args = listToArray(cdr(a));
-        try {
-            if (locString == null) {
-                if (toString) return EolUtil.anyToUnixEol(String.format(s, args));
-                if (!haveIO) throw new LambdaJError(true, "%s: I/O is disabled", func);
-                if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
-                lispPrinter.printString(EolUtil.anyToUnixEol(String.format(s, args)));
-                return null;
-            }
-            final Locale loc = Locale.forLanguageTag(locString);
-            if (toString) return EolUtil.anyToUnixEol(String.format(loc, s, args));
-            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
-            lispPrinter.printString(EolUtil.anyToUnixEol(String.format(loc, s, args)));
-            return null;
-        } catch (IllegalFormatException e) {
-            // todo sbcl wirft SB-FORMAT:FORMAT-ERROR extends ERROR
-            throw new SimpleError("%s: illegal format string and/ or arguments: %s. Error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
-        }
-    }
-
-
-    /// misc
-
-    static long getInternalRealTime() {
-        return System.nanoTime();
-    }
-
-    static long getInternalRunTime() {
-        return getThreadBean("get-internal-run-time").getCurrentThreadUserTime();
-    }
-
-    static long getInternalCpuTime() {
-        return getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime();
-    }
-
-    private static ThreadMXBean getThreadBean(final String func) {
-        final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
-        if (threadBean == null)
-            throw new LambdaJError(true, "%s: ThreadMXBean not supported in this Java Runtime", func);
-        if (!threadBean.isCurrentThreadCpuTimeSupported())
-            throw new LambdaJError(true, "%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", func);
-        return threadBean;
-    }
-
-    static Object sleep(Object seconds) {
-        try {
-            final long millis = (long)(toDouble("sleep", seconds) * 1e3D);
-            Thread.sleep(millis);
-            return null;
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new LambdaJError("sleep: got interrupted");
-        }
-    }
-
-    static long getUniversalTime() {
-        final ZoneId utc = ZoneId.of("UTC");
-        final ZonedDateTime ld1900 = ZonedDateTime.of(1900, 1, 1, 0, 0, 0, 0, utc);
-        return ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS);
-    }
-
-    interface Boolresult { Object apply(boolean b); }
-
-    static <T extends AbstractListBuilder<T>> ConsCell getDecodedTime(T lb, Boolresult boolResult) {
-        final Instant now = Clock.systemDefaultZone().instant();
-        final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
-        final ZoneRules rules = n.getZone().getRules();
-        final boolean daylightSavings = rules.isDaylightSavings(now);
-        final double offset = -rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
-        //get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
-        return (ConsCell)lb.appendElements(n.getSecond(), n.getMinute(), n.getHour(),
-                                           n.getDayOfMonth(), n.getMonthValue(), n.getYear(), n.getDayOfWeek().getValue() - 1,
-                                           boolResult.apply(daylightSavings), offset, null).first();
-    }
-
-    /** expand a single macro call */
-    final Object macroexpand1(ConsCell args) {
-        oneArg("macroexpand-1", args);
-        final Object maybeMacroCall = car(args);
-        if (!consp(maybeMacroCall)) {
-            values = cons(maybeMacroCall, cons(null, null));
-            return maybeMacroCall;
-        }
-        return macroexpandImpl((ConsCell) maybeMacroCall);
-    }
-
-    final Object macroexpandImpl(ConsCell form) {
+    static Object macroexpandImpl(LambdaJ intp, ConsCell form) {
         final Object maybeSymbol = car(form);
         if (maybeSymbol == null || !symbolp(maybeSymbol)) {
-            values = cons(form, cons(null, null));
+            intp.values = intp.cons(form, intp.cons(null, null));
             return form;
         }
         final LambdaJSymbol macroSymbol = (LambdaJSymbol)maybeSymbol;
         final Closure macroClosure = macroSymbol.macro;
         if (macroClosure == null) {
-            values = cons(form, cons(null, null));
+            intp.values = intp.cons(form, intp.cons(null, null));
             return form;
         }
         final ConsCell arguments = (ConsCell) cdr(form);
-        final Object expansion = evalMacro(macroSymbol, macroClosure, arguments);
-        values = cons(expansion, cons(sT, null));
+        final Object expansion = intp.evalMacro(macroSymbol, macroClosure, arguments);
+        intp.values = intp.cons(expansion, intp.cons(sT, null));
         return expansion;
     }
 
-    static Object gensym(Object name) {
-        if (name != null) return new LambdaJSymbol(requireString("gensym", name));
-        else return new LambdaJSymbol("gensym");
-    }
 
-    static void error(SymbolTable st, Object datum, Object... args) {
-        if (stringp(datum)) { throw new SimpleError(requireString("error", datum), args); }
 
-        if (datum == st.intern("file-error"))   throw new InvalidPathException("(input)", "(reason)"); // todo args
+    /// Runtime for Lisp programs, i.e. an environment with primitives and predefined global symbols
+    static final class Subr {
+        private Subr() {}
 
-        final String msg;
-        switch (args.length) {
-        case 0:  msg = null;  break;
-        case 1:  msg = String.format(requireString("error", args[0]));  break;
-        default: msg = String.format(requireString("error", args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
+        enum CompareMode { NUMBER, EQL, EQUAL }
+
+        /** compare two objects. {@code mode} determines which types are compared by their value and which are compared by their identity.
+         * 
+         *  <p>Implementation note: this relies on the hope that {@link System#identityHashCode(Object)} will return different values for different objects that are not numbers.
+         *  This is strongly suggested but not guaranteed by the Java spec:
+         *  "As much as is reasonably practical, the hashCode method defined by class {@code Object}
+         *  does return distinct integers for distinct objects." */
+        static int compare(Object o1, Object o2, CompareMode mode) {
+            if (o1 == o2) return 0;
+            if (o1 == null) return -1;
+            if (o2 == null) return 1;
+
+            if (integerp(o1) && integerp(o2)) {
+                if (o1 instanceof BigInteger && o2 instanceof BigInteger) return ((BigInteger)o1).compareTo((BigInteger)o2);
+                if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue())));
+                if (o2 instanceof BigInteger)                             return new BigInteger(String.valueOf(((Number)o1).longValue())).compareTo((BigInteger)o2);
+                return Long.compare(((Number)o1).longValue(), ((Number)o2).longValue());
+            }
+
+            if (floatp(o1) && floatp(o2)) {
+                if (o1.getClass() != o2.getClass()) return System.identityHashCode(o1) - System.identityHashCode(o2);
+                if (o1 instanceof BigDecimal && o2 instanceof BigDecimal) return ((BigDecimal)o1).compareTo((BigDecimal)o2);
+                return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue());
+            }
+            if (mode == CompareMode.NUMBER) return System.identityHashCode(o1) - System.identityHashCode(o2);
+
+            if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
+            if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
+
+            if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
+
+            if (bitvectorp(o1) && bitvectorp(o2)) { return Bitvector.of(o1).compareTo(Bitvector.of(o2)); }
+
+            if (consp(o1) && consp(o2)) { return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
+
+            return System.identityHashCode(o1) - System.identityHashCode(o2);
         }
 
-        if (datum == st.intern("condition")) wrap(new Throwable(msg));
-        if (datum == st.intern("error")) wrap(new Exception(msg));
+        static boolean eql(Object o1, Object o2) {
+            return compare(o1, o2, CompareMode.EQL) == 0;
+        }
 
-        if (datum == st.intern("simple-error")) throw new SimpleError(msg);
+        static boolean equal(Object o1, Object o2) {
+            return compare(o1, o2, CompareMode.EQUAL) == 0;
+        }
 
-        if (datum == st.intern("cell-error")) throw new CellError(msg);
-        if (datum == st.intern("unbound-variable")) throw new UnboundVariable(msg);
-        if (datum == st.intern("undefined-function")) throw new UndefinedFunction(msg);
 
-        if (datum == st.intern("control-error")) throw new ControlError(msg);
-        if (datum == st.intern("program-error")) throw new ProgramError(msg);
-        if (datum == st.intern("parse-error")) throw new ParseError(msg);
 
-        if (datum == st.intern("arithmetic-error")) throw new ArithmeticException(msg);
+        /// conses and lists
 
-        if (datum == st.intern("type-error")) throw new ClassCastException(msg);
-        if (datum == st.intern("simple-type-error")) throw new SimpleTypeError(msg);
+        static Object listStar(LambdaJ intp, ConsCell args) {
+            if (cdr(args) == null) return car(args);
+            if (cddr(args) == null) return intp.cons(car(args), cadr(args));
+            final CountingListBuilder b = intp.new CountingListBuilder();
+            for (; cdr(args) != null; args = (ConsCell)cdr(args)) {
+                b.append(car(args));
+            }
+            b.appendLast(car(args));
+            return b.first();
+        }
 
-        if (datum == st.intern("stream-error")) wrap(new IOException(msg));
-        if (datum == st.intern("end-of-file"))  wrap(new EOFException(msg));
-        if (datum == st.intern("reader-error")) wrap(new ReaderError(msg));
+        /** append args non destructively, all args except the last are shallow copied (list structure is copied, contents is not),
+         *  all args except the last must be a list */
+        static Object append(LambdaJ intp, ConsCell args) {
+            if (args == null) return null;
+            if (cdr(args) == null) return car(args);
+            if (!listp(car(args))) throw new SimpleTypeError("append: first argument %s is not a list", car(args));
 
-        throw new SimpleTypeError("error: unknown condition type " + printSEx(datum) + ": " + msg);
+            while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
+
+            ConsCell current = args;
+            CountingListBuilder lb = null;
+            for (; cdr(current) != null; current = (ConsCell)cdr(current)) {
+                final Object o = car(current);
+                if (o == null) continue;
+                if (!consp(o)) throw new SimpleTypeError("append: argument is not a list: %s", printSEx(o));
+                if (lb == null) lb = intp.new CountingListBuilder();
+                for (Object obj: (ConsCell)o) lb.append(obj);
+            }
+            if (lb == null) return car(args);
+            lb.appendLast(car(current));
+            return lb.first();
+        }
+
+        /** return the cons whose car is eql to {@code atom}
+         * @see #assq
+         */
+        static ConsCell assoc(Object atom, Object maybeList) {
+            if (maybeList == null) return null;
+            final ConsCell ccList = requireList("assoc", maybeList);
+            for (Object entry: ccList) {
+                if (entry != null) { // ignore null items
+                    if (eql(atom, car(entry))) return (ConsCell)entry;
+                }
+            }
+            return null;
+        }
+
+
+        /// numbers
+
+        interface DoubleBiPred {
+            boolean test(double d1, double d2);
+        }
+
+        /** compare subsequent pairs of the given list of numbers with the given predicate */
+        static boolean compare(ConsCell args, String opName, DoubleBiPred pred) {
+            Object prev = car(args);
+            for (ConsCell rest = (ConsCell)cdr(args); rest != null; rest = (ConsCell)cdr(rest)) {
+                final Object next = car(rest);
+                if (!pred.test(toDouble(opName, prev), toDouble(opName, next))) return false;
+                prev = next;
+            }
+            return true;
+        }
+
+        /** operator for zero or more args */
+        static double addOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
+            if (car(_args) == null) return startVal;
+            ConsCell args = _args;
+            double result = toDouble(opName, car(args));
+
+            for (;;) {
+                final Object next = cdr(args);
+                if (!listp(next) || next == _args) // todo nested loop check
+                    throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
+                args = (ConsCell) next;
+                if (args == null) break;
+                result = op.applyAsDouble(result, toDouble(opName, car(args)));
+            }
+            return result;
+        }
+
+        /** operator for one or more args */
+        static double subOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
+            ConsCell args = _args;
+            double result = toDouble(opName, car(args));
+
+            if (cdr(args) == null) return op.applyAsDouble(startVal, result);
+
+            for (;;) {
+                final Object next = cdr(args);
+                if (!listp(next) || next == args) // todo nested loop check
+                    throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
+                args = (ConsCell) next;
+                if (args == null) break;
+                result = op.applyAsDouble(result, toDouble(opName, car(args)));
+            }
+            return result;
+        }
+
+        static double quot12(String func, ConsCell args) {
+            final double lhs = toDouble(func, car(args));
+            return cdr(args) == null ? lhs : lhs / toDouble(func, cadr(args));
+        }
+
+        static Number cl_signum(Object n) {
+            if (n instanceof Double)     { return Math.signum((Double)n); }
+            if (n instanceof Long)       { return (long)Long.signum((Long)n); }
+            if (n instanceof Byte)       { return (long)Integer.signum((int) (Byte)n); }
+            if (n instanceof Short)      { return (long)Integer.signum((int) (Short)n); }
+            if (n instanceof Integer)    { return (long)Integer.signum((Integer)n); }
+            if (n instanceof BigInteger) { return (long)((BigInteger)n).signum(); }
+            if (n instanceof BigDecimal) { return (double)((BigDecimal)n).signum(); }
+
+            return Math.signum(toDouble("signum", n));
+        }
+
+        /** produce a quotient that has been truncated towards zero; that is, the quotient represents the mathematical integer
+         *  of the same sign as the mathematical quotient,
+         *  and that has the greatest integral magnitude not greater than that of the mathematical quotient. */
+        static double cl_truncate(double d) {
+            return d < 0.0 ? Math.ceil(d) : Math.floor(d);
+        }
+
+        /** note that the Java modulo operator {@code %} works differently, see also https://en.wikipedia.org/wiki/Modulo_operation */
+        static double cl_mod(double x, double y) {
+            return x - Math.floor(x / y) * y;
+        }
+
+        static Number inc(Object n) {
+            if (n instanceof Double) return ((Double)n) + 1;
+            if (n instanceof Long) {
+                final long l;
+                if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
+                return l + 1;
+            }
+            if (n instanceof Byte) return ((Byte)n).longValue() + 1;
+            if (n instanceof Short) return ((Short)n).longValue() + 1;
+            if (n instanceof Integer) return ((Integer)n).longValue() + 1;
+            if (n instanceof BigInteger) {
+                final long l;
+                try {
+                    l = ((BigInteger)n).longValueExact();
+                }
+                catch (ArithmeticException e) {
+                    throw new ArithmeticException("1+: overflow, BigInteger argument does not fit in a fixnum");
+                }
+                if (l == MOST_POSITIVE_FIXNUM) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
+                return l + 1;
+            }
+            return toDouble("1+", n) + 1;
+        }
+
+        static Number dec(Object n) {
+            if (n instanceof Double) return ((Double)n) - 1;
+            if (n instanceof Long) {
+                final long l;
+                if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
+                return l - 1;
+            }
+            if (n instanceof Byte) return ((Byte)n).longValue() - 1;
+            if (n instanceof Short) return ((Short)n).longValue() - 1;
+            if (n instanceof Integer) return ((Integer)n).longValue() - 1;
+            if (n instanceof BigInteger) {
+                final long l;
+                try {
+                    l = ((BigInteger)n).longValueExact();
+                }
+                catch (ArithmeticException e) {
+                    throw new ArithmeticException("1-: underflow, BigInteger argument does not fit in a fixnum");
+                }
+                if (l == MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
+                return l - 1;
+            }
+            return toDouble("1-", n) - 1;
+        }
+
+
+        /// vectors
+
+        static final class Bitvector implements Serializable, Writeable, Iterable<Long>, Comparable<Bitvector> {
+            class Iter implements Iterator<Long> {
+                private int cursor;
+                @Override public boolean hasNext() { return cursor < size(); }
+                @Override public Long next() { if (cursor == size()) throw new NoSuchElementException(); return get(cursor++); }
+            }
+
+            private static final long serialVersionUID = 1L;
+            private final BitSet bitSet;
+            private int size;
+
+            Bitvector(int capacity, int size) {
+                bitSet = new BitSet(capacity);
+                this.size = size;
+            }
+
+            Bitvector(boolean[] contents) {
+                this(contents.length, 0);
+                for (boolean b: contents) add(b);
+            }
+
+            static Bitvector of(Object o) {
+                if (o instanceof Bitvector) return (Bitvector)o;
+                if (o instanceof boolean[]) return new Bitvector((boolean[])o);
+                throw new SimpleTypeError("not a bitvector: %s", LambdaJ.printSEx(o));
+            }
+
+            @Override public Iterator<Long> iterator() { return new Iter(); }
+
+            @Override public boolean equals(Object other) { return other instanceof Bitvector && bitSet.equals(((Bitvector)other).bitSet); }
+            @Override public int hashCode() { return bitSet.hashCode(); }
+
+            @Override public int compareTo(Bitvector b2) {
+                final int len1 = size();
+                final int len2 = b2.size();
+                final int lim = Math.min(len1, len2);
+
+                for (int k = 0; k < lim; k++) {
+                    final int c1 = (int)get(k);
+                    final int c2 = (int)b2.get(k);
+                    if (c1 != c2) {
+                        return c1 - c2;
+                    }
+                }
+                return len1 - len2;
+            }
+
+            int size() { return size; }
+            long add(boolean value) { if (value) bitSet.set(size); size++; return size - 1; }
+            long get(int idx) { return bitSet.get(idx) ? 1L : 0L; }
+            void set(int idx, boolean val) { bitSet.set(idx, val); }
+
+            void fill(boolean value) {
+                if (value) bitSet.set(0, size);
+                else bitSet.clear();
+            }
+
+            boolean[] toBooleanArray() {
+                final boolean[] ret = new boolean[size];
+                if (size == 0) return ret;
+
+                final BitSet bitSet = this.bitSet;
+                final int limit = bitSet.length();
+                for (int idx = 0; idx < limit; idx++) {
+                    ret[idx] = bitSet.get(idx);
+                }
+                return ret;
+            }
+
+            @Override public void printSEx(WriteConsumer sb, boolean escapeAtoms) {
+                sb.print("#*");
+                int idx = 0;
+                for (; idx < bitSet.length(); idx++) sb.print(bitSet.get(idx) ? "1" : "0");
+                for (; idx < size; idx++) sb.print("0");
+            }
+        }
+
+        static Object makeArray(LambdaJSymbol sBit, LambdaJSymbol sCharacter, ConsCell a) {
+            final int size = toNonnegInt("make-array", car(a));
+            final Object type = cadr(a);
+            final Object cap = caddr(a);
+            final boolean adjustable = cap != null;
+            final int capacity;
+            if (adjustable && cap != sT) capacity = requireIntegralNumber("make-array", cap, size, MAX_ARRAY_SIZE).intValue();
+            else capacity = size;
+
+            if (cdr(a) == null || type == sT) {
+                if (adjustable) { final List<Object> ret = new ArrayList<>(capacity); for (int i = 0; i < size; i++) ret.add(null); return ret; }
+                return new Object[size];
+            }
+
+            if (type == sBit) {
+                if (adjustable) return new Bitvector(capacity, size);
+                return new boolean[size];
+            }
+
+            if (type == sCharacter) {
+                if (adjustable) { final StringBuilder ret = new StringBuilder(capacity); for (int i = 0; i < size; i++) ret.append('\0'); return ret; }
+                return new char[size];
+            }
+
+            throw new SimpleTypeError("make-array: unsupported or invalid type specification %s", printSEx(type)); // todo sbcl akzeptiert alles als :element-type
+        }
+
+
+        static long vectorLength(Object maybeVector) {
+            if (maybeVector instanceof Object[])     return ((Object[])maybeVector).length;
+            if (maybeVector instanceof boolean[])    return ((boolean[])maybeVector).length;
+            if (maybeVector instanceof Bitvector)    return ((Bitvector)maybeVector).size();
+            if (maybeVector instanceof char[])       return ((char[])maybeVector).length;
+            if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
+            if (maybeVector instanceof List)         return ((List<?>)maybeVector).size();
+            throw errorNotAVector("vector-length", maybeVector);
+        }
+
+        static Object vectorCopy(Object vector, boolean adjustablep) {
+            final int length = (int)vectorLength(vector);
+            if (adjustablep) {
+                if (vector instanceof Object[]) return new ArrayList<>(Arrays.asList((Object[])vector));
+                if (vector instanceof boolean[]) return new Bitvector((boolean[])vector);
+                if (vector instanceof Bitvector) return new Bitvector(((Bitvector)vector).toBooleanArray());
+                if (vector instanceof char[]) return new StringBuilder(String.valueOf((char[])vector));
+                if (vector instanceof CharSequence) return new StringBuilder((CharSequence)vector);
+                if (vector instanceof List<?>) return new ArrayList<>((List<?>)vector);
+            }
+            else {
+                if (vector instanceof Object[]) return Arrays.copyOf((Object[])vector, length);
+                if (vector instanceof boolean[]) return Arrays.copyOf((boolean[])vector, length);
+                if (vector instanceof Bitvector) return ((Bitvector)vector).toBooleanArray();
+                if (vector instanceof char[]) return Arrays.copyOf((char[])vector, length);
+                if (vector instanceof CharSequence) return vector.toString().toCharArray();
+                if (vector instanceof List<?>) return ((List<?>)vector).toArray(new Object[0]);
+            }
+            throw errorNotAVector("vector-copy", vector);
+        }
+
+        @SuppressWarnings("unchecked")
+        static Object vectorFill(Object vector, Object value, Object _start, Object _end) {
+            final int start, end;
+            final int length = (int)vectorLength(vector);
+            if (_start != null) {
+                start = requireIntegralNumber("vector-fill", _start, 0, length).intValue();
+                if (_end != null) {
+                    end = requireIntegralNumber("vector-fill", _end, start+1, length).intValue();
+                }
+                else end = length;
+            }
+            else { start = 0; end = length; }
+
+            if (vector instanceof Object[])      { Arrays.fill((Object[])vector, start, end, value); return vector; }
+            if (vector instanceof boolean[])     { Arrays.fill((boolean[])vector, start, end, requireBit("vector-fill", value)); return vector; }
+            if (vector instanceof Bitvector)     { ((Bitvector)vector).fill(requireBit("vector-fill", value)); return vector; }
+            if (vector instanceof char[])        { Arrays.fill((char[])vector, start, end, requireChar("vector-fill", value)); return vector; }
+            if (vector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)vector; final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
+            if (vector instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)vector;   final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
+            if (vector instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)vector; for (int i = start; i < end; i++) list.set(i, value); return vector; }
+            throw errorNotAVector("vector-fill", vector);
+        }
+
+        @SuppressWarnings("unchecked")
+        static long vectorAdd(Object maybeVector, Object newValue) {
+            if (!adjustableArrayP(maybeVector)) throw new InvalidIndexError("vector-add: not an adjustable vector: %s", printSEx(maybeVector));
+            if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
+            if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
+            if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-add", newValue)); }
+            if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(newValue); return l.size() - 1; }
+            throw errorInternal("vector-add: unknown object type %s", maybeVector);
+        }
+
+        static Object vectorToList(LambdaJ intp, Object maybeVector) {
+            if (svectorp(maybeVector)) return simpleVectorToList(intp, maybeVector);
+            if (stringp(maybeVector)) return stringToList(intp, maybeVector);
+            if (sbitvectorp(maybeVector)) return bitVectorToList(intp, maybeVector);
+
+            if (maybeVector instanceof Bitvector || maybeVector instanceof List) {
+                final Iterator<?> it = ((Iterable<?>)maybeVector).iterator();
+                if (!it.hasNext()) return null;
+                final CountingListBuilder ret = intp.new CountingListBuilder();
+                do { ret.append(it.next()); }
+                while (it.hasNext());
+                return ret.first();
+            }
+
+            throw errorNotAVector("vector->list", maybeVector);
+        }
+
+        static Object listToVector(Object lst, boolean adjustablep) {
+            if (lst == null) return adjustablep ? new ArrayList<>() : new Object[0];
+            if (adjustablep) {
+                final ConsCell l = requireList("list->vector", lst);
+                final ArrayList<Object> ret = new ArrayList<>();
+                for (Object o: l) ret.add(o);
+                return ret;
+            }
+            return listToArray(lst); 
+        }
+
+        static long svlength(Object maybeVector) {
+            if (maybeVector instanceof Object[]) return ((Object[])maybeVector).length;
+            throw errorNotASimpleVector("svlength", maybeVector);
+        }
+
+        static Object svref(Object maybeVector, int idx) {
+            if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx];
+            throw errorNotASimpleVector("svref", maybeVector);
+        }
+
+        static Object svset(Object maybeVector, int idx, Object newValue) {
+            if (maybeVector instanceof Object[]) return ((Object[])maybeVector)[idx] = newValue;
+            throw errorNotASimpleVector("svset", maybeVector);
+        }
+
+        static Object simpleVectorToList(LambdaJ intp, Object maybeVector) {
+            final Object[] s = requireSimpleVector("simple-vector->list", maybeVector);
+            if (s.length == 0) return null;
+            final CountingListBuilder ret = intp.new CountingListBuilder();
+            final int len = s.length;
+            for (int i = 0; i < len; i++) ret.append(s[i]);
+            return ret.first();
+        }
+
+
+        static long slength(Object maybeVector) {
+            if (maybeVector instanceof char[])       return ((char[])maybeVector).length;
+            if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
+            throw errorNotAString("slength", maybeVector);
+        }
+
+        static char sref(Object maybeString, int idx) {
+            if (maybeString instanceof char[]) return ((char[])maybeString)[idx];
+            return requireCharsequence("sref", maybeString).charAt(idx);
+        }
+
+        static char sset(Object maybeString, int idx, char newValue) {
+            if (maybeString instanceof char[]) return ((char[])maybeString)[idx] = newValue;
+            if (maybeString instanceof StringBuilder) { ((StringBuilder)maybeString).setCharAt(idx, newValue); return newValue; }
+            if (maybeString instanceof StringBuffer) { ((StringBuffer)maybeString).setCharAt(idx, newValue); return newValue; }
+            if (maybeString instanceof String) { throw new SimpleTypeError("%s: cannot modify readonly string", "sset"); }
+            throw new SimpleTypeError("%s: expected a string argument but got %s", "sset", printSEx(maybeString));
+        }
+
+        static boolean stringEq(Object o1, Object o2) {
+            return Objects.equals(requireStringDesignator("string=", o1), requireStringDesignator("string=", o2));
+        }
+
+        static Object stringToList(LambdaJ intp, Object maybeString) {
+            final CountingListBuilder ret = intp.new CountingListBuilder();
+            if (maybeString instanceof char[]) {
+                final char[] carry = (char[])maybeString;
+                final int len = carry.length;
+                for (int i = 0; i < len; i++) ret.append(carry[i]);
+                return ret.first();
+            }
+            final CharSequence s = requireCharsequence("string->list", maybeString);
+            final int len = s.length();
+            for (int i = 0; i < len; i++) ret.append(s.charAt(i));
+            return ret.first();
+        }
+
+        static Object stringDesignatorToString(Object o) {
+            if (o == null) return new char[] { 'n', 'i', 'l' };
+            if (o instanceof String) return ((String)o).toCharArray();
+            if (o instanceof char[] || o instanceof CharSequence) return o;
+            if (o instanceof LambdaJSymbol) return ((LambdaJSymbol)o).name.toCharArray();
+            if (o instanceof Character) return new char[] { ((char)o) };
+            throw new SimpleTypeError("not a string designator: %s", printSEx(o));
+        }
+
+        static Object listToString(Object lst, boolean adjustablep) {
+            if (lst == null) return adjustablep ? new StringBuilder() : new char[0];
+            final ConsCell l = requireList("list->string", lst);
+            final StringBuilder ret = new StringBuilder();
+            for (Object c: l) ret.append(requireChar("list->string", c)); // todo cyclecheck
+            return adjustablep ? ret : ret.toString().toCharArray();
+        }
+
+
+        static long bvlength(Object maybeVector) {
+            if (maybeVector instanceof boolean[])    return ((boolean[])maybeVector).length;
+            if (maybeVector instanceof Bitvector)    return ((Bitvector)maybeVector).size();
+            throw errorNotABitVector("bvlength", maybeVector);
+        }
+
+        static long bvref(Object bv, int idx) {
+            if (bv instanceof boolean[]) return ((boolean[])bv)[idx] ? 1L : 0L;
+            if (bv instanceof Bitvector) { final Bitvector _bv = (Bitvector)bv;   if (idx >= _bv.size()) errorIndexTooLarge(idx, _bv.size()); return _bv.get(idx); }
+            throw errorNotABitVector("bvref", bv);
+        }
+
+        static long bvset(Object maybeVector, int idx, long newValue) {
+            if (maybeVector instanceof boolean[]) {
+                final boolean b;
+                if (newValue == 0) b = false;
+                else if (newValue == 1) b = true;
+                else throw errorNotABit("bvset", newValue);
+                ((boolean[])maybeVector)[idx] = b;
+                return newValue;
+            }
+            if (maybeVector instanceof Bitvector) { ((Bitvector)maybeVector).set(idx, requireBit("bvset", newValue)); return newValue; }
+            throw errorNotABitVector("bvset", maybeVector);
+        }
+
+        static boolean bvEq(Object maybeVector1, Object maybeVector2) {
+            if (sbitvectorp(maybeVector1) && sbitvectorp(maybeVector2)) return Arrays.equals((boolean[])maybeVector1, (boolean[])maybeVector2);
+            if (!bitvectorp(maybeVector1)) throw errorNotABitVector("bv=", maybeVector1);
+            if (!bitvectorp(maybeVector2)) throw errorNotABitVector("bv=", maybeVector2);
+            if (maybeVector1 == maybeVector2) return true;
+            if (vectorLength(maybeVector1) != vectorLength(maybeVector2)) return false;
+            for (int i = 0; i < vectorLength(maybeVector1); i++) {
+                if (seqref(maybeVector1, i) != seqref(maybeVector2, i)) return false;
+            }
+            return true;
+        }
+
+        static Object bitVectorToList(LambdaJ intp, Object maybeVector) {
+            final CountingListBuilder ret;
+            if (maybeVector instanceof boolean[]) {
+                final boolean[] s = (boolean[])maybeVector;
+                final int len = s.length;
+                if (len == 0) return null;
+                ret = intp.new CountingListBuilder();
+                for (int i = 0; i < len; i++) ret.append(s[i] ? 1L : 0L);
+            }
+            else if (maybeVector instanceof Bitvector) {
+                final Bitvector bv = (Bitvector)maybeVector;
+                if (bv.size() == 0) return null;
+                ret = intp.new CountingListBuilder();
+                for (Object bit: bv) ret.append(bit);
+            }
+            else throw errorNotABitVector("bit-vector->list", maybeVector);
+            return ret.first();
+        }
+
+        static Object listToBitVector(Object o, boolean adjustablep) {
+            final ConsCell lst = requireList("list->bit-vector", o);
+            if (adjustablep) {
+                final Bitvector bv = new Bitvector(10, 0);
+                if (lst != null) for (Object bit: lst) bv.add(requireBit("list->bit-vector", bit));
+                return bv;
+            }
+            return listToBooleanArray(lst);
+        }
+
+
+        /// sequences
+
+        static Object seqref(Object maybeSeq, long idx) {
+            checkSequenceBounds(maybeSeq, idx);
+            if (maybeSeq instanceof ConsCell)     return ((ConsCell)maybeSeq).elt(idx);
+            if (maybeSeq instanceof Object[])     { final Object[]  arry = (Object[])maybeSeq;      if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
+            if (maybeSeq instanceof char[])       { final char[]    arry = (char[])maybeSeq;        if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx]; }
+            if (maybeSeq instanceof boolean[])    { final boolean[] arry = (boolean[])maybeSeq;     if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] ? 1L : 0L; }
+            if (maybeSeq instanceof Bitvector)    { final Bitvector bv = (Bitvector)maybeSeq;       if (idx >= bv.size())   errorIndexTooLarge(idx, bv.size());   return bv.get((int)idx); }
+            if (maybeSeq instanceof List)         { @SuppressWarnings("rawtypes")
+                                                    final List list = (List)maybeSeq;               if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); return list.get((int)idx); }
+            if (maybeSeq instanceof CharSequence) { final CharSequence cs = (CharSequence)maybeSeq; if (idx >= cs.length()) errorIndexTooLarge(idx, cs.length()); return cs.charAt((int)idx); }
+            throw errorInternal("seqref: unknown object type %s or not implemented", maybeSeq);
+        }
+
+        private static void checkSequenceBounds(Object maybeSeq, long idx) {
+            if (idx < 0) throw new InvalidIndexError("seqref: index must be >= 0");
+            if (maybeSeq == null) errorIndexTooLarge(idx, 0);
+        }
+
+        @SuppressWarnings("unchecked")
+        static Object seqset(Object maybeSeq, long idx, Object newValue) {
+            checkSequenceBounds(maybeSeq, idx);
+            if (maybeSeq instanceof ConsCell)      return ((ConsCell)maybeSeq).eltset(newValue, idx);
+            if (maybeSeq instanceof Object[])      { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
+            if (maybeSeq instanceof char[])        { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
+            if (maybeSeq instanceof boolean[])     { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length);
+                                                     final int newBit = requireIntegralNumber("seqset", newValue, 0, 1).intValue();
+                                                     if (newBit == 0) { arry[(int)idx] = false; return 0L; }
+                                                     if (newBit == 1) { arry[(int)idx] = true;  return 1L; }
+                                                     throw errorNotABit("seqset", newValue); }
+            if (maybeSeq instanceof Bitvector)     { final Bitvector bv = (Bitvector)maybeSeq; if (idx >= bv.size()) errorIndexTooLarge(idx, bv.size()); bv.set((int)idx, requireBit("seqset", newValue));
+                                                    return newValue; }
+            if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
+                                                     final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
+                                                     return newValue; }
+            if (maybeSeq instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
+                                                     final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
+                                                     return newValue; }
+            if (maybeSeq instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
+                                                     return newValue; }
+            throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
+        }
+
+
+        /// Hash tables
+        static final int DEFAULT_HASH_SIZE = 24; // will give capacity==32
+        static final Object NO_DEFAULT_VALUE = new Object();
+
+        /** a hash function that is compatible with equal(o1, o1) aka compare(o1, o2, CompareMode.EQUAL):
+         *  two objects that are equal will have the same hash, two objects that are not equal may or may not have the same hash.
+         *  Objects with (possibly embedded) loops should be handled as well. */
+        static int sxhash(Object o) {
+            return sxhashSigned(o) & 0x7fffffff; // Math.abs() won't guarantee a nonnegative number: Math.abs(-2147483648) == -2147483648
+        }
+
+        static final class EqlKey implements Comparable<Object> {
+            final Object key;
+            EqlKey(Object key) { this.key = key; }
+
+            static Object of(Object key) {
+                if (key instanceof Float || key instanceof Double || key instanceof BigDecimal) return key;
+                return new EqlKey(key);
+            }
+            @Override public int compareTo(Object o) { if (o instanceof EqlKey) return LambdaJ.Subr.compare(this.key, ((EqlKey)o).key, CompareMode.EQL);
+                                                       else return LambdaJ.Subr.compare(this.key, o, CompareMode.EQL); }
+            @Override public int hashCode() { return sxhashSigned(key); }
+            @Override public boolean equals(Object o) { if (o instanceof EqlKey) return LambdaJ.Subr.compare(this.key, ((EqlKey)o).key, CompareMode.EQL) == 0;
+                                                        else return LambdaJ.Subr.compare(this.key, o, CompareMode.EQL) == 0; }
+        }
+
+        static final class EqualKey implements Comparable<Object> {
+            final Object key;
+            EqualKey(Object key) { this.key = key; }
+
+            static Object of(Object key) {
+                if (key instanceof Float || key instanceof Double || key instanceof BigDecimal) return key;
+                return new EqualKey(key);
+            }
+            @Override public int compareTo(Object o) { if (o instanceof EqualKey) return LambdaJ.Subr.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL);
+                                                       else return LambdaJ.Subr.compare(this.key, o, CompareMode.EQUAL); }
+            @Override public int hashCode() { return sxhashSigned(key); }
+            @Override public boolean equals(Object o) { if (o instanceof EqualKey) return LambdaJ.Subr.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL) == 0;
+                                                        else return LambdaJ.Subr.compare(this.key, o, CompareMode.EQUAL) == 0; }
+        }
+
+        /** Note: getEntrySet(), getKeySet() and maybe more Map methods will NOT work as expected! */
+        abstract static class MurmelMap extends HashMap<Object, Object> implements Writeable {
+            MurmelMap(int size) { super((int)(size / 0.75f)); }
+
+            abstract String pfx();
+            abstract Object makeKey(Object key);
+            abstract Object getKey(Map.Entry<?,?> entry);
+
+            @Override public Object put(Object key, Object value) { return super.put(makeKey(key), value); }
+            @Override public Object get(Object key) { return super.get(makeKey(key)); }
+            @Override public boolean containsKey(Object key) { return super.containsKey(makeKey(key)); }
+            @Override public Object remove(Object key) { return super.remove(makeKey(key)); }
+
+            @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) {
+                out.print(pfx());
+                for (Map.Entry<?,?> entry: entrySet()) {
+                    out.print(" ");  LambdaJ.printSEx(out, getKey(entry), escapeAtoms);
+                    out.print(" ");  LambdaJ.printSEx(out, entry.getValue(), escapeAtoms);
+                }
+                out.print(")");
+            }
+        }
+
+        static class EqlMap extends MurmelMap {
+            EqlMap(int size) { super(size); }
+
+            @Override String pfx() { return "#H(eql"; }
+            @Override Object makeKey(Object key) { return EqlKey.of(key); }
+            @Override Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqlKey) return ((EqlKey)entry.getKey()).key; return entry.getKey(); }
+        }
+
+        static class EqualMap extends MurmelMap {
+            EqualMap(int size) { super(size); }
+
+            @Override String pfx() { return "#H(equal"; }
+            @Override Object makeKey(Object key) { return EqualKey.of(key); }
+            @Override Object getKey(Map.Entry<?,?> entry) { if (entry.getKey() instanceof EqualKey) return ((EqualKey)entry.getKey()).key; return entry.getKey(); }
+        }
+
+        static class EqlTreeMap extends TreeMap<Object, Object> {
+            EqlTreeMap() { super(EqlTreeMap::doCompare); }
+            private static int doCompare(Object o1, Object o2) {
+                return LambdaJ.Subr.compare(o1, o2, CompareMode.EQL);
+            }
+        }
+
+        static class EqualTreeMap extends TreeMap<Object, Object> {
+            EqualTreeMap() { super(EqualTreeMap::doCompare); }
+            private static int doCompare(Object o1, Object o2) {
+                return LambdaJ.Subr.compare(o1, o2, CompareMode.EQUAL);
+            }
+        }
+
+        static Map<Object,Object> hash(SymbolTable symtab, ConsCell testAndPairs) {
+            if (testAndPairs == null) return new EqlMap(DEFAULT_HASH_SIZE);
+            final Map<Object,Object> ret = makeHashTable(symtab, car(testAndPairs), DEFAULT_HASH_SIZE);
+            final ConsCell pairs = requireList("hash", testAndPairs.cdr());
+            if (pairs == null) return ret;
+            final Iterator<?> i = pairs.iterator();
+            while (i.hasNext()) {
+                final Object key = i.next();
+                if (!i.hasNext()) errorMalformedFmt("hash", "last key/value pair is missing 'value'");
+                ret.put(key, i.next());
+            }
+            return ret;
+        }
+
+        static Map<Object,Object> makeHashTable(SymbolTable st, Object test, int size) {
+            if (test == sT) return new HashMap<>((int)(size/0.75f), 0.75f);
+            if (test == null || test == st.intern("eql")) return new EqlMap(size);
+            if (test == st.intern("compare-eql")) return new EqlTreeMap();
+            if (test == st.intern("equal")) return new EqualMap(size);
+            if (test == st.intern("compare-equal")) return new EqualTreeMap();
+            if (test == st.intern("eq")) return new IdentityHashMap<>(size);
+            throw new SimpleTypeError("only nil, eq, eql, compare-eql, equal, compare-eql and t are implemented as 'test', got " + printSEx(test));
+        }
+
+        static Object[] hashref(Object hash, Object key, Object def) {
+            final Map<?,Object> map = requireHash("hashref", hash);
+            if (map.containsKey(key)) {
+                final Object val = map.get(key);
+                return new Object[] { val, sT };
+            }
+            else if (def == NO_DEFAULT_VALUE) return new Object[] { null, null };
+            else return new Object[] { def, null };
+        }
+
+        static Object hashset(ConsCell args) {
+            final Object hashOrGen = car(args);
+            if (hashOrGen instanceof IteratorGenerator) return ((IteratorGenerator)hashOrGen).set(cadr(args));
+            if (cddr(args) == null) throw new ProgramError("hashset: when the first argument is a hash-table 3 arguments are required");
+            return hashset(hashOrGen, cadr(args), caddr(args));
+        }
+
+        static Object hashset(Object hash, Object key, Object value) {
+            final Map<Object,Object> map = requireHash("hashset", hash);
+            map.put(key, value);
+            return value;
+        }
+
+        static Object hashTableCount(Object hash) {
+            return requireHash("hash-table-count", hash).size();
+        }
+
+        static Object clrhash(Object hash) {
+            requireHash("clrhash", hash).clear();
+            return hash;
+        }
+
+        static boolean hashRemove(ConsCell args) {
+            final Object hashOrGen = car(args);
+            if (hashOrGen instanceof IteratorGenerator) return ((IteratorGenerator)hashOrGen).remove();
+            if (cdr(args) == null) throw new ProgramError("hash-table-remove: when the first argument is a hash-table 2 arguments are required");
+            return hashRemove(hashOrGen, cadr(args));
+        }
+
+        static boolean hashRemove(Object hash, Object key) {
+            final Map<?,Object> map = requireHash("hash-table-remove", hash);
+            final boolean ret = map.containsKey(key);
+            map.remove(key);
+            return ret;
+        }
+
+        interface IteratorGenerator {
+            default Object set(Object value) { throw new SimpleError("no such element - hash-table is empty"); }
+            default boolean remove() { return false; }
+        }
+
+        interface InterpreterIteratorGenerator extends IteratorGenerator, Primitive {}
+
+        static Object scanHash(LambdaJ intp, Object hash) {
+            final Map<Object, Object> map = requireHash("scan-hash-table", hash);
+            final Function<Map.Entry<?,?>, Object> getKey;
+            if (map instanceof MurmelMap) getKey = ((MurmelMap)map)::getKey;
+            else getKey = Map.Entry::getKey;
+
+            final Iterator<Map.Entry<Object,Object>> it = map.entrySet().iterator();
+            if (it.hasNext()) return new InterpreterIteratorGenerator() {
+                private Map.Entry<Object,Object> entry;
+                @Override public Object applyPrimitive(ConsCell args) {
+                    if (it.hasNext()) { entry = it.next(); final ConsCell tuple = intp.cons(getKey.apply(entry), entry.getValue()); intp.values = intp.cons(tuple, intp.cons(sT, null)); return tuple; }
+                    else { entry = null;  intp.values = intp.cons(null, intp.cons(null, null));  return null; }
+                }
+                @Override public Object set(Object value) { if (entry != null) { entry.setValue(value); return value; } else throw new SimpleError("no such element"); }
+                @Override public boolean remove() { it.remove(); entry = null; return true; }
+                @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
+            };
+            else return new InterpreterIteratorGenerator() { @Override public Object applyPrimitive(ConsCell args) { intp.values = intp.cons(null, intp.cons(null, null));  return null; }
+                                                             @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
+        }
+
+
+        /// I/O
+
+        /** (read eof-obj?) -> result */
+        static Object read(ObjectReader lispReader, ConsCell a) {
+            if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
+            if (a == null) {
+                final Object eof = new Object();
+                final Object ret = lispReader.readObj(eof);
+                if (ret == eof) wrap(new EOFException("read: EOF"));
+                return ret;
+            }
+            else {
+                return lispReader.readObj(car(a));
+            }
+        }
+
+        /** (read-from-string str [eof-obj [start [end]]]) -> result, position */
+        static Object[] readFromString(ConsCell a) {
+            final String str = requireString("read-from-string", car(a));
+            final StringReader strReader = new StringReader(str);
+            a = (ConsCell)cdr(a);
+
+            final long[] count = new long[1];
+            final Object eof;
+            final long end;
+            if (a != null) {
+                eof = car(a);
+                a = (ConsCell)cdr(a);
+
+                if (a != null) {
+                    final long start = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+                    if (start > str.length()) throw new InvalidIndexError("start must be <= string length");
+                    try { count[0] = strReader.skip(start); } catch (IOException e) { wrap(e); }
+                    a = (ConsCell)cdr(a);
+
+                    if (a != null) {
+                        end = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+                        if (end < start) throw new InvalidIndexError("end must be >= start");
+                        if (end > str.length()) throw new InvalidIndexError("end must be <= string length");
+                    }
+                    else end = -1;
+                }
+                else end = -1;
+            }
+            else { eof = null; end = -1; }
+
+            final ObjectReader reader = makeReader(() -> { if (end != -1 && count[0] == end) return EOF; final int c = strReader.read(); if (c != EOF) count[0]++; return c; });
+            final Object ret;
+            if (eof == null) {
+                final Object myeof = new Object();
+                ret = reader.readObj(myeof);
+                if (ret == myeof) wrap(new EOFException("read-from-string: EOF"));
+            }
+            else ret = reader.readObj(eof);
+
+            return new Object[] { ret, count[0] };
+        }
+
+        /** (read-textfile-lines filenamestr [charset]) -> result-string-vector */
+        static Object readTextfileLines(ConsCell args) {
+            final String fileName = requireString("read-textfile-lines", car(args));
+            try {
+                final List<String> ret;
+                if (cdr(args) == null) ret = Files.readAllLines(Paths.get(fileName));
+                else ret = Files.readAllLines(Paths.get(fileName), Charset.forName(requireString("read-textfile-lines", cadr(args))));
+                return ret.toArray();
+            }
+            catch (Exception e) {
+                throw wrap(e);
+            }
+        }
+
+        /** (read-textfile filenamestr [charset]) -> result-string */
+        static Object readTextfile(ConsCell args) {
+            final String fileName = requireString("read-textfile", car(args));
+            args = (ConsCell)cdr(args);
+            try (BufferedReader reader
+                 = args == null
+                   ? Files.newBufferedReader(Paths.get(fileName))
+                   : Files.newBufferedReader(Paths.get(fileName), Charset.forName(requireString("read-textfile", car(args))))){
+                final StringBuilder ret = new StringBuilder();
+                for (;;) {
+                    final String line = reader.readLine();
+                    if (line == null)
+                        break;
+                    ret.append(line).append('\n');
+                }
+                return ret;
+            }
+            catch (Exception e) {
+                throw wrap(e);
+            }
+        }
+
+        /** (write-textfile-lines filenamestr string-sequence  [appendp [charset]]) -> nil */
+        @SuppressWarnings("unchecked")
+        static Object writeTextfileLines(ConsCell args) {
+            final String fileName = requireString("write-textfile-lines", car(args));
+            args = (ConsCell)cdr(args);
+
+            final Object seq = car(args);
+            if (!listp(seq) && !vectorp(seq)) errorNotASequence("write-textfile-lines", seq);
+            args = (ConsCell)cdr(args);
+
+            boolean appendp = false;
+            String cs = null;
+            if (args != null) {
+                if (car(args) != null) appendp = true;
+                args = (ConsCell)cdr(args);
+                if (args != null) cs = requireString("write-textfile-lines", car(args));
+            }
+            final Iterator<Object> it;
+            if (svectorp(seq)) it = Arrays.asList((Object[])seq).iterator();
+            else if (seq instanceof Iterable) it = ((Iterable<Object>)seq).iterator(); // covers ConCell and adjustable array which are ArrayLists
+            else throw new SimpleTypeError("expected a sequence of strings bit got %s", printSEx(seq));
+            final Path p = Paths.get(fileName);
+            try (Writer w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
+                                                    appendp
+                                                    ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
+                                                    : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
+                final String eol = System.lineSeparator();
+                while (it.hasNext()) {
+                    final String line = requireString("write-textfile-lines", it.next());
+                    w.write(line);
+                    w.write(eol);
+                }
+                return null;
+            }
+            catch (Exception e) { throw wrap(e); }
+        }
+
+        /** (write-textfile filenamestr string [appendp [charset]]) -> nil */
+        static Object writeTextfile(ConsCell args) {
+            final String fileName = requireString("write-textfile", car(args));
+            args = (ConsCell)cdr(args);
+
+            final CharSequence charSeq = requireCharsequence("write-textfile", car(args));
+            args = (ConsCell)cdr(args);
+
+            boolean appendp = false;
+            String cs = null;
+            if (args != null) {
+                if (car(args) != null) appendp = true;
+                args = (ConsCell)cdr(args);
+                if (args != null) cs = requireString("write-textfile", car(args));
+            }
+            final Path p = Paths.get(fileName);
+            try (BufferedWriter w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
+                                                            appendp
+                                                            ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
+                                                            : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
+                final String eol = System.lineSeparator();
+                if ("\n".equals(eol))
+                    w.append(charSeq);
+                else for (int i = 0; i < charSeq.length(); i++) {
+                    final char c = charSeq.charAt(i);
+                    if (c == '\n') w.append(eol);
+                    else w.append(c);
+                }
+                return null;
+            }
+            catch (Exception e) { throw wrap(e); }
+        }
+
+        static Object writeToString(Object arg, boolean printEscape) {
+            return printSEx(arg, printEscape);
+        }
+
+        static Object write(ObjectWriter lispPrinter, Object arg, boolean printEscape) {
+            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
+            lispPrinter.printObj(arg, printEscape);
+            return arg;
+        }
+
+        static Object writeln(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
+            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
+            if (arg != null) {
+                lispPrinter.printObj(car(arg), printEscape);
+            }
+            lispPrinter.printEol();
+            return car(arg);
+        }
+
+        static Object lnwrite(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
+            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "lnwrite");
+            lispPrinter.printEol();
+            if (arg == null) return null;
+            final Object o;
+            lispPrinter.printObj(o = car(arg), printEscape);
+            lispPrinter.printString(" ");
+            return o;
+        }
+
+        static String format(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
+            return format(lispPrinter, haveIO, false, a);
+        }
+
+        static String formatLocale(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
+            return format(lispPrinter, haveIO, true, a);
+        }
+
+        private static String format(ObjectWriter lispPrinter, boolean haveIO, boolean locale, ConsCell a) {
+            final String func = locale ? "format-locale" : "format";
+            varargsMin(func, a, locale ? 3 : 2);
+            final boolean toString = car(a) == null;
+            a = (ConsCell) cdr(a);
+
+            final String locString;
+            if (locale) {
+                if (car(a) != null) {
+                    stringArg(func, "first argument", a);
+                    locString = (String)car(a);
+                } else locString = null;
+                a = (ConsCell)cdr(a);
+            }
+            else locString = null;
+
+            stringArg(func, locale ? "third argument" : "second argument", a);
+            final String s = (String) car(a);
+            final Object[] args = listToArray(cdr(a));
+            try {
+                if (locString == null) {
+                    if (toString) return EolUtil.anyToUnixEol(String.format(s, args));
+                    if (!haveIO) throw new LambdaJError(true, "%s: I/O is disabled", func);
+                    if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
+                    lispPrinter.printString(EolUtil.anyToUnixEol(String.format(s, args)));
+                    return null;
+                }
+                final Locale loc = Locale.forLanguageTag(locString);
+                if (toString) return EolUtil.anyToUnixEol(String.format(loc, s, args));
+                if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
+                lispPrinter.printString(EolUtil.anyToUnixEol(String.format(loc, s, args)));
+                return null;
+            } catch (IllegalFormatException e) {
+                // todo sbcl wirft SB-FORMAT:FORMAT-ERROR extends ERROR
+                throw new SimpleError("%s: illegal format string and/ or arguments: %s. Error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
+            }
+        }
+
+
+        /// misc
+
+        static long getInternalRealTime() {
+            return System.nanoTime();
+        }
+
+        static long getInternalRunTime() {
+            return getThreadBean("get-internal-run-time").getCurrentThreadUserTime();
+        }
+
+        static long getInternalCpuTime() {
+            return getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime();
+        }
+
+        private static ThreadMXBean getThreadBean(final String func) {
+            final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
+            if (threadBean == null)
+                throw new LambdaJError(true, "%s: ThreadMXBean not supported in this Java Runtime", func);
+            if (!threadBean.isCurrentThreadCpuTimeSupported())
+                throw new LambdaJError(true, "%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", func);
+            return threadBean;
+        }
+
+        static Object sleep(Object seconds) {
+            try {
+                final long millis = (long)(toDouble("sleep", seconds) * 1e3D);
+                Thread.sleep(millis);
+                return null;
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                throw new LambdaJError("sleep: got interrupted");
+            }
+        }
+
+        static long getUniversalTime() {
+            final ZoneId utc = ZoneId.of("UTC");
+            final ZonedDateTime ld1900 = ZonedDateTime.of(1900, 1, 1, 0, 0, 0, 0, utc);
+            return ld1900.until(ZonedDateTime.now(utc), ChronoUnit.SECONDS);
+        }
+
+        interface Boolresult { Object apply(boolean b); }
+
+        static <T extends AbstractListBuilder<T>> ConsCell getDecodedTime(T lb, Boolresult boolResult) {
+            final Instant now = Clock.systemDefaultZone().instant();
+            final ZonedDateTime n = now.atZone(ZoneId.systemDefault());
+            final ZoneRules rules = n.getZone().getRules();
+            final boolean daylightSavings = rules.isDaylightSavings(now);
+            final double offset = -rules.getOffset(now).get(ChronoField.OFFSET_SECONDS) / 3600.0;
+            //get-decoded-time <no arguments> => second, minute, hour, date, month, year, day, daylight-p, zone
+            return (ConsCell)lb.appendElements(n.getSecond(), n.getMinute(), n.getHour(),
+                                               n.getDayOfMonth(), n.getMonthValue(), n.getYear(), n.getDayOfWeek().getValue() - 1,
+                                               boolResult.apply(daylightSavings), offset, null).first();
+        }
+
+        /** expand a single macro call */
+        static Object macroexpand1(LambdaJ intp, ConsCell args) {
+            oneArg("macroexpand-1", args);
+            final Object maybeMacroCall = car(args);
+            if (!consp(maybeMacroCall)) {
+                intp.values = intp.cons(maybeMacroCall, intp.cons(null, null));
+                return maybeMacroCall;
+            }
+            return macroexpandImpl(intp, (ConsCell) maybeMacroCall);
+        }
+
+        static Object gensym(Object name) {
+            if (name != null) return new LambdaJSymbol(requireString("gensym", name));
+            else return new LambdaJSymbol("gensym");
+        }
+
+        static void error(SymbolTable st, Object datum, Object... args) {
+            if (stringp(datum)) { throw new SimpleError(requireString("error", datum), args); }
+
+            if (datum == st.intern("file-error"))   throw new InvalidPathException("(input)", "(reason)"); // todo args
+
+            final String msg;
+            switch (args.length) {
+            case 0:  msg = null;  break;
+            case 1:  msg = String.format(requireString("error", args[0]));  break;
+            default: msg = String.format(requireString("error", args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
+            }
+
+            if (datum == st.intern("condition")) wrap(new Throwable(msg));
+            if (datum == st.intern("error")) wrap(new Exception(msg));
+
+            if (datum == st.intern("simple-error")) throw new SimpleError(msg);
+
+            if (datum == st.intern("cell-error")) throw new CellError(msg);
+            if (datum == st.intern("unbound-variable")) throw new UnboundVariable(msg);
+            if (datum == st.intern("undefined-function")) throw new UndefinedFunction(msg);
+
+            if (datum == st.intern("control-error")) throw new ControlError(msg);
+            if (datum == st.intern("program-error")) throw new ProgramError(msg);
+            if (datum == st.intern("parse-error")) throw new ParseError(msg);
+
+            if (datum == st.intern("arithmetic-error")) throw new ArithmeticException(msg);
+
+            if (datum == st.intern("type-error")) throw new ClassCastException(msg);
+            if (datum == st.intern("simple-type-error")) throw new SimpleTypeError(msg);
+
+            if (datum == st.intern("stream-error")) wrap(new IOException(msg));
+            if (datum == st.intern("end-of-file"))  wrap(new EOFException(msg));
+            if (datum == st.intern("reader-error")) wrap(new ReaderError(msg));
+
+            throw new SimpleTypeError("error: unknown condition type " + printSEx(datum) + ": " + msg);
+        }
     }
 
     /** possibly wrap {@code t} in a {@link LambdaJError} and throw, wrap doesn't return */ 
@@ -7399,11 +7399,11 @@ public class LambdaJ {
 
         public final Object _eq        (Object... args) { twoArgs("eq",          args.length);        return bool(args[0] == args[1]); }
 
-        public final Object _eql       (Object... args) { twoArgs("eql",         args.length);        return bool(LambdaJ.eql(args[0], args[1])); }
-        public final Object _eql(Object o1, Object o2)  { return bool(LambdaJ.eql(o1, o2)); }
+        public final Object _eql       (Object... args) { twoArgs("eql",         args.length);        return bool(LambdaJ.Subr.eql(args[0], args[1])); }
+        public final Object _eql(Object o1, Object o2)  { return bool(LambdaJ.Subr.eql(o1, o2)); }
 
-        public final Object _equal     (Object... args) { twoArgs("equal",       args.length);        return bool(LambdaJ.equal(args[0], args[1])); }
-        public final Object _equal(Object o1, Object o2) { return bool(LambdaJ.equal(o1, o2)); }
+        public final Object _equal     (Object... args) { twoArgs("equal",       args.length);        return bool(LambdaJ.Subr.equal(args[0], args[1])); }
+        public final Object _equal(Object o1, Object o2) { return bool(LambdaJ.Subr.equal(o1, o2)); }
 
         public final Object _consp     (Object... args) { oneArg("consp",        args.length);        return bool(consp(args[0])); }
         public final Object _consp     (Object    arg)  {                                             return bool(consp(arg)); }
@@ -7525,10 +7525,10 @@ public class LambdaJ {
             return _t;
         }
 
-        public final Number   inc      (Object... args) { values = null; oneArg("1+",         args.length); return LambdaJ.inc(args[0]); }
-        public final Number   inc      (Object arg)     { values = null; return LambdaJ.inc(arg); }
-        public final Number   dec      (Object... args) { values = null; oneArg("1-",         args.length); return LambdaJ.dec(args[0]); }
-        public final Number   dec      (Object arg)     { values = null; return LambdaJ.dec(arg); }
+        public final Number   inc      (Object... args) { values = null; oneArg("1+",         args.length); return LambdaJ.Subr.inc(args[0]); }
+        public final Number   inc      (Object arg)     { values = null; return LambdaJ.Subr.inc(arg); }
+        public final Number   dec      (Object... args) { values = null; oneArg("1-",         args.length); return LambdaJ.Subr.dec(args[0]); }
+        public final Number   dec      (Object arg)     { values = null; return LambdaJ.Subr.dec(arg); }
 
         public final Number   _signum  (Object... args) { values = null; oneArg("signum",        args.length); return cl_signum (args[0]); }
 
@@ -7543,7 +7543,7 @@ public class LambdaJ {
         public final double   _ftruncate(Object... args) { varargs1_2("ftruncate",args.length); return cl_truncate(quot12(args)); }
 
         public static double cl_round(double d)    { return Math.rint(d); }
-        public static double cl_truncate(double d) { return LambdaJ.cl_truncate(d); }
+        public static double cl_truncate(double d) { return LambdaJ.Subr.cl_truncate(d); }
         public static long   toFixnum(double d)    { return LambdaJ.toFixnum(d); }
         private double quot12(Object[] args) { values = null; return args.length == 2 ? toDouble(args[0]) / toDouble(args[1]) : toDouble(args[0]); }
 
@@ -7553,7 +7553,7 @@ public class LambdaJ {
         public final double   _exp     (Object... args) { oneArg("exp",           args.length); values = null; return Math.exp  (toDouble(args[0])); }
         public final double   _expt    (Object... args) { twoArgs("expt",         args.length); values = null; return Math.pow  (toDouble(args[0]), toDouble(args[1])); }
         public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(toDouble(args[0]), toDouble(args[1])); }
-        public final double cl_mod(double lhs, double rhs) { values = null; return LambdaJ.cl_mod(lhs, rhs); }
+        public final double cl_mod(double lhs, double rhs) { values = null; return LambdaJ.Subr.cl_mod(lhs, rhs); }
         public final double   _rem     (Object... args) { twoArgs("rem",          args.length); values = null; return toDouble(args[0]) % toDouble(args[1]); }
 
 
@@ -7561,12 +7561,12 @@ public class LambdaJ {
 
         public final Object   makeArray(Object... args) { values = null; varargsMinMax("make-array", args.length, 1, 3);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
-                                                          return LambdaJ.makeArray(sBit, sCharacter, arraySlice(args)); }
-        public final long     vectorLength(Object... args) { values = null; oneArg("vector-length", args.length); return LambdaJ.vectorLength(args[0]); }
-        public final Object   vectorCopy  (Object... args) { values = null; varargs1_2("vector-copy", args.length);   return LambdaJ.vectorCopy(args[0], args.length > 1 && args[1] != null); }
+                                                          return LambdaJ.Subr.makeArray(sBit, sCharacter, arraySlice(args)); }
+        public final long     vectorLength(Object... args) { values = null; oneArg("vector-length", args.length); return LambdaJ.Subr.vectorLength(args[0]); }
+        public final Object   vectorCopy  (Object... args) { values = null; varargs1_2("vector-copy", args.length);   return LambdaJ.Subr.vectorCopy(args[0], args.length > 1 && args[1] != null); }
         public final Object   vectorFill  (Object... args) { values = null; varargsMinMax("vector-fill", args.length, 2, 4);
-                                                             return LambdaJ.vectorFill(args[0], args[1], args.length <= 2 ? null : args[2], args.length <= 3 ? null : args[3]); }
-        public final long     vectorAdd   (Object... args) { values = null; twoArgs("vector-add", args.length); return LambdaJ.vectorAdd(args[0], args[1]); }
+                                                             return LambdaJ.Subr.vectorFill(args[0], args[1], args.length <= 2 ? null : args[2], args.length <= 3 ? null : args[3]); }
+        public final long     vectorAdd   (Object... args) { values = null; twoArgs("vector-add", args.length); return LambdaJ.Subr.vectorAdd(args[0], args[1]); }
         public final Object   vectorToList (Object... args) {
             values = null; oneArg("vector->list", args.length);
             final Object maybeVector = args[0];
@@ -7586,13 +7586,13 @@ public class LambdaJ {
 
             throw errorNotAVector("vector->list", maybeVector);
         }
-        public final Object   listToVector(Object... args) { values = null; varargs1_2("list->vector", args.length); return LambdaJ.listToVector(args[0], args.length > 1 && args[1] != null); }
+        public final Object   listToVector(Object... args) { values = null; varargs1_2("list->vector", args.length); return LambdaJ.Subr.listToVector(args[0], args.length > 1 && args[1] != null); }
 
         public final long     _svlength(Object... args) { values = null; oneArg("svlength", args.length); return svlength(args[0]); }
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return _svref(args[0], args[1]); }
-        public final Object   _svref(Object v, Object idx) { values = null; return LambdaJ.svref(v, toArrayIndex(idx)); }
+        public final Object   _svref(Object v, Object idx) { values = null; return LambdaJ.Subr.svref(v, toArrayIndex(idx)); }
         public final Object   _svset   (Object... args) { threeArgs("svref", args.length); return _svset(args[0], args[1], args[2]); }
-        public final Object   _svset(Object v, Object idx, Object val) { values = null; return LambdaJ.svset(v, toArrayIndex(idx), val); }
+        public final Object   _svset(Object v, Object idx, Object val) { values = null; return LambdaJ.Subr.svset(v, toArrayIndex(idx), val); }
         public final Object   simpleVectorToList (Object... args) {
             values = null; oneArg("simple-vector->list", args.length);
             final Object maybeVector = args[0];
@@ -7607,9 +7607,9 @@ public class LambdaJ {
 
         public final Object    _string (Object... args) { values = null; oneArg("string", args.length); return stringDesignatorToString(args[0]); }
         public final long      _slength(Object... args) { values = null; oneArg("slength", args.length); return slength(args[0]); }
-        public final char      _sref   (Object... args) { values = null; twoArgs("sref", args.length);   return LambdaJ.sref(args[0], toArrayIndex(args[1])); }
-        public final char      _sset   (Object... args) { values = null; threeArgs("sset", args.length); return LambdaJ.sset(args[0], toArrayIndex(args[1]), LambdaJ.requireChar("sset", args[2])); }
-        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(LambdaJ.stringEq(args[0], args[1])); }
+        public final char      _sref   (Object... args) { values = null; twoArgs("sref", args.length);   return LambdaJ.Subr.sref(args[0], toArrayIndex(args[1])); }
+        public final char      _sset   (Object... args) { values = null; threeArgs("sset", args.length); return LambdaJ.Subr.sset(args[0], toArrayIndex(args[1]), LambdaJ.requireChar("sset", args[2])); }
+        public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(LambdaJ.Subr.stringEq(args[0], args[1])); }
         public final Object   stringToList (Object... args) {
             values = null; oneArg("string->list", args.length);
             final Object maybeString = args[0];
@@ -7625,7 +7625,7 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
             return ret.first();
         }
-        public final Object listToString(Object... args) { values = null; varargs1_2("list->string", args.length); return LambdaJ.listToString(args[0], args.length > 1 && args[1] != null); }
+        public final Object listToString(Object... args) { values = null; varargs1_2("list->string", args.length); return LambdaJ.Subr.listToString(args[0], args.length > 1 && args[1] != null); }
 
         public final long   charInt     (Object... args) { values = null; oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
         public final long   charInt     (Object arg)     { values = null;                                       return (long) LambdaJ.requireChar("char-code", arg); }
@@ -7634,13 +7634,13 @@ public class LambdaJ {
 
         public final  long  _bvlength   (Object... args) { values = null; oneArg("bvlength", args.length);      return bvlength(args[0]); }
         public final  long  _bvref      (Object... args) { twoArgs("bvref", args.length);        return _bvref(args[0], args[1]); }
-        public final  long  _bvref(Object v, Object idx) { values = null; return LambdaJ.bvref(v, toArrayIndex(idx)); }
-        public final  long  _bvref(Object v, long idx)   { values = null; return LambdaJ.bvref(v, toArrayIndex(idx)); }
+        public final  long  _bvref(Object v, Object idx) { values = null; return LambdaJ.Subr.bvref(v, toArrayIndex(idx)); }
+        public final  long  _bvref(Object v, long idx)   { values = null; return LambdaJ.Subr.bvref(v, toArrayIndex(idx)); }
         public final  long  _bvset      (Object... args) { threeArgs("bvset", args.length);      return _bvset(args[0], args[1], args[2]); }
-        public final  long  _bvset(Object v, Object idx, Object val) { values = null; return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
-        public final  long  _bvset(Object v, Object idx, long val)   { values = null; return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
-        public final  long  _bvset(Object v, long idx, long val)     { values = null; return LambdaJ.bvset(v, toArrayIndex(idx), toBit(val)); }
-        public final Object bvEq        (Object... args)             { twoArgs("bv=", args.length); return bool(LambdaJ.bvEq(args[0], args[1])); }
+        public final  long  _bvset(Object v, Object idx, Object val) { values = null; return LambdaJ.Subr.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public final  long  _bvset(Object v, Object idx, long val)   { values = null; return LambdaJ.Subr.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public final  long  _bvset(Object v, long idx, long val)     { values = null; return LambdaJ.Subr.bvset(v, toArrayIndex(idx), toBit(val)); }
+        public final Object bvEq        (Object... args)             { twoArgs("bv=", args.length); return bool(LambdaJ.Subr.bvEq(args[0], args[1])); }
         public final Object bitVectorToList(Object... args) {
             values = null; oneArg("bit-vector->list", args.length);
             final Object maybeVector = args[0];
@@ -7662,25 +7662,25 @@ public class LambdaJ {
         }
         public final Object listToBitVector(Object... args) {
             values = null; varargs1_2("list->bit-vector", args.length);
-            return LambdaJ.listToBitVector(LambdaJ.requireList("list->bit-vector", args[0]), args.length > 1 && args[1] != null);
+            return LambdaJ.Subr.listToBitVector(LambdaJ.requireList("list->bit-vector", args[0]), args.length > 1 && args[1] != null);
         }
 
-        public final Object   _seqref  (Object... args) { values = null; twoArgs("seqref",   args.length); return LambdaJ.seqref(args[0], toArrayIndex(args[1])); }
-        public final Object   _seqset  (Object... args) { values = null; threeArgs("seqset", args.length); return LambdaJ.seqset(args[0], toArrayIndex(args[1]), args[2]); }
+        public final Object   _seqref  (Object... args) { values = null; twoArgs("seqref",   args.length); return LambdaJ.Subr.seqref(args[0], toArrayIndex(args[1])); }
+        public final Object   _seqset  (Object... args) { values = null; threeArgs("seqset", args.length); return LambdaJ.Subr.seqset(args[0], toArrayIndex(args[1]), args[2]); }
 
 
         // Hashtables
-        public final Object _hash         (Object... args)      { values = null;                                               return LambdaJ.hash(symtab, arraySlice(args)); }
+        public final Object _hash         (Object... args)      { values = null;                                               return LambdaJ.Subr.hash(symtab, arraySlice(args)); }
         public final Object makeHash      (Object... args)      { values = null; varargs0_2("make-hash-table", args.length);   return makeHashTable(symtab,
                                                                                                                                                     args.length >= 1 ? args[0] : null,
                                                                                                                                                     args.length >= 2 ? toNonnegInt("make-hash-table", cadr(args)) : DEFAULT_HASH_SIZE); }
         public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args.length, 2, 3);  values = hashref(args[0], args[1], args.length == 2 ? NO_DEFAULT_VALUE : args[2]); return values[0]; }
         public final Object _hashset      (Object... args)      { values = null; varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
-        public final Object hashTableCount(Object... args)      { values = null; oneArg("hash-table-count", args.length);      return LambdaJ.hashTableCount(args[0]); }
-        public final Object _clrhash      (Object... args)      { values = null; oneArg("clrhash", args.length);               return LambdaJ.clrhash(args[0]); }
-        public final Object hashRemove    (Object... args)      { varargs1_2("hash-table-remove", args.length);                return bool(LambdaJ.hashRemove(arraySlice(args))); }
-        public final Object _sxhash       (Object... args)      { values = null; oneArg("sxhash", args.length);                return LambdaJ.sxhash(args[0]); }
-        public final Object _sxhash       (Object    obj)       { values = null;                                               return LambdaJ.sxhash(obj); }
+        public final Object hashTableCount(Object... args)      { values = null; oneArg("hash-table-count", args.length);      return LambdaJ.Subr.hashTableCount(args[0]); }
+        public final Object _clrhash      (Object... args)      { values = null; oneArg("clrhash", args.length);               return LambdaJ.Subr.clrhash(args[0]); }
+        public final Object hashRemove    (Object... args)      { varargs1_2("hash-table-remove", args.length);                return bool(LambdaJ.Subr.hashRemove(arraySlice(args))); }
+        public final Object _sxhash       (Object... args)      { values = null; oneArg("sxhash", args.length);                return LambdaJ.Subr.sxhash(args[0]); }
+        public final Object _sxhash       (Object    obj)       { values = null;                                               return LambdaJ.Subr.sxhash(obj); }
         public final Object scanHash      (Object... args)      { values = null; oneArg("scan-hash-table", args.length);       return scanHashCompiler(args[0]); }
 
         interface CompilerIteratorGenerator extends IteratorGenerator, CompilerPrimitive {}
@@ -7708,37 +7708,37 @@ public class LambdaJ {
 
 
         // I/O
-        public final Object _read             (Object... args)  { varargs0_1("read",                    args.length);       values = null; return LambdaJ.read(lispReader, arraySlice(args)); }
-        public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args.length, 1, 4); return ret(LambdaJ.readFromString(arraySlice(args))); }
-        public final Object readTextfileLines (Object... args)  { varargs1_2("read-textfile-lines",     args.length);       values = null; return LambdaJ.readTextfileLines(arraySlice(args)); }
-        public final Object readTextfile      (Object... args)  { varargs1_2("read-textfile",           args.length);       values = null; return LambdaJ.readTextfile(arraySlice(args)); }
-        public final Object writeTextfileLines(Object... args)  { varargsMinMax("write-textfile-lines", args.length, 2, 4); values = null; return LambdaJ.writeTextfileLines(arraySlice(args)); }
-        public final Object writeTextfile     (Object... args)  { varargsMinMax("write-textfile",       args.length, 2, 4); values = null; return LambdaJ.writeTextfile(arraySlice(args)); }
-        public final Object writeToString     (Object... args)  { varargs1_2("write-to-string",         args.length);       values = null; return LambdaJ.writeToString(args[0], args.length < 2 || args[1] != null); }
-        public final Object _write            (Object... args)  { varargs1_2("write",                   args.length);       values = null; return LambdaJ.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
-        public final Object _writeln          (Object... args)  { varargs0_2("writeln",                 args.length);       values = null; return LambdaJ.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
-        public final Object _lnwrite          (Object... args)  { varargs0_2("lnwrite",                 args.length);       values = null; return LambdaJ.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _read             (Object... args)  { varargs0_1("read",                    args.length);       values = null; return LambdaJ.Subr.read(lispReader, arraySlice(args)); }
+        public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args.length, 1, 4); return ret(LambdaJ.Subr.readFromString(arraySlice(args))); }
+        public final Object readTextfileLines (Object... args)  { varargs1_2("read-textfile-lines",     args.length);       values = null; return LambdaJ.Subr.readTextfileLines(arraySlice(args)); }
+        public final Object readTextfile      (Object... args)  { varargs1_2("read-textfile",           args.length);       values = null; return LambdaJ.Subr.readTextfile(arraySlice(args)); }
+        public final Object writeTextfileLines(Object... args)  { varargsMinMax("write-textfile-lines", args.length, 2, 4); values = null; return LambdaJ.Subr.writeTextfileLines(arraySlice(args)); }
+        public final Object writeTextfile     (Object... args)  { varargsMinMax("write-textfile",       args.length, 2, 4); values = null; return LambdaJ.Subr.writeTextfile(arraySlice(args)); }
+        public final Object writeToString     (Object... args)  { varargs1_2("write-to-string",         args.length);       values = null; return LambdaJ.Subr.writeToString(args[0], args.length < 2 || args[1] != null); }
+        public final Object _write            (Object... args)  { varargs1_2("write",                   args.length);       values = null; return LambdaJ.Subr.write(lispPrinter, args[0], args.length < 2 || args[1] != null); }
+        public final Object _writeln          (Object... args)  { varargs0_2("writeln",                 args.length);       values = null; return LambdaJ.Subr.writeln(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object _lnwrite          (Object... args)  { varargs0_2("lnwrite",                 args.length);       values = null; return LambdaJ.Subr.lnwrite(lispPrinter, arraySlice(args), args.length < 2 || args[1] != null); }
 
-        public final Object format            (Object... args)  { varargs2("format",                    args.length);       values = null; return LambdaJ.format(lispPrinter, true, arraySlice(args)); }
-        public final Object formatLocale      (Object... args)  { varargs3("format-locale",             args.length);       values = null; return LambdaJ.formatLocale(lispPrinter, true, arraySlice(args)); }
+        public final Object format            (Object... args)  { varargs2("format",                    args.length);       values = null; return LambdaJ.Subr.format(lispPrinter, true, arraySlice(args)); }
+        public final Object formatLocale      (Object... args)  { varargs3("format-locale",             args.length);       values = null; return LambdaJ.Subr.formatLocale(lispPrinter, true, arraySlice(args)); }
 
 
         // misc
         protected Object[] values;
         public final Object _values    (Object... args) { return ret(args); }
-        public final Object _gensym    (Object... args) { values = null; varargs0_1("gensym", args.length); return LambdaJ.gensym(args.length == 0 ? null : args[0]); }
+        public final Object _gensym    (Object... args) { values = null; varargs0_1("gensym", args.length); return LambdaJ.Subr.gensym(args.length == 0 ? null : args[0]); }
         public final Object _trace     (Object... args) { values = null; return null; }
         public final Object _untrace   (Object... args) { values = null; return null; }
-        public final Object _error     (Object... args) { values = null; varargs1("error", args.length); LambdaJ.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
+        public final Object _error     (Object... args) { values = null; varargs1("error", args.length); LambdaJ.Subr.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
 
 
         // time
-        public final long   getInternalRealTime(Object... args) { values = null; noArgs("get-internal-real-time", args.length); return LambdaJ.getInternalRealTime(); }
-        public final long   getInternalRunTime (Object... args) { values = null; noArgs("get-internal-run-time", args.length); return LambdaJ.getInternalRunTime(); }
-        public final long   getInternalCpuTime (Object... args) { values = null; noArgs("get-internal-cpu-time", args.length); return LambdaJ.getInternalCpuTime(); }
-        public final Object sleep              (Object... args) { values = null; oneArg("sleep", args.length); return LambdaJ.sleep(args[0]); }
-        public final long   getUniversalTime   (Object... args) { values = null; noArgs("get-universal-time", args.length); return LambdaJ.getUniversalTime(); }
-        public final Object getDecodedTime     (Object... args) { values = null; noArgs("get-decoded-time", args.length); return LambdaJ.getDecodedTime(new ListBuilder(), this::bool); }
+        public final long   getInternalRealTime(Object... args) { values = null; noArgs("get-internal-real-time", args.length); return LambdaJ.Subr.getInternalRealTime(); }
+        public final long   getInternalRunTime (Object... args) { values = null; noArgs("get-internal-run-time", args.length); return LambdaJ.Subr.getInternalRunTime(); }
+        public final long   getInternalCpuTime (Object... args) { values = null; noArgs("get-internal-cpu-time", args.length); return LambdaJ.Subr.getInternalCpuTime(); }
+        public final Object sleep              (Object... args) { values = null; oneArg("sleep", args.length); return LambdaJ.Subr.sleep(args[0]); }
+        public final long   getUniversalTime   (Object... args) { values = null; noArgs("get-universal-time", args.length); return LambdaJ.Subr.getUniversalTime(); }
+        public final Object getDecodedTime     (Object... args) { values = null; noArgs("get-decoded-time", args.length); return LambdaJ.Subr.getDecodedTime(new ListBuilder(), this::bool); }
 
 
         // Java FFI
@@ -7824,7 +7824,7 @@ public class LambdaJ {
             return ret.first();
         }
 
-        public final Map<Object,Object> hash(ConsCell args) { return LambdaJ.hash(symtab, args); } 
+        public final Map<Object,Object> hash(ConsCell args) { return LambdaJ.Subr.hash(symtab, args); } 
 
         public static ConsCell arraySlice(Object[] o, int offset) { return LambdaJ.arraySlice(o, offset); }
         public static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
@@ -9193,7 +9193,7 @@ public class LambdaJ {
                         if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
                         sb.append("((Supplier<Object>)(() -> {\n"
                                   + "        final Object expansion").append(rsfx).append(" = ");
-                        emitQuotedForm(sb, intp.macroexpand1((ConsCell)cdar(ccArguments)), true);
+                        emitQuotedForm(sb, LambdaJ.Subr.macroexpand1(intp, (ConsCell)cdar(ccArguments)), true);
                         final String expanded = cadr(intp.values) == sT ? "rt()._t" : "null";
                         sb.append("; return rt()._values(expansion").append(rsfx).append(", ").append(expanded).append(");\n        })).get()");
                         return;

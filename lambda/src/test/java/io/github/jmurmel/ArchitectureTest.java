@@ -23,6 +23,14 @@ public class ArchitectureTest {
     public void checkMurmel() {
         checkUsers(LambdaJ.Cli.class, LambdaJ.class);
 
+        checkUsers(LambdaJ.Subr.class,
+                   LambdaJ.ConsCell.class,           // wg. compare. evtl. compare woanders hinschieben
+                   LambdaJ.SExpressionReader.class,  // wg. hash (fuer #H(...))
+                   LambdaJ.MurmelJavaCompiler.class, // nur wg. macroexpand1, ggf. aendern
+
+                   LambdaJ.WellknownSymbol.class,
+                   LambdaJ.MurmelJavaProgram.class);
+
         checkUsers(JavaCompilerHelper.class, LambdaJ.MurmelJavaCompiler.class);
         checkUsers(JavaSourceFromString.class, JavaCompilerHelper.class);
         checkUsers(MurmelClassLoader.class, JavaCompilerHelper.class);
@@ -43,6 +51,8 @@ public class ArchitectureTest {
         //checkLeaf("UnixToAnyEol"); uses LambdaJ.WriteConsumer.print()
         checkLeaf("WrappingWriter");
     }
+
+
 
     /** check that {@code clazz} is only used by nested classes inside {@code clazz} or {@code allowedUsers} */
     private static void checkUsers(Class<?> clazz, Class<?>... allowedUsers) {
