@@ -9196,19 +9196,19 @@ public class LambdaJ {
 
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                     if (symbolEq(op, "macroexpand-1")) {
+                        oneArg("macroexpand-1", ccArguments);
                         if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
-                        sb.append("((Supplier<Object>)(() -> {\n"
-                                  + "        final Object expansion").append(rsfx).append(" = ");
-                        emitQuotedForm(sb, macroexpand1(intp, (ConsCell)cdar(ccArguments)), true);
-                        final String expanded = cadr(intp.values) == sT ? "rt()._t" : "null";
-                        sb.append("; return rt()._values(expansion").append(rsfx).append(", ").append(expanded).append(");\n        })).get()");
+                        final Object expandedForm, expanded;
+                        final Object maybeMacroCall = car((ConsCell)cdar(ccArguments));
+                        if (consp(maybeMacroCall)) { expandedForm = macroexpandImpl(intp, (ConsCell)maybeMacroCall); expanded = cadr(intp.values) == sT ? "rt()._t" : "null"; }
+                        else { expandedForm = maybeMacroCall; expanded = "null"; }
+                        sb.append("rt()._values(");  emitQuotedForm(sb, expandedForm, true);  sb.append(", ").append(expanded).append(")");
                         return;
                     }
 
                     /// * some functions and operators are opencoded:
                     if (intp.speed >= 1 && symbolp(op) && opencode(sb, (LambdaJSymbol)op, ccArguments, env, topEnv, rsfx, isLast)) return;
-
-                    if (intp.speed >= 1 && consp(op) && symbolp(car(op)) && symbolEq(car(op), "jmethod")
+                    if (intp.speed >= 1 && consp(op) && symbolEq(car(op), "jmethod")
                         && emitJmethod(sb, requireCons("jmethod application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
                         return;
                     }

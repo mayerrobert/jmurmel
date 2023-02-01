@@ -1,3 +1,18 @@
+kompiliertes macroexpand-1 veträgt sich irgendwie nicht mit gensym: "#:gensym" vs. "gensym"
+
+JMurmel> (load "mlib")
+
+==> nil
+JMurmel> (macroexpand-1 '(dotimes (i 10) (write i)))
+
+ -> (let ((i 0) (#:gensym 10)) (if (<= #:gensym 0) (progn) (if (>= i #:gensym) (progn) (let #:gensym nil (write i) (incf i) (if (>= i #:gensym) (progn) (#:gensym))))))
+ -> t
+JMurmel> :r
+
+ -> (let ((i 0) (gensym 10)) (if (<= gensym 0) (progn) (if (>= i gensym) (progn) (let gensym nil (write i) (incf i) (if (>= i gensym) (progn) (gensym))))))
+ -> t
+
+
 jmurmel + jrunscript dokumentieren: https://docs.oracle.com/en/java/javase/19/docs/specs/man/jrunscript.html
 $ jrunscript -cp jmurmel.jar -l jmurmel -f ../../samples.murmel/fizzbuzz.lisp
 1, 2, Fizz, 4, Buzz, Fizz, 7, 8, Fizz, Buzz, 11, Fizz, 13, 14, Fizz Buzz, 16, 17, Fizz, 19, Buzz, Fizz,
