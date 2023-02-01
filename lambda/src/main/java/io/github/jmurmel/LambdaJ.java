@@ -429,6 +429,12 @@ public class LambdaJ {
         return String.format(msg, params);
     }
 
+    /** possibly wrap {@code t} in a {@link LambdaJError} and throw, wrap doesn't return */
+    static RuntimeException wrap(Throwable t) {
+        if (t instanceof RuntimeException) throw (RuntimeException)t;
+        throw new LambdaJError(t, t.getMessage());
+    }
+
 
     /// ## Data types used by interpreter program as well as interpreted programs
 
@@ -2236,6 +2242,7 @@ public class LambdaJ {
 
 
     /// ### Global environment - define'd symbols go into this list
+
     private final Map<Object, ConsCell> gcache = new IdentityHashMap<>(100);
 
     private ConsCell lookupEnvEntry(Object symbol, ConsCell lexenv) {
@@ -2300,6 +2307,7 @@ public class LambdaJ {
 
 
     /// ###  eval - the heart of most if not all Lisp interpreters
+
     private Object eval(Object form, ConsCell env, int stack, int level, int traceLvl) {
         final boolean doOpencode = speed >= 1;
         Object func = null;
@@ -3838,21 +3846,75 @@ public class LambdaJ {
         return ret.toArray();
     }
 
-    static boolean[] listToBooleanArray(ConsCell maybeList) {
-        if (maybeList == null) return new boolean[0];
-        if (maybeList instanceof ArraySlice) return ((ArraySlice)maybeList).listToBooleanArray();
-        boolean[] ret = new boolean[32];
-        int i = 0;
-        final Long zero = 0L, one = 1L;
-        for (Object rest = maybeList; rest != null; rest = cdr(rest)) {
-            if (i == ret.length) ret = Arrays.copyOf(ret, ret.length * 2);
-            final Object o = car(rest);
-            if (zero.equals(o)) ret[i] = false;
-            else if (one.equals(o)) ret[i] = true;
-            else throw new SimpleTypeError("not a valid value for bitvector: %s", o);
-            i++;
+    enum CompareMode { NUMBER, EQL, EQUAL }
+
+    /** compare two objects. {@code mode} determines which types are compared by their value and which are compared by their identity.
+     *
+     *  <p>Implementation note: this relies on the hope that {@link System#identityHashCode(Object)} will return different values for different objects that are not numbers.
+     *  This is strongly suggested but not guaranteed by the Java spec:
+     *  "As much as is reasonably practical, the hashCode method defined by class {@code Object}
+     *  does return distinct integers for distinct objects." */
+    static int compare(Object o1, Object o2, CompareMode mode) {
+        if (o1 == o2) return 0;
+        if (o1 == null) return -1;
+        if (o2 == null) return 1;
+
+        if (integerp(o1) && integerp(o2)) {
+            if (o1 instanceof BigInteger && o2 instanceof BigInteger) return ((BigInteger)o1).compareTo((BigInteger)o2);
+            if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue())));
+            if (o2 instanceof BigInteger)                             return new BigInteger(String.valueOf(((Number)o1).longValue())).compareTo((BigInteger)o2);
+            return Long.compare(((Number)o1).longValue(), ((Number)o2).longValue());
         }
-        return Arrays.copyOf(ret, i);
+
+        if (floatp(o1) && floatp(o2)) {
+            if (o1.getClass() != o2.getClass()) return System.identityHashCode(o1) - System.identityHashCode(o2);
+            if (o1 instanceof BigDecimal && o2 instanceof BigDecimal) return ((BigDecimal)o1).compareTo((BigDecimal)o2);
+            return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue());
+        }
+        if (mode == CompareMode.NUMBER) return System.identityHashCode(o1) - System.identityHashCode(o2);
+
+        if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
+        if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
+
+        if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
+
+        if (bitvectorp(o1) && bitvectorp(o2)) { return Bitvector.of(o1).compareTo(Bitvector.of(o2)); }
+
+        if (consp(o1) && consp(o2)) { return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
+
+        return System.identityHashCode(o1) - System.identityHashCode(o2);
+    }
+
+    static int sxhashSigned(Object o) {
+        if (o == null) return 97;
+
+        if (integerp(o)) return Long.hashCode(((Number)o).longValue()); // byte..BigInteger have different hash codes for negative numbers
+        if (o instanceof StringBuilder) return o.toString().hashCode();
+        if (o instanceof StringBuffer) return o.toString().hashCode();
+        if (o instanceof char[]) return String.valueOf((char[])o).hashCode();
+        if (o instanceof boolean[]) return Bitvector.of(o).hashCode();
+
+        if (symbolp(o) || characterp(o) || numberp(o) || consp(o) || stringp(o) || bitvectorp(o)) return o.hashCode();
+
+        return o.getClass().getName().hashCode(); // see https://stackoverflow.com/questions/21126507/why-does-sxhash-return-a-constant-for-all-structs
+    }
+
+    static Object macroexpandImpl(LambdaJ intp, ConsCell form) {
+        final Object maybeSymbol = car(form);
+        if (maybeSymbol == null || !symbolp(maybeSymbol)) {
+            intp.values = intp.cons(form, intp.cons(null, null));
+            return form;
+        }
+        final LambdaJSymbol macroSymbol = (LambdaJSymbol)maybeSymbol;
+        final Closure macroClosure = macroSymbol.macro;
+        if (macroClosure == null) {
+            intp.values = intp.cons(form, intp.cons(null, null));
+            return form;
+        }
+        final ConsCell arguments = (ConsCell) cdr(form);
+        final Object expansion = intp.evalMacro(macroSymbol, macroClosure, arguments);
+        intp.values = intp.cons(expansion, intp.cons(sT, null));
+        return expansion;
     }
 
     /** transform {@code obj} into an S-expression, atoms are escaped */
@@ -4332,77 +4394,6 @@ public class LambdaJ {
 
     static int toNonnegInt(String func, Object a) {
         return requireIntegralNumber(func, a, 0, Integer.MAX_VALUE).intValue();
-    }
-
-    enum CompareMode { NUMBER, EQL, EQUAL }
-
-    /** compare two objects. {@code mode} determines which types are compared by their value and which are compared by their identity.
-     *
-     *  <p>Implementation note: this relies on the hope that {@link System#identityHashCode(Object)} will return different values for different objects that are not numbers.
-     *  This is strongly suggested but not guaranteed by the Java spec:
-     *  "As much as is reasonably practical, the hashCode method defined by class {@code Object}
-     *  does return distinct integers for distinct objects." */
-    static int compare(Object o1, Object o2, CompareMode mode) {
-        if (o1 == o2) return 0;
-        if (o1 == null) return -1;
-        if (o2 == null) return 1;
-
-        if (integerp(o1) && integerp(o2)) {
-            if (o1 instanceof BigInteger && o2 instanceof BigInteger) return ((BigInteger)o1).compareTo((BigInteger)o2);
-            if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue())));
-            if (o2 instanceof BigInteger)                             return new BigInteger(String.valueOf(((Number)o1).longValue())).compareTo((BigInteger)o2);
-            return Long.compare(((Number)o1).longValue(), ((Number)o2).longValue());
-        }
-
-        if (floatp(o1) && floatp(o2)) {
-            if (o1.getClass() != o2.getClass()) return System.identityHashCode(o1) - System.identityHashCode(o2);
-            if (o1 instanceof BigDecimal && o2 instanceof BigDecimal) return ((BigDecimal)o1).compareTo((BigDecimal)o2);
-            return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue());
-        }
-        if (mode == CompareMode.NUMBER) return System.identityHashCode(o1) - System.identityHashCode(o2);
-
-        if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
-        if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
-
-        if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
-
-        if (bitvectorp(o1) && bitvectorp(o2)) { return Bitvector.of(o1).compareTo(Bitvector.of(o2)); }
-
-        if (consp(o1) && consp(o2)) { return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
-
-        return System.identityHashCode(o1) - System.identityHashCode(o2);
-    }
-
-    static int sxhashSigned(Object o) {
-        if (o == null) return 97;
-
-        if (integerp(o)) return Long.hashCode(((Number)o).longValue()); // byte..BigInteger have different hash codes for negative numbers
-        if (o instanceof StringBuilder) return o.toString().hashCode();
-        if (o instanceof StringBuffer) return o.toString().hashCode();
-        if (o instanceof char[]) return String.valueOf((char[])o).hashCode();
-        if (o instanceof boolean[]) return Bitvector.of(o).hashCode();
-
-        if (symbolp(o) || characterp(o) || numberp(o) || consp(o) || stringp(o) || bitvectorp(o)) return o.hashCode();
-
-        return o.getClass().getName().hashCode(); // see https://stackoverflow.com/questions/21126507/why-does-sxhash-return-a-constant-for-all-structs
-    }
-
-    static Object macroexpandImpl(LambdaJ intp, ConsCell form) {
-        final Object maybeSymbol = car(form);
-        if (maybeSymbol == null || !symbolp(maybeSymbol)) {
-            intp.values = intp.cons(form, intp.cons(null, null));
-            return form;
-        }
-        final LambdaJSymbol macroSymbol = (LambdaJSymbol)maybeSymbol;
-        final Closure macroClosure = macroSymbol.macro;
-        if (macroClosure == null) {
-            intp.values = intp.cons(form, intp.cons(null, null));
-            return form;
-        }
-        final ConsCell arguments = (ConsCell) cdr(form);
-        final Object expansion = intp.evalMacro(macroSymbol, macroClosure, arguments);
-        intp.values = intp.cons(expansion, intp.cons(sT, null));
-        return expansion;
     }
 
 
@@ -4937,14 +4928,28 @@ public class LambdaJ {
             return ret.first();
         }
 
-        static Object listToBitVector(Object o, boolean adjustablep) {
-            final ConsCell lst = requireList("list->bit-vector", o);
+        static Object listToBitVector(Object maybeList, boolean adjustablep) {
+            final ConsCell lst = requireList("list->bit-vector", maybeList);
             if (adjustablep) {
                 final Bitvector bv = new Bitvector(10, 0);
                 if (lst != null) for (Object bit: lst) bv.add(requireBit("list->bit-vector", bit));
                 return bv;
             }
-            return listToBooleanArray(lst);
+
+            if (lst == null) return new boolean[0];
+            if (lst instanceof ArraySlice) return ((ArraySlice)lst).listToBooleanArray();
+            boolean[] ret = new boolean[32];
+            int i = 0;
+            final Long zero = 0L, one = 1L;
+            for (Object rest = lst; rest != null; rest = cdr(rest)) {
+                if (i == ret.length) ret = Arrays.copyOf(ret, ret.length * 2);
+                final Object o = car(rest);
+                if (zero.equals(o)) ret[i] = false;
+                else if (one.equals(o)) ret[i] = true;
+                else throw new SimpleTypeError("not a valid value for bitvector: %s", o);
+                i++;
+            }
+            return Arrays.copyOf(ret, i);
         }
 
 
@@ -5532,12 +5537,6 @@ public class LambdaJ {
 
             throw new SimpleTypeError("error: unknown condition type " + printSEx(datum) + ": " + msg);
         }
-    }
-
-    /** possibly wrap {@code t} in a {@link LambdaJError} and throw, wrap doesn't return */ 
-    static RuntimeException wrap(Throwable t) {
-        if (t instanceof RuntimeException) throw (RuntimeException)t;
-        throw new LambdaJError(t, t.getMessage());
     }
 
 
@@ -9208,6 +9207,7 @@ public class LambdaJ {
 
                     /// * some functions and operators are opencoded:
                     if (intp.speed >= 1 && symbolp(op) && opencode(sb, (LambdaJSymbol)op, ccArguments, env, topEnv, rsfx, isLast)) return;
+
                     if (intp.speed >= 1 && consp(op) && symbolEq(car(op), "jmethod")
                         && emitJmethod(sb, requireCons("jmethod application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
                         return;
