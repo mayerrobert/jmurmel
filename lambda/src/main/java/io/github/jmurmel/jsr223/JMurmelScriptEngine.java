@@ -5,17 +5,12 @@ import java.io.Reader;
 import java.io.StringReader;
 import java.io.Writer;
 
-import javax.script.AbstractScriptEngine;
-import javax.script.Bindings;
-import javax.script.ScriptContext;
-import javax.script.ScriptEngine;
-import javax.script.ScriptEngineFactory;
-import javax.script.ScriptException;
+import javax.script.*;
 
 import io.github.jmurmel.LambdaJ;
 
 /** JSR-223 wrapper for JMurmel */
-public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptEngine {
+public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptEngine, Invocable {
 
     final JMurmelScriptEngineFactory factory;
     final LambdaJ murmel;
@@ -38,7 +33,7 @@ public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptE
     public Object eval(Reader reader, ScriptContext context) throws ScriptException {
         final Reader stdIn = context.getReader();
         final Writer stdOut = context.getWriter();
-        final Object ret = murmel.evalScript(reader, stdIn, stdOut);
+        final Object ret = murmel.evalScript(reader, stdIn, stdOut, context.getBindings(ScriptContext.ENGINE_SCOPE));
         try {
             stdOut.flush();
         } catch (IOException e) {
@@ -48,9 +43,33 @@ public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptE
     }
 
     @Override
+    public Object invokeMethod(Object thiz, String name, Object... args) {
+        throw new UnsupportedOperationException("methods are not supported, use invokeFunction instead");
+    }
+
+    @Override
+    public Object invokeFunction(String name, Object... args) throws ScriptException, NoSuchMethodException {
+        try {
+            return murmel.getFunction(name).apply(args);
+        }
+        catch (Exception e) {
+            throw new ScriptException(e);
+        }
+    }
+
+    @Override
+    public <T> T getInterface(Class<T> clasz) {
+        throw new UnsupportedOperationException("getInterface(Class) is not yet supported"); // todo
+    }
+
+    @Override
+    public <T> T getInterface(Object thiz, Class<T> clasz) {
+        throw new UnsupportedOperationException("objects are not supported, use getInterface(Class) instead");
+    }
+
+    @Override
     public Bindings createBindings() {
-        // todo das wird wohl fuer setzen von Java Objekten gebraucht werden
-        return null;
+        return new SimpleBindings();
     }
 
     @Override

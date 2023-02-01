@@ -5969,7 +5969,10 @@ public class LambdaJ {
 
     /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
-        if (gcache.isEmpty()) throw new LambdaJError("getValue: not initialized (must interpret *something* first)");
+        if (gcache.isEmpty()) {
+            lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, null, null);
+            environment();
+        }
         final ConsCell envEntry = lookupEnvEntry(intern(globalSymbol), null);
         if (envEntry != null) return cdr(envEntry);
         throw new UnboundVariable("%s: '%s' is not bound", "getValue", globalSymbol);
@@ -6055,10 +6058,13 @@ public class LambdaJ {
     /** <p>evalScript is for JSR-223 support.
      *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
      *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
-    public Object evalScript(Reader program, Reader in, Writer out) {
+    public Object evalScript(Reader program, Reader in, Writer out, Map<String, Object> engineBindings) {
         if (gcache.isEmpty()) {
             lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in::read, null);
             environment();
+        }
+        if (engineBindings != null) for (Map.Entry<String, Object> entry: engineBindings.entrySet()) {
+            extendTopenv(entry.getKey(), entry.getValue()); // create new or replace existing binding
         }
         final ObjectReader scriptParser = lispReader;
         scriptParser.setInput(program::read, null);
@@ -10807,7 +10813,6 @@ final class TurtleFrame {
     }
 
 
-
     TurtleFrame pushPos() {
         posStack.addLast(new Pos(this));
         return this;
@@ -10820,7 +10825,6 @@ final class TurtleFrame {
         angle = next.angle;
         return this;
     }
-
 
 
     TurtleFrame color(int newColor) {
@@ -10883,7 +10887,6 @@ final class TurtleFrame {
     }
 
 
-
     private void allclean() { dirtyxl = dirtyxr = x; dirtyyl = dirtyyu = y; }
     private void alldirty() { dirtyxl = xmin; dirtyxr = xmax; dirtyyl = ymin; dirtyyu = ymax; }
     private void calcdirty() {
@@ -10892,7 +10895,6 @@ final class TurtleFrame {
         if (y < dirtyyl) dirtyyl = y;
         else if (y > dirtyyu) dirtyyu = y;
     }
-
 
 
     private static int trX(double fac, double xoff, double x) {
@@ -10918,7 +10920,6 @@ final class TurtleFrame {
     }
 
 
-
     private BufferedImage bitmap;
 
     TurtleFrame makeBitmap(int width, int height) {
@@ -10935,7 +10936,6 @@ final class TurtleFrame {
         bitmap.setRGB(x, bitmap.getHeight() - y - 1, rgb);
         return this;
     }
-
 
 
     private class LineComponent extends Component {
