@@ -130,17 +130,19 @@ Try e.g.
 
 JMurmel also can read program text from stdin:
 
-    C:\> echo (write (quote Hello,\ World!))| java -jar jmurmel.jar
+Windows:
+
+    C:\> echo (write (quote Hello\,\ World!))| java -jar jmurmel.jar
     |Hello, World!|
-    ==> t
+    ==> |Hello, World!|
     
     C:\>
 
-or
+or Unix:
 
-    $ echo "(write (quote Hello,\ World!))" | java -jar jmurmel.jar
+    $ echo '(write (quote Hello\,\ World!))' | java -jar jmurmel.jar
     |Hello, World!|
-    ==> t
+    ==> |Hello, World!|
     
     $
 
@@ -309,6 +311,32 @@ is given below:
     
     jshell>
 
+Or use `jshell` to interactively explore the [Java Scripting API (defined by JSR 223)](https://docs.oracle.com/javase/8/docs/technotes/guides/scripting/prog_guide/about.html)
+with JMurmel as a scripting engine (sample session shown using Debian running in WSL2):
+
+    robert@ROBERT-DELL:/mnt/c/robert/jmurmel/lambda/target$ jshell --module-path jmurmel.jar --add-modules io.github.jmurmel
+    |  Welcome to JShell -- Version 11.0.12
+    |  For an introduction type: /help intro
+    
+    jshell> import javax.script.*;
+    
+    jshell> ScriptEngineManager manager = new ScriptEngineManager();
+       ...> ScriptEngine engine = manager.getEngineByName("jmurmel");
+    manager ==> javax.script.ScriptEngineManager@234bef66
+    engine ==> io.github.jmurmel.jsr223.JMurmelScriptEngine@5056dfcb
+    
+    jshell> engine.eval("(writeln \"Hello, World!\" nil)")
+    Hello, World!
+    $4 ==> "Hello, World!"
+    
+    jshell> engine.eval(new java.io.FileReader("../../samples.murmel/fizzbuzz.lisp"));
+    1, 2, Fizz, 4, Buzz, Fizz, 7, 8, Fizz, Buzz, 11, Fizz, 13, 14, Fizz Buzz, 16, 17, Fizz, 19, Buzz, Fizz,
+    22, 23, Fizz, Buzz, 26, Fizz, 28, 29, Fizz Buzz, 31, 32, Fizz, 34, Buzz, Fizz, 37, 38, Fizz, Buzz, 41,
+    Fizz, 43, 44, Fizz Buzz, 46, 47, Fizz, 49, Buzz, Fizz, 52, 53, Fizz, Buzz, 56, Fizz, 58, 59, Fizz Buzz,
+    61, 62, Fizz, 64, Buzz, Fizz, 67, 68, Fizz, Buzz, 71, Fizz, 73, 74, Fizz Buzz, 76, 77, Fizz, 79, Buzz,
+    Fizz, 82, 83, Fizz, Buzz, 86, Fizz, 88, 89, Fizz Buzz, 91, 92, Fizz, 94, Buzz, Fizz, 97, 98, Fizz, Buzz$5 ==> null
+    
+    jshell>
 
 ## Examples
 A [Quine](http://rosettacode.org/wiki/Quine#Lisp)
