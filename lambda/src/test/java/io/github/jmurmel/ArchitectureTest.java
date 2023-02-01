@@ -24,7 +24,7 @@ public class ArchitectureTest {
         checkUsers(LambdaJ.Cli.class, LambdaJ.class);
 
         checkUsers(LambdaJ.Subr.class,
-                   LambdaJ.ConsCell.class,           // wg. compare. evtl. compare woanders hinschieben
+                   //LambdaJ.ConsCell.class,           // wg. compare. evtl. compare woanders hinschieben
                    LambdaJ.SExpressionReader.class,  // wg. hash (fuer #H(...))
                    LambdaJ.MurmelJavaCompiler.class, // nur wg. macroexpand1, ggf. aendern
 

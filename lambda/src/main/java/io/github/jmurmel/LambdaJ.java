@@ -2010,8 +2010,8 @@ public class LambdaJ {
         sRplacd("rplacd", Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
 
         sList("list", Features.HAVE_UTIL, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return args; } },
-        sListStar("list*", Features.HAVE_UTIL, 1, -1) { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.listStar(intp, args); } },
-        sAppend("append", Features.HAVE_UTIL, -1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.append(intp, args); } },
+        sListStar("list*", Features.HAVE_UTIL, 1, -1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listStar(intp, args); } },
+        sAppend("append", Features.HAVE_UTIL, -1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return append(intp, args); } },
         sAssq("assq", Features.HAVE_UTIL, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
         sAssoc("assoc", Features.HAVE_UTIL, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
 
@@ -2059,13 +2059,13 @@ public class LambdaJ {
         sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
 
         sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
-        sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.vectorToList(intp, car(args)); } },
+        sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorToList(intp, car(args)); } },
         sListToVector("list->vector", Features.HAVE_VECTOR, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToVector(car(args), cadr(args) != null); } },
 
         sSvLength("svlength", Features.HAVE_VECTOR, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return svlength(car(args)); } },
         sSvRef("svref", Features.HAVE_VECTOR, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return svref(car(args), toNonnegInt("svref", cadr(args))); } },
         sSvSet("svset", Features.HAVE_VECTOR, 3)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); } },
-        sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.simpleVectorToList(intp, car(args)); } },
+        sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return simpleVectorToList(intp, car(args)); } },
         sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
         sVector("vector", Features.HAVE_VECTOR, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
 
@@ -2074,7 +2074,7 @@ public class LambdaJ {
         sSRef("sref", Features.HAVE_STRING, 2)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sref(car(args), toNonnegInt("sref", cadr(args))); } },
         sSSet("sset", Features.HAVE_STRING, 3)                         { @Override Object apply(LambdaJ intp, ConsCell args) { return sset(car(args), toNonnegInt("sset", cadr(args)), requireChar("sset", caddr(args))); } },
         sSEq("string=", Features.HAVE_STRING, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringEq(car(args), cadr(args))); } },
-        sStringToList("string->list", Features.HAVE_STRING, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.stringToList(intp, car(args)); } },
+        sStringToList("string->list", Features.HAVE_STRING, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return stringToList(intp, car(args)); } },
         sListToString("list->string", Features.HAVE_STRING, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToString(car(args), cadr(args) != null); } },
 
         sCharCode("char-code", Features.HAVE_STRING, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return (long) requireChar("char-code", car(args)); } },
@@ -2084,7 +2084,7 @@ public class LambdaJ {
         sBvRef("bvref", Features.HAVE_VECTOR, 2)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return bvref(car(args), toNonnegInt("bvref", cadr(args))); } },
         sBvSet("bvset", Features.HAVE_VECTOR, 3)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return bvset(car(args), toNonnegInt("bvset", cadr(args)), requireIntegralNumber("bvset", caddr(args), 0, 1).longValue()); } },
         sBvEq("bv=", Features.HAVE_VECTOR, 2)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bvEq(car(args), cadr(args))); } },
-        sBvToList("bit-vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.bitVectorToList(intp, car(args)); } },
+        sBvToList("bit-vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return bitVectorToList(intp, car(args)); } },
         sListToBv("list->bit-vector", Features.HAVE_VECTOR, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToBitVector(car(args), cadr(args) != null); } },
 
         sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
@@ -2098,8 +2098,8 @@ public class LambdaJ {
         sHashTableCount("hash-table-count", Features.HAVE_HASH, 1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashTableCount(car(args)); } },
         sClrHash("clrhash", Features.HAVE_HASH, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return clrhash(car(args)); } },
         sHashRemove("hash-table-remove", Features.HAVE_HASH, 1, 2)     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashRemove(args)); } },
-        sSxHash("sxhash", Features.HAVE_HASH, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.sxhash(car(args)); } },
-        sScanHash("scan-hash-table", Features.HAVE_HASH, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.scanHash(intp, car(args)); } },
+        sSxHash("sxhash", Features.HAVE_HASH, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return sxhash(car(args)); } },
+        sScanHash("scan-hash-table", Features.HAVE_HASH, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return scanHash(intp, car(args)); } },
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
@@ -2120,7 +2120,7 @@ public class LambdaJ {
         sGensym("gensym", Features.HAVE_XTRA, 0, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
         sTrace("trace", Features.HAVE_XTRA, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
-        sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)       { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.Subr.macroexpand1(intp, args); } },
+        sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)       { @Override Object apply(LambdaJ intp, ConsCell args) { return macroexpand1(intp, args); } },
         sError("error", Features.HAVE_UTIL, 1, -1)                  { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.getSymbolTable(), car(args), listToArray(cdr(args))); return null; } },
 
         // time
@@ -4334,6 +4334,45 @@ public class LambdaJ {
         return requireIntegralNumber(func, a, 0, Integer.MAX_VALUE).intValue();
     }
 
+    enum CompareMode { NUMBER, EQL, EQUAL }
+
+    /** compare two objects. {@code mode} determines which types are compared by their value and which are compared by their identity.
+     *
+     *  <p>Implementation note: this relies on the hope that {@link System#identityHashCode(Object)} will return different values for different objects that are not numbers.
+     *  This is strongly suggested but not guaranteed by the Java spec:
+     *  "As much as is reasonably practical, the hashCode method defined by class {@code Object}
+     *  does return distinct integers for distinct objects." */
+    static int compare(Object o1, Object o2, CompareMode mode) {
+        if (o1 == o2) return 0;
+        if (o1 == null) return -1;
+        if (o2 == null) return 1;
+
+        if (integerp(o1) && integerp(o2)) {
+            if (o1 instanceof BigInteger && o2 instanceof BigInteger) return ((BigInteger)o1).compareTo((BigInteger)o2);
+            if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue())));
+            if (o2 instanceof BigInteger)                             return new BigInteger(String.valueOf(((Number)o1).longValue())).compareTo((BigInteger)o2);
+            return Long.compare(((Number)o1).longValue(), ((Number)o2).longValue());
+        }
+
+        if (floatp(o1) && floatp(o2)) {
+            if (o1.getClass() != o2.getClass()) return System.identityHashCode(o1) - System.identityHashCode(o2);
+            if (o1 instanceof BigDecimal && o2 instanceof BigDecimal) return ((BigDecimal)o1).compareTo((BigDecimal)o2);
+            return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue());
+        }
+        if (mode == CompareMode.NUMBER) return System.identityHashCode(o1) - System.identityHashCode(o2);
+
+        if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
+        if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
+
+        if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
+
+        if (bitvectorp(o1) && bitvectorp(o2)) { return Bitvector.of(o1).compareTo(Bitvector.of(o2)); }
+
+        if (consp(o1) && consp(o2)) { return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
+
+        return System.identityHashCode(o1) - System.identityHashCode(o2);
+    }
+
     static int sxhashSigned(Object o) {
         if (o == null) return 97;
 
@@ -4372,51 +4411,12 @@ public class LambdaJ {
     static final class Subr {
         private Subr() {}
 
-        enum CompareMode { NUMBER, EQL, EQUAL }
-
-        /** compare two objects. {@code mode} determines which types are compared by their value and which are compared by their identity.
-         * 
-         *  <p>Implementation note: this relies on the hope that {@link System#identityHashCode(Object)} will return different values for different objects that are not numbers.
-         *  This is strongly suggested but not guaranteed by the Java spec:
-         *  "As much as is reasonably practical, the hashCode method defined by class {@code Object}
-         *  does return distinct integers for distinct objects." */
-        static int compare(Object o1, Object o2, CompareMode mode) {
-            if (o1 == o2) return 0;
-            if (o1 == null) return -1;
-            if (o2 == null) return 1;
-
-            if (integerp(o1) && integerp(o2)) {
-                if (o1 instanceof BigInteger && o2 instanceof BigInteger) return ((BigInteger)o1).compareTo((BigInteger)o2);
-                if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue())));
-                if (o2 instanceof BigInteger)                             return new BigInteger(String.valueOf(((Number)o1).longValue())).compareTo((BigInteger)o2);
-                return Long.compare(((Number)o1).longValue(), ((Number)o2).longValue());
-            }
-
-            if (floatp(o1) && floatp(o2)) {
-                if (o1.getClass() != o2.getClass()) return System.identityHashCode(o1) - System.identityHashCode(o2);
-                if (o1 instanceof BigDecimal && o2 instanceof BigDecimal) return ((BigDecimal)o1).compareTo((BigDecimal)o2);
-                return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue());
-            }
-            if (mode == CompareMode.NUMBER) return System.identityHashCode(o1) - System.identityHashCode(o2);
-
-            if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
-            if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
-
-            if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
-
-            if (bitvectorp(o1) && bitvectorp(o2)) { return Bitvector.of(o1).compareTo(Bitvector.of(o2)); }
-
-            if (consp(o1) && consp(o2)) { return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
-
-            return System.identityHashCode(o1) - System.identityHashCode(o2);
-        }
-
         static boolean eql(Object o1, Object o2) {
-            return compare(o1, o2, CompareMode.EQL) == 0;
+            return LambdaJ.compare(o1, o2, CompareMode.EQL) == 0;
         }
 
         static boolean equal(Object o1, Object o2) {
-            return compare(o1, o2, CompareMode.EQUAL) == 0;
+            return LambdaJ.compare(o1, o2, CompareMode.EQUAL) == 0;
         }
 
 
@@ -5012,11 +5012,11 @@ public class LambdaJ {
                 if (key instanceof Float || key instanceof Double || key instanceof BigDecimal) return key;
                 return new EqlKey(key);
             }
-            @Override public int compareTo(Object o) { if (o instanceof EqlKey) return LambdaJ.Subr.compare(this.key, ((EqlKey)o).key, CompareMode.EQL);
-                                                       else return LambdaJ.Subr.compare(this.key, o, CompareMode.EQL); }
+            @Override public int compareTo(Object o) { if (o instanceof EqlKey) return LambdaJ.compare(this.key, ((EqlKey)o).key, CompareMode.EQL);
+                                                       else return LambdaJ.compare(this.key, o, CompareMode.EQL); }
             @Override public int hashCode() { return sxhashSigned(key); }
-            @Override public boolean equals(Object o) { if (o instanceof EqlKey) return LambdaJ.Subr.compare(this.key, ((EqlKey)o).key, CompareMode.EQL) == 0;
-                                                        else return LambdaJ.Subr.compare(this.key, o, CompareMode.EQL) == 0; }
+            @Override public boolean equals(Object o) { if (o instanceof EqlKey) return LambdaJ.compare(this.key, ((EqlKey)o).key, CompareMode.EQL) == 0;
+                                                        else return LambdaJ.compare(this.key, o, CompareMode.EQL) == 0; }
         }
 
         static final class EqualKey implements Comparable<Object> {
@@ -5027,11 +5027,11 @@ public class LambdaJ {
                 if (key instanceof Float || key instanceof Double || key instanceof BigDecimal) return key;
                 return new EqualKey(key);
             }
-            @Override public int compareTo(Object o) { if (o instanceof EqualKey) return LambdaJ.Subr.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL);
-                                                       else return LambdaJ.Subr.compare(this.key, o, CompareMode.EQUAL); }
+            @Override public int compareTo(Object o) { if (o instanceof EqualKey) return LambdaJ.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL);
+                                                       else return LambdaJ.compare(this.key, o, CompareMode.EQUAL); }
             @Override public int hashCode() { return sxhashSigned(key); }
-            @Override public boolean equals(Object o) { if (o instanceof EqualKey) return LambdaJ.Subr.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL) == 0;
-                                                        else return LambdaJ.Subr.compare(this.key, o, CompareMode.EQUAL) == 0; }
+            @Override public boolean equals(Object o) { if (o instanceof EqualKey) return LambdaJ.compare(this.key, ((EqualKey)o).key, CompareMode.EQUAL) == 0;
+                                                        else return LambdaJ.compare(this.key, o, CompareMode.EQUAL) == 0; }
         }
 
         /** Note: getEntrySet(), getKeySet() and maybe more Map methods will NOT work as expected! */
@@ -5076,14 +5076,14 @@ public class LambdaJ {
         static class EqlTreeMap extends TreeMap<Object, Object> {
             EqlTreeMap() { super(EqlTreeMap::doCompare); }
             private static int doCompare(Object o1, Object o2) {
-                return LambdaJ.Subr.compare(o1, o2, CompareMode.EQL);
+                return LambdaJ.compare(o1, o2, CompareMode.EQL);
             }
         }
 
         static class EqualTreeMap extends TreeMap<Object, Object> {
             EqualTreeMap() { super(EqualTreeMap::doCompare); }
             private static int doCompare(Object o1, Object o2) {
-                return LambdaJ.Subr.compare(o1, o2, CompareMode.EQUAL);
+                return LambdaJ.compare(o1, o2, CompareMode.EQUAL);
             }
         }
 
@@ -9199,7 +9199,7 @@ public class LambdaJ {
                         if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
                         sb.append("((Supplier<Object>)(() -> {\n"
                                   + "        final Object expansion").append(rsfx).append(" = ");
-                        emitQuotedForm(sb, LambdaJ.Subr.macroexpand1(intp, (ConsCell)cdar(ccArguments)), true);
+                        emitQuotedForm(sb, macroexpand1(intp, (ConsCell)cdar(ccArguments)), true);
                         final String expanded = cadr(intp.values) == sT ? "rt()._t" : "null";
                         sb.append("; return rt()._values(expansion").append(rsfx).append(", ").append(expanded).append(");\n        })).get()");
                         return;
