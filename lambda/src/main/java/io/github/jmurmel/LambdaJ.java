@@ -3341,36 +3341,32 @@ public class LambdaJ {
     }
 
     /** in case compiled code calls "(eval)" */
+    MurmelJavaProgram compiledProgram = null;
+
     private Object applyCompilerPrimitive(MurmelJavaProgram.CompilerPrimitive primfn, ConsCell args, int stack, int level) {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<compiler primitive> " + printSEx(args));
         assert compiledProgram != null;
         assert values == NO_VALUES;
         try {
             final Object ret = primfn.applyCompilerPrimitive(listToArray(args));
-            synchMultipleValues();
+            if (compiledProgram.values != null) values = list(compiledProgram.values);
             return ret;
         }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(e); }
     }
 
-    MurmelJavaProgram compiledProgram = null;
     private Object applyCompiledFunction(MurmelFunction fn, ConsCell args, int stack, int level) {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<compiled function> " + printSEx(args));
         assert compiledProgram != null;
         assert values == NO_VALUES;
         try {
             final Object ret = compiledProgram.funcall(fn, listToArray(args));
-            synchMultipleValues();
+            if (compiledProgram.values != null) values = list(compiledProgram.values);
             return ret;
         }
         catch (LambdaJError e) { throw e; }
         catch (Exception e) { throw new LambdaJError(e); }
-    }
-
-    private void synchMultipleValues() {
-        if (compiledProgram.values != null)
-            values = list(compiledProgram.values);
     }
 
 
@@ -3631,115 +3627,31 @@ public class LambdaJ {
 
 
 
-    /* the following predicates more or less implement Murmel's type system */
-    static boolean consp(Object o)      { return o instanceof ConsCell; }
-    static boolean atom(Object o)       { return !consp(o); }
+    /** the following predicates more or less implement Murmel's type system, see also {@link Subr#typep} and {@link Subr#adjustableArrayP} */
+    static boolean consp(Object o)       { return o instanceof ConsCell; }
+    static boolean atom(Object o)        { return !consp(o); }
 
-    static boolean symbolp(Object o)    { return o == null || o instanceof LambdaJSymbol; }
+    static boolean symbolp(Object o)     { return o == null || o instanceof LambdaJSymbol; }
 
-    static boolean numberp(Object o)    { return integerp(o) || floatp(o) || o instanceof Number; }
-    static boolean floatp(Object o)     { return o instanceof Double || o instanceof Float || o instanceof BigDecimal; }
-    static boolean integerp(Object o)   { return o instanceof Long || o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof BigInteger; }
+    static boolean numberp(Object o)     { return integerp(o) || floatp(o) || o instanceof Number; }
+    static boolean floatp(Object o)      { return o instanceof Double || o instanceof Float || o instanceof BigDecimal; }
+    static boolean integerp(Object o)    { return o instanceof Long || o instanceof Byte || o instanceof Short || o instanceof Integer || o instanceof BigInteger; }
 
-    static boolean characterp(Object o) { return o instanceof Character; }
+    static boolean characterp(Object o)  { return o instanceof Character; }
 
-    static boolean vectorp(Object o)    { return stringp(o) || bitvectorp(o) || svectorp(o) || o instanceof List; }
-    static boolean svectorp(Object o)   { return o != null && o.getClass().isArray() && !bitvectorp(o) && !stringp(o); }
-    static boolean stringp(Object o)    { return sstringp(o) || o instanceof CharSequence; }
-    static boolean sstringp(Object o)   { return o instanceof String || o instanceof char[]; }
-    static boolean bitvectorp(Object o) { return sbitvectorp(o) || o instanceof Bitvector; }
+    static boolean vectorp(Object o)     { return stringp(o) || bitvectorp(o) || svectorp(o) || o instanceof List; }
+    static boolean svectorp(Object o)    { return o != null && o.getClass().isArray() && !bitvectorp(o) && !stringp(o); }
+    static boolean stringp(Object o)     { return sstringp(o) || o instanceof CharSequence; }
+    static boolean sstringp(Object o)    { return o instanceof String || o instanceof char[]; }
+    static boolean bitvectorp(Object o)  { return sbitvectorp(o) || o instanceof Bitvector; }
     static boolean sbitvectorp(Object o) { return o instanceof boolean[]; }
 
-    static boolean hashtablep(Object o) { return o instanceof Map; }
+    static boolean hashtablep(Object o)  { return o instanceof Map; }
 
-    final  boolean functionp(Object o)   { return functionp0(o)
-                                                  || have(Features.HAVE_OLDLAMBDA) && consp(o) && car(o) == sLambda; }
-    static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure
-                                                  || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction; }
+    final  boolean functionp(Object o)   { return functionp0(o) || have(Features.HAVE_OLDLAMBDA) && consp(o) && car(o) == sLambda; }
+    static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction; }
 
-    static boolean listp(Object o)      { return o == null || consp(o); }
-
-    static boolean typep(SymbolTable st, LambdaJ intp, Object o, Object typespec) {
-        if (typespec == LambdaJ.sT) return true;
-        if (typespec == st.intern("null")) return null == o;
-
-        if (typespec == st.intern("cons")) return consp(o);
-        if (typespec == st.intern("atom")) return atom(o);
-        if (typespec == st.intern("symbol")) return symbolp(o);
-
-        if (typespec == st.intern("number")) return numberp(o);
-        if (typespec == st.intern("float")) return floatp(o);
-        if (typespec == st.intern("integer")) return integerp(o);
-        if (typespec == st.intern("bit")) {
-            if (!integerp(o)) return false;
-            if (o instanceof BigInteger) return false;
-            final long l = ((Number)o).longValue();
-            return l == 0 || l == 1;
-        }
-
-        if (typespec == st.intern("character")) return characterp(o);
-
-        if (typespec == st.intern("vector")) return vectorp(o);
-        if (typespec == st.intern("simple-vector")) return svectorp(o);
-        if (typespec == st.intern("string")) return stringp(o);
-        if (typespec == st.intern("simple-string")) return sstringp(o);
-        if (typespec == st.intern("bit-vector")) return bitvectorp(o);
-        if (typespec == st.intern("simple-bit-vector")) return sbitvectorp(o);
-
-        if (typespec == st.intern("hash-table")) return hashtablep(o);
-
-        if (typespec == st.intern("function")) return intp == null ? functionp0(o) : intp.functionp(o);
-
-        if (typespec == st.intern("list")) return listp(o);
-        if (typespec == st.intern("sequence")) return listp(o) || vectorp(o);
-
-        if (o == null) return false; // the object nil aka () is of type null or list or sequence or t which we have already checked
-
-        // conditions
-        if (o.getClass() == LambdaJError.class) o = ((LambdaJError)o).getCause();
-
-        if (typespec == st.intern("simple-error")) return o instanceof SimpleError;
-
-        if (typespec == st.intern("unbound-variable")) return o instanceof UnboundVariable;
-        if (typespec == st.intern("undefined-function")) return o instanceof UndefinedFunction;
-        if (typespec == st.intern("cell-error")) return o instanceof CellError;
-
-        if (typespec == st.intern("control-error")) return o instanceof ControlError;
-
-        if (typespec == st.intern("program-error")) return o instanceof ProgramError;
-
-        if (typespec == st.intern("parse-error")) return o instanceof ParseError || o instanceof ReaderError;
-
-
-        // extends RuntimeException
-        if (typespec == st.intern("arithmetic-error")) return o instanceof ArithmeticException;
-
-        if (typespec == st.intern("simple-type-error")) return o instanceof SimpleTypeError;
-        if (typespec == st.intern("type-error")) return o instanceof ClassCastException || o instanceof IndexOutOfBoundsException;
-        if (typespec == st.intern("invalid-index-error")) return o instanceof IndexOutOfBoundsException;
-
-        if (typespec == st.intern("file-error")) return o instanceof InvalidPathException;
-
-
-        // extends IOException
-        if (typespec == st.intern("end-of-file")) return o instanceof EOFException;
-        if (typespec == st.intern("reader-error")) return o instanceof ReaderError;
-        if (typespec == st.intern("stream-error")) return o instanceof IOException;
-
-
-        // extends Throwable
-        if (typespec == st.intern("error")) return o instanceof Exception;
-        if (typespec == st.intern("condition")) return o instanceof Throwable;
-
-        throw new SimpleError("typep: unknown type specifier %s", printSEx(typespec));
-    }
-
-
-    static boolean adjustableArrayP(Object o) {
-        if (o instanceof Bitvector || o instanceof StringBuilder || o instanceof StringBuffer || o instanceof List) return true;
-        //if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);  // CL throws this error
-        return false;
-    }
+    static boolean listp(Object o)       { return o == null || consp(o); }
 
 
     // these *should* have no usages as these checks would be superfluous.
@@ -4052,107 +3964,42 @@ public class LambdaJ {
 
     /// ##  Error "handlers"
 
-    static void errorReaderError(String msg) {
-        wrap(new ReaderError(msg));
-    }
+    static void             errorReaderError     (String msg)                                   { wrap(new ReaderError(msg)); }
+    static void             errorReaderError     (String msg, Object... args)                   { wrap(new ReaderError(msg, args)); }
+    static RuntimeException errorNotImplemented  (String msg, Object... args)                   { throw new LambdaJError(true, msg, args); }
+    static RuntimeException errorInternal        (String msg, Object... args)                   { throw new LambdaJError(true, "internal error - " + msg, args); }
+    static RuntimeException errorInternal        (Throwable t, String msg, Object... args)      { throw new LambdaJError(t, true, "internal error - " + msg, args); }
+    static RuntimeException errorMalformed       (String func, String msg)                      { throw new ProgramError("%s: malformed %s: %s", func, func, msg); }
+    static RuntimeException errorMalformedFmt    (String func, String msg, Object... params)    { return errorMalformed(func, String.format(msg, params)); }
+    static RuntimeException errorMalformed       (String func, String expected, Object actual)  { throw new ProgramError("%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual)); }
+    static void             errorReserved        (String op, Object sym)                        { errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym == null ? "nil" : sym); }
 
-    static void errorReaderError(String msg, Object... args) {
-        wrap(new ReaderError(msg, args));
-    }
+    static RuntimeException errorNotANumber      (String func, Object n)                        { throw new SimpleTypeError("%s: expected a number argument but got %s", func, printSEx(n)); }
+    static RuntimeException errorNotAnInteger    (String func, Object n)                        { throw new SimpleTypeError("%s: expected an integral number argument but got %s", func, printSEx(n)); }
+    static RuntimeException errorNotABit         (String func, Object n)                        { throw new SimpleTypeError("%s: expected a bit argument but got %s", func, printSEx(n)); }
+    static RuntimeException errorNotAVector      (String func, Object n)                        { throw new SimpleTypeError("%s: expected a vector argument but got %s", func, printSEx(n)); }
+    static RuntimeException errorNotASimpleVector(String func, Object n)                        { throw new SimpleTypeError("%s: expected a simple vector argument but got %s", func, printSEx(n)); }
+    static RuntimeException errorNotAString      (String func, Object n)                        { throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(n)); }
+    static RuntimeException errorNotABitVector   (String func, Object n)                        { throw new SimpleTypeError("%s: expected a bitvector argument but got %s", func, printSEx(n)); }
+    static void             errorNotASequence    (String func, Object n)                        { throw new SimpleTypeError("%s: expected a list or vector argument but got %s", func, printSEx(n)); }
 
-    static RuntimeException errorNotImplemented(String msg, Object... args) {
-        throw new LambdaJError(true, msg, args);
-    }
+    static RuntimeException errorOverflow        (String func, String targetType, Object n)     { throw new ArithmeticException(String.format("%s: value cannot be represented as a %s: %s", func, targetType, n)); }
+    static RuntimeException errorIndexTooLarge   (long idx, long actualLength)                  { throw new InvalidIndexError("index %d is too large for a sequence of length %d", idx, actualLength); }
 
-    static RuntimeException errorInternal(String msg, Object... args) {
-        throw new LambdaJError(true, "internal error - " + msg, args);
-    }
-
-    static RuntimeException errorInternal(Throwable t, String msg, Object... args) {
-        throw new LambdaJError(t, true, "internal error - " + msg, args);
-    }
-
-    static RuntimeException errorMalformed(String func, String msg) {
-        throw new ProgramError("%s: malformed %s: %s", func, func, msg);
-    }
-
-    static RuntimeException errorMalformedFmt(String func, String msg, Object... params) {
-        return errorMalformed(func, String.format(msg, params));
-    }
-
-    static RuntimeException errorMalformed(String func, String expected, Object actual) {
-        throw new ProgramError("%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual));
-    }
-
-    static void errorReserved(final String op, final Object sym) {
-        errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym == null ? "nil" : sym);
-    }
-
-    static RuntimeException errorNotANumber(String func, Object n) {
-        throw new SimpleTypeError("%s: expected a number argument but got %s", func, printSEx(n));
-    }
-
-    static RuntimeException errorNotAnIntegralNumber(String func, Object n) {
-        throw new SimpleTypeError("%s: expected an integral number argument but got %s", func, printSEx(n));
-    }
-
-    static RuntimeException errorNotABit(String func, Object n) {
-        throw new SimpleTypeError("%s: expected a bit argument but got %s", func, printSEx(n));
-    }
-
-    static RuntimeException errorNotAVector(String func, Object n) {
-        throw new SimpleTypeError("%s: expected a vector argument but got %s", func, printSEx(n));
-    }
-
-    static RuntimeException errorNotASimpleVector(String func, Object n) {
-        throw new SimpleTypeError("%s: expected a simple vector argument but got %s", func, printSEx(n));
-    }
-
-    static RuntimeException errorNotAString(String func, Object n) {
-        throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(n));
-    }
-
-    static RuntimeException errorNotABitVector(String func, Object n) {
-        throw new SimpleTypeError("%s: expected a bitvector argument but got %s", func, printSEx(n));
-    }
-
-    static void errorNotASequence(String func, Object n) {
-        throw new SimpleTypeError("%s: expected a list or vector argument but got %s", func, printSEx(n));
-    }
-
-    static RuntimeException errorOverflow(String func, String targetType, Object n) {
-        throw new ArithmeticException(String.format("%s: value cannot be represented as a %s: %s", func, targetType, n));
-    }
-
-    static RuntimeException errorIndexTooLarge(long idx, long actualLength) {
-        throw new InvalidIndexError("index %d is too large for a sequence of length %d", idx, actualLength);
-    }
+    static void             errorVarargsCount    (String func, int min, int actual)             { throw new ProgramError("%s: expected %s or more but %s", func, expectedArgPhrase(min), actualArgPhrase(actual)); }
 
     static void errorArgCount(String func, int expectedMin, int expectedMax, int actual, Object form) {
         final String argPhrase = expectedMin == expectedMax
                                  ? expectedArgPhrase(expectedMin)
                                  : expectedMin + " to " + expectedMax + " arguments";
 
-        if (actual < expectedMin) {
-            throw new ProgramError("%s: expected %s but %s", func, argPhrase, actualArgPhrase(actual));
-        }
-        if (actual > expectedMax) {
-            throw new ProgramError("%s: expected %s but got extra arg(s) %s", func, argPhrase, printSEx(nthcdr(expectedMax, form)));
-        }
+        if (actual < expectedMin) { throw new ProgramError("%s: expected %s but %s", func, argPhrase, actualArgPhrase(actual)); }
+        if (actual > expectedMax) { throw new ProgramError("%s: expected %s but got extra arg(s) %s", func, argPhrase, printSEx(nthcdr(expectedMax, form))); }
         assert false: "errorArgCount was called, but there is no error";
     }
 
-    static void errorVarargsCount(String func, int min, int actual) {
-        throw new ProgramError("%s: expected %s or more but %s", func, expectedArgPhrase(min), actualArgPhrase(actual));
-    }
-
-    private static String expectedArgPhrase(int expected) {
-        return expected == 0 ? "no arguments" : expected == 1 ? "one argument" : expected == 2 ? "two arguments" : expected + " arguments";
-    }
-
-    private static String actualArgPhrase(int actual) {
-        return actual == 0 ? "no argument was given" : actual == 1 ? "only one argument was given" : "got only " + actual;
-    }
+    private static String expectedArgPhrase(int expected) { return expected == 0 ? "no arguments" : expected == 1 ? "one argument" : expected == 2 ? "two arguments" : expected + " arguments"; }
+    private static String actualArgPhrase(int actual)     { return actual == 0 ? "no argument was given" : actual == 1 ? "only one argument was given" : "got only " + actual; }
 
 
 
@@ -4272,7 +4119,7 @@ public class LambdaJ {
     }
 
     static Number requireIntegralNumber(String func, Object n, long minIncl, long maxIncl) {
-        if (n == null) errorNotAnIntegralNumber(func, null);
+        if (n == null) errorNotAnInteger(func, null);
         if (n instanceof Long)    { return requireIntegralNumber(func, (Long) n, n, minIncl, maxIncl); }
         if (n instanceof Double)  { return requireIntegralNumber(func, (Double) n, n, minIncl, maxIncl); }
         if (n instanceof Byte)    { return requireIntegralNumber(func, (Byte) n, n, minIncl, maxIncl); }
@@ -4280,18 +4127,18 @@ public class LambdaJ {
         if (n instanceof Integer) { return requireIntegralNumber(func, (Integer) n, n, minIncl, maxIncl); }
         if (n instanceof Float)   { return requireIntegralNumber(func, (double) (Float) n, n, minIncl, maxIncl); }
         if (n instanceof Number)  { return requireIntegralNumber(func, toDouble(func, n), n, minIncl, maxIncl); }
-        throw errorNotAnIntegralNumber(func, n);
+        throw errorNotAnInteger(func, n);
     }
 
     private static Number requireIntegralNumber(String func, double d, Object originalValue, long minIncl, long maxIncl) {
         // see https://stackoverflow.com/questions/9898512/how-to-test-if-a-double-is-an-integer
         if (Math.rint(d) == d && !Double.isInfinite(d) && d >= minIncl && d <= maxIncl) return d;
-        throw errorNotAnIntegralNumber(func, originalValue);
+        throw errorNotAnInteger(func, originalValue);
     }
 
     private static Number requireIntegralNumber(String func, long l, Object originalValue, long minIncl, long maxIncl) {
         if (l >= minIncl && l <= maxIncl) return l;
-        throw errorNotAnIntegralNumber(func, originalValue);
+        throw errorNotAnInteger(func, originalValue);
     }
 
 
@@ -4402,6 +4249,90 @@ public class LambdaJ {
     static final class Subr {
         private Subr() {}
 
+        /// logic, predicates
+
+        static boolean typep(SymbolTable st, LambdaJ intp, Object o, Object typespec) {
+            if (typespec == LambdaJ.sT) return true;
+            if (typespec == st.intern("null")) return null == o;
+
+            if (typespec == st.intern("cons")) return consp(o);
+            if (typespec == st.intern("atom")) return atom(o);
+            if (typespec == st.intern("symbol")) return symbolp(o);
+
+            if (typespec == st.intern("number")) return numberp(o);
+            if (typespec == st.intern("float")) return floatp(o);
+            if (typespec == st.intern("integer")) return integerp(o);
+            if (typespec == st.intern("bit")) {
+                if (!integerp(o)) return false;
+                if (o instanceof BigInteger) return false;
+                final long l = ((Number)o).longValue();
+                return l == 0 || l == 1;
+            }
+
+            if (typespec == st.intern("character")) return characterp(o);
+
+            if (typespec == st.intern("vector")) return vectorp(o);
+            if (typespec == st.intern("simple-vector")) return svectorp(o);
+            if (typespec == st.intern("string")) return stringp(o);
+            if (typespec == st.intern("simple-string")) return sstringp(o);
+            if (typespec == st.intern("bit-vector")) return bitvectorp(o);
+            if (typespec == st.intern("simple-bit-vector")) return sbitvectorp(o);
+
+            if (typespec == st.intern("hash-table")) return hashtablep(o);
+
+            if (typespec == st.intern("function")) return intp == null ? functionp0(o) : intp.functionp(o);
+
+            if (typespec == st.intern("list")) return listp(o);
+            if (typespec == st.intern("sequence")) return listp(o) || vectorp(o);
+
+            if (o == null) return false; // the object nil aka () is of type null or list or sequence or t which we have already checked
+
+            // conditions
+            if (o.getClass() == LambdaJError.class) o = ((LambdaJError)o).getCause();
+
+            if (typespec == st.intern("simple-error")) return o instanceof SimpleError;
+
+            if (typespec == st.intern("unbound-variable")) return o instanceof UnboundVariable;
+            if (typespec == st.intern("undefined-function")) return o instanceof UndefinedFunction;
+            if (typespec == st.intern("cell-error")) return o instanceof CellError;
+
+            if (typespec == st.intern("control-error")) return o instanceof ControlError;
+
+            if (typespec == st.intern("program-error")) return o instanceof ProgramError;
+
+            if (typespec == st.intern("parse-error")) return o instanceof ParseError || o instanceof ReaderError;
+
+
+            // extends RuntimeException
+            if (typespec == st.intern("arithmetic-error")) return o instanceof ArithmeticException;
+
+            if (typespec == st.intern("simple-type-error")) return o instanceof SimpleTypeError;
+            if (typespec == st.intern("type-error")) return o instanceof ClassCastException || o instanceof IndexOutOfBoundsException;
+            if (typespec == st.intern("invalid-index-error")) return o instanceof IndexOutOfBoundsException;
+
+            if (typespec == st.intern("file-error")) return o instanceof InvalidPathException;
+
+
+            // extends IOException
+            if (typespec == st.intern("end-of-file")) return o instanceof EOFException;
+            if (typespec == st.intern("reader-error")) return o instanceof ReaderError;
+            if (typespec == st.intern("stream-error")) return o instanceof IOException;
+
+
+            // extends Throwable
+            if (typespec == st.intern("error")) return o instanceof Exception;
+            if (typespec == st.intern("condition")) return o instanceof Throwable;
+
+            throw new SimpleError("typep: unknown type specifier %s", printSEx(typespec));
+        }
+
+
+        static boolean adjustableArrayP(Object o) {
+            if (o instanceof Bitvector || o instanceof StringBuilder || o instanceof StringBuffer || o instanceof List) return true;
+            //if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);  // CL throws this error
+            return false;
+        }
+
         static boolean eql(Object o1, Object o2) {
             return LambdaJ.compare(o1, o2, CompareMode.EQL) == 0;
         }
@@ -4409,7 +4340,6 @@ public class LambdaJ {
         static boolean equal(Object o1, Object o2) {
             return LambdaJ.compare(o1, o2, CompareMode.EQUAL) == 0;
         }
-
 
 
         /// conses and lists
@@ -7447,7 +7377,7 @@ public class LambdaJ {
         public final Object _typep     (Object... args) { twoArgs("typep",       args.length);        return bool(typep(symtab, null, args[0], args[1])); }
         public final Object _typep     (Object o, Object t) {                                         return bool(typep(symtab, null, o, t)); }
 
-        public final Object adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return bool(LambdaJ.adjustableArrayP(args[0])); }
+        public final Object adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return bool(LambdaJ.Subr.adjustableArrayP(args[0])); }
 
 
         // conses and lists
