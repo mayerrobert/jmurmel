@@ -11,7 +11,7 @@ import org.testng.annotations.Test;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.*;
 
 /**
- * Murmel's "architecture" is kinda messy, try checking/ enforcing some rules.
+ * Murmel's "architecture" is kinda messy, try checking/ enforcing some rules so that not every class uses all other classes.
  * See https://www.archunit.org/userguide/html/000_Index.html
  */
 public class ArchitectureTest {
@@ -28,11 +28,24 @@ public class ArchitectureTest {
                    LambdaJ.WellknownSymbol.class,
                    LambdaJ.MurmelJavaProgram.class);
 
+        checkUsers(LambdaJ.Chk.class,
+                   LambdaJ.Subr.class,
+                   LambdaJ.JFFI.class,
+                   LambdaJ.Turtle.class,
+                   LambdaJ.WellknownSymbol.class,
+                   LambdaJ.MurmelJavaProgram.class);
+
+        checkUsers(LambdaJ.JFFI.class,
+                   LambdaJ.WellknownSymbol.class,
+                   LambdaJ.MurmelJavaProgram.class,
+                   LambdaJ.MurmelJavaCompiler.class);
+
+        checkUsers(LambdaJ.Turtle.class,
+                   LambdaJ.class);
+
         checkUsers(JavaCompilerHelper.class, LambdaJ.MurmelJavaCompiler.class);
         checkUsers(JavaSourceFromString.class, JavaCompilerHelper.class);
         checkUsers(MurmelClassLoader.class, JavaCompilerHelper.class);
-
-        checkUsers(LambdaJ.JFFI.class, LambdaJ.WellknownSymbol.class, LambdaJ.MurmelJavaCompiler.class, LambdaJ.MurmelJavaProgram.class);
     }
 
     /** Utility classes whose methods are leafs in the call hierarchy, i.e. don't use any other Murmel classes (other than *Error) */

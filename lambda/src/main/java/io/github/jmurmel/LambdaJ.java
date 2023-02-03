@@ -53,6 +53,7 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.SimpleJavaFileObject;
 
+import static io.github.jmurmel.LambdaJ.Chk.*;
 import static io.github.jmurmel.LambdaJ.Subr.*;
 
 /// # JMurmel - Murmel interpreter/ compiler
@@ -2883,6 +2884,7 @@ public class LambdaJ {
                                 if (cddr(binding) != null) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
                                 if (consp(cadr(binding))) {
                                     final ConsCell ccBinding = carShallowCopyList(sfName, i);
+                                    assert ccBinding != null;
                                     final ConsCell valueFormList = cdrShallowCopyList(sfName, ccBinding);
                                     valueFormList.rplaca(expandForm(car(valueFormList)));
                                 }
@@ -3747,6 +3749,19 @@ public class LambdaJ {
 
     /// ###  Misc. helpers and printing of S-expressions
 
+    static String requireString(String func, Object c) {
+        if (!stringp(c)) throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(c));
+        if (c instanceof char[]) return String.valueOf((char[])c);
+        return c.toString();
+    }
+
+    /** return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
+    static ConsCell requireList(String func, Object a) {
+        if (a == null) return null;
+        if (!consp(a)) throw new SimpleTypeError("%s: expected a list argument but got %s", func, printSEx(a));
+        return (ConsCell)a;
+    }
+
     /** convert a (possibly empty aka nil/ null) list to a (possibly empty) Object[] */
     static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return EMPTY_ARRAY;
@@ -4082,150 +4097,141 @@ public class LambdaJ {
     /// ## Murmel runtime
     ///
 
-    /// Additional error checking functions used by primitives only.
+    static final class Chk {
+        private Chk() {}
 
-    /** at least one arg, the first arg must be a non-nil string */
-    static void stringArg(String func, String arg, ConsCell a) {
-        if (!stringp(car(a)))
-            throw new SimpleTypeError("%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
-    }
+        /// Additional error checking functions used by primitives only.
 
-    static Number requireNumberOrNull(String func, Object a) {
-        if (a == null) return null;
-        return requireNumber(func, a);
-    }
+        /** at least one arg, the first arg must be a non-nil string */
+        static void stringArg(String func, String arg, ConsCell a) {
+            if (!stringp(car(a)))
+                throw new SimpleTypeError("%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
+        }
 
-    /** error if n is not of type number */
-    static Number requireNumber(String func, Object n) {
-        if (n instanceof Long)    return (Long)n;
-        if (n instanceof Double)  return (Double) n;
-        if (n instanceof Number)  return (Number)n;
-        throw errorNotANumber(func, n);
-    }
+        static Number requireNumberOrNull(String func, Object a) {
+            if (a == null) return null;
+            return requireNumber(func, a);
+        }
 
-    static Number requireIntegralNumber(String func, Object n, long minIncl, long maxIncl) {
-        if (n == null) errorNotAnInteger(func, null);
-        if (n instanceof Long)    { return requireIntegralNumber(func, (Long) n, n, minIncl, maxIncl); }
-        if (n instanceof Double)  { return requireIntegralNumber(func, (Double) n, n, minIncl, maxIncl); }
-        if (n instanceof Byte)    { return requireIntegralNumber(func, (Byte) n, n, minIncl, maxIncl); }
-        if (n instanceof Short)   { return requireIntegralNumber(func, (Short) n, n, minIncl, maxIncl); }
-        if (n instanceof Integer) { return requireIntegralNumber(func, (Integer) n, n, minIncl, maxIncl); }
-        if (n instanceof Float)   { return requireIntegralNumber(func, (double) (Float) n, n, minIncl, maxIncl); }
-        if (n instanceof Number)  { return requireIntegralNumber(func, toDouble(func, n), n, minIncl, maxIncl); }
-        throw errorNotAnInteger(func, n);
-    }
+        /** error if n is not of type number */
+        static Number requireNumber(String func, Object n) {
+            if (n instanceof Long)    return (Long)n;
+            if (n instanceof Double)  return (Double) n;
+            if (n instanceof Number)  return (Number)n;
+            throw errorNotANumber(func, n);
+        }
 
-    private static Number requireIntegralNumber(String func, double d, Object originalValue, long minIncl, long maxIncl) {
-        // see https://stackoverflow.com/questions/9898512/how-to-test-if-a-double-is-an-integer
-        if (Math.rint(d) == d && !Double.isInfinite(d) && d >= minIncl && d <= maxIncl) return d;
-        throw errorNotAnInteger(func, originalValue);
-    }
+        static Number requireIntegralNumber(String func, Object n, long minIncl, long maxIncl) {
+            if (n == null) errorNotAnInteger(func, null);
+            if (n instanceof Long)    { return requireIntegralNumber(func, (Long) n, n, minIncl, maxIncl); }
+            if (n instanceof Double)  { return requireIntegralNumber(func, (Double) n, n, minIncl, maxIncl); }
+            if (n instanceof Byte)    { return requireIntegralNumber(func, (Byte) n, n, minIncl, maxIncl); }
+            if (n instanceof Short)   { return requireIntegralNumber(func, (Short) n, n, minIncl, maxIncl); }
+            if (n instanceof Integer) { return requireIntegralNumber(func, (Integer) n, n, minIncl, maxIncl); }
+            if (n instanceof Float)   { return requireIntegralNumber(func, (double) (Float) n, n, minIncl, maxIncl); }
+            if (n instanceof Number)  { return requireIntegralNumber(func, toDouble(func, n), n, minIncl, maxIncl); }
+            throw errorNotAnInteger(func, n);
+        }
 
-    private static Number requireIntegralNumber(String func, long l, Object originalValue, long minIncl, long maxIncl) {
-        if (l >= minIncl && l <= maxIncl) return l;
-        throw errorNotAnInteger(func, originalValue);
-    }
+        private static Number requireIntegralNumber(String func, double d, Object originalValue, long minIncl, long maxIncl) {
+            // see https://stackoverflow.com/questions/9898512/how-to-test-if-a-double-is-an-integer
+            if (Math.rint(d) == d && !Double.isInfinite(d) && d >= minIncl && d <= maxIncl) return d;
+            throw errorNotAnInteger(func, originalValue);
+        }
+
+        private static Number requireIntegralNumber(String func, long l, Object originalValue, long minIncl, long maxIncl) {
+            if (l >= minIncl && l <= maxIncl) return l;
+            throw errorNotAnInteger(func, originalValue);
+        }
 
 
-    /** Return {@code c} as a Character, error if {@code c} is not a Character. */
-    static Character requireChar(String func, Object c) {
-        if (!(c instanceof Character)) throw new SimpleTypeError("%s: expected a character argument but got %s", func, printSEx(c));
-        return (Character)c;
-    }
+        /** Return {@code c} as a Character, error if {@code c} is not a Character. */
+        static Character requireChar(String func, Object c) {
+            if (!(c instanceof Character)) throw new SimpleTypeError("%s: expected a character argument but got %s", func, printSEx(c));
+            return (Character)c;
+        }
 
-    static boolean requireBit(String func, Object value) {
-        return requireIntegralNumber(func, value, 0, 1).intValue() != 0;
-    }
+        static boolean requireBit(String func, Object value) {
+            return requireIntegralNumber(func, value, 0, 1).intValue() != 0;
+        }
 
-    static Object[] requireSimpleVector(String func, Object c) {
-        if (!svectorp(c)) throw new SimpleTypeError("%s: expected a simple vector argument but got %s", func, printSEx(c));
-        return (Object[])c;
-    }
+        static Object[] requireSimpleVector(String func, Object c) {
+            if (!svectorp(c)) throw new SimpleTypeError("%s: expected a simple vector argument but got %s", func, printSEx(c));
+            return (Object[])c;
+        }
 
-    /** return {@code c} as a String, error if {@code c} is not a string, character or symbol */
-    static String requireStringDesignator(String func, Object c) {
-        if (c == null) return "nil";
-        if (c instanceof Character || c instanceof LambdaJSymbol) return c.toString();
-        return requireString(func, c);
-    }
+        /** return {@code c} as a String, error if {@code c} is not a string, character or symbol */
+        static String requireStringDesignator(String func, Object c) {
+            if (c == null) return "nil";
+            if (c instanceof Character || c instanceof LambdaJSymbol) return c.toString();
+            return requireString(func, c);
+        }
 
-    static String requireString(String func, Object c) {
-        if (!stringp(c)) throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(c));
-        if (c instanceof char[]) return String.valueOf((char[])c);
-        return c.toString();
-    }
+        static CharSequence requireCharsequence(String func, Object c) {
+            if (c instanceof char[]) return String.valueOf((char[])c);
+            if (!(c instanceof CharSequence)) throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(c));
+            return (CharSequence)c;
+        }
 
-    static CharSequence requireCharsequence(String func, Object c) {
-        if (c instanceof char[]) return String.valueOf((char[])c);
-        if (!(c instanceof CharSequence)) throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(c));
-        return (CharSequence)c;
-    }
+        /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
+        static ConsCell requireCons(String func, Object a) {
+            if (!consp(a)) throw new SimpleTypeError("%s: expected a cons argument but got %s", func, printSEx(a));
+            return (ConsCell)a;
+        }
 
-    /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
-    static ConsCell requireCons(String func, Object a) {
-        if (!consp(a)) throw new SimpleTypeError("%s: expected a cons argument but got %s", func, printSEx(a));
-        return (ConsCell)a;
-    }
-
-    /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
-    static ConsCell requireList(String func, Object a) {
-        if (a == null) return null;
-        if (!consp(a)) throw new SimpleTypeError("%s: expected a list argument but got %s", func, printSEx(a));
-        return (ConsCell)a;
-    }
-
-    @SuppressWarnings("unchecked")
-    static Map<Object,Object> requireHash(String func, Object a) {
-        if (!hashtablep(a)) throw new SimpleTypeError("%s: expected a hashtable argument but got %s", func, printSEx(a));
-        return (Map<Object,Object>)a;
-    }
+        @SuppressWarnings("unchecked")
+        static Map<Object, Object> requireHash(String func, Object a) {
+            if (!hashtablep(a)) throw new SimpleTypeError("%s: expected a hashtable argument but got %s", func, printSEx(a));
+            return (Map<Object, Object>)a;
+        }
 
 
 
-    /// Number type conversions
+        /// Number type conversions
 
-    /** return the argument w/o decimal places as a long, exception if conversion is not possible */
-    static long toFixnum(double d) {
-        if (Double.isInfinite(d)) throw new ArithmeticException("value is Infinite");
-        if (Double.isNaN(d)) throw new ArithmeticException("value is NaN");
-        if (d < MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("underflow");
-        if (d > MOST_POSITIVE_FIXNUM) throw new ArithmeticException("overflow");
-        return (long)d;
-    }
+        /** return the argument w/o decimal places as a long, exception if conversion is not possible */
+        static long toFixnum(double d) {
+            if (Double.isInfinite(d)) throw new ArithmeticException("value is Infinite");
+            if (Double.isNaN(d)) throw new ArithmeticException("value is NaN");
+            if (d < MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("underflow");
+            if (d > MOST_POSITIVE_FIXNUM) throw new ArithmeticException("overflow");
+            return (long)d;
+        }
 
-    /** convert {@code a} to a double, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
-    static double toDouble(String func, Object a) {
-        final Number n = requireNumber(func, a);
+        /** convert {@code a} to a double, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
+        static double toDouble(String func, Object a) {
+            final Number n = requireNumber(func, a);
 
-        final double ret = n.doubleValue();
-        if (n instanceof BigInteger || n instanceof BigDecimal) {
-            if (Double.isNaN(ret)) errorOverflow(func, "double", a);
+            final double ret = n.doubleValue();
+            if (n instanceof BigInteger || n instanceof BigDecimal) {
+                if (Double.isNaN(ret)) errorOverflow(func, "double", a);
+                return ret;
+            }
             return ret;
         }
-        return ret;
-    }
 
-    /** convert {@code a} to a float, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
-    private static float toFloat(String func, Object a) {
-        final Number n = requireNumber(func, a);
+        /** convert {@code a} to a float, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
+        static float toFloat(String func, Object a) {
+            final Number n = requireNumber(func, a);
 
-        final float ret = n.floatValue();
-        if (n instanceof BigInteger || n instanceof BigDecimal) {
-            if (Float.isNaN(ret)) errorOverflow(func, "float", a);
+            final float ret = n.floatValue();
+            if (n instanceof BigInteger || n instanceof BigDecimal) {
+                if (Float.isNaN(ret)) errorOverflow(func, "float", a);
+                return ret;
+            }
+            final double dbl = n.doubleValue();
+            if (dbl > Float.MAX_VALUE || dbl < Float.MIN_VALUE) errorOverflow(func, "float", a);
             return ret;
         }
-        final double dbl = n.doubleValue();
-        if (dbl > Float.MAX_VALUE || dbl < Float.MIN_VALUE) errorOverflow(func, "float", a);
-        return ret;
-    }
 
-    /** convert {@code a} to an int, error if {@code a} is not a number. */
-    static int toInt(String func, Object a) {
-        return requireIntegralNumber(func, a, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
-    }
+        /** convert {@code a} to an int, error if {@code a} is not a number. */
+        static int toInt(String func, Object a) {
+            return requireIntegralNumber(func, a, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
+        }
 
-    static int toNonnegInt(String func, Object a) {
-        return requireIntegralNumber(func, a, 0, Integer.MAX_VALUE).intValue();
+        static int toNonnegInt(String func, Object a) {
+            return requireIntegralNumber(func, a, 0, Integer.MAX_VALUE).intValue();
+        }
     }
 
 
@@ -4313,9 +4319,8 @@ public class LambdaJ {
 
 
         static boolean adjustableArrayP(Object o) {
-            if (o instanceof Bitvector || o instanceof StringBuilder || o instanceof StringBuffer || o instanceof List) return true;
             //if (!vectorp(o)) throw errorNotAVector("adjustable-array-p", o);  // CL throws this error
-            return false;
+            return o instanceof Bitvector || o instanceof StringBuilder || o instanceof StringBuffer || o instanceof List;
         }
 
         static boolean eql(Object o1, Object o2) {
@@ -5764,56 +5769,60 @@ public class LambdaJ {
 
 
     /// Turtle primitives
-    private void turtlePrimitives(LambdaJ intp) {
-        final Primitive makeFrame = a -> {
-            varargsMinMax("make-frame", a, 1, 4);
-            final String title = requireString("make-frame", car(a));
-            final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull("make-frame", cadr(a)), requireNumberOrNull("make-frame", caddr(a)), requireNumberOrNull("make-frame", cadddr(a)));
-            intp.current_frame = ret;
-            return ret;
-        };
-        extendTopenv("make-frame",    makeFrame);
-        extendTopenv("open-frame",    (Primitive) a -> { varargs0_1("open-frame",    a); return requireFrame("open-frame",    car(a)).open();    });
-        extendTopenv("close-frame",   (Primitive) a -> { varargs0_1("close-frame",   a); return requireFrame("close-frame",   car(a)).close();   });
-        extendTopenv("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",   a); return requireFrame("reset-frame",   car(a)).reset();   });
-        extendTopenv("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",   a); return requireFrame("clear-frame",   car(a)).clear();   });
-        extendTopenv("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame", a); return requireFrame("repaint-frame", car(a)).repaint(); });
-        extendTopenv("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",   a); return requireFrame("flush-frame",   car(a)).flush();   });
+    static final class Turtle {
+        private Turtle() {}
 
-        // set new current frame, return previous frame
-        extendTopenv("current-frame", (Primitive) a -> { varargs0_1("current-frame",  a); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; });
+        static void turtlePrimitives(LambdaJ intp) {
+            final Primitive makeFrame = a -> {
+                varargsMinMax("make-frame", a, 1, 4);
+                final String title = requireString("make-frame", car(a));
+                final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull("make-frame", cadr(a)), requireNumberOrNull("make-frame", caddr(a)), requireNumberOrNull("make-frame", cadddr(a)));
+                intp.current_frame = ret;
+                return ret;
+            };
+            intp.extendTopenv("make-frame",    makeFrame);
+            intp.extendTopenv("open-frame",    (Primitive) a -> { varargs0_1("open-frame",     a); return intp.requireFrame("open-frame",    car(a)).open();    });
+            intp.extendTopenv("close-frame",   (Primitive) a -> { varargs0_1("close-frame",    a); return intp.requireFrame("close-frame",   car(a)).close();   });
+            intp.extendTopenv("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",    a); return intp.requireFrame("reset-frame",   car(a)).reset();   });
+            intp.extendTopenv("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",    a); return intp.requireFrame("clear-frame",   car(a)).clear();   });
+            intp.extendTopenv("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame",  a); return intp.requireFrame("repaint-frame", car(a)).repaint(); });
+            intp.extendTopenv("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",    a); return intp.requireFrame("flush-frame",   car(a)).flush();   });
 
-        extendTopenv("push-pos",      (Primitive) a -> { varargs0_1("push-pos",       a); return requireFrame("push-pos",car(a)).pushPos(); });
-        extendTopenv("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",        a); return requireFrame("pop-pos", car(a)).popPos();  });
+            // set new current frame, return previous frame
+            intp.extendTopenv("current-frame", (Primitive) a -> { varargs0_1("current-frame",  a); final Object prev = intp.current_frame; if (car(a) != null) intp.current_frame = intp.requireFrame("current-frame", car(a)); return prev; });
 
-        extendTopenv("pen-up",        (Primitive) a -> { varargs0_1("pen-up",         a); return requireFrame("pen-up",   car(a)).penUp();   });
-        extendTopenv("pen-down",      (Primitive) a -> { varargs0_1("pen-down",       a); return requireFrame("pen-down", car(a)).penDown(); });
+            intp.extendTopenv("push-pos",      (Primitive) a -> { varargs0_1("push-pos",       a); return intp.requireFrame("push-pos",car(a)).pushPos(); });
+            intp.extendTopenv("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",        a); return intp.requireFrame("pop-pos", car(a)).popPos();  });
 
-        extendTopenv("color",         (Primitive) a -> { varargs1_2("color",          a); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); });
-        extendTopenv("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor",        a); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); });
+            intp.extendTopenv("pen-up",        (Primitive) a -> { varargs0_1("pen-up",         a); return intp.requireFrame("pen-up",   car(a)).penUp();   });
+            intp.extendTopenv("pen-down",      (Primitive) a -> { varargs0_1("pen-down",       a); return intp.requireFrame("pen-down", car(a)).penDown(); });
 
-        extendTopenv("text",          (Primitive) a -> { varargs1_2("text",           a); return requireFrame("text",    cadr(a)).text   (car(a).toString()); });
+            intp.extendTopenv("color",         (Primitive) a -> { varargs1_2("color",          a); return intp.requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); });
+            intp.extendTopenv("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor",        a); return intp.requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); });
 
-        extendTopenv("right",         (Primitive) a -> { varargs1_2("right",          a); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); });
-        extendTopenv("left",          (Primitive) a -> { varargs1_2("left",           a); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); });
-        extendTopenv("forward",       (Primitive) a -> { varargs1_2("forward",        a); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); });
+            intp.extendTopenv("text",          (Primitive) a -> { varargs1_2("text",           a); return intp.requireFrame("text",    cadr(a)).text   (car(a).toString()); });
 
-        extendTopenv("move-to",       (Primitive) a -> { varargsMinMax("move-to",     a, 2, 3); return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  });
-        extendTopenv("line-to",       (Primitive) a -> { varargsMinMax("line-to",     a, 2, 3); return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  });
-        extendTopenv("move-rel",      (Primitive) a -> { varargsMinMax("move-rel",    a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); });
-        extendTopenv("line-rel",      (Primitive) a -> { varargsMinMax("line-rel",    a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); });
+            intp.extendTopenv("right",         (Primitive) a -> { varargs1_2("right",          a); return intp.requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); });
+            intp.extendTopenv("left",          (Primitive) a -> { varargs1_2("left",           a); return intp.requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); });
+            intp.extendTopenv("forward",       (Primitive) a -> { varargs1_2("forward",        a); return intp.requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); });
 
-        extendTopenv("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap", a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); });
-        extendTopenv("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap", a);       return requireFrame("discard-bitmap", car(a)).discardBitmap(); });
-        extendTopenv("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",   a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  });
-        extendTopenv("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",    a);
-                                                         return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
-                                                                            | toInt("rgb-to-pixel", cadr(a)) << 8
-                                                                            | toInt("rgb-to-pixel", caddr(a))); });
-        extendTopenv("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",    a);
-                                                         return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
-                                                                                     toFloat("hsb-to-pixel", cadr(a)),
-                                                                                     toFloat("hsb-to-pixel", caddr(a)));  });
+            intp.extendTopenv("move-to",       (Primitive) a -> { varargsMinMax("move-to",     a, 2, 3); return intp.requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  });
+            intp.extendTopenv("line-to",       (Primitive) a -> { varargsMinMax("line-to",     a, 2, 3); return intp.requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  });
+            intp.extendTopenv("move-rel",      (Primitive) a -> { varargsMinMax("move-rel",    a, 2, 3); return intp.requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); });
+            intp.extendTopenv("line-rel",      (Primitive) a -> { varargsMinMax("line-rel",    a, 2, 3); return intp.requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); });
+
+            intp.extendTopenv("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap", a, 2, 3); return intp.requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); });
+            intp.extendTopenv("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap", a);       return intp.requireFrame("discard-bitmap", car(a)).discardBitmap(); });
+            intp.extendTopenv("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",   a, 3, 4); return intp.requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  });
+            intp.extendTopenv("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",    a);
+                                                                  return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
+                                                                                     | toInt("rgb-to-pixel", cadr(a)) << 8
+                                                                                     | toInt("rgb-to-pixel", caddr(a))); });
+            intp.extendTopenv("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",    a);
+                                                                  return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
+                                                                                              toFloat("hsb-to-pixel", cadr(a)),
+                                                                                              toFloat("hsb-to-pixel", caddr(a)));  });
+        }
     }
 
 
@@ -5822,7 +5831,7 @@ public class LambdaJ {
     TurtleFrame current_frame;
 
     /** Return {@code a} as a TurtleFrame or current_frame if null, error if {@code a} is not of type frame. */
-    private TurtleFrame requireFrame(String func, Object a) {
+    TurtleFrame requireFrame(String func, Object a) {
         final TurtleFrame ret;
         if (a == null) {
             ret = current_frame;
@@ -5861,7 +5870,7 @@ public class LambdaJ {
         if (have(Features.HAVE_VECTOR)) extendTopenv("array-dimension-limit", MAX_ARRAY_SIZE);
 
         if (have(Features.HAVE_GUI)) {
-            turtlePrimitives(this);
+            Turtle.turtlePrimitives(this);
         }
 
         if (have(Features.HAVE_APPLY)) {
@@ -7484,7 +7493,7 @@ public class LambdaJ {
 
         public static double cl_round(double d)    { return Math.rint(d); }
         public static double cl_truncate(double d) { return LambdaJ.Subr.cl_truncate(d); }
-        public static long   toFixnum(double d)    { return LambdaJ.toFixnum(d); }
+        public static long   toFixnum(double d)    { return LambdaJ.Chk.toFixnum(d); }
         private double quot12(Object[] args) { values = null; return args.length == 2 ? toDouble(args[0]) / toDouble(args[1]) : toDouble(args[0]); }
 
         public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); values = null; return Math.sqrt (toDouble(args[0])); }
@@ -7536,7 +7545,7 @@ public class LambdaJ {
         public final Object   simpleVectorToList (Object... args) {
             values = null; oneArg("simple-vector->list", args.length);
             final Object maybeVector = args[0];
-            final Object[] s = LambdaJ.requireSimpleVector("simple-vector->list", maybeVector);
+            final Object[] s = LambdaJ.Chk.requireSimpleVector("simple-vector->list", maybeVector);
             final ListBuilder ret = new ListBuilder();
             final int len = s.length;
             for (int i = 0; i < len; i++) ret.append(s[i]);
@@ -7548,7 +7557,7 @@ public class LambdaJ {
         public final Object    _string (Object... args) { values = null; oneArg("string", args.length); return stringDesignatorToString(args[0]); }
         public final long      _slength(Object... args) { values = null; oneArg("slength", args.length); return slength(args[0]); }
         public final char      _sref   (Object... args) { values = null; twoArgs("sref", args.length);   return LambdaJ.Subr.sref(args[0], toArrayIndex(args[1])); }
-        public final char      _sset   (Object... args) { values = null; threeArgs("sset", args.length); return LambdaJ.Subr.sset(args[0], toArrayIndex(args[1]), LambdaJ.requireChar("sset", args[2])); }
+        public final char      _sset   (Object... args) { values = null; threeArgs("sset", args.length); return LambdaJ.Subr.sset(args[0], toArrayIndex(args[1]), requireChar(args[2])); }
         public final Object   stringeq (Object... args) { twoArgs("string=", args.length); return bool(LambdaJ.Subr.stringEq(args[0], args[1])); }
         public final Object   stringToList (Object... args) {
             values = null; oneArg("string->list", args.length);
@@ -7560,15 +7569,15 @@ public class LambdaJ {
                 for (int i = 0; i < len; i++) ret.append(carry[i]);
                 return ret.first();
             }
-            final CharSequence s = LambdaJ.requireCharsequence("string->list", maybeString);
+            final CharSequence s = requireCharsequence("string->list", maybeString);
             final int len = s.length();
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
             return ret.first();
         }
         public final Object listToString(Object... args) { values = null; varargs1_2("list->string", args.length); return LambdaJ.Subr.listToString(args[0], args.length > 1 && args[1] != null); }
 
-        public final long   charInt     (Object... args) { values = null; oneArg("char-code",     args.length); return (long) LambdaJ.requireChar("char-code", args[0]); }
-        public final long   charInt     (Object arg)     { values = null;                                       return (long) LambdaJ.requireChar("char-code", arg); }
+        public final long   charInt     (Object... args) { values = null; oneArg("char-code",     args.length); return (long) LambdaJ.Chk.requireChar("char-code", args[0]); }
+        public final long   charInt     (Object arg)     { values = null;                                       return (long) LambdaJ.Chk.requireChar("char-code", arg); }
         public final char   intChar     (Object... args) { values = null; oneArg("code-char",     args.length); return (char) toInt(args[0]); }
         public final char   intChar     (Object arg)     { values = null;                                       return (char) toInt(arg); }
 
@@ -7699,7 +7708,7 @@ public class LambdaJ {
         public final Object makeFrame  (Object... args) {
             values = null; varargsMinMax("make-frame", args.length, 1, 4);
             final String title = LambdaJ.requireString("make-frame", args[0]);
-            final TurtleFrame ret = new TurtleFrame(title, LambdaJ.requireNumberOrNull("make-frame", nth(1, args)), LambdaJ.requireNumberOrNull("make-frame", nth(2, args)), LambdaJ.requireNumberOrNull("make-frame", nth(3, args)));
+            final TurtleFrame ret = new TurtleFrame(title, LambdaJ.Chk.requireNumberOrNull("make-frame", nth(1, args)), LambdaJ.Chk.requireNumberOrNull("make-frame", nth(2, args)), LambdaJ.Chk.requireNumberOrNull("make-frame", nth(3, args)));
             current_frame = ret;
             return ret;
         }
@@ -7805,7 +7814,7 @@ public class LambdaJ {
             // the redundant checks are faster than instanceof Number and will succeed most of the time
             if (n instanceof Long)    return ((Long)n).doubleValue();
             if (n instanceof Double)  return (Double) n;
-            return LambdaJ.toDouble("?", n);
+            return LambdaJ.Chk.toDouble("?", n);
         }
         public static double toDouble(Double n) { if (n != null) return n;  throw errorNotANumber(null); }
         public static double toDouble(double n) { return n; }
@@ -7828,7 +7837,7 @@ public class LambdaJ {
 
         public static int   toInt(Object n)       { return requireIntegralNumber("toInt", n, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue(); }
         public static float toFloat(Object o) {
-            final Number n = LambdaJ.requireNumber("toFloat", o);
+            final Number n = LambdaJ.Chk.requireNumber("toFloat", o);
             final double d = n.doubleValue();
             if (d >= Float.MIN_VALUE && d <= Float.MAX_VALUE) return n.floatValue();
             throw errorOverflow("toFloat", "java.lang.Float", o);
@@ -7888,13 +7897,13 @@ public class LambdaJ {
 
         /** used by JFFI and generated inline JFFI */
         public static Number requireNumber(Object o) {
-            return LambdaJ.requireNumber("?", o);
+            return LambdaJ.Chk.requireNumber("?", o);
         }
 
         /** used by JFFI and generated inline JFFI */
         public static Number requireNumberOrNull(Object o) {
             if (o == null) return null;
-            return LambdaJ.requireNumber("?", o);
+            return LambdaJ.Chk.requireNumber("?", o);
         }
 
         private TurtleFrame requireFrame(String s, Object o) {
@@ -9144,7 +9153,7 @@ public class LambdaJ {
                     if (intp.speed >= 1 && symbolp(op) && opencode(sb, (LambdaJSymbol)op, ccArguments, env, topEnv, rsfx, isLast)) return;
 
                     if (intp.speed >= 1 && consp(op) && symbolEq(car(op), "jmethod")
-                        && emitJmethod(sb, requireCons("jmethod application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
+                        && emitJmethod(sb, listOrMalformed("jmethod application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
                         return;
                     }
 
@@ -10847,7 +10856,7 @@ final class TurtleFrame {
         return Math.min(xfac, yfac);
     }
 
-    private double factBitmap(final int w, final int h) {
+    double factBitmap(final int w, final int h) {
         final double xfac = ((double)w-2*padding) / bitmap.getWidth();
         final double yfac = ((double)h-2*padding) / bitmap.getHeight();
 
