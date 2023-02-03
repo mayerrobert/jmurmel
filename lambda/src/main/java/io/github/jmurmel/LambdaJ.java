@@ -4090,21 +4090,6 @@ public class LambdaJ {
             throw new SimpleTypeError("%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
     }
 
-    /** Return {@code a} as a TurtleFrame or current_frame if null, error if {@code a} is not of type frame. */
-    private TurtleFrame requireFrame(String func, Object a) {
-        final TurtleFrame ret;
-        if (a == null) {
-            ret = current_frame;
-        }
-        else {
-            if (!(a instanceof TurtleFrame)) throw new SimpleTypeError("%s: expected a frame argument but got %s", func, printSEx(a));
-            ret = (TurtleFrame) a;
-        }
-        if (ret == null) throw new UnboundVariable("%s: no frame argument and no current frame", func);
-        return ret;
-    }
-
-
     static Number requireNumberOrNull(String func, Object a) {
         if (a == null) return null;
         return requireNumber(func, a);
@@ -5778,9 +5763,77 @@ public class LambdaJ {
 
 
 
+    /// Turtle primitives
+    private void turtlePrimitives(LambdaJ intp) {
+        final Primitive makeFrame = a -> {
+            varargsMinMax("make-frame", a, 1, 4);
+            final String title = requireString("make-frame", car(a));
+            final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull("make-frame", cadr(a)), requireNumberOrNull("make-frame", caddr(a)), requireNumberOrNull("make-frame", cadddr(a)));
+            intp.current_frame = ret;
+            return ret;
+        };
+        extendTopenv("make-frame",    makeFrame);
+        extendTopenv("open-frame",    (Primitive) a -> { varargs0_1("open-frame",    a); return requireFrame("open-frame",    car(a)).open();    });
+        extendTopenv("close-frame",   (Primitive) a -> { varargs0_1("close-frame",   a); return requireFrame("close-frame",   car(a)).close();   });
+        extendTopenv("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",   a); return requireFrame("reset-frame",   car(a)).reset();   });
+        extendTopenv("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",   a); return requireFrame("clear-frame",   car(a)).clear();   });
+        extendTopenv("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame", a); return requireFrame("repaint-frame", car(a)).repaint(); });
+        extendTopenv("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",   a); return requireFrame("flush-frame",   car(a)).flush();   });
+
+        // set new current frame, return previous frame
+        extendTopenv("current-frame", (Primitive) a -> { varargs0_1("current-frame",  a); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; });
+
+        extendTopenv("push-pos",      (Primitive) a -> { varargs0_1("push-pos",       a); return requireFrame("push-pos",car(a)).pushPos(); });
+        extendTopenv("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",        a); return requireFrame("pop-pos", car(a)).popPos();  });
+
+        extendTopenv("pen-up",        (Primitive) a -> { varargs0_1("pen-up",         a); return requireFrame("pen-up",   car(a)).penUp();   });
+        extendTopenv("pen-down",      (Primitive) a -> { varargs0_1("pen-down",       a); return requireFrame("pen-down", car(a)).penDown(); });
+
+        extendTopenv("color",         (Primitive) a -> { varargs1_2("color",          a); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); });
+        extendTopenv("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor",        a); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); });
+
+        extendTopenv("text",          (Primitive) a -> { varargs1_2("text",           a); return requireFrame("text",    cadr(a)).text   (car(a).toString()); });
+
+        extendTopenv("right",         (Primitive) a -> { varargs1_2("right",          a); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); });
+        extendTopenv("left",          (Primitive) a -> { varargs1_2("left",           a); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); });
+        extendTopenv("forward",       (Primitive) a -> { varargs1_2("forward",        a); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); });
+
+        extendTopenv("move-to",       (Primitive) a -> { varargsMinMax("move-to",     a, 2, 3); return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  });
+        extendTopenv("line-to",       (Primitive) a -> { varargsMinMax("line-to",     a, 2, 3); return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  });
+        extendTopenv("move-rel",      (Primitive) a -> { varargsMinMax("move-rel",    a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); });
+        extendTopenv("line-rel",      (Primitive) a -> { varargsMinMax("line-rel",    a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); });
+
+        extendTopenv("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap", a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); });
+        extendTopenv("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap", a);       return requireFrame("discard-bitmap", car(a)).discardBitmap(); });
+        extendTopenv("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",   a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  });
+        extendTopenv("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",    a);
+                                                         return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
+                                                                            | toInt("rgb-to-pixel", cadr(a)) << 8
+                                                                            | toInt("rgb-to-pixel", caddr(a))); });
+        extendTopenv("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",    a);
+                                                         return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
+                                                                                     toFloat("hsb-to-pixel", cadr(a)),
+                                                                                     toFloat("hsb-to-pixel", caddr(a)));  });
+    }
+
+
     ConsCell values = NO_VALUES;
 
     TurtleFrame current_frame;
+
+    /** Return {@code a} as a TurtleFrame or current_frame if null, error if {@code a} is not of type frame. */
+    private TurtleFrame requireFrame(String func, Object a) {
+        final TurtleFrame ret;
+        if (a == null) {
+            ret = current_frame;
+        }
+        else {
+            if (!(a instanceof TurtleFrame)) throw new SimpleTypeError("%s: expected a frame argument but got %s", func, printSEx(a));
+            ret = (TurtleFrame) a;
+        }
+        if (ret == null) throw new UnboundVariable("%s: no frame argument and no current frame", func);
+        return ret;
+    }
 
     private ObjectReader lispReader;
     private ObjectWriter lispPrinter;
@@ -5808,55 +5861,7 @@ public class LambdaJ {
         if (have(Features.HAVE_VECTOR)) extendTopenv("array-dimension-limit", MAX_ARRAY_SIZE);
 
         if (have(Features.HAVE_GUI)) {
-            final Primitive makeFrame = a -> {
-                varargsMinMax("make-frame", a, 1, 4);
-                final String title = requireString("make-frame", car(a));
-                final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull("make-frame", cadr(a)), requireNumberOrNull("make-frame", caddr(a)), requireNumberOrNull("make-frame", cadddr(a)));
-                current_frame = ret;
-                return ret;
-            };
-            extendTopenv("make-frame",    makeFrame);
-            extendTopenv("open-frame",    (Primitive) a -> { varargs0_1("open-frame",    a); return requireFrame("open-frame",    car(a)).open();    });
-            extendTopenv("close-frame",   (Primitive) a -> { varargs0_1("close-frame",   a); return requireFrame("close-frame",   car(a)).close();   });
-            extendTopenv("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",   a); return requireFrame("reset-frame",   car(a)).reset();   });
-            extendTopenv("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",   a); return requireFrame("clear-frame",   car(a)).clear();   });
-            extendTopenv("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame", a); return requireFrame("repaint-frame", car(a)).repaint(); });
-            extendTopenv("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",   a); return requireFrame("flush-frame",   car(a)).flush();   });
-
-            // set new current frame, return previous frame
-            extendTopenv("current-frame", (Primitive) a -> { varargs0_1("current-frame", a); final Object prev = current_frame; if (car(a) != null) current_frame = requireFrame("current-frame", car(a)); return prev; });
-
-            extendTopenv("push-pos",      (Primitive) a -> { varargs0_1("push-pos", a); return requireFrame("push-pos",car(a)).pushPos(); });
-            extendTopenv("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",  a); return requireFrame("pop-pos", car(a)).popPos();  });
-
-            extendTopenv("pen-up",        (Primitive) a -> { varargs0_1("pen-up",   a); return requireFrame("pen-up",   car(a)).penUp();   });
-            extendTopenv("pen-down",      (Primitive) a -> { varargs0_1("pen-down", a); return requireFrame("pen-down", car(a)).penDown(); });
-
-            extendTopenv("color",         (Primitive) a -> { varargs1_2("color",   a); return requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); });
-            extendTopenv("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor", a); return requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); });
-
-            extendTopenv("text",          (Primitive) a -> { varargs1_2("text",    a); return requireFrame("text",    cadr(a)).text   (car(a).toString()); });
-
-            extendTopenv("right",         (Primitive) a -> { varargs1_2("right",   a); return requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); });
-            extendTopenv("left",          (Primitive) a -> { varargs1_2("left",    a); return requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); });
-            extendTopenv("forward",       (Primitive) a -> { varargs1_2("forward", a); return requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); });
-
-            extendTopenv("move-to",       (Primitive) a -> { varargsMinMax("move-to", a, 2, 3);  return requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  });
-            extendTopenv("line-to",       (Primitive) a -> { varargsMinMax("line-to", a, 2, 3);  return requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  });
-            extendTopenv("move-rel",      (Primitive) a -> { varargsMinMax("move-rel", a, 2, 3); return requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); });
-            extendTopenv("line-rel",      (Primitive) a -> { varargsMinMax("line-rel", a, 2, 3); return requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); });
-
-            extendTopenv("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap",    a, 2, 3); return requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); });
-            extendTopenv("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap",    a);       return requireFrame("discard-bitmap", car(a)).discardBitmap(); });
-            extendTopenv("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",      a, 3, 4); return requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  });
-            extendTopenv("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",   a);
-                                                             return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
-                                                                                | toInt("rgb-to-pixel", cadr(a)) << 8
-                                                                                | toInt("rgb-to-pixel", caddr(a))); });
-            extendTopenv("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",   a);
-                                                             return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
-                                                                                         toFloat("hsb-to-pixel", cadr(a)),
-                                                                                         toFloat("hsb-to-pixel", caddr(a)));  });
+            turtlePrimitives(this);
         }
 
         if (have(Features.HAVE_APPLY)) {
