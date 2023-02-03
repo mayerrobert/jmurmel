@@ -1089,23 +1089,6 @@ public class LambdaJ {
         return isLong(s, lenMinus1);
     }
 
-    /*
-    private static final Pattern DOUBLE_PATTERN = Pattern.compile(
-    "[-+]?"                                // optional-sign
-    + "("                                  // either
-    + "(([0-9]*\\.[0-9]+)"                 //   zero-or-more-digits  '.' one-or-more-digits
-    + "([eE][-+]?[0-9]+)?)"                //   optionally followed by: e-or-E optional-sign one-or-more-digits
-    + "|"                                  // or
-    + "([0-9]+[eE][-+]?[0-9]+)"            //   one-or-more-digits e-or-E optional-sign one-or-more-digits
-    + ")");
-    static boolean isDouble(String s) {
-        assert s != null : "tokens should not be null";
-        assert !s.isEmpty() : "tokens should not be the empty string";
-
-        return DOUBLE_PATTERN.matcher(s).matches();
-    }
-    */
-
     static boolean isDouble(String s) {
         assert s != null : "tokens should not be null";
         assert !s.isEmpty() : "tokens should not be the empty string";
@@ -10130,9 +10113,15 @@ public class LambdaJ {
             else if (symbolp(form)) {
                 if (form == sT) sb.append("_t");
                 else {
-                    final String s = "intern(\"" + escapeString(form.toString()) + "\")";
-                    if (pool) emitReference(sb, s);
-                    else sb.append(s);
+                    final LambdaJSymbol sym = (LambdaJSymbol)form;
+                    if (sym.wellknownSymbol == WellknownSymbol.notInterned) {
+                        emitGensym(sb, sym);
+                    }
+                    else {
+                        final String s = "intern(\"" + escapeString(form.toString()) + "\")";
+                        if (pool) emitReference(sb, s);
+                        else sb.append(s);
+                    }
                 }
             }
             else if (atom(form))    { emitAtom(sb, form); }
@@ -10179,6 +10168,17 @@ public class LambdaJ {
             else throw errorInternal("quote: unexpected form", form);
         }
 
+        private final Map<LambdaJSymbol, String> gensyms = new IdentityHashMap<>();
+
+        private void emitGensym(WrappingWriter sb, LambdaJSymbol sym) {
+            String ref = gensyms.get(sym);
+            if (ref == null) {
+                ref = createReference("_gensym(\"" + escapeString(sym.toString()) + "\")");
+                gensyms.put(sym, ref);
+            }
+            sb.append(ref);
+        }
+
         private int qCounter;
         private final List<String> quotedForms = new ArrayList<>();
 
@@ -10186,11 +10186,14 @@ public class LambdaJ {
          *  or add a new one to the pool and emit a reference to that */
         private void emitReference(WrappingWriter sb, String s) {
             final int prev = quotedForms.indexOf(s);
-            if (prev == -1) {
-                sb.append("q").append(qCounter++);
-                quotedForms.add(s);
-            }
+            if (prev == -1) sb.append(createReference(s));
             else sb.append("q").append(prev);
+        }
+
+        private String createReference(String s) {
+            final String ret = "q" + qCounter++;
+            quotedForms.add(s);
+            return ret;
         }
 
         private void emitConstantPool(WrappingWriter ret) {

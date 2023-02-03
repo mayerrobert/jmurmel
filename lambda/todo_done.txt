@@ -2421,3 +2421,18 @@ einige CL funktionen akzeptieren "string-designator", das ist string oder symbol
    -> aber "string" ist anders als list, vector, hash, ... kein "constructor" obwohls der name nahelegt
    -> string sollte wsl. java.lang.String -> char[] (aka simple-string) wandeln, d.h. mutable strings liefern
       praktisch für z.B. string-split und string-join die derzeit immutable strings liefern
+
+
+kompiliertes macroexpand-1 veträgt sich irgendwie nicht mit gensym: "#:gensym" vs. "gensym"
+
+JMurmel> (load "mlib")
+
+==> nil
+JMurmel> (macroexpand-1 '(dotimes (i 10) (write i)))
+
+ -> (let ((i 0) (#:gensym 10)) (if (<= #:gensym 0) (progn) (if (>= i #:gensym) (progn) (let #:gensym nil (write i) (incf i) (if (>= i #:gensym) (progn) (#:gensym))))))
+ -> t
+JMurmel> :r
+
+ -> (let ((i 0) (gensym 10)) (if (<= gensym 0) (progn) (if (>= i gensym) (progn) (let gensym nil (write i) (incf i) (if (>= i gensym) (progn) (gensym))))))
+ -> t
