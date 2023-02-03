@@ -3390,7 +3390,7 @@ public class LambdaJ {
             throw wrap(re);
         }
         catch (IOException e) {
-            errorReaderError("load: error reading file '%s': ", e.getMessage());
+            errorReaderError("%s: error reading file '%s': %s", func, argument, e.getMessage());
             return null; // notreached
         }
         finally {
@@ -3400,18 +3400,18 @@ public class LambdaJ {
 
     final Path findFile(String func, Object argument) {
         if (!stringp(argument)) errorMalformed(func, "a string argument", printSEx(argument));
-        final String filename = (String)argument;
-        final Path path;
-        if (filename.toLowerCase(Locale.ENGLISH).endsWith(".lisp")) path = Paths.get(filename);
-        else path = Paths.get(filename + ".lisp");
+        final String _filename = (String)argument;
+        final String filenameLC = _filename.toLowerCase(Locale.ENGLISH);
+        final String filename = filenameLC.endsWith(".lisp") ? _filename : _filename + ".lisp";
+
+        final Path path = Paths.get(filename);
         if (path.isAbsolute()) return path;
 
         Path current = currentSource;
         if (current == null) current = Paths.get("dummy");
-        Path ret = current.resolveSibling(path);
+        final Path ret = current.resolveSibling(path);
         if (Files.isReadable(ret)) return ret;
-        ret = libDir.resolve(path);
-        return ret;
+        return libDir.resolve(path);
     }
 
 
