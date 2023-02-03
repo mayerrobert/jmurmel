@@ -10109,19 +10109,17 @@ public class LambdaJ {
          *  and a reference to the new or already existing identical constant pool entry is emitted. */
         private void emitQuotedForm(WrappingWriter sb, Object form, boolean pool) {
             if (form == null || form == sNil) sb.append("(Object)null");
+            else if (form == sT) sb.append("_t");
 
             else if (symbolp(form)) {
-                if (form == sT) sb.append("_t");
+                final LambdaJSymbol sym = (LambdaJSymbol)form;
+                if (sym.wellknownSymbol == WellknownSymbol.notInterned) {
+                    emitGensym(sb, sym);
+                }
                 else {
-                    final LambdaJSymbol sym = (LambdaJSymbol)form;
-                    if (sym.wellknownSymbol == WellknownSymbol.notInterned) {
-                        emitGensym(sb, sym);
-                    }
-                    else {
-                        final String s = "intern(\"" + escapeString(form.toString()) + "\")";
-                        if (pool) emitReference(sb, s);
-                        else sb.append(s);
-                    }
+                    final String s = "intern(\"" + escapeString(form.toString()) + "\")";
+                    if (pool) emitReference(sb, s);
+                    else sb.append(s);
                 }
             }
             else if (atom(form))    { emitAtom(sb, form); }
@@ -10132,14 +10130,14 @@ public class LambdaJ {
                 if (atom(cdr(form))) {
                     // fast path for dotted pairs and 1 element lists
                     qsb.append("_cons("); emitQuotedForm(qsb, car(form), false);
-                    qsb.append(", ");    emitQuotedForm(qsb, cdr(form), false);
+                    qsb.append(", ");     emitQuotedForm(qsb, cdr(form), false);
                     qsb.append(")");
                 }
                 else if (atom(cddr(form))) {
                     // fast path for 2 element lists or dotted 3 element lists
                     qsb.append("_cons(");   emitQuotedForm(qsb, car(form),  false);
                     qsb.append(", _cons("); emitQuotedForm(qsb, cadr(form), false);
-                    qsb.append(", ");      emitQuotedForm(qsb, cddr(form), false);
+                    qsb.append(", ");       emitQuotedForm(qsb, cddr(form), false);
                     qsb.append("))");
                 }
                 else {
