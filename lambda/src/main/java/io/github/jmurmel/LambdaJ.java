@@ -2662,9 +2662,7 @@ public class LambdaJ {
             }
         }
 
-        catch (ReturnException re) {
-            return result = nonlocalReturn(re, localCatchTags);
-        }
+        catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
         catch (Exception e) {
             if (have(Features.HAVE_UTIL)) {
                 final Object handler = cdr(conditionHandlerEnvEntry);
@@ -2697,18 +2695,18 @@ public class LambdaJ {
                 }
             }
             if (e != null) {
-                if (e instanceof ReturnException) {
-                    return nonlocalReturn((ReturnException)e, localCatchTags);
-                }
+                if (e instanceof ReturnException) { return nonlocalReturn((ReturnException)e, localCatchTags); }
                 throw e;
             }
         }
     }
 
     private Object nonlocalReturn(ReturnException re, ConsCell localCatchTags) {
-        final Object thrownTag = re.tag;
-        if (localCatchTags != null) for (ConsCell i = localCatchTags; i != null; i = (ConsCell)cdr(i)) {
-            if (car(i) == thrownTag) { values = re.valuesAsList(); return re.result; }
+        if (localCatchTags != null) {
+            final Object thrownTag = re.tag;
+            for (ConsCell i = localCatchTags; i != null; i = (ConsCell)cdr(i)) {
+                if (car(i) == thrownTag) { values = re.valuesAsList(); return re.result; }
+            }
         }
         throw re;
     }
@@ -5405,6 +5403,8 @@ public class LambdaJ {
         }
 
         static void error(SymbolTable st, Object datum, Object... args) {
+            if (datum instanceof Throwable) wrap((Throwable)datum);
+
             if (stringp(datum)) { throw new SimpleError(requireString("error", datum), args); }
 
             if (datum == st.intern("file-error"))   throw new InvalidPathException("(input)", "(reason)"); // todo args

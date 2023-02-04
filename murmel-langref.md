@@ -673,8 +673,9 @@ Example:
     (multiple-value-bind (result condition)
       (try (1+ most-positive-fixnum) 'error)
       (if (eq result 'error)
-            (progn (write "an error occurred" nil)
-                   (write condition) 'bummer)
+            (progn (write "an error occurred: " nil)
+                   (write condition)
+                   'bummer)
         result))
     ; ==> bummer
 
@@ -1298,6 +1299,23 @@ will be `t`, e.g.:
 Since 1.4
 
 Similar to CL's `error`.
+`datum` can also be a condition,
+e.g. to re-raise a condition that is not handled.
+
+    (try (error 'simple-error "an error occurred") 'err)
+-> err
+-> simple-error - an error occurred
+
+    (writeln (try (multiple-value-bind (result condition) (try (error 'simple-error "an error occurred") 'err)
+                    (if (eq result 'err)
+                          (if (typep condition 'arithmetic-error)
+                                (writeln "an arithmetic error occurred")
+                            (progn (writeln "another error occurred, rethrowing")
+                                   (error condition)))
+                      (writeln "no error")))
+                  'outer-err))
+outer-err
+###> outer-err
 
 
 ## Time
