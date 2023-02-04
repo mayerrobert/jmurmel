@@ -1,5 +1,6 @@
 
 Changes in JMurmel-1.4.1 relative to JMurmel-1.4
+released: 2023-02-04
 
  * fixed sxhash to return nonnegative integer values
  * fixed using macroexpand-1 & gensym in compiled code
