@@ -4201,7 +4201,7 @@ public class LambdaJ {
                 return ret;
             }
             final double dbl = n.doubleValue();
-            if (dbl > Float.MAX_VALUE || dbl < Float.MIN_VALUE) errorOverflow(func, "float", a);
+            if (dbl > Float.MAX_VALUE || dbl < -Float.MAX_VALUE) errorOverflow(func, "float", a);
             return ret;
         }
 
@@ -7822,7 +7822,7 @@ public class LambdaJ {
         public static float toFloat(Object o) {
             final Number n = LambdaJ.Chk.requireNumber("toFloat", o);
             final double d = n.doubleValue();
-            if (d >= Float.MIN_VALUE && d <= Float.MAX_VALUE) return n.floatValue();
+            if (d >= -Float.MAX_VALUE && d <= Float.MAX_VALUE) return n.floatValue();
             throw errorOverflow("toFloat", "java.lang.Float", o);
         }
         public static boolean toBoolean(Object n)  { return n != null; }
