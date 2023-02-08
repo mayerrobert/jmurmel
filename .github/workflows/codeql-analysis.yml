@@ -38,6 +38,7 @@ on:
 
 env:
   JAVA_VERSION: 11
+  # 19 makes "run-compiled-langref" fail. It seems that CodeQL somehow changes some stuff.
 
 jobs:
   analyze:
@@ -69,11 +70,11 @@ jobs:
         # Prefix the list here with "+" to use these queries and those in the config file.
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
-    #- name: Set up JDK ${{ matrix.Java }}
-    #  uses: actions/setup-java@v3
-    #  with:
-    #    java-version: ${{ env.JAVA_VERSION }}
-    #    distribution: 'zulu'
+    - name: Set up JDK ${{ matrix.Java }}
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'zulu'
 
     - name: Cache Maven packages
       uses: actions/cache@v3
