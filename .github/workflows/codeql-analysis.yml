@@ -37,7 +37,7 @@ on:
     - cron: '30 17 * * 3'
 
 env:
-  JAVA_VERSION: 19
+  JAVA_VERSION: 11
 
 jobs:
   analyze:
