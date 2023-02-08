@@ -3,9 +3,11 @@ name: JMurmel Native Image builds
 on:
   push:
     paths-ignore:
+      - CHANGES
       - "**.md"
       - "**.txt"
       - "**.html"
+      - "**.lisp"
       - "**.completions"
       - "scribbles/**"
 

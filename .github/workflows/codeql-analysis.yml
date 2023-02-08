@@ -14,23 +14,30 @@ name: "CodeQL"
 on:
   push:
     paths-ignore:
+      - CHANGES
       - "**.md"
       - "**.txt"
       - "**.html"
+      - "**.lisp"
       - "**.completions"
       - "scribbles/**"
     branches: [ master ]
   pull_request:
     paths-ignore:
+      - CHANGES
       - "**.md"
       - "**.txt"
       - "**.html"
+      - "**.lisp"
       - "**.completions"
       - "scribbles/**"
     # The branches below must be a subset of the branches above
     branches: [ master ]
   schedule:
     - cron: '30 17 * * 3'
+
+env:
+  JAVA_VERSION: 19
 
 jobs:
   analyze:
@@ -62,21 +69,22 @@ jobs:
         # Prefix the list here with "+" to use these queries and those in the config file.
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
-    # Autobuild attempts to build any compiled languages  (C/C++, C#, or Java).
-    # If this step fails, then you should remove it and run the build manually (see below)
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v2
+    - name: Set up JDK ${{ matrix.Java }}
+      uses: actions/setup-java@v3
+      with:
+        java-version: ${{ env.JAVA_VERSION }}
+        distribution: 'zulu'
 
-    # ℹ️ Command-line programs to run using the OS shell.
-    # 📚 https://git.io/JvXDl
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2/repository
+        key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+        restore-keys: |
+          ${{ runner.os }}-maven-
 
-    # ✏️ If the Autobuild fails above, remove it and uncomment the following three lines
-    #    and modify them (or add more) to build your code if your project
-    #    uses a compiled language
-
-    #- run: |
-    #   make bootstrap
-    #   make release
+    - name: Build with Maven
+      run: mvn -B clean package --file pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
