@@ -36,7 +36,8 @@ public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptE
         final Object ret = murmel.evalScript(reader, stdIn, stdOut, context.getBindings(ScriptContext.ENGINE_SCOPE));
         try {
             stdOut.flush();
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             throw new ScriptException("I/O exception during final flush");
         }
         return ret;
