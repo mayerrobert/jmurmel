@@ -83,8 +83,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
 
-    - name: Build with Maven
-      run: mvn -B clean package --file pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
+    - name: Autobuild
+      uses: github/codeql-action/autobuild@v2
+    
+    #- name: Build with Maven
+    #  run: mvn -B clean package --file pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
