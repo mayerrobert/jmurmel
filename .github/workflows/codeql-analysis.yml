@@ -69,11 +69,11 @@ jobs:
         # Prefix the list here with "+" to use these queries and those in the config file.
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
-    - name: Set up JDK ${{ matrix.Java }}
-      uses: actions/setup-java@v3
-      with:
-        java-version: ${{ env.JAVA_VERSION }}
-        distribution: 'zulu'
+    #- name: Set up JDK ${{ matrix.Java }}
+    #  uses: actions/setup-java@v3
+    #  with:
+    #    java-version: ${{ env.JAVA_VERSION }}
+    #    distribution: 'zulu'
 
     - name: Cache Maven packages
       uses: actions/cache@v3
@@ -83,11 +83,11 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-maven-
 
-    - name: Autobuild
-      uses: github/codeql-action/autobuild@v2
+    #- name: Autobuild
+    #  uses: github/codeql-action/autobuild@v2
     
-    #- name: Build with Maven
-    #  run: mvn -B clean package --file pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
+    - name: Build with Maven
+      run: mvn -V -B clean package --file pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
 
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v2
