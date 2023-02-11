@@ -8719,7 +8719,9 @@ public class LambdaJ {
 
                 assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
 
-                if (isOperator(op, WellknownSymbol.sDefine)) {
+                if (symbolp(op)) switch (((LambdaJSymbol)op).wellknownSymbol) {
+
+                case sDefine: {
                     globalEnv = defineToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
                     bodyForms.add(ccForm);
@@ -8727,7 +8729,7 @@ public class LambdaJ {
                     return globalEnv;
                 }
 
-                else if (isOperator(op, WellknownSymbol.sDefun)) {
+                case sDefun: {
                     globalEnv = defunToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
                     bodyForms.add(ccForm);
@@ -8735,30 +8737,31 @@ public class LambdaJ {
                     return globalEnv;
                 }
 
-                else if (isOperator(op, WellknownSymbol.sDefmacro)) {
+                case sDefmacro: {
                     LambdaJ.symbolOrMalformed("defmacro", cadr(ccForm));
                     intp.eval(ccForm, null);
                     bodyForms.add(ccForm); // needed if compiled code calls macroexpand-1
                     return globalEnv;
                 }
 
-                else if (isOperator(op, WellknownSymbol.sProgn)) {
+                case sProgn: {
                     // toplevel progn will be replaced by the (macroexpanded) forms it contains
                     final ConsCell body = listOrMalformed("progn", cdr(ccForm));
-                    for (Object prognForm: body) {
+                    for (Object prognForm : body) {
                         globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm));
                     }
                     return globalEnv;
                 }
 
-                else if (isOperator(op, WellknownSymbol.sLoad)) {
+                case sLoad: {
                     final ConsCell ccArgs = listOrMalformed("load", cdr(ccForm));
                     oneArg("load", ccArgs);
                     if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack 
                     globalEnv = loadFile("load", ret, car(ccArgs), null, globalEnv, -1, false, bodyForms, globals);
+                    return globalEnv;
                 }
 
-                else if (isOperator(op, WellknownSymbol.sRequire)) {
+                case sRequire: {
                     final ConsCell ccArgs = listOrMalformed("require", cdr(ccForm));
                     varargs1_2("require", ccArgs);
                     if (!stringp(car(ccArgs))) errorMalformed("require", "a string argument", ccArgs);
@@ -8770,30 +8773,32 @@ public class LambdaJ {
                         globalEnv = loadFile("require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
                         if (!intp.modules.contains(modName)) errorMalformedFmt("require", "require'd file '%s' does not provide '%s'", modFilePath, modName);
                     }
+                    return globalEnv;
                 }
 
-                else if (isOperator(op, WellknownSymbol.sProvide)) {
+                case sProvide: {
                     final ConsCell ccArgs = listOrMalformed("provide", cdr(ccForm));
                     oneArg("provide", ccArgs);
                     if (!stringp(car(ccArgs))) errorMalformed("provide", "a string argument", ccArgs);
                     final Object modName = car(ccArgs);
                     intp.modules.add(modName);
+                    return globalEnv;
                 }
 
-                else if (isOperator(op, WellknownSymbol.sDeclaim)) {
+                case sDeclaim: {
                     intp.evalDeclaim(1, (ConsCell)cdr(ccForm)); // todo kann form eine dotted list sein und der cast schiefgehen?
                     bodyForms.add(ccForm);
+                    return globalEnv;
                 }
 
-                else if (symbolp(op) && null != ((LambdaJSymbol)op).macro) {
-                    errorInternal("unexpected unexpanded macrocall: %s", printSEx(form));
+                default:
+                    if (null != ((LambdaJSymbol)op).macro) {
+                        errorInternal("unexpected unexpanded macrocall: %s", printSEx(form));
+                    }
                 }
-
-                else bodyForms.add(ccForm);
             }
 
-            else bodyForms.add(form);
-
+            bodyForms.add(form);
             return globalEnv;
         }
 
