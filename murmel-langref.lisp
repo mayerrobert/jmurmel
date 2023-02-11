@@ -1671,8 +1671,9 @@ pi ; ==> 3.141592653589793
 ;
 ; Murmel language:
 ;
-; - runtime errors should be wellknown so that can runtime errors can be handled
-; - file i/o
+; - macrolet
+; - eval-when
+; - multithreading
 ;
 ; Compiler issues:
 ;

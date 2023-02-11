@@ -1668,8 +1668,9 @@ methodname/ murmelcode tupels, and returns a Java object that implements
 
 Murmel language:
 
-- runtime errors should be wellknown so that can runtime errors can be handled
-- file i/o
+- macrolet
+- eval-when
+- multithreading
 
 Compiler issues:
 
