@@ -288,6 +288,20 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testEvalCompileError() throws Exception {
+        // compiletime error because #\a is not a valid argument to +
+        compileError("(defun add (a b) (+ #\\a b))" 
+                     + "(eval '(add 1 2) (list (cons 'add add)))", "+: expected a number argument but got #\\a");
+    }
+
+    @Test
+    public void testEvalRuntimeError() throws Exception {
+        // runtime error because #\a is not a valid argument to +
+        runtimeError("(defun add (a b) (+ a b))"
+                     + "(eval '(add 1 #\\b) (list (cons 'add add)))", "?: expected a number argument but got #\\b");
+    }
+
+    @Test
     public void testCond() throws Exception {
         final MurmelProgram program = compile("((lambda (x) (cond ((eq x 's1) 's1) ((eq x 's2) 's2) ((eq x 's3) 's3))) 's3)");
         assertNotNull("failed to compile cond to class", program);

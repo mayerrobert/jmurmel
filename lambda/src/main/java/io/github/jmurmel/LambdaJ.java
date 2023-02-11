@@ -8645,7 +8645,7 @@ public class LambdaJ {
                     globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(form));
                 }
                 catch (LambdaJError e) {
-                    throw new LambdaJError(false, e.getMessage(), form);
+                    throw e;
                 }
                 catch (Exception e) {
                     throw errorInternal(e, "formToJava: caught exception %s: %s", e.getClass().getName(), e.getMessage(), form); // convenient breakpoint for errors
@@ -9138,8 +9138,8 @@ public class LambdaJ {
                 throw new LambdaJError("emitForm: form not implemented: " + printSEx(form));
 
             }
-            catch (LambdaJError e) {
-                throw new LambdaJError(false, e.getMessage(), form);
+            catch (ArithmeticException | ClassCastException | IndexOutOfBoundsException | LambdaJError e) {
+                throw new LambdaJError(e, form);
             }
             catch (Exception e) {
                 //e.printStackTrace();
