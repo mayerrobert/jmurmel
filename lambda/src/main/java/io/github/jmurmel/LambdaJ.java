@@ -1064,8 +1064,7 @@ public class LambdaJ {
         assert s != null : "tokens should not be null";
         assert !s.isEmpty() : "tokens should not be the empty string";
 
-        final int len = s.length();
-        return isLong(s, len);
+        return isLong(s, s.length());
     }
 
     private static boolean isLong(String s, int len) {
@@ -1107,12 +1106,12 @@ public class LambdaJ {
         if (c == '.') {
             // s starts with [+-]?\.
             // must be followed by at least one digit
-            if (!isDigit(s.charAt(idx++))) return false;
+            if (!isDigit(s.charAt(idx))) return false;
 
             // s starts with [+-]?\.\d
             // eat additional digits and then there must be [eE] or end-of-string
-            while (idx < len && isDigit(s.charAt(idx))) {
-                idx++;
+            while (++idx < len && isDigit(s.charAt(idx))) {
+                /* nothing */;
             }
             if (idx == len) return true;
         }
@@ -1125,11 +1124,10 @@ public class LambdaJ {
             if (idx == len) return false;
 
             if (s.charAt(idx) == '.') {
-                idx++;
-                if (!isDigit(s.charAt(idx++))) return false;
+                if (!isDigit(s.charAt(++idx))) return false;
 
-                while (idx < len && isDigit(s.charAt(idx))) {
-                    idx++;
+                while (++idx < len && isDigit(s.charAt(idx))) {
+                    /* nothing */;
                 }
                 if (idx == len) return true;
             }
