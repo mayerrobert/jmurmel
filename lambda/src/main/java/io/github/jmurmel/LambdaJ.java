@@ -2520,13 +2520,19 @@ public class LambdaJ {
                 case sMultipleValueCall: {
                     final Object funcOrSymbol = car(ccArguments);
                     func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
-                    ConsCell allArgs = null;
+                    ConsCell allArgs = null, appendPos = null;
                     final Object valueForms = cdr(ccArguments);
                     if (valueForms != null) for (Object valueForm : listOrMalformed("multiple-value-call", valueForms)) {
                         final Object prim = eval(valueForm, env, stack, level, traceLvl);
-                        final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
-                        allArgs = listOrMalformed("multiple-value-call", append2(allArgs, newValues)); // todo ggf. statt append2: appendPos merken
-                        values = NO_VALUES;
+                        final ConsCell newValues;
+                        if (values == NO_VALUES) newValues = cons(prim, null);
+                        else { newValues = values; values = NO_VALUES; }
+
+                        if (allArgs == null) allArgs = appendPos = newValues;
+                        else if (newValues != null) {
+                            while (cdr(appendPos) != null) appendPos = (ConsCell)cdr(appendPos);
+                            appendPos.rplacd(newValues);
+                        }
                     }
                     argList = allArgs;
                     if (doOpencode && funcOrSymbol instanceof LambdaJSymbol && ((LambdaJSymbol)funcOrSymbol).primitive()) {
@@ -3700,26 +3706,6 @@ public class LambdaJ {
         return null;
     }
 
-    /** Create a new list by copying lhs and appending rhs. Faster (?) 2 argument version of {@link Subr#append} for internal use. */
-    private ConsCell append2(ConsCell lhs, ConsCell rhs) {
-        if (lhs == null) return rhs;
-        if (rhs == null) return lhs;
-        ConsCell ret = null, insertPos = null;
-        for (Object o: lhs) {
-            if (ret == null) {
-                ret = cons(o, null);
-                insertPos = ret;
-            }
-            else {
-                insertPos.rplacd(cons(o, null));
-                insertPos = (ConsCell) insertPos.cdr();
-            }
-        }
-        // insertPos cannot be null because lhs is either null or a nonempty list which means the loop body runs at least once
-        insertPos.rplacd(rhs);
-        return ret;
-    }
-
 
     /// ###  Misc. helpers and printing of S-expressions
 
@@ -4376,7 +4362,7 @@ public class LambdaJ {
 
         /** operator for zero or more args */
         static double addOp(ConsCell _args, String opName, double startVal, DoubleBinaryOperator op) {
-            if (car(_args) == null) return startVal;
+            if (_args == null) return startVal;
             ConsCell args = _args;
             double result = toDouble(opName, car(args));
 
