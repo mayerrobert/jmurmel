@@ -8786,7 +8786,7 @@ public class LambdaJ {
                 }
 
                 case sDeclaim: {
-                    intp.evalDeclaim(1, (ConsCell)cdr(ccForm)); // todo kann form eine dotted list sein und der cast schiefgehen?
+                    intp.evalDeclaim(1, (ConsCell)cdr(ccForm)); // cast is safe because expandForm will fail on dotted forms
                     bodyForms.add(ccForm);
                     return globalEnv;
                 }

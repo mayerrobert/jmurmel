@@ -82,6 +82,10 @@ public class MurmelJavaCompilerTest {
         runtimeError("((lambda (a) a))", "(lambda (a) ...): not enough arguments");
     }
 
+    @Test
+    public void testDeclaimDotted() throws Exception {
+        compileError("(declaim . 1)", "eval: malformed eval: expected a list but got 1");
+    }
 
     // function uses a variable that is defined later
     @Test
