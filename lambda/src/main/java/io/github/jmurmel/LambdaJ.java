@@ -2506,9 +2506,12 @@ public class LambdaJ {
 
                 /// eval - (multiple-value-bind (symbols...) values-form bodyforms...) -> object
                 case sMultipleValueBind: {
-                    final ConsCell[] formsAndEnv = evalMultipleValueBind(ccArguments, env, stack, level, traceLvl);
-                    ccForms = formsAndEnv[0];
-                    env = formsAndEnv[1];
+                    final Object prim = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                    final ConsCell newValues;
+                    if (values == NO_VALUES) newValues = cons(prim, null);
+                    else { newValues = values; values = NO_VALUES; }
+                    env = zip(car(ccArguments), newValues, env, false);
+                    ccForms = (ConsCell)cddr(ccArguments);
                     funcall = false;
                     break; // fall through to "eval a list of forms"
                 }
@@ -3173,14 +3176,6 @@ public class LambdaJ {
             this.oldValue = oldValue;
         }
         void restore() { entry.rplacd(oldValue); }
-    }
-
-    private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
-        final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
-        final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
-        values = NO_VALUES;
-        final ConsCell extEnv = zip(car(bindingsAndBodyForms), newValues, env, false);
-        return new ConsCell[] { listOrMalformed("multiple-value-bind", cddr(bindingsAndBodyForms)), extEnv };
     }
 
     Object evalMacro(Object operator, final Closure macroClosure, final ConsCell arguments) {
