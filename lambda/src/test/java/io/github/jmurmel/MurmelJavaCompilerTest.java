@@ -470,7 +470,7 @@ public class MurmelJavaCompilerTest {
         assertEquals("let* dynamic produced wrong output", "33.0", out.toString());
     }
 
-    // todo @Test
+    @Test
     public void testLetDynamicLambda() throws Exception {
         final MurmelProgram program = compile("(define *g* 1)\n"
                                               + "(define *g-getter* (let dynamic ((*g* 2))\n"
