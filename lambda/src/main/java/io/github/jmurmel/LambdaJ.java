@@ -8715,6 +8715,8 @@ public class LambdaJ {
                 final ConsCell ccForm = (ConsCell)form;
                 final Object op = car(ccForm);
 
+                assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
+
                 if (isOperator(op, WellknownSymbol.sDefine)) {
                     globalEnv = defineToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
@@ -8728,25 +8730,21 @@ public class LambdaJ {
                 else if (isOperator(op, WellknownSymbol.sDefmacro)) {
                     LambdaJ.symbolOrMalformed("defmacro", cadr(ccForm));
                     intp.eval(ccForm, null);
-                    bodyForms.add(ccForm);
+                    bodyForms.add(ccForm); // needed if compiled code calls macroexpand-1
                     return globalEnv;
                 }
 
                 else if (isOperator(op, WellknownSymbol.sProgn)) {
-                    // toplevel progn will be replaced by the forms it contains
-                    final Object body = cdr(ccForm);
-                    if (consp(body)) {
-                        for (Object prognForm: (ConsCell)body) {
-                            globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, prognForm);
-                        }
-                        return globalEnv;
+                    // toplevel progn will be replaced by the (macroexpanded) forms it contains
+                    final ConsCell body = listOrMalformed("progn", cdr(ccForm));
+                    for (Object prognForm: body) {
+                        globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm));
                     }
+                    return globalEnv;
                 }
 
-                final Closure macroClosure; // todo sollte eigentlich nicht mehr vorkommen ?!?
-                if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
-                    final Object expansion = intp.evalMacro(op, macroClosure, (ConsCell)cdr(ccForm));
-                    globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, expansion);
+                if (symbolp(op) && null != ((LambdaJSymbol)op).macro) {
+                    errorInternal("unexpected unexpanded macrocall: %s", printSEx(form));
                 }
 
                 else if (isOperator(op, WellknownSymbol.sLoad)) {
@@ -8776,6 +8774,7 @@ public class LambdaJ {
                     if (!stringp(car(ccArgs))) errorMalformed("provide", "a string argument", ccArgs);
                     final Object modName = car(ccArgs);
                     intp.modules.add(modName);
+                    // todo was ist mit dem return value von provide?
                 }
 
                 else if (isOperator(op, WellknownSymbol.sDeclaim)) {
@@ -8991,7 +8990,7 @@ public class LambdaJ {
 
                     if (isOperator(op, WellknownSymbol.sDefmacro)) {
                         if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
-                        intp.expandForm(form); // this will process the macro definition as a side effect
+                        intp.expandForm(form); // this will process the macro definition as a side effect in case macroexpand-1 was used
                         sb.append("intern(\"").append(car(ccArguments)).append("\")");
                         return;
                     }
@@ -9110,12 +9109,9 @@ public class LambdaJ {
                         return;
                     }
 
-                    /// * macro expansion todo das kann eigentlich nicht mehr passieren ?!?
-                    final Closure macroClosure;
-                    if (op != null && symbolp(op) && null != (macroClosure = ((LambdaJSymbol)op).macro)) {
-                        final Object expansion = intp.evalMacro(op, macroClosure, ccArguments);
-                        emitForm(sb, expansion, env, topEnv, rsfx-1, isLast);
-                        return;
+                    /// * macro expansion - all macros were already expanded
+                    if (op != null && symbolp(op) && null != ((LambdaJSymbol)op).macro) {
+                        errorInternal("unexpected unexpanded macrocall %s", printSEx(form));
                     }
 
                     /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time

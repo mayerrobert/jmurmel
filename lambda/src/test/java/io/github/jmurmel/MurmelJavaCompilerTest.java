@@ -614,6 +614,15 @@ public class MurmelJavaCompilerTest {
         assertEquals("macroDefun produced wrong result", "1", TestUtils.sexp(program.body()));
     }
 
+    // macro is defined and used in a progn
+    @Test
+    public void testMacroProgn() throws Exception {
+        final MurmelProgram program = compile("(progn (defmacro add2 (a) `(+ ,a 2))"
+                                              + "(add2 3))");
+        assertNotNull("failed to compile macro to class", program);
+        assertEquals("macro produced wrong result", "5.0", TestUtils.sexp(program.body()));
+    }
+
     @Test
     public void testReverse() throws Exception {
         final String source = "((lambda (reverse)\n"
