@@ -2513,7 +2513,6 @@ public class LambdaJ {
                     break; // fall through to "eval a list of forms"
                 }
 
-                /// eval - multiple-value-call
                 /// eval - (multiple-value-call function-form values-form*) -> object
                 case sMultipleValueCall: {
                     final Object funcOrSymbol = car(ccArguments);
@@ -3177,7 +3176,6 @@ public class LambdaJ {
     }
 
     private ConsCell[] evalMultipleValueBind(final ConsCell bindingsAndBodyForms, ConsCell env, int stack, int level, int traceLvl) {
-        varargsMin("multiple-value-bind", bindingsAndBodyForms, 2); // todo sollte eig nicht noetig sein, sollte in expandForm gecheckt werden
         final Object prim = eval(cadr(bindingsAndBodyForms), env, stack, level, traceLvl);
         final ConsCell newValues = values == NO_VALUES ? cons(prim, null) : values;
         values = NO_VALUES;
@@ -9070,7 +9068,6 @@ public class LambdaJ {
 
                     ///     - multiple-value-bind: (multiple-value-bind (var*) value-form forms)
                     if (isOperator(op, WellknownSymbol.sMultipleValueBind)) {
-                        varargsMin("multiple-value-bind", ccArguments, 2);
                         final Object vars = car(ccArguments);
                         int length;
                         final boolean varargs;
