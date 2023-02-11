@@ -2317,8 +2317,10 @@ public class LambdaJ {
                 /// eval - form is not an atom - must be a cons (nonempty list) containing either a special form or a function application
                 final ConsCell ccForm = (ConsCell)form;
 
-                final Object operator = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                if (operator == null) throw new UndefinedFunction("function application: not a primitive or lambda: nil");
+                // first element of the of the form should be a symbol that evals to a funtion or lambda
+                // or an expression that evals to a funtion or lambda
+                final Object operator = car(ccForm);
+                assert operator != null && operator != sNil : "not a function: nil - should have been caught by expandForm()";
 
                 final ConsCell ccArguments = (ConsCell)cdr(ccForm);   // list with remaining atoms/ expressions
 
@@ -8720,11 +8722,17 @@ public class LambdaJ {
                 if (isOperator(op, WellknownSymbol.sDefine)) {
                     globalEnv = defineToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
+                    bodyForms.add(ccForm);
+                    globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv)).append(";\n");
+                    return globalEnv;
                 }
 
                 else if (isOperator(op, WellknownSymbol.sDefun)) {
                     globalEnv = defunToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
+                    bodyForms.add(ccForm);
+                    globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv)).append(";\n");
+                    return globalEnv;
                 }
 
                 else if (isOperator(op, WellknownSymbol.sDefmacro)) {
@@ -8741,10 +8749,6 @@ public class LambdaJ {
                         globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm));
                     }
                     return globalEnv;
-                }
-
-                if (symbolp(op) && null != ((LambdaJSymbol)op).macro) {
-                    errorInternal("unexpected unexpanded macrocall: %s", printSEx(form));
                 }
 
                 else if (isOperator(op, WellknownSymbol.sLoad)) {
@@ -8774,7 +8778,6 @@ public class LambdaJ {
                     if (!stringp(car(ccArgs))) errorMalformed("provide", "a string argument", ccArgs);
                     final Object modName = car(ccArgs);
                     intp.modules.add(modName);
-                    // todo was ist mit dem return value von provide?
                 }
 
                 else if (isOperator(op, WellknownSymbol.sDeclaim)) {
@@ -8782,12 +8785,14 @@ public class LambdaJ {
                     bodyForms.add(ccForm);
                 }
 
+                else if (symbolp(op) && null != ((LambdaJSymbol)op).macro) {
+                    errorInternal("unexpected unexpanded macrocall: %s", printSEx(form));
+                }
+
                 else bodyForms.add(ccForm);
+            }
 
-                if (isOperator(op, WellknownSymbol.sDefine) || isOperator(op, WellknownSymbol.sDefun))
-                    globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv)).append(";\n");
-
-            } else bodyForms.add(form);
+            else bodyForms.add(form);
 
             return globalEnv;
         }
