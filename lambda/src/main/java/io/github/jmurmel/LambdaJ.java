@@ -9310,7 +9310,7 @@ public class LambdaJ {
             final ConsCell cleanupForms = listOrMalformed("unwind-protect", cdr(ccForms));
             if (isLast) {
                 sb.append("tailcallWithCleanup(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
-                emitForm(sb, cons(sProgn, cons(protectedForm, null)), env, topEnv, rsfx, false); // todo brauchts das wrappen in progn?
+                emitForm(sb, protectedForm, env, topEnv, rsfx, false);
                 sb.append("; },\n");
                 sb.append("        (MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
                 emitForms(sb, cleanupForms, env, topEnv, rsfx, false);
@@ -9319,7 +9319,7 @@ public class LambdaJ {
             }
             else {
                 sb.append("funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n        try { return ");
-                emitForm(sb, cons(sProgn, cons(protectedForm, null)), env, topEnv, rsfx, true);
+                emitForm(sb, protectedForm, env, topEnv, rsfx, true);
                 sb.append("; }\n");
                 sb.append("        finally {\n");
                 final String tmp = "tmp" + rsfx;
