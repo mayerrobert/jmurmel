@@ -23,14 +23,16 @@
 ; this does less than the bare minimum, don't use for anything important
 ; or suffer from cross-site-scripting attacks and other fun stuff
 (defun write-escaped-string (s)
-  (let loop ((s (string->list s)))
-    (if s
-      (progn
-        (cond ((eql (car s) #\&) (write "&amp;" nil))
-              ((eql (car s) #\<) (write "&lt;" nil))
-              ((eql (car s) #\>) (write "&gt;" nil))
-              (t (write (car s) nil)))
-        (loop (cdr s))))))
+  (if s
+        (let loop ((s (string->list s)))
+          (if s
+            (progn
+              (cond ((eql (car s) #\&) (write "&amp;" nil))
+                    ((eql (car s) #\<) (write "&lt;" nil))
+                    ((eql (car s) #\>) (write "&gt;" nil))
+                    (t (write (car s) nil)))
+              (loop (cdr s)))))
+    (write "(nil)" nil)))
 
 
 (writeln "<HTML>" nil)

@@ -77,6 +77,7 @@ public final class MurmelHttpServer {
 
             try (BufferedReader reader = Files.newBufferedReader(filePath)) {
                 final ScriptEngine engine = manager.getEngineByName("jmurmel");
+                if (engine == null) { writeResponse(t, 500, "Configuration error: cannot create a Murmel interpreter");  return; }
                 final StringWriter response = new StringWriter();
                 ctx.setWriter(response);
                 engine.eval(reader, ctx);
@@ -91,7 +92,6 @@ public final class MurmelHttpServer {
             ctx.setAttribute("*request-uri*", t.getRequestURI().toASCIIString(), ScriptContext.ENGINE_SCOPE);
             ctx.setAttribute("*query-string*", t.getRequestURI().getRawQuery(), ScriptContext.ENGINE_SCOPE);
             ctx.setAttribute("*remote-address*", t.getRemoteAddress().getHostString(), ScriptContext.ENGINE_SCOPE);
-
             ctx.setAttribute("*request-method*", t.getRequestMethod(), ScriptContext.ENGINE_SCOPE);
             ctx.setAttribute("*request-headers*", t.getRequestHeaders(), ScriptContext.ENGINE_SCOPE);
             ctx.setAttribute("*response-headers*", t.getResponseHeaders(), ScriptContext.ENGINE_SCOPE);
