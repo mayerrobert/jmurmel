@@ -243,7 +243,6 @@ public class LambdaJ {
 
         LambdaJSymbol(String symbolName, boolean wellknown) {
             this(symbolName, wellknown ? WellknownSymbol.of(symbolName) : WellknownSymbol.notInterned);
-            assert wellknownSymbol != null : "enum value for wellknown symbol " + symbolName + " not found";
         }
 
         private LambdaJSymbol(String symbolName, WellknownSymbol ws) {
@@ -1002,44 +1001,29 @@ public class LambdaJ {
     /// ## Scanner, symboltable and S-expression reader
 
     static class ListSymbolTable implements SymbolTable {
-        /// A symbol table implemented with a list just because. could easily replaced by a HashMap for better performance.
-        private ConsCell symbols;
+        private final Map<String,LambdaJSymbol> symbols = new HashMap<>();
 
-        // String#equalsIgnoreCase is slow. we could String#toUpperCase all symbols then we could use String#equals
         @Override public LambdaJSymbol intern(LambdaJSymbol sym) {
-            final String symName = sym.name;
-            for (ConsCell s = symbols; s != null; s = (ConsCell)cdr(s)) {
-                final LambdaJSymbol _s = (LambdaJSymbol) car(s);
-                if (_s.name.equalsIgnoreCase(symName))
-                    return _s;
-            }
+            final String symNameLC = sym.name.toLowerCase();
+            final LambdaJSymbol existing = symbols.get(symNameLC);
+            if (existing != null) return existing;
 
-            if (sym.wellknownSymbol == WellknownSymbol.notInterned) sym = new LambdaJSymbol(true, symName);
-            symbols = ConsCell.cons(sym, symbols);
+            if (sym.wellknownSymbol == WellknownSymbol.notInterned) sym = new LambdaJSymbol(true, sym.name);
+            symbols.put(symNameLC, sym);
             return sym;
         }
 
         @Override public LambdaJSymbol intern(String symName) {
-            for (ConsCell s = symbols; s != null; s = (ConsCell)cdr(s)) {
-                final LambdaJSymbol _s = (LambdaJSymbol) car(s);
-                if (_s.name.equalsIgnoreCase(symName))
-                    return _s;
-            }
+            final String symNameLC = symName.toLowerCase();
+            final LambdaJSymbol existing = symbols.get(symNameLC);
+            if (existing != null) return existing;
 
             final LambdaJSymbol ret = new LambdaJSymbol(true, symName);
-            symbols = ConsCell.cons(ret, symbols);
+            symbols.put(symNameLC, ret);
             return ret;
         }
 
-        private static class Iter implements Iterator<LambdaJSymbol> {
-            private final Iterator<Object> delegate;
-
-            private Iter(Iterator<Object> delegate) { this.delegate = delegate; }
-            @Override public boolean hasNext() {return delegate.hasNext();}
-            @Override public LambdaJSymbol next() {return (LambdaJSymbol)delegate.next();}
-        }
-
-        @Override public Iterator<LambdaJSymbol> iterator() { return new Iter(symbols.iterator()); }
+        @Override public Iterator<LambdaJSymbol> iterator() { return symbols.values().iterator(); }
     }
 
     public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable(), null, null); }
@@ -2177,11 +2161,12 @@ public class LambdaJ {
             }
         }
 
+        /** case sensitive lookup because it's faster, and this should only used from Java code during initialisation with the correct case */
         static WellknownSymbol of(String name) {
             for (WellknownSymbol s: values()) {
-                if (s.sym.equalsIgnoreCase(name)) return s;
+                if (s.sym.equals(name)) return s;
             }
-            return null;
+            throw errorInternal("Wellknown symbol %s not found", name);
         }
     }
 
