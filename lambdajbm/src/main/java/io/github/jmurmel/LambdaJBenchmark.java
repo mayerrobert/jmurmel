@@ -121,6 +121,16 @@ public class LambdaJBenchmark {
     }
 
     @Benchmark
+    public Object evalNew() {
+        return new LambdaJ().interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> {});
+    }
+
+    @Benchmark
+    public Object create() {
+        return new LambdaJ();
+    }
+
+    @Benchmark
     public void fiveTimesEval(Blackhole bh) {
         bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));
         bh.consume(interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> { }));

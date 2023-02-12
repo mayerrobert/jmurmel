@@ -189,17 +189,14 @@ public class LambdaJ {
 
         public static ConsCell list(Object... elems) {
             if (elems == null || elems.length == 0) return null;
-            ConsCell ret = null, insertPos = null;
-            for (Object o: elems) {
-                if (ret == null) {
-                    ret = cons(o, null);
-                    insertPos = ret;
-                }
-                else {
-                    final ConsCell cons = cons(o, null);
-                    insertPos.rplacd(cons);
-                    insertPos = cons;
-                }
+            if (elems.length == 1) return cons(elems[0], null);
+            final int n = elems.length;
+            ConsCell insertPos;
+            final ConsCell ret = insertPos = cons(elems[0], null);
+            for (int i = 1; i < n; i++) {
+                final ConsCell cons = cons(elems[i], null);
+                insertPos.rplacd(cons);
+                insertPos = cons;
             }
             return ret;
         }
@@ -208,18 +205,13 @@ public class LambdaJ {
             assert elems != null && elems.length != 0;
             if (elems.length == 1) return elems[0];
             if (elems.length == 2) return cons(elems[0], elems[1]);
-            ConsCell ret = null, insertPos = null;
             final int n = elems.length - 1;
-            for (int i = 0; i < n; i++) {
-                if (ret == null) {
-                    ret = cons(elems[i], null);
-                    insertPos = ret;
-                }
-                else {
-                    final ConsCell cons = cons(elems[i], null);
-                    insertPos.rplacd(cons);
-                    insertPos = cons;
-                }
+            ConsCell insertPos;
+            final ConsCell ret = insertPos = cons(elems[0], null);
+            for (int i = 1; i < n; i++) {
+                final ConsCell cons = cons(elems[i], null);
+                insertPos.rplacd(cons);
+                insertPos = cons;
             }
             insertPos.rplacd(elems[n]);
             return ret;
@@ -1001,7 +993,7 @@ public class LambdaJ {
     /// ## Scanner, symboltable and S-expression reader
 
     static class ListSymbolTable implements SymbolTable {
-        private final Map<String,LambdaJSymbol> symbols = new HashMap<>();
+        private final Map<String,LambdaJSymbol> symbols = new HashMap<>(100, 0.75f);
 
         @Override public LambdaJSymbol intern(LambdaJSymbol sym) {
             final String symNameLC = sym.name.toLowerCase();
