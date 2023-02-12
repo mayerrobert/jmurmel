@@ -3034,7 +3034,7 @@ public class LambdaJ {
     }
 
     private Object evalRequire(ConsCell arguments) {
-        varargs1_2("require", arguments); // todo in expandForm checken
+        varargs1_2("require", arguments);
         if (!stringp(car(arguments))) errorMalformed("require", "a string argument", arguments);
         final Object modName = car(arguments);
         if (!modules.contains(modName)) {
@@ -3048,7 +3048,7 @@ public class LambdaJ {
     }
 
     private Object evalProvide(ConsCell arguments) {
-        oneArg("provide", arguments); // todo in expandForm checken
+        oneArg("provide", arguments);
         if (!stringp(car(arguments))) errorMalformed("provide", "a string argument", arguments);
         final Object modName = car(arguments);
         modules.add(modName);
@@ -9884,19 +9884,9 @@ public class LambdaJ {
             // else jmethod() will check the runtime type at runtime
             if (!stringp(strClazz) || !stringp(strMethod)) return false;
 
-            // check if the class exists in the current (the compiler's) VM. If it can't be loaded then don't opencode,
-            // let jmethod handle things at runtime, the class may be available then.
-            // todo brauchts diesen check ueberhaupt wenn eh nur receiver/ parameter klassen aus classByName erlaubt sind?
-            final Class<?> clazz;
-            try {
-                clazz = JFFI.findClass(((String) strClazz).replace('$', '.'));
-            }
-            catch (ClassNotFoundException e) {
-                // todo warn re: performance
-                return false;
-            }
-
-            if (!JFFI.classByName.containsKey(strClazz)) return false; // todo warn re: performance
+            final Object[] clazzDesc = JFFI.classByName.get(strClazz);
+            if (clazzDesc == null) return false; // todo warn re: performance
+            final Class<?> clazz = (Class<?>)clazzDesc[0];
 
             // all parameter classes (if any) must be one of the classes that we know how to do Murmel->Java conversion else "return false"
             final ArrayList<Class<?>> paramTypes = new ArrayList<>();
@@ -9935,13 +9925,9 @@ public class LambdaJ {
                     if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
                     else {
                         // instance method, first arg is the object
-                        final Object[] conv = JFFI.classByName.get(strClazz);
-                        assert conv != null : "unknown receiver class";
-                        final String convReceiver = (String)conv[1];
-                        if (convReceiver == null)
-                            sb.append("(Object)((").append(strClazz).append(')');
-                        else
-                            sb.append("(Object)").append(convReceiver).append('(');
+                        final String convReceiver = (String)clazzDesc[1];
+                        if (convReceiver == null) sb.append("(Object)((").append(strClazz).append(')');
+                        else                      sb.append("(Object)").append(convReceiver).append('(');
                         emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                         sb.append(").").append(strMethod);
                         ccArguments = listOrMalformed((String)strMethod, cdr(ccArguments));
