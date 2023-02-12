@@ -3134,11 +3134,11 @@ public class LambdaJ {
 
                 if (namedLet) {
                     if (params == null) {
-                        params = cons(sym, null);
-                        insertPos = params;
+                        insertPos = params = cons(sym, null);
                     } else {
-                        insertPos.rplacd(cons(sym, null));
-                        insertPos = (ConsCell) insertPos.cdr();
+                        final ConsCell c;
+                        insertPos.rplacd(c = cons(sym, null));
+                        insertPos = c;
                     }
                 }
             }
@@ -3149,8 +3149,9 @@ public class LambdaJ {
         }
         final ConsCell bodyForms = (ConsCell)cdr(bindingsAndBodyForms);
         if (namedLet) {
-            extenv = acons(maybeLoopSymbol, null, extenv);
-            ((ConsCell)extenv.car()).rplacd(makeClosure(params, bodyForms, extenv));
+            final ConsCell c;
+            extenv = cons(c = cons(maybeLoopSymbol, null), extenv);
+            c.rplacd(makeClosure(params, bodyForms, extenv));
         }
         return new ConsCell[] {bodyForms, extenv, restore};
     }
