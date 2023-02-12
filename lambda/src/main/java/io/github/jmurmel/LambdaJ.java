@@ -4368,7 +4368,7 @@ public class LambdaJ {
 
             for (;;) {
                 final Object next = cdr(args);
-                if (!listp(next) || next == _args) // todo nested loop check
+                if (!listp(next) || next == _args) // missing nested loop check
                     throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
                 args = (ConsCell) next;
                 if (args == null) break;
@@ -4386,7 +4386,7 @@ public class LambdaJ {
 
             for (;;) {
                 final Object next = cdr(args);
-                if (!listp(next) || next == args) // todo nested loop check
+                if (!listp(next) || next == args) // missing nested loop check
                     throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
                 args = (ConsCell) next;
                 if (args == null) break;
@@ -4747,7 +4747,7 @@ public class LambdaJ {
             if (lst == null) return adjustablep ? new StringBuilder() : new char[0];
             final ConsCell l = requireList("list->string", lst);
             final StringBuilder ret = new StringBuilder();
-            for (Object c: l) ret.append(requireChar("list->string", c)); // todo cyclecheck
+            for (Object c: l) ret.append(requireChar("list->string", c)); // missing nested loop check
             return adjustablep ? ret : ret.toString().toCharArray();
         }
 
@@ -5515,7 +5515,9 @@ public class LambdaJ {
                     throw new SimpleTypeError("jmethod: %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
 
                 try { return invoke.invoke(args); }
-                catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", method.getDeclaringClass().getName(), method.getName(), t.toString()); } // todo t sollte nicht verschluckt werden, damit z.b. eine CCE zu type-error wird
+                catch (ArithmeticException | ClassCastException | IndexOutOfBoundsException e) { throw new LambdaJError(e); }
+                catch (LambdaJError e) { throw e; }
+                catch (Throwable t) { throw new LambdaJError(true, "%s.%s: %s", method.getDeclaringClass().getName(), method.getName(), t.toString()); }
             }
         }
 
