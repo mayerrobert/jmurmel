@@ -2347,13 +2347,8 @@ public class LambdaJ {
                 /// eval - (define symbol exp) -> symbol with a side of global environment extension
                 case sDefine: {
                     final Object symbol = car(ccArguments);
-                    final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                    extendTopenv(symbol, eval(cadr(ccArguments), env, stack, level, traceLvl));
                     values = NO_VALUES;
-
-                    final ConsCell prevEnvEntry = lookupEnvEntry(symbol, null);
-                    if (prevEnvEntry == null) extendTopenv(symbol, value);
-                    else prevEnvEntry.rplacd(value);
-
                     return result = symbol;
                 }
 
@@ -2364,11 +2359,7 @@ public class LambdaJ {
                     final ConsCell selfEnvEntry = cons(symbol, null);
                     final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
                     selfEnvEntry.rplacd(closure);
-
-                    final ConsCell prevEnvEntry = lookupEnvEntry(symbol, null);
-                    if (prevEnvEntry == null) extendTopenv(symbol, closure);
-                    else prevEnvEntry.rplacd(closure);
-
+                    extendTopenv(symbol, closure);
                     return result = symbol;
                 }
 
@@ -2482,10 +2473,8 @@ public class LambdaJ {
                 case sLet:
                 case sLetStar:
                 case sLetrec: {
-                    final ConsCell[] formsAndEnv = evalLet(symOperator, ccArguments, env, restore, stack, level, traceLvl);
-                    ccForms = formsAndEnv[0];
-                    env = formsAndEnv[1];
-                    restore = formsAndEnv[2];
+                    final ConsCell[] formsAndEnv = evalLet(symOperator.wellknownSymbol, ccArguments, env, restore, stack, level, traceLvl);
+                    ccForms = formsAndEnv[0];  env = formsAndEnv[1];  restore = formsAndEnv[2];
                     funcall = false;
                     break; // fall through to "eval a list of forms"
                 }
@@ -3088,7 +3077,7 @@ public class LambdaJ {
 
     Object prev() { if (handlers == null || handlers.isEmpty()) return null; return handlers.get(handlers.size()-1); }
 
-    private ConsCell[] evalLet(LambdaJSymbol operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
+    private ConsCell[] evalLet(WellknownSymbol operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
         final Object maybeLoopSymbol = car(arguments);
         final boolean letDynamic, namedLet;
         if (maybeLoopSymbol == sDynamic) { letDynamic = true; namedLet = false; }
@@ -3101,8 +3090,8 @@ public class LambdaJ {
         ConsCell params = null;
         ConsCell extenv = env;
         if (ccBindings != null) {
-            final boolean letStar  = operator.wellknownSymbol == WellknownSymbol.sLetStar;
-            final boolean letRec   = operator.wellknownSymbol == WellknownSymbol.sLetrec;
+            final boolean letStar  = operator == WellknownSymbol.sLetStar;
+            final boolean letRec   = operator == WellknownSymbol.sLetrec;
             final ArrayList<Object> seen = letDynamic && cdr(ccBindings) != null ? new ArrayList<>() : null;
 
             ConsCell newValues = null; // used for let dynamic
