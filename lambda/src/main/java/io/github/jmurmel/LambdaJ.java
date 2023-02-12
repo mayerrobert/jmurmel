@@ -2153,12 +2153,21 @@ public class LambdaJ {
             }
         }
 
+        private static final Map<String, WellknownSymbol> valuesBySymbolName;
+        static {
+            final WellknownSymbol[] values = values();
+            final HashMap<String, WellknownSymbol> m = new HashMap<>((int)(values.length / 0.75f), 0.75f);
+            for (WellknownSymbol s: values) {
+                m.put(s.sym, s);
+            }
+            valuesBySymbolName = m;
+        }
+
         /** case sensitive lookup because it's faster, and this should only used from Java code during initialisation with the correct case */
         static WellknownSymbol of(String name) {
-            for (WellknownSymbol s: values()) {
-                if (s.sym.equals(name)) return s;
-            }
-            throw errorInternal("Wellknown symbol %s not found", name);
+            final WellknownSymbol ret = valuesBySymbolName.get(name);
+            if (ret == null) throw errorInternal("Wellknown symbol %s not found", name);
+            return ret;
         }
     }
 
