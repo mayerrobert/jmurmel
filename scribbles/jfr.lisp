@@ -51,7 +51,7 @@
 (defun m%jfr-popparent (event)
   (if (eq event (car *m%jfr-parent*)) 
         (setq *m%jfr-parent* (cdr *m%jfr-parent*))
-    (fatal "parents not properly nested")))
+    (error "parents not properly nested")))
 
 
 
