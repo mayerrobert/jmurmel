@@ -3048,9 +3048,8 @@ public class LambdaJ {
         final ListConsCell extEnv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
         for (Object localFunction : localFunctions) {
             final ConsCell currentFunc = (ConsCell)localFunction;
-            final LambdaJSymbol currentSymbol = (LambdaJSymbol)car(currentFunc);
             final ConsCell ccParamsAndForms = (ConsCell)cdr(currentFunc);
-            insertFront(extEnv, currentSymbol, makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv));
+            insertFront(extEnv, car(currentFunc), makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv));
         }
         return extEnv;
     }
@@ -3193,16 +3192,14 @@ public class LambdaJ {
         if (paramList == null && args == null) return env; // shortcut for no params/ no args
 
         for (Object params = paramList; params != null; ) {
-            // regular param/arg: add to env
             if (consp(params)) {
                 if (match && args == null) throw new ProgramError("%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
+                // regular param/arg: add to env
                 env = acons(car(params), car(args), env);
             }
-
-            // if paramList is a dotted list then the last param will be bound to the list of remaining args
             else {
-                env = acons(params, args, env);
-                args = null; break;
+                // paramList is a dotted list: the last param will be bound to the list of remaining args
+                return acons(params, args, env);
             }
 
             params = cdr(params);
@@ -3210,18 +3207,18 @@ public class LambdaJ {
 
             args = (ConsCell) cdr(args);
             if (args == null) {
-                if (consp(params)) {
+                if (params == null) return env;
+                else if (consp(params)) {
                     if (match) throw new ProgramError("%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
                     else env = acons(params, null, env);
                 }
-                else if (params != null) {
+                else {
                     // paramList is a dotted list, no argument for vararg parm: assign nil
-                    env = acons(params, null, env);
-                    break;
+                    return acons(params, null, env);
                 }
             }
         }
-        if (match && args != null) throw new ProgramError("%s: too many arguments. Remaining arguments: %s", "function application", printSEx(args));
+        if (match) throw new ProgramError("%s: too many arguments. Remaining arguments: %s", "function application", printSEx(args));
         return env;
     }
 
