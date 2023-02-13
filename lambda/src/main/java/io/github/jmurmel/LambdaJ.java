@@ -187,12 +187,13 @@ public class LambdaJ {
             else return 0;
         }
 
+        /** return a list. See also {@link LambdaJ#list} */
         public static ConsCell list(Object... elems) {
             if (elems == null || elems.length == 0) return null;
-            if (elems.length == 1) return cons(elems[0], null);
+            final ConsCell ret = cons(elems[0], null);
+            if (elems.length == 1) return ret;
+            ConsCell insertPos = ret;
             final int n = elems.length;
-            ConsCell insertPos;
-            final ConsCell ret = insertPos = cons(elems[0], null);
             for (int i = 1; i < n; i++) {
                 final ConsCell cons = cons(elems[i], null);
                 insertPos.rplacd(cons);
@@ -3623,20 +3624,17 @@ public class LambdaJ {
 
     final Object boolResult(boolean b) { return b ? expTrue.get() : null; }
 
-    /** return a list, count the conscells */
-    private ConsCell list(Object... a) {
-        if (a == null || a.length == 0) return null;
-        ConsCell ret = null, insertPos = null;
-        for (Object o: a) {
-            if (ret == null) {
-                ret = cons(o, null);
-                insertPos = ret;
-            }
-            else {
-                final ConsCell cons = cons(o, null);
-                insertPos.rplacd(cons);
-                insertPos = cons;
-            }
+    /** return a list, count the conscells. See also {@link ConsCell#list} */
+    private ConsCell list(Object... elems) {
+        if (elems == null || elems.length == 0) return null;
+        final ConsCell ret = cons(elems[0], null);
+        if (elems.length == 1) return ret;
+        ConsCell insertPos = ret;
+        final int n = elems.length;
+        for (int i = 1; i < n; i++) {
+            final ConsCell cons = cons(elems[i], null);
+            insertPos.rplacd(cons);
+            insertPos = cons;
         }
         return ret;
     }
@@ -3652,13 +3650,10 @@ public class LambdaJ {
      *  Note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
     static ConsCell assq(Object atom, Object lst) {
         if (lst == null) return null;
-        final ConsCell ccList = requireList("assq", lst);
 
-        for (Object entry: ccList) {
-            if (entry != null) {
-                if (atom == car(entry)) {
-                    return (ConsCell)entry; // cast can't fail if car() succeeded
-                }
+        for (Object entry: requireList("assq", lst)) {
+            if (entry != null && atom == car(entry)) {
+                return (ConsCell)entry; // cast can't fail if car() succeeded
             }
         }
         return null;
@@ -3668,9 +3663,9 @@ public class LambdaJ {
     static ConsCell fastassq(Object atom, ConsCell ccList) {
         if (ccList == null) return null;
         //int n = 0;
-        for (ConsCell rest = ccList; rest != null; rest = (ConsCell)rest.cdr()) {
+        for (; ccList != null; ccList = (ConsCell)ccList.cdr()) {
             //n++;
-            final ConsCell ccEntry = (ConsCell)rest.car();
+            final ConsCell ccEntry = (ConsCell)ccList.car();
             if (atom == ccEntry.car()) {
                 //if (n >= 20) System.out.printf("assq: %s %d%n", atom, n);
                 return ccEntry;
@@ -3683,7 +3678,7 @@ public class LambdaJ {
     /// ###  Misc. helpers and printing of S-expressions
 
     static String requireString(String func, Object c) {
-        if (!stringp(c)) throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(c));
+        if (!stringp(c)) errorNotAString(func, c);
         if (c instanceof char[]) return String.valueOf((char[])c);
         return c.toString();
     }
@@ -3691,7 +3686,7 @@ public class LambdaJ {
     /** return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
     static ConsCell requireList(String func, Object a) {
         if (a == null) return null;
-        if (!consp(a)) throw new SimpleTypeError("%s: expected a list argument but got %s", func, printSEx(a));
+        if (!consp(a)) errorNotAList(func, a);
         return (ConsCell)a;
     }
 
@@ -3699,7 +3694,7 @@ public class LambdaJ {
     static Object[] listToArray(Object maybeList) {
         if (maybeList == null) return EMPTY_ARRAY;
         if (maybeList instanceof ArraySlice) return ((ArraySlice)maybeList).listToArray();
-        if (!consp(maybeList)) throw new SimpleTypeError("%s: expected argument to be a list but got %s", "listToArray", printSEx(maybeList));
+        if (!consp(maybeList)) errorNotAList("listToArray", maybeList);
         final List<Object> ret = new ArrayList<>();
         ((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
         //for (Object rest = maybeList; rest != null; rest = cdr(rest)) ret.add(car(rest));
@@ -3929,6 +3924,8 @@ public class LambdaJ {
     static RuntimeException errorNotASimpleVector(String func, Object n)                        { throw new SimpleTypeError("%s: expected a simple vector argument but got %s", func, printSEx(n)); }
     static RuntimeException errorNotAString      (String func, Object n)                        { throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(n)); }
     static RuntimeException errorNotABitVector   (String func, Object n)                        { throw new SimpleTypeError("%s: expected a bitvector argument but got %s", func, printSEx(n)); }
+    static void             errorNotACons        (String func, Object n)                        { throw new SimpleTypeError("%s: expected a cons argument but got %s", func, printSEx(n)); }
+    static void             errorNotAList        (String func, Object n)                        { throw new SimpleTypeError("%s: expected a list argument but got %s", func, printSEx(n)); }
     static void             errorNotASequence    (String func, Object n)                        { throw new SimpleTypeError("%s: expected a list or vector argument but got %s", func, printSEx(n)); }
 
     static RuntimeException errorOverflow        (String func, String targetType, Object n)     { throw new ArithmeticException(String.format("%s: value cannot be represented as a %s: %s", func, targetType, n)); }
@@ -4102,13 +4099,13 @@ public class LambdaJ {
 
         static CharSequence requireCharsequence(String func, Object c) {
             if (c instanceof char[]) return String.valueOf((char[])c);
-            if (!(c instanceof CharSequence)) throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(c));
+            if (!(c instanceof CharSequence)) throw errorNotAString(func, c);
             return (CharSequence)c;
         }
 
         /** Return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
         static ConsCell requireCons(String func, Object a) {
-            if (!consp(a)) throw new SimpleTypeError("%s: expected a cons argument but got %s", func, printSEx(a));
+            if (!consp(a)) errorNotACons(func, a);
             return (ConsCell)a;
         }
 
@@ -4686,7 +4683,7 @@ public class LambdaJ {
             if (maybeString instanceof StringBuilder) { ((StringBuilder)maybeString).setCharAt(idx, newValue); return newValue; }
             if (maybeString instanceof StringBuffer) { ((StringBuffer)maybeString).setCharAt(idx, newValue); return newValue; }
             if (maybeString instanceof String) { throw new SimpleTypeError("%s: cannot modify readonly string", "sset"); }
-            throw new SimpleTypeError("%s: expected a string argument but got %s", "sset", printSEx(maybeString));
+            throw errorNotAString("sset", maybeString);
         }
 
         static boolean stringEq(Object o1, Object o2) {
@@ -5158,7 +5155,7 @@ public class LambdaJ {
             final Iterator<Object> it;
             if (svectorp(seq)) it = Arrays.asList((Object[])seq).iterator();
             else if (seq instanceof Iterable) it = ((Iterable<Object>)seq).iterator(); // covers ConCell and adjustable array which are ArrayLists
-            else throw new SimpleTypeError("expected a sequence of strings bit got %s", printSEx(seq));
+            else throw new SimpleTypeError("expected a sequence of strings but got %s", printSEx(seq));
             final Path p = Paths.get(fileName);
             try (Writer w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
                                                     appendp
