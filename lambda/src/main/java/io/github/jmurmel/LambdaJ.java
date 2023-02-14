@@ -1088,7 +1088,7 @@ public class LambdaJ {
             // s starts with [+-]?\.\d
             // eat additional digits and then there must be [eE] or end-of-string
             while (++idx < len && isDigit(s.charAt(idx))) {
-                /* nothing */;
+                /* nothing */
             }
             if (idx == len) return true;
         }
@@ -1104,7 +1104,7 @@ public class LambdaJ {
                 if (!isDigit(s.charAt(++idx))) return false;
 
                 while (++idx < len && isDigit(s.charAt(idx))) {
-                    /* nothing */;
+                    /* nothing */
                 }
                 if (idx == len) return true;
             }
@@ -2170,13 +2170,6 @@ public class LambdaJ {
             if (ret == null) throw errorInternal("Wellknown symbol %s not found", name);
             return ret;
         }
-    }
-
-    /** return true if {@code op} is a symbol and is the given wellknown symbol {@code wellknownOp} */
-    static boolean isOperator(Object op, WellknownSymbol wellknownOp) {
-        if (op == null) return wellknownOp == WellknownSymbol.sNil;
-        if (!symbolp(op)) return false;
-        return ((LambdaJSymbol)op).wellknownSymbol == wellknownOp;
     }
 
     private Supplier<Object> expTrue;
@@ -8862,232 +8855,238 @@ public class LambdaJ {
                     final Object op = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
                     final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ expressions
 
+                    if (op != null && symbolp(op)) {
+                        final LambdaJSymbol symop = (LambdaJSymbol)op;
+                        switch (symop.wellknownSymbol) {
 
-                    /// * special forms:
+                        /// * special forms:
 
-                    ///     - quote
-                    if (isOperator(op, WellknownSymbol.sQuote)) { emitQuotedForm(sb, car(ccArguments), true); return; }
-
-                    ///     - if
-                    if (isOperator(op, WellknownSymbol.sIf)) {
-                        varargsMinMax("if", ccArguments, 2, 3);
-                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
-                            // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                            final ConsCell transformed = ConsCell.list(op, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
-                            emitForm(sb, transformed, env, topEnv, rsfx, isLast);
+                        ///     - quote
+                        case sQuote: {
+                            emitQuotedForm(sb, car(ccArguments), true);
                             return;
                         }
-                        sb.append("(");
-                        emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
-                        sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
-                        if (caddr(ccArguments) != null) { sb.append(")\n        : ("); emitForm(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
-                        else sb.append(")\n        : (Object)null)");
-                        return;
-                    }
 
-                    ///     - cond
-                    if (isOperator(op, WellknownSymbol.sCond)) {
-                        emitCond(sb, ccArguments, env, topEnv, rsfx, isLast);
-                        return;
-                    }
-
-                    /// eval - (catch tagform forms...) -> object
-                    if (isOperator(op, WellknownSymbol.sCatch)) {
-                        emitCatch(sb, ccArguments, env, topEnv, rsfx, isLast);
-                        return;
-                    }
-
-                    /// eval - (throw tagform resultform) -> |
-                    if (isOperator(op, WellknownSymbol.sThrow)) {
-                        emitThrow(sb, ccArguments, env, topEnv, rsfx, isLast);
-                        return;
-                    }
-
-                    /// try - (try protected-form . errorobj) -> result
-                    if (isOperator(op, WellknownSymbol.sTry)) {
-                        emitTry(sb, ccArguments, env, topEnv, rsfx, isLast);
-                        return;
-                    }
-
-                    ///     - lambda
-                    if (isOperator(op, WellknownSymbol.sLambda)) {
-                        emitLambda(sb, ccArguments, env, topEnv, rsfx, true);
-                        return;
-                    }
-
-                    ///     - setq
-                    if (isOperator(op, WellknownSymbol.sSetQ)) {
-                        if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
-                        else if (cddr(ccArguments) == null)
-                            emitSetq(sb, ccArguments, env, topEnv, rsfx);
-                        else {
-                            sb.append("((Supplier<Object>)(() -> {\n");
-                            String javaName = null;
-                            for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
-                                sb.append("        ");
-                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx-1);
-                                sb.append(";\n");
+                        ///     - if
+                        case sIf: {
+                            if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
+                                // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
+                                final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
+                                emitForm(sb, transformed, env, topEnv, rsfx, isLast);
+                                return;
                             }
-                            sb.append("        return ").append(javaName).append(";})).get()");
+                            sb.append("(");
+                            emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
+                            sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
+                            if (caddr(ccArguments) != null) { sb.append(")\n        : ("); emitForm(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
+                            else sb.append(")\n        : (Object)null)");
+                            return;
                         }
-                        return;
-                    }
 
-                    if (isOperator(op, WellknownSymbol.sDefine)) {
-                        if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not yet implemented");
-                        defined("define", car(ccArguments), env);
-                        final String javasym = mangle(car(ccArguments).toString(), 0);
-                        sb.append("define_").append(javasym).append("()");
-                        return;
-                    }
+                        ///     - cond
+                        case sCond: {
+                            emitCond(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            return;
+                        }
 
-                    if (isOperator(op, WellknownSymbol.sDefun)) {
-                        if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not yet implemented");
-                        defined("defun", car(ccArguments), env);
-                        final String javasym = mangle(car(ccArguments).toString(), 0);
-                        sb.append("defun_").append(javasym).append("()");
-                        return;
-                    }
+                        /// eval - (catch tagform forms...) -> object
+                        case sCatch: {
+                            emitCatch(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            return;
+                        }
 
-                    if (isOperator(op, WellknownSymbol.sDefmacro)) {
-                        if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
-                        intp.expandForm(form); // this will process the macro definition as a side effect in case macroexpand-1 was used
-                        sb.append("intern(\"").append(car(ccArguments)).append("\")");
-                        return;
-                    }
+                        /// eval - (throw tagform resultform) -> |
+                        case sThrow: {
+                            emitThrow(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            return;
+                        }
 
-                    ///     - progn
-                    if (isOperator(op, WellknownSymbol.sProgn)) {
-                        emitProgn(sb, ccArguments, env, topEnv, rsfx, isLast);
-                        return;
-                    }
+                        /// try - (try protected-form . errorobj) -> result
+                        case sTry: {
+                            emitTry(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            return;
+                        }
 
-                    ///     - unwind-protect
-                    if (isOperator(op, WellknownSymbol.sUnwindProtect)) {
-                        emitUnwindProtect(sb, ccArguments, env, topEnv, rsfx, isLast);
-                        return;
-                    }
+                        ///     - lambda
+                        case sLambda: {
+                            emitLambda(sb, ccArguments, env, topEnv, rsfx, true);
+                            return;
+                        }
 
-                    ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
-                    // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
-                    if (isOperator(op, WellknownSymbol.sLabels)) {
-                        emitLabels(sb, ccArguments, env, topEnv, rsfx, isLast);
-                        return;
-                    }
-
-                    ///     - let: (let ((sym form)...) forms...) -> object
-                    ///     - named let: (let sym ((sym form)...) forms...) -> object
-                    if (isOperator(op, WellknownSymbol.sLet)) {
-                        if (car(ccArguments) == intp.sDynamic)
-                            emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, false, isLast);
-                        else
-                            emitLet(sb, ccArguments, env, topEnv, rsfx, isLast);
-                        return;
-                    }
-
-                    ///     - let*: (let* ((sym form)...) forms...) -> Object
-                    ///     - named let*: (let sym ((sym form)...) forms...) -> Object
-                    if (isOperator(op, WellknownSymbol.sLetStar)) {
-                        if (car(ccArguments) == intp.sDynamic)
-                            emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, true, isLast);
-                        else
-                            emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, false, isLast);
-                        return;
-                    }
-
-                    ///     - letrec:       (letrec ((sym form)...) forms) -> Object
-                    ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
-                    if (isOperator(op, WellknownSymbol.sLetrec)) {
-                        emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, true, isLast);
-                        return;
-                    }
-
-                    if (isOperator(op, WellknownSymbol.sMultipleValueCall)) {
-                        sb.append(isLast ? "tailcall(" : "funcall(");
-                        emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
-                        if (cdr(ccArguments) != null) {
-                            sb.append(", rt().new ValuesBuilder()");
-                            for (Object arg: listOrMalformed("multiple-value-call", cdr(ccArguments))) {
-                                sb.append("\n        .add(");
-                                emitForm(sb, arg, env, topEnv, rsfx, false);
-                                sb.append(')');
+                        ///     - setq
+                        case sSetQ: {
+                            if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
+                            else if (cddr(ccArguments) == null)
+                                emitSetq(sb, ccArguments, env, topEnv, rsfx);
+                            else {
+                                sb.append("((Supplier<Object>)(() -> {\n");
+                                String javaName = null;
+                                for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
+                                    sb.append("        ");
+                                    javaName = emitSetq(sb, pairs, env, topEnv, rsfx - 1);
+                                    sb.append(";\n");
+                                }
+                                sb.append("        return ").append(javaName).append(";})).get()");
                             }
-                            sb.append("\n        .build()");
+                            return;
                         }
-                        else sb.append(", NOARGS");
-                        sb.append(')');
-                        return;
-                    }
 
-                    ///     - multiple-value-bind: (multiple-value-bind (var*) value-form forms)
-                    if (isOperator(op, WellknownSymbol.sMultipleValueBind)) {
-                        final Object vars = car(ccArguments);
-                        int length;
-                        final boolean varargs;
-                        if (consp(vars)) {
-                            varargs = dottedList(vars);
-                            length = listLength((ConsCell)vars);
-                            if (varargs) length--;
+                        case sDefine: {
+                            if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not yet implemented");
+                            defined("define", car(ccArguments), env);
+                            final String javasym = mangle(car(ccArguments).toString(), 0);
+                            sb.append("define_").append(javasym).append("()");
+                            return;
                         }
-                        else if (symbolp(vars)) {
-                            varargs = true;
-                            length = 0;
+
+                        case sDefun: {
+                            if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not yet implemented");
+                            defined("defun", car(ccArguments), env);
+                            final String javasym = mangle(car(ccArguments).toString(), 0);
+                            sb.append("defun_").append(javasym).append("()");
+                            return;
                         }
-                        else throw errorMalformedFmt("multiple-value-bind", "expected a list or a symbol but got %s", printSEx(vars));
-                        sb.append(isLast ? "tailcall(" : "funcall(");
-                        emitLambda(sb, cons(vars, cddr(ccArguments)), env, topEnv, rsfx, false);
-                        if (cadr(ccArguments) != null) {
-                            sb.append(", rt().new ValuesBuilder()\n        .add(");
-                            emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, false);
-                            sb.append(")\n        .build(").append(length).append(',').append(String.valueOf(!varargs)).append(")");
+
+                        case sDefmacro: {
+                            if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
+                            intp.expandForm(form); // this will process the macro definition as a side effect in case macroexpand-1 was used
+                            sb.append("intern(\"").append(car(ccArguments)).append("\")");
+                            return;
                         }
-                        else sb.append(", NOARGS");
-                        sb.append(')');
-                        return;
-                    }
 
-                    if (isOperator(op, WellknownSymbol.sLoad)) {
-                        varargs1("load", ccArguments);
-                        // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
-                        loadFile("load", sb, car(ccArguments), env, topEnv, rsfx-1, isLast, null, null);
-                        return;
-                    }
+                        ///     - progn
+                        case sProgn: {
+                            emitProgn(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            return;
+                        }
 
-                    if (isOperator(op, WellknownSymbol.sRequire)) {
-                        // pass1 has replaced all toplevel (require)s with the file contents
-                        errorNotImplemented("require as non-toplevel form is not implemented");
-                    }
+                        ///     - unwind-protect
+                        case sUnwindProtect: {
+                            emitUnwindProtect(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            return;
+                        }
 
-                    if (isOperator(op, WellknownSymbol.sProvide)) {
-                        // pass 2 shouldn't see this
-                        errorNotImplemented("provide as non-toplevel form is not implemented");
-                    }
+                        ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
+                        // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
+                        case sLabels: {
+                            emitLabels(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            return;
+                        }
 
-                    if (isOperator(op, WellknownSymbol.sDeclaim)) {
-                        intp.evalDeclaim(rsfx, ccArguments);
-                        sb.append("(Object)null");
-                        return;
-                    }
+                        ///     - let: (let ((sym form)...) forms...) -> object
+                        ///     - named let: (let sym ((sym form)...) forms...) -> object
+                        case sLet: {
+                            if (car(ccArguments) == intp.sDynamic)
+                                emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, false, isLast);
+                            else
+                                emitLet(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            return;
+                        }
 
-                    /// * macro expansion - all macros were already expanded
-                    if (op != null && symbolp(op) && null != ((LambdaJSymbol)op).macro) {
-                        errorInternal("unexpected unexpanded macrocall %s", printSEx(form));
-                    }
+                        ///     - let*: (let* ((sym form)...) forms...) -> Object
+                        ///     - named let*: (let sym ((sym form)...) forms...) -> Object
+                        case sLetStar: {
+                            if (car(ccArguments) == intp.sDynamic)
+                                emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, true, isLast);
+                            else
+                                emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, false, isLast);
+                            return;
+                        }
 
-                    /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
-                    if (symbolEq(op, "macroexpand-1")) {
-                        oneArg("macroexpand-1", ccArguments);
-                        if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
-                        final Object expandedForm, expanded;
-                        final Object maybeMacroCall = car((ConsCell)cdar(ccArguments));
-                        if (consp(maybeMacroCall)) { expandedForm = macroexpandImpl(intp, (ConsCell)maybeMacroCall); expanded = cadr(intp.values) == sT ? "rt()._t" : "null"; }
-                        else { expandedForm = maybeMacroCall; expanded = "null"; }
-                        sb.append("rt()._values(");  emitQuotedForm(sb, expandedForm, true);  sb.append(", ").append(expanded).append(")");
-                        return;
-                    }
+                        ///     - letrec:       (letrec ((sym form)...) forms) -> Object
+                        ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
+                        case sLetrec: {
+                            emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, true, isLast);
+                            return;
+                        }
 
-                    /// * some functions and operators are opencoded:
-                    if (intp.speed >= 1 && symbolp(op) && opencode(sb, (LambdaJSymbol)op, ccArguments, env, topEnv, rsfx, isLast)) return;
+                        case sMultipleValueCall: {
+                            sb.append(isLast ? "tailcall(" : "funcall(");
+                            emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
+                            if (cdr(ccArguments) != null) {
+                                sb.append(", rt().new ValuesBuilder()");
+                                for (Object arg : listOrMalformed("multiple-value-call", cdr(ccArguments))) {
+                                    sb.append("\n        .add(");
+                                    emitForm(sb, arg, env, topEnv, rsfx, false);
+                                    sb.append(')');
+                                }
+                                sb.append("\n        .build()");
+                            }
+                            else sb.append(", NOARGS");
+                            sb.append(')');
+                            return;
+                        }
+
+                        ///     - multiple-value-bind: (multiple-value-bind (var*) value-form forms)
+                        case sMultipleValueBind: {
+                            final Object vars = car(ccArguments);
+                            int length;
+                            final boolean varargs;
+                            if (consp(vars)) {
+                                varargs = dottedList(vars);
+                                length = listLength((ConsCell)vars);
+                                if (varargs) length--;
+                            }
+                            else if (symbolp(vars)) {
+                                varargs = true;
+                                length = 0;
+                            }
+                            else throw errorMalformedFmt("multiple-value-bind", "expected a list or a symbol but got %s", printSEx(vars));
+                            sb.append(isLast ? "tailcall(" : "funcall(");
+                            emitLambda(sb, cons(vars, cddr(ccArguments)), env, topEnv, rsfx, false);
+                            if (cadr(ccArguments) != null) {
+                                sb.append(", rt().new ValuesBuilder()\n        .add(");
+                                emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, false);
+                                sb.append(")\n        .build(").append(length).append(',').append(String.valueOf(!varargs)).append(")");
+                            }
+                            else sb.append(", NOARGS");
+                            sb.append(')');
+                            return;
+                        }
+
+                        case sLoad: {
+                            varargs1("load", ccArguments);
+                            // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
+                            loadFile("load", sb, car(ccArguments), env, topEnv, rsfx - 1, isLast, null, null);
+                            return;
+                        }
+
+                        case sRequire: {
+                            // pass1 has replaced all toplevel (require)s with the file contents
+                            errorNotImplemented("require as non-toplevel form is not implemented");
+                        }
+
+                        case sProvide: {
+                            // pass 2 shouldn't see this
+                            errorNotImplemented("provide as non-toplevel form is not implemented");
+                        }
+
+                        case sDeclaim: {
+                            intp.evalDeclaim(rsfx, ccArguments);
+                            sb.append("(Object)null");
+                            return;
+                        }
+
+                        default:
+                            /// * macro expansion - all macros were already expanded
+                            if (null != symop.macro) throw new UndefinedFunction("function application: not a primitive or lambda: %s is a macro not a function", symop, form);
+
+                            /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
+                            if (symbolEq(symop, "macroexpand-1")) {
+                                oneArg("macroexpand-1", ccArguments);
+                                if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
+                                final Object expandedForm, expanded;
+                                final Object maybeMacroCall = car((ConsCell)cdar(ccArguments));
+                                if (consp(maybeMacroCall)) { expandedForm = macroexpandImpl(intp, (ConsCell)maybeMacroCall); expanded = cadr(intp.values) == sT ? "rt()._t" : "null"; }
+                                else { expandedForm = maybeMacroCall; expanded = "null"; }
+                                sb.append("rt()._values(");  emitQuotedForm(sb, expandedForm, true);  sb.append(", ").append(expanded).append(")");
+                                return;
+                            }
+
+                            /// * some functions and operators are opencoded:
+                            if (intp.speed >= 1 && opencode(sb, symop, ccArguments, env, topEnv, rsfx, isLast)) return;
+                        }
+                    }
 
                     if (intp.speed >= 1 && consp(op) && symbolEq(car(op), "jmethod")
                         && emitJmethod(sb, listOrMalformed("jmethod application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
