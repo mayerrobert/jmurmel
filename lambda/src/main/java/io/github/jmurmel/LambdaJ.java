@@ -7114,8 +7114,8 @@ public class LambdaJ {
             public Object set(Object value) { values = null; return this.value = value; }
             public Object setForTry(Object value) { return this.value = value; }
 
-            public void push() { dynamicStack = _cons(value, dynamicStack); }
-            public void push(Object value) { dynamicStack = _cons(this.value, dynamicStack); this.value = value; }
+            public void push() { dynamicStack = ConsCell.cons(value, dynamicStack); }
+            public void push(Object value) { dynamicStack = ConsCell.cons(this.value, dynamicStack); this.value = value; }
             public void pop() { value = car(dynamicStack); dynamicStack = (ConsCell)cdr(dynamicStack); }
         }
 
@@ -7693,8 +7693,9 @@ public class LambdaJ {
         public final LambdaJSymbol intern(String symName) { return symtab.intern(symName); }
 
         public final Object arrayToList(Object[] args, int start) {
+            values = null;
             if (start >= args.length) return null;
-            if (args.length-start == 1) return _cons(args[start], null);
+            if (args.length-start == 1) return ConsCell.cons(args[start], null);
             final ListBuilder ret = new ListBuilder();
             for (int i = start; i < args.length; i++) ret.append(args[i]);
             return ret.first();
@@ -7939,7 +7940,7 @@ public class LambdaJ {
                 r = fn.apply(args);
                 while (r instanceof Tailcall) {
                     final Tailcall functionCall = (Tailcall) r;
-                    if (functionCall.cleanup != null) cleanups = _cons(functionCall.cleanup, cleanups);
+                    if (functionCall.cleanup != null) cleanups = ConsCell.cons(functionCall.cleanup, cleanups);
                     values = null;
                     r = functionCall.fn.apply(functionCall.args);
                     if (Thread.interrupted()) throw new InterruptedException("got interrupted");
@@ -7975,12 +7976,12 @@ public class LambdaJ {
 
         private Object interpret(Object fn, Object[] args) {
             final LambdaJ intp = intpForEval();
-            final Object ret = intp.eval(_cons(intern("apply"),
-                                               _cons(fn,
-                                                     _cons(_cons(intern("quote"),
-                                                                 _cons(arraySlice(args),
-                                                                       null)),
-                                                           null))),
+            final Object ret = intp.eval(ConsCell.cons(intern("apply"),
+                                                       ConsCell.cons(fn,
+                                                                     ConsCell.cons(ConsCell.cons(intern("quote"),
+                                                                                                 ConsCell.cons(arraySlice(args),
+                                                                                                               null)),
+                                                                                   null))),
                                          null);
             if (intp.values == LambdaJ.NO_VALUES) values = null;
             else values = toArray(intp.values);
