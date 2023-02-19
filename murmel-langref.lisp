@@ -1154,9 +1154,9 @@ pi ; ==> 3.141592653589793
 ; = read, write, writeln, lnwrite
 ;
 ;     (read eof-obj?) -> obj
-;     (write   obj  print-escape-p?) -> obj
-;     (writeln obj? print-escape-p?) -> obj
-;     (lnwrite obj? print-escape-p?) -> obj
+;     (write   obj  [print-escape-p [dest]]) -> obj
+;     (writeln [obj [print-escape-p [dest]]]) -> obj
+;     (lnwrite [obj [print-escape-p [dest]]]) -> obj
 ;
 ; `read` w/o an argument will throw an error when encountering EOF.
 ; If an optional argument was given then EOF does not throw an error
@@ -1174,6 +1174,12 @@ pi ; ==> 3.141592653589793
 ; `write` accepts an optional boolean argument `print-escape-p`.
 ; `writeln` and `lnwrite` accept an optional argument `obj`
 ; and an optional boolean argument `print-escape-p`.
+;
+; `write`, `writeln` and `lnwrite` accept an optional argument `dest`
+; which may be `nil`, `t` or an adjustable string.
+; `nil`and `t` means: write to stdout, else write to `dest`.
+; (Implementation note: any Java object implementing `java.lang.Appendable`
+; is acceptable.)
 ;
 ; `writeln` will write the argument if given, followed by a newline.  
 ; `lnwrite` will write a newline followed by the argument if given,
@@ -1248,7 +1254,9 @@ pi ; ==> 3.141592653589793
 ; Each #\Newline character will be written as the OS-default line-end character(-sequence).
 
 
-; = format, format-locale
+; = (format dest formatstr args*), (format-locale dest locale formatstr args*)
+;
+; The first argument `dest` can be `t`, `nil` or an adjustable string.
 ;
 ; `format t` writes a formatted string to stdout and returns `nil`.
 ; `format`'s parameters work as with `java.lang.String.format()`
@@ -1257,15 +1265,15 @@ pi ; ==> 3.141592653589793
 (format t "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 ; `format-locale` works similar to format except it has an additional
-; first string parameter that should be a locale, `nil` means use Java's
+; second string parameter that should be a locale, `nil` means use Java's
 ; default locale.
 
 (format-locale t
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 ; `format nil` and `format-locale nil` work similar
-; to `format` and `format-locale` except they don't write to stdout
-; but return the string
+; to `format t` and `format-locale t` except they don't write to stdout
+; but return the string.
 
 (format-locale nil
    "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
