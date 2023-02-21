@@ -3719,10 +3719,10 @@ public class LambdaJ {
             if (o1 instanceof BigDecimal && o2 instanceof BigDecimal) return ((BigDecimal)o1).compareTo((BigDecimal)o2);
             return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue());
         }
-        if (mode == CompareMode.NUMBER) return System.identityHashCode(o1) - System.identityHashCode(o2);
+        if (mode == CompareMode.NUMBER) return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
 
         if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
-        if (mode == CompareMode.EQL) return System.identityHashCode(o1) - System.identityHashCode(o2);
+        if (mode == CompareMode.EQL) return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
 
         if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
 
@@ -3730,7 +3730,7 @@ public class LambdaJ {
 
         if (consp(o1) && consp(o2)) { return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
 
-        return System.identityHashCode(o1) - System.identityHashCode(o2);
+        return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
     }
 
     static int sxhashSigned(Object o) {
@@ -4479,10 +4479,10 @@ public class LambdaJ {
                     final int c1 = (int)get(k);
                     final int c2 = (int)b2.get(k);
                     if (c1 != c2) {
-                        return c1 - c2;
+                        return Integer.compare(c1, c2);
                     }
                 }
-                return len1 - len2;
+                return Integer.compare(len1, len2);
             }
 
             int size() { return size; }
