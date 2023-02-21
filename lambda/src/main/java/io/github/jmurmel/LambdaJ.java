@@ -3709,8 +3709,8 @@ public class LambdaJ {
 
         if (integerp(o1) && integerp(o2)) {
             if (o1 instanceof BigInteger && o2 instanceof BigInteger) return ((BigInteger)o1).compareTo((BigInteger)o2);
-            if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(new BigInteger(String.valueOf(((Number)o2).longValue())));
-            if (o2 instanceof BigInteger)                             return new BigInteger(String.valueOf(((Number)o1).longValue())).compareTo((BigInteger)o2);
+            if (o1 instanceof BigInteger)                             return ((BigInteger)o1).compareTo(BigInteger.valueOf(((Number)o2).longValue()));
+            if (o2 instanceof BigInteger)                             return BigInteger.valueOf(((Number)o1).longValue()).compareTo((BigInteger)o2);
             return Long.compare(((Number)o1).longValue(), ((Number)o2).longValue());
         }
 
