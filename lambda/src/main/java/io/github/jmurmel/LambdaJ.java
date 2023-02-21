@@ -2009,7 +2009,7 @@ public class LambdaJ {
         sFTruncate("ftruncate", Features.HAVE_NUMBERS, 1, 2) { @Override Object apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
 
         sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
-        sLog("log", Features.HAVE_NUMBERS, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.log  (toDouble("log",   car(args))); } },
+        sLog("log", Features.HAVE_NUMBERS, 1, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return (cdr(args) == null) ? Math.log(toDouble("log", car(args))) : Math.log(toDouble("log", car(args))) / Math.log(toDouble("log", cadr(args))); } },
         sLog10("log10", Features.HAVE_NUMBERS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
         sExp("exp", Features.HAVE_NUMBERS, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
         sExpt("expt", Features.HAVE_NUMBERS, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
@@ -7439,7 +7439,7 @@ public class LambdaJ {
         private double quot12(Object[] args) { values = null; return args.length == 2 ? toDouble(args[0]) / toDouble(args[1]) : toDouble(args[0]); }
 
         public final double   _sqrt    (Object... args) { oneArg("sqrt",          args.length); values = null; return Math.sqrt (toDouble(args[0])); }
-        public final double   _log     (Object... args) { oneArg("log",           args.length); values = null; return Math.log  (toDouble(args[0])); }
+        public final double   _log     (Object... args) { varargs1_2("log",       args.length); values = null; return args.length == 1 ? Math.log(toDouble(args[0])) : Math.log(toDouble(args[0])) / Math.log(toDouble(args[1])); }
         public final double   _log10   (Object... args) { oneArg("log10",         args.length); values = null; return Math.log10(toDouble(args[0])); }
         public final double   _exp     (Object... args) { oneArg("exp",           args.length); values = null; return Math.exp  (toDouble(args[0])); }
         public final double   _expt    (Object... args) { twoArgs("expt",         args.length); values = null; return Math.pow  (toDouble(args[0]), toDouble(args[1])); }

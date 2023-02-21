@@ -1396,8 +1396,6 @@ pi ; ==> 3.141592653589793
 ; = +, -, \*, /, mod, rem, sqrt, log, log10, exp, expt
 ;
 ; The math operators accept numbers only.
-; `log` only takes 1 argument,
-; but otherwise should work similar to CL.
 ; All numeric operators return a double.
 ; eg. `(+ number number) -> double`.
 

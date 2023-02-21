@@ -1,8 +1,9 @@
 
 Changes in JMurmel-1.4.2 relative to JMurmel-1.4.1
 
- * write, writeln, lnwrite, format, format-locale
-   also accept an adjustable string as destination
+ * changed write, writeln, lnwrite, format, format-locale
+   to also accept an adjustable string as destination
+ * changed log to accept a second optional parameter
 
 
 Changes in JMurmel-1.4.1 relative to JMurmel-1.4
