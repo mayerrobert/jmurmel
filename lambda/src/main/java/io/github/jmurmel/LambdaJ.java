@@ -2994,7 +2994,7 @@ public class LambdaJ {
 
             pairs = (ConsCell) cdr(pairs);
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
-            if (envEntry == null) insertFront(env, symbol, value);
+            if (envEntry == null) env = acons(symbol, value, env);
             else envEntry.rplacd(value);
             res = value;
             pairs = (ConsCell) cdr(pairs);
