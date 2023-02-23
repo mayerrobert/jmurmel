@@ -54,6 +54,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - I/O
     - [write-char](#function-write-char)
     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
+    - [with-output-to-string](#macro-with-output-to-string)
 - misc
     - [time](#macro-time)
 
@@ -95,7 +96,7 @@ as well as the following additional functions and macros:
 - generators
     - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat)
 - strings
-    - [string-trim](#function-string-trim), [string-replace](#function-string-replace), [string-split](#function-string-split), [string-join](#function-string-join)
+    - [string-trim](#function-string-trim), [string-subseq](#function-string-subseq), [string-replace](#function-string-replace), [string-split](#function-string-split), [string-join](#function-string-join)
 
 ## Description of functions and macros
 
@@ -863,6 +864,11 @@ Since: 1.1
 
 Since: 1.1
 
+### Macro: with-output-to-string
+    (with-output-to-string (var) forms*)
+
+Since: 1.4.2
+
 ### Function: pprint
     (pprint object) -> t
 
@@ -1020,6 +1026,14 @@ with leading and/ or trailing whitespace removed.
 Example usage:
 
     (string-trim "  asdf   ") ; ==> "asdf"
+
+### Function: string-subseq
+    (string-subseq str start [end-excl]) -> result
+
+Since: 1.4.2
+
+Return a fresh immutable `simple-string`
+whose value is the substring [start end-excl[.
 
 ### Function: string-replace
     (string-replace str srch replacement) -> result

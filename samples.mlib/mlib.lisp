@@ -60,6 +60,7 @@
 ;;; - I/O
 ;;;     - [write-char](#function-write-char)
 ;;;     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
+;;;     - [with-output-to-string](#macro-with-output-to-string)
 
 ;;; - misc
 ;;;     - [time](#macro-time)
@@ -102,7 +103,7 @@
 ;;; - generators
 ;;;     - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat)
 ;;; - strings
-;;;     - [string-trim](#function-string-trim), [string-replace](#function-string-replace), [string-split](#function-string-split), [string-join](#function-string-join)
+;;;     - [string-trim](#function-string-trim), [string-subseq](#function-string-subseq), [string-replace](#function-string-replace), [string-split](#function-string-split), [string-join](#function-string-join)
 
 
 ;;; == Description of functions and macros
@@ -2082,6 +2083,16 @@
 (m%def-macro-fun print (obj) `(lnwrite ,obj))
 
 
+;;; = Macro: with-output-to-string
+;;;     (with-output-to-string (var) forms*)
+;;;
+;;; Since: 1.4.2
+(defmacro with-output-to-string (s . body)
+  `(let ((,@s (make-array 0 'character t)))
+     ,@body
+     ,@s))
+
+
 ;;; = Function: pprint
 ;;;     (pprint object) -> t
 ;;;
@@ -2412,6 +2423,19 @@
 ;;;     (string-trim "  asdf   ") ; ==> "asdf"
 (define string-trim
   (jmethod "String" "trim"))
+
+
+;;; = Function: string-subseq
+;;;     (string-subseq str start [end-excl]) -> result
+;;;
+;;; Since: 1.4.2
+;;;
+;;; Return a fresh immutable `simple-string`
+;;; whose value is the substring [start end-excl[.
+(defun string-subseq (str start . end-excl)
+  (if end-excl
+        ((jmethod "String" "substring" "int" "int") str start (car end-excl))
+    ((jmethod "String" "substring" "int") str start)))
 
 
 ;;; = Function: string-replace

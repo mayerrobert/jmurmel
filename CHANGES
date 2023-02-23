@@ -5,6 +5,8 @@ Changes in JMurmel-1.4.2 relative to JMurmel-1.4.1
    to also accept an adjustable string as destination
  * changed log to accept a second optional parameter
 
+ * mlib: added string-subseq, with-output-to-string
+
 
 Changes in JMurmel-1.4.1 relative to JMurmel-1.4
 released: 2023-02-04
