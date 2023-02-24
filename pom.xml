@@ -63,7 +63,7 @@
         <exec-maven-plugin.version>3.1.0</exec-maven-plugin.version>
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
         <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
-        <spotbugs-maven-plugin.version>4.7.3.0</spotbugs-maven-plugin.version>
+        <spotbugs-maven-plugin.version>4.7.3.1</spotbugs-maven-plugin.version>
         <spotbugs.version>4.7.3</spotbugs.version>
         <pitest-maven-plugin.version>1.11.1</pitest-maven-plugin.version>
         <pitest-testng-plugin.version>1.0.0</pitest-testng-plugin.version>
