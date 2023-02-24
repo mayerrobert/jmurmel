@@ -125,7 +125,7 @@ Feature flags:
 --no-quote ....  no special form quote
 
 --lambda ......  turns off yet even more stuff, leaving I guess
-                 bare bones Lambda calculus:
+                 bare bones Lambda calculus + environment:
                    S-expressions
                    symbols and cons-cells (i.e. lists)
                    function application

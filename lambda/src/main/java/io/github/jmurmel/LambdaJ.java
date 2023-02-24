@@ -1483,8 +1483,8 @@ public class LambdaJ {
                                 throw new EOFException("string literal is missing closing \"");
                             look = getchar(); // consume trailing "
                             tok = tokenToString(token, 1, index).intern();
-                            break;
                         }
+                        break;
 
                     case '#':
                         look = getchar(false);
@@ -6989,7 +6989,7 @@ public class LambdaJ {
                                + "--no-quote ....  no special form quote\n"
                                + "\n"
                                + "--lambda ......  turns off yet even more stuff, leaving I guess\n"
-                               + "                 bare bones Lambda calculus:\n"
+                               + "                 bare bones Lambda calculus + environment:\n"
                                + "                   S-expressions\n"
                                + "                   symbols and cons-cells (i.e. lists)\n"
                                + "                   function application\n"
@@ -9069,12 +9069,12 @@ public class LambdaJ {
 
                         case sRequire: {
                             // pass1 has replaced all toplevel (require)s with the file contents
-                            errorNotImplemented("require as non-toplevel form is not implemented");
+                            throw errorNotImplemented("require as non-toplevel form is not implemented");
                         }
 
                         case sProvide: {
                             // pass 2 shouldn't see this
-                            errorNotImplemented("provide as non-toplevel form is not implemented");
+                            throw errorNotImplemented("provide as non-toplevel form is not implemented");
                         }
 
                         case sDeclaim: {
