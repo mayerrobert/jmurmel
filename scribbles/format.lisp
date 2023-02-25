@@ -87,27 +87,20 @@
   (if (integerp arg)
       (let ((mincol (if params (pop params)))
             (padchar (if params (pop params) #\ ))
-            (commachar #\,)
-            (comma-interval 3)
-            (digits "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ")
             (rev (make-array 0 'character t))
             (len 0))
 
         (if colonp
             ;; grouping: separate 'comma-interval' digits with 'commachar'
-            (progn
-              (when params
-                (when (car params)
-                  (setq commachar (car params)))
-                (when (cadr params)
-                  (setq comma-interval (cadr params))))
+            (let ((commachar (if (car params) (car params) #\,))
+                  (comma-interval (if (cadr params) (cadr params) 3)))
               (labels ((loop (n pos)
                         (when (> n 0)
                           (when (= pos comma-interval)
                             (vector-add rev commachar)
                             (incf len)
                             (setq pos 0))
-                          (vector-add rev (sref digits (mod n base)))
+                          (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (mod n base)))
                           (incf len)
                           (loop (truncate n base) (1+ pos)))))
                 (loop (abs arg) 0)))
@@ -115,7 +108,7 @@
             ;; no grouping
             (labels ((loop (n)
                       (when (> n 0)
-                        (vector-add rev (sref digits (mod n base)))
+                        (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (mod n base)))
                         (incf len)
                         (loop (truncate n base)))))
               (loop (abs arg))))
@@ -309,11 +302,15 @@
 
                    ;; Tilde A: Aesthetic
                    ((#\a #\A)
-                    (push `(print-obj (pop arguments) output-stream nil ,atp ',params) body))
+                    (if params
+                        (push `(print-obj (pop arguments) output-stream nil ,atp ',params) body)
+                        (push `(write (pop arguments) nil output-stream) body)))
 
                    ;; Tilde S: Standard
                    ((#\s #\S)
-                    (push `(print-obj (pop arguments) output-stream t ,atp ',params) body))
+                    (if params
+                        (push `(print-obj (pop arguments) output-stream t ,atp ',params) body)
+                        (push `(write (pop arguments) t output-stream) body)))
 
                    ;; Tilde W: Write
                    ((#\w #\W)
