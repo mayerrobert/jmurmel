@@ -26,7 +26,7 @@
 
                 car cadr caddr cdr cdddr cons rplacd list list*
 
-                error apply values eql equal integerp stringp
+                error apply values eql equal functionp integerp stringp
                 < <= = >= > 1+ + - * abs ceiling truncate mod
                 char-code length nreverse
 
@@ -461,10 +461,13 @@
 
 
 (defun format (destination control-string #-murmel cl:&rest #+murmel . args)
-  (if destination
-      (apply (format-function control-string) (cons destination args))
-      (with-output-to-string (destination)
-        (apply (format-function control-string) (cons destination args)))))
+  (let ((f (if (functionp control-string)
+               control-string
+               (format-function control-string))))
+    (if destination
+        (apply f (cons destination args))
+        (with-output-to-string (destination)
+          (apply f (cons destination args))))))
 
 
 
@@ -482,12 +485,16 @@
               "hello")
 (assert-equal (format nil "hello")
               "hello")
+(assert-equal (format nil (formatter "hello"))
+              "hello")
 
 ; C
 #+sbcl
 (assert-equal (cl:format nil "~@c" #\c)
               "#\\c")
 (assert-equal (format nil "~@c" #\c)
+              "#\\c")
+(assert-equal (format nil (formatter "~@c") #\c)
               "#\\c")
 
 ; B
@@ -496,11 +503,15 @@
               "asdf x00000000000000001111x")
 (assert-equal (format nil "~a x~20,'0bx" "asdf" 15)
               "asdf x00000000000000001111x")
+(assert-equal (format nil (formatter "~a x~20,'0bx") "asdf" 15)
+              "asdf x00000000000000001111x")
 
 #+sbcl
 (assert-equal (cl:format nil "x~20,'0,'_,2:bx" 255)
               "x00000000011_11_11_11x")
 (assert-equal (format nil "x~20,'0,'_,2:bx" 255)
+              "x00000000011_11_11_11x")
+(assert-equal (format nil (formatter "x~20,'0,'_,2:bx") 255)
               "x00000000011_11_11_11x")
 
 ; O
@@ -509,6 +520,8 @@
               "asdf x00000000000000000017x")
 (assert-equal (format nil "~a x~20,'0ox" "asdf" 15)
               "asdf x00000000000000000017x")
+(assert-equal (format nil (formatter "~a x~20,'0ox") "asdf" 15)
+              "asdf x00000000000000000017x")
 
 ; D
 #+sbcl
@@ -516,11 +529,15 @@
               "asdf x00+15x")
 (assert-equal (format nil "~a x~5,'0@dx" "asdf" 15)
               "asdf x00+15x")
+(assert-equal (format nil (formatter "~a x~5,'0@dx") "asdf" 15)
+              "asdf x00+15x")
 
 #+sbcl
 (assert-equal (cl:format nil "~a x~5,'0dx" "asdf" -15)
               "asdf x00-15x")
 (assert-equal (format nil "~a x~5,'0dx" "asdf" -15)
+              "asdf x00-15x")
+(assert-equal (format nil (formatter "~a x~5,'0dx") "asdf" -15)
               "asdf x00-15x")
 
 ; R
@@ -529,11 +546,15 @@
               "x00-18x")
 (assert-equal (format nil "x~12,5,'0rx" -20)
               "x00-18x")
+(assert-equal (format nil (formatter "x~12,5,'0rx") -20)
+              "x00-18x")
 
 #+sbcl
 (assert-equal (cl:format nil "x~4,20,'0,,2:rx" 255)
               "x00000000000000033,33x")
 (assert-equal (format nil "x~4,20,'0,,2:rx" 255)
+              "x00000000000000033,33x")
+(assert-equal (format nil (formatter "x~4,20,'0,,2:rx") 255)
               "x00000000000000033,33x")
 
 #+sbcl
@@ -541,11 +562,15 @@
               "x0000000000000003_333x")
 (assert-equal (format nil    "x~4,20,'0,'_:rx" 255)
               "x0000000000000003_333x")
+(assert-equal (format nil    (formatter "x~4,20,'0,'_:rx") 255)
+              "x0000000000000003_333x")
 
 #+sbcl
 (assert-equal (cl:format nil "x~12,5,'0rx" 'HELLO)
               "xHELLOx")
 (assert-equal (format nil "x~12,5,'0rx" 'HELLO)
+              "xHELLOx")
+(assert-equal (format nil (formatter "x~12,5,'0rx") 'HELLO)
               "xHELLOx")
 
 ; X
@@ -554,6 +579,8 @@
               "asdf x*******************Fx")
 (assert-equal (format nil "~a x~20,'*Xx" "asdf" 15)
               "asdf x*******************Fx")
+(assert-equal (format nil (formatter "~a x~20,'*Xx") "asdf" 15)
+              "asdf x*******************Fx")
 
 ; A
 #+sbcl
@@ -561,17 +588,23 @@
               "x_________________123x")
 (assert-equal (format nil "x~20,1,0,'_@ax" "123")
               "x_________________123x")
+(assert-equal (format nil (formatter "x~20,1,0,'_@ax") "123")
+              "x_________________123x")
 
 #+sbcl
 (assert-equal (cl:format nil "x~20,,,'*ax" '(1 2 3))
               "x(1 2 3)*************x")
 (assert-equal (format nil "x~20,,,'*ax" '(1 2 3))
               "x(1 2 3)*************x")
+(assert-equal (format nil (formatter "x~20,,,'*ax") '(1 2 3))
+              "x(1 2 3)*************x")
 
 #+sbcl
 (assert-equal (cl:format nil "x~5,3,1,'*Ax" '(1))
               "x(1)****x")
 (assert-equal (format nil "x~5,3,1,'*Ax" '(1))
+              "x(1)****x")
+(assert-equal (format nil (formatter "x~5,3,1,'*Ax") '(1))
               "x(1)****x")
 
 
