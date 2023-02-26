@@ -180,71 +180,72 @@
          (i 0)
          (j nil)
          (control-string-length (length control-string)))
-    (labels ((collect (obj)
-               (setq append-to (cdr (rplacd append-to (cons obj ())))))
+    (when (> control-string-length 0)
+      (labels ((collect (obj)
+                 (setq append-to (cdr (rplacd append-to (cons obj ())))))
 
-             (start ()
-               (when (< i control-string-length)
-                 (when (eql (sref control-string i) #\~)
-                   (when j
-                     (collect (string-subseq control-string j i)))
-                   (incf i)
-                   (let* (code colonp atp arg
-                          (args (cons () ()))
-                          (append-to-args args))
-                     (labels ((collect-arg (arg)
-                                (setq append-to-args (cdr (rplacd append-to-args (cons arg ())))))
+               (start ()
+                 (when (< i control-string-length)
+                   (when (eql (sref control-string i) #\~)
+                     (when j
+                       (collect (string-subseq control-string j i)))
+                     (incf i)
+                     (let* (code colonp atp arg
+                                 (args (cons () ()))
+                                 (append-to-args args))
+                       (labels ((collect-arg (arg)
+                                  (setq append-to-args (cdr (rplacd append-to-args (cons arg ())))))
 
-                              (next ()
-                                (setq code (sref control-string i))
-                                (case code
-                                  (#\'
-                                   (setq arg (sref control-string (incf i)))
-                                   (incf i)
-                                   (next))
+                                (next ()
+                                  (setq code (sref control-string i))
+                                  (case code
+                                    (#\'
+                                     (setq arg (sref control-string (incf i)))
+                                     (incf i)
+                                     (next))
 
-                                  (#\,
-                                   (collect-arg arg)
-                                   (setq arg nil)
-                                   (incf i)
-                                   (next))
-
-                                  (#\:
-                                   (setq colonp t)
-                                   (incf i)
-                                   (next))
-
-                                  (#\@
-                                   (setq atp t)
-                                   (incf i)
-                                   (next))
-
-                                  ((#\+ #\- #\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-                                   (setq arg 0)
-                                   (labels ((loop (code)
-                                             (when (and (>= code 48) (<= code 57))
-                                               (setq arg (+ (* arg 10) (- code 48))
-                                                     i (1+ i))
-                                               (when (< i control-string-length)
-                                                 (loop (char-code (sref control-string i)))))))
-                                     (loop (char-code (sref control-string i))))
-                                   (next))
-
-                                  (t
-                                   (when arg
+                                    (#\,
                                      (collect-arg arg)
-                                     (setq arg nil))
-                                   (collect (list* code colonp atp (cdr args)))))))
-                       (next)))
+                                     (setq arg nil)
+                                     (incf i)
+                                     (next))
 
-                   (setf j (1+ i)))
-                 (unless j (setf j i))
-                 (incf i)
-                 (start))
-               (when (< j i)
-                 (collect (string-subseq control-string j i))
-                 (setq j i))))
-      (start))
+                                    (#\:
+                                     (setq colonp t)
+                                     (incf i)
+                                     (next))
+
+                                    (#\@
+                                     (setq atp t)
+                                     (incf i)
+                                     (next))
+
+                                    ((#\+ #\- #\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                     (setq arg 0)
+                                     (labels ((loop (code)
+                                               (when (and (>= code 48) (<= code 57))
+                                                 (setq arg (+ (* arg 10) (- code 48))
+                                                       i (1+ i))
+                                                 (when (< i control-string-length)
+                                                   (loop (char-code (sref control-string i)))))))
+                                       (loop (char-code (sref control-string i))))
+                                     (next))
+
+                                    (t
+                                     (when arg
+                                       (collect-arg arg)
+                                       (setq arg nil))
+                                     (collect (list* code colonp atp (cdr args)))))))
+                         (next)))
+
+                     (setf j (1+ i)))
+                   (unless j (setf j i))
+                   (incf i)
+                   (start))
+                 (when (< j i)
+                   (collect (string-subseq control-string j i))
+                   (setq j i))))
+        (start)))
 
     (cdr result)))
 
