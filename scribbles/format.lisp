@@ -480,133 +480,75 @@
     (write "      actual:   " nil) (write actual nil) (write #\Newline nil)
     nil))
 
+(defmacro test (expected str #-murmel cl:&rest #+murmel . args)
+  `(progn
+     #+sbcl
+     (assert-equal (cl:format nil ,str ,@args) ,expected)
+     (assert-equal (format    nil ,str ,@args) ,expected)
+     (assert-equal (apply #'format (list nil (formatter ,str) ,@args)) ,expected)
+     ))
 
-#+sbcl
-(assert-equal (cl:format nil "hello")
-              "hello")
-(assert-equal (format nil "hello")
-              "hello")
-(assert-equal (format nil (formatter "hello"))
-              "hello")
 
-; C
-#+sbcl
-(assert-equal (cl:format nil "~@c" #\c)
-              "#\\c")
-(assert-equal (format nil "~@c" #\c)
-              "#\\c")
-(assert-equal (format nil (formatter "~@c") #\c)
-              "#\\c")
+;; no format characters
+(test "hello"
+      "hello")
 
-; B
-#+sbcl
-(assert-equal (cl:format nil "~a x~20,'0bx" "asdf" 15)
-              "asdf x00000000000000001111x")
-(assert-equal (format nil "~a x~20,'0bx" "asdf" 15)
-              "asdf x00000000000000001111x")
-(assert-equal (format nil (formatter "~a x~20,'0bx") "asdf" 15)
-              "asdf x00000000000000001111x")
 
-#+sbcl
-(assert-equal (cl:format nil "x~20,'0,'_,2:bx" 255)
-              "x00000000011_11_11_11x")
-(assert-equal (format nil "x~20,'0,'_,2:bx" 255)
-              "x00000000011_11_11_11x")
-(assert-equal (format nil (formatter "x~20,'0,'_,2:bx") 255)
-              "x00000000011_11_11_11x")
+;; C
+(test "#\\c"
+      "~@c" #\c)
 
-; O
-#+sbcl
-(assert-equal (cl:format nil "~a x~20,'0ox" "asdf" 15)
-              "asdf x00000000000000000017x")
-(assert-equal (format nil "~a x~20,'0ox" "asdf" 15)
-              "asdf x00000000000000000017x")
-(assert-equal (format nil (formatter "~a x~20,'0ox") "asdf" 15)
-              "asdf x00000000000000000017x")
 
-; D
-#+sbcl
-(assert-equal (cl:format nil "~a x~5,'0@dx" "asdf" 15)
-              "asdf x00+15x")
-(assert-equal (format nil "~a x~5,'0@dx" "asdf" 15)
-              "asdf x00+15x")
-(assert-equal (format nil (formatter "~a x~5,'0@dx") "asdf" 15)
-              "asdf x00+15x")
+;; B
+(test "asdf x00000000000000001111x"
+      "~a x~20,'0bx" "asdf" 15)
 
-#+sbcl
-(assert-equal (cl:format nil "~a x~5,'0dx" "asdf" -15)
-              "asdf x00-15x")
-(assert-equal (format nil "~a x~5,'0dx" "asdf" -15)
-              "asdf x00-15x")
-(assert-equal (format nil (formatter "~a x~5,'0dx") "asdf" -15)
-              "asdf x00-15x")
+(test "x00000000011_11_11_11x"
+      "x~20,'0,'_,2:bx" 255)
 
-; R
-#+sbcl
-(assert-equal (cl:format nil "x~12,5,'0rx" -20)
-              "x00-18x")
-(assert-equal (format nil "x~12,5,'0rx" -20)
-              "x00-18x")
-(assert-equal (format nil (formatter "x~12,5,'0rx") -20)
-              "x00-18x")
 
-#+sbcl
-(assert-equal (cl:format nil "x~4,20,'0,,2:rx" 255)
-              "x00000000000000033,33x")
-(assert-equal (format nil "x~4,20,'0,,2:rx" 255)
-              "x00000000000000033,33x")
-(assert-equal (format nil (formatter "x~4,20,'0,,2:rx") 255)
-              "x00000000000000033,33x")
+;; O
+(test "asdf x00000000000000000017x"
+      "~a x~20,'0ox" "asdf" 15)
 
-#+sbcl
-(assert-equal (cl:format nil "x~4,20,'0,'_:rx" 255)
-              "x0000000000000003_333x")
-(assert-equal (format nil    "x~4,20,'0,'_:rx" 255)
-              "x0000000000000003_333x")
-(assert-equal (format nil    (formatter "x~4,20,'0,'_:rx") 255)
-              "x0000000000000003_333x")
 
-#+sbcl
-(assert-equal (cl:format nil "x~12,5,'0rx" 'HELLO)
-              "xHELLOx")
-(assert-equal (format nil "x~12,5,'0rx" 'HELLO)
-              "xHELLOx")
-(assert-equal (format nil (formatter "x~12,5,'0rx") 'HELLO)
-              "xHELLOx")
+;; D
+(test "asdf x00+15x"
+      "~a x~5,'0@dx" "asdf" 15)
 
-; X
-#+sbcl
-(assert-equal (cl:format nil "~a x~20,'*Xx" "asdf" 15)
-              "asdf x*******************Fx")
-(assert-equal (format nil "~a x~20,'*Xx" "asdf" 15)
-              "asdf x*******************Fx")
-(assert-equal (format nil (formatter "~a x~20,'*Xx") "asdf" 15)
-              "asdf x*******************Fx")
 
-; A
-#+sbcl
-(assert-equal (cl:format nil "x~20,1,0,'_@ax" "123")
-              "x_________________123x")
-(assert-equal (format nil "x~20,1,0,'_@ax" "123")
-              "x_________________123x")
-(assert-equal (format nil (formatter "x~20,1,0,'_@ax") "123")
-              "x_________________123x")
+(test "asdf x00-15x"
+      "~a x~5,'0dx" "asdf" -15)
 
-#+sbcl
-(assert-equal (cl:format nil "x~20,,,'*ax" '(1 2 3))
-              "x(1 2 3)*************x")
-(assert-equal (format nil "x~20,,,'*ax" '(1 2 3))
-              "x(1 2 3)*************x")
-(assert-equal (format nil (formatter "x~20,,,'*ax") '(1 2 3))
-              "x(1 2 3)*************x")
 
-#+sbcl
-(assert-equal (cl:format nil "x~5,3,1,'*Ax" '(1))
-              "x(1)****x")
-(assert-equal (format nil "x~5,3,1,'*Ax" '(1))
-              "x(1)****x")
-(assert-equal (format nil (formatter "x~5,3,1,'*Ax") '(1))
-              "x(1)****x")
+;; R
+(test "x00-18x"
+      "x~12,5,'0rx" -20)
+
+(test "x00000000000000033,33x"
+      "x~4,20,'0,,2:rx" 255)
+
+(test "x0000000000000003_333x"
+      "x~4,20,'0,'_:rx" 255)
+
+(test "xHELLOx"
+      "x~12,5,'0rx" 'HELLO)
+
+
+;; X
+(test "asdf x*******************Fx"
+      "~a x~20,'*Xx" "asdf" 15)
+
+
+;; A
+(test "x_________________123x"
+      "x~20,1,0,'_@ax" "123")
+
+(test "x(1 2 3)*************x"
+      "x~20,,,'*ax" '(1 2 3))
+
+(test "x(1)****x"
+      "x~5,3,1,'*Ax" '(1))
 
 
 ;; print 65535 with a leading sign in radix 4, group 3 digits with '_', left pad with '0' to 20 chars
