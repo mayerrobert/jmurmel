@@ -222,7 +222,7 @@ multiline comment
 (deftest backquote.1  `nil nil)
 (deftest backquote.2  `1 1)
 #+murmel
-(deftest backquote.3  ``1 ''1)
+(deftest backquote.3  ``1 1) ; sbcl says ``1 -> `1, abcl says ``1 -> 1, both are probably correct
 (deftest backquote.4  `x 'x)
 (deftest backquote.5  (let ((x 1)) `,x) 1)
 

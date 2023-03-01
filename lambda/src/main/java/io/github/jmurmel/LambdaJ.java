@@ -1775,6 +1775,8 @@ public class LambdaJ {
         private Object qq_expand(Object x) {
             if (x == null)
                 return null;
+            if (x == sT || x == sNil || (atom(x) && !symbolp(x)))
+                return x;
             if (atom(x))
                 return quote(x);
 
@@ -1816,6 +1818,8 @@ public class LambdaJ {
         private Object qq_expand_list(Object x) {
             if (x == null)
                 return list(sList, sNil);
+            if (x == sT || x == sNil || (atom(x) && !symbolp(x)))
+                return list(sQuote, new ListConsCell(x, null));
             if (atom(x))
                 return list(sList, quote(x));
 
@@ -1835,30 +1839,47 @@ public class LambdaJ {
                 return list(sList, qq_expand_list(op));
 
             //return list(sList, list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons))));
-            return list(sList, optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons))));
+            final ConsCell combined = optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons)));
+            if (car(combined) == sQuote) {
+                return list(sQuote, cdr(combined));
+            }
+            return list(sList, combined);
         }
 
         /** create a form that will append lhs and rhs: "(append lhs rhs)"
          * For some special case the form will be optimized:
          *
-         * (append (list lhsX) (list rhsX...))  -> (list lhsX rhsX...)
-         * (append (list lhsX) (list* rhsX...)) -> (list* lhsX rhsX...)
-         * (append (list lhsX) (cons rhsX...))  -> (list* lhsX rhsX...)
-         * (append (list lhsX) rhs)             -> (cons lhsX rhs)  
-         * (append lhs (list rhsX))             -> (append lhs (cons rhsX nil))
+         * (append (quote lhsX) (quote rhsX...)) -> (quote lhsX rhsX...)
+         *
+         * (append (list lhsX) (list rhsX...))   -> (list lhsX rhsX...)
+         * (append (list lhsX) (list* rhsX...))  -> (list* lhsX rhsX...)
+         * (append (list lhsX) (cons rhsX...))   -> (list* lhsX rhsX...)
+         * (append (list lhsX) rhs)              -> (cons lhsX rhs)  
+         * (append lhs (list rhsX))              -> (append lhs (cons rhsX nil))
          */
         private ConsCell optimizedAppend(Object lhs, Object rhs) {
-            if (consp(lhs) && car(lhs) == sList) {
-                assert cddr(lhs) == null: "expected single argument list call, got: " + lhs;
+            if (consp(lhs)) {
+                if (car(lhs) == sQuote) {
+                    assert cddr(lhs) == null : "expected single argument quote call, got: " + lhs;
 
-                if (consp(rhs)) {
-                    final Object carRhs = car(rhs);
-                    if (carRhs == sList)     return new ListConsCell(sList,     new ListConsCell(cadr(lhs), cdr(rhs)));
-                    if (carRhs == sListStar
-                        || carRhs == sCons)  return new ListConsCell(sListStar, new ListConsCell(cadr(lhs), cdr(rhs)));
+                    if (consp(rhs)) {
+                        final Object carRhs = car(rhs);
+                        if (carRhs == sQuote) return new ListConsCell(sQuote, new ListConsCell(((ConsCell)cadr(lhs)).rplacd(cadr(rhs)), null));
+                    }
                 }
 
-                return list(sCons, cadr(lhs), rhs);
+                if (car(lhs) == sList) {
+                    assert cddr(lhs) == null : "expected single argument list call, got: " + lhs;
+
+                    if (consp(rhs)) {
+                        final Object carRhs = car(rhs);
+                        if (carRhs == sList) return new ListConsCell(sList, new ListConsCell(cadr(lhs), cdr(rhs)));
+                        if (carRhs == sListStar
+                            || carRhs == sCons) return new ListConsCell(sListStar, new ListConsCell(cadr(lhs), cdr(rhs)));
+                    }
+
+                    return list(sCons, cadr(lhs), rhs);
+                }
             }
 
             if (consp(rhs) && car(rhs) == sList && cddr(rhs) == null)

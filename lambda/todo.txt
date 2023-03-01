@@ -1,3 +1,34 @@
+Scheme r7rs sagt:
+A quasiquote expression may return either newly allocated,
+mutable objects or literal structure for any structure that
+is constructed at run time during the evaluation of the
+expression. Portions that do not need to be rebuilt are
+always literal.
+
+JMurmel> (defun foo () `((1 2)))
+==> foo
+JMurmel> (eq (car (foo)) (car (foo)))
+==> nil
+-> das sollte/ könnte t sein
+
+JMurmel> (read) `((1 2))
+==> (list (list (quote 1) (quote 2)))
+sollte/ könnte aber z.B. (list '(1 2)) sein
+
+Soll:
+JMurmel> (read) (let ((a 3)) `((1 2) ,a ,4 ,'five 6))
+==> (let ((a 3)) (list* (quote (1 2)) a 4 (quote five) (quote (6))))
+
+JMurmel> `(((1 2 3) (11 22 33)))
+==> (((1 2 3) (11 22 33)))
+
+
+In vectors sollte auch expandiert werden (beispiel aus r7rs mit sbcl):
+* `#(10 5 ,(sqrt 4) ,@(map 'list #'sqrt '(16 9)) 8)
+#(10 5 2.0 4.0 3.0 8)
+
+
+
 jmurmel + jrunscript dokumentieren: https://docs.oracle.com/en/java/javase/19/docs/specs/man/jrunscript.html
 $ jrunscript -cp jmurmel.jar -l jmurmel -f ../../samples.murmel/fizzbuzz.lisp
 1, 2, Fizz, 4, Buzz, Fizz, 7, 8, Fizz, Buzz, 11, Fizz, 13, 14, Fizz Buzz, 16, 17, Fizz, 19, Buzz, Fizz,

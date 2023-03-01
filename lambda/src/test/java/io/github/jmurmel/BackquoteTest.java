@@ -131,8 +131,14 @@ public class BackquoteTest {
         assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (cons c nil)))");
     }
 
+    // sample from r7rs.pdf p. 21
+    @Test
+    public void testR7rs() {
+        eval("(let ((a 3)) `((1 2) ,a ,4 ,'five 6))", "((1.0 2.0) 3.0 4.0 five 6.0)");
+        assertExpansion("`((1 2) ,a ,4 ,'five 6))", "(append (quote ((1 2))) (list* a 4 (quote five) (quote (6))))");
+    }
+
     // sample from Ansi Common Lisp pp413
-    // ``(w ,x ,,y) -> `
     @Test
     public void testACL() {
         eval("(define  x  'a) "
