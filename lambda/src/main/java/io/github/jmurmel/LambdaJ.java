@@ -1651,10 +1651,10 @@ public class LambdaJ {
                 if (tok == Token.BQ) {
                     skipWs();
                     final int _startLine = lineNo, _startChar = charNo;
-                    readToken();
                     final Object o;
                     try {
                         backquote++;
+                        readToken();
                         final Object exp = readObject(_startLine, _startChar, eof);
                         if (backquote == 1) {
                             o = qq_expand(exp);
@@ -1674,10 +1674,10 @@ public class LambdaJ {
                     if (look == '@') { splice = true; look = getchar(); }
                     else splice = false;
                     final int _startLine = lineNo, _startChar = charNo;
-                    readToken();
                     final Object o;
                     try {
                         backquote--;
+                        readToken();
                         o = cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar, eof), null));
                     }
                     finally { backquote++; }
@@ -1699,8 +1699,8 @@ public class LambdaJ {
         // todo wozu brauchts den parameter eof?
         private ConsCell readList(int listStartLine, int listStartChar, Object eof) throws IOException {
             AbstractConsCell first = null, appendTo = null;
+            skipWs();
             for (;;) {
-                skipWs();
                 final int carStartLine = lineNo, carStartChar = charNo;
                 readToken();
                 if (tok == null) throw new EOFException("cannot read list. missing ')'?");
@@ -1775,6 +1775,9 @@ public class LambdaJ {
         private Object qq_expand(Object x) {
             if (x == null)
                 return null;
+            if (x instanceof Object[]) { // this is effectively vectorp(x) (except string or bitvector)
+                return qq_expandVector((Object[])x);
+            }
             if (x == sT || x == sNil || (atom(x) && !symbolp(x)))
                 return x;
             if (atom(x))
@@ -1844,6 +1847,14 @@ public class LambdaJ {
                 return list(sQuote, cdr(combined));
             }
             return list(sList, combined);
+        }
+
+        private Object qq_expandVector(Object[] x) {
+            /*for (int i = 0; i < x.length; i++)
+                x[i] = qq_expand(x[i]);
+            return x;*/
+            final ConsCell c = ConsCell.cons(st.intern("vector"), ConsCell.list(x));
+            return qq_expand(c);
         }
 
         /** create a form that will append lhs and rhs: "(append lhs rhs)"

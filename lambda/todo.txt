@@ -28,6 +28,11 @@ In vectors sollte auch expandiert werden (beispiel aus r7rs mit sbcl):
 #(10 5 2.0 4.0 3.0 8)
 
 
+JMurmel> (read) (let ((a 11)) `(1 2 3 ,a))
+==> (let ((a 11)) (append (quote (1)) (append (quote (2)) (append (quote (3)) (cons a nil)))))
+sollte (list 1 2 3 a) geben
+
+
 
 jmurmel + jrunscript dokumentieren: https://docs.oracle.com/en/java/javase/19/docs/specs/man/jrunscript.html
 $ jrunscript -cp jmurmel.jar -l jmurmel -f ../../samples.murmel/fizzbuzz.lisp
