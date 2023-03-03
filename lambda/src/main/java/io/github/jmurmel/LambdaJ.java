@@ -1821,6 +1821,9 @@ public class LambdaJ {
         private Object qq_expand_list(Object x) {
             if (x == null)
                 return list(sList, sNil);
+            if (x instanceof Object[]) { // this is effectively vectorp(x) (except string or bitvector)
+                return qq_expand_listVector((Object[])x);
+            }
             if (x == sT || x == sNil || (atom(x) && !symbolp(x)))
                 return list(sQuote, new ListConsCell(x, null));
             if (atom(x))
@@ -1850,11 +1853,25 @@ public class LambdaJ {
         }
 
         private Object qq_expandVector(Object[] x) {
-            /*for (int i = 0; i < x.length; i++)
-                x[i] = qq_expand(x[i]);
-            return x;*/
             final ConsCell c = ConsCell.cons(st.intern("vector"), ConsCell.list(x));
             return qq_expand(c);
+        }
+
+        /*
+        private Object qq_expandVector(Object[] x) {
+            final ConsCell elements = ConsCell.list(x);
+            final Object expanded = qq_expand_list(elements);
+            if (expanded instanceof ConsCell && car((ConsCell)expanded) == sQuote) {
+                final ConsCell ccExpanded = (ConsCell)expanded;
+                final ConsCell expandedElements = (ConsCell)cadr(ccExpanded);
+                return listToArray(expandedElements, listLength(expandedElements));
+            }
+            return ConsCell.cons(st.intern("vector"), expanded);
+        }
+        */
+
+        private Object qq_expand_listVector(Object[] x) {
+            return list(sList, qq_expandVector(x));
         }
 
         /** create a form that will append lhs and rhs: "(append lhs rhs)"
