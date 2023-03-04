@@ -1820,14 +1820,12 @@ public class LambdaJ {
         */
         private Object qq_expand_list(Object x) {
             if (x == null)
-                return list(sList, sNil);
+                return list(sQuote, new ListConsCell(null, null));
             if (x instanceof Object[]) { // this is effectively vectorp(x) (except string or bitvector)
                 return qq_expand_listVector((Object[])x);
             }
-            if (x == sT || x == sNil || (atom(x) && !symbolp(x)))
+            if (atom(x)) // todo hashtables?
                 return list(sQuote, new ListConsCell(x, null));
-            if (atom(x))
-                return list(sList, quote(x));
 
             final ConsCell xCons = (ConsCell)x;
             final Object op = car(xCons);
@@ -1885,19 +1883,27 @@ public class LambdaJ {
          * (append (list lhsX) rhs)              -> (cons lhsX rhs)  
          * (append lhs (list rhsX))              -> (append lhs (cons rhsX nil))
          */
-        private ConsCell optimizedAppend(Object lhs, Object rhs) {
+        private ConsCell optimizedAppend(Object lhs, Object rhs) { // todo Object lhs nach ConsCell lhs aendern?!
+            if (rhs == null) return (ConsCell)lhs;
             if (consp(lhs)) {
                 if (car(lhs) == sQuote) {
-                    assert cddr(lhs) == null : "expected single argument quote call, got: " + lhs;
+                    assert cddr(lhs) == null : "expected a single argument quote call, got: " + lhs;
+                    assert cdr(cadr(lhs)) == null : "expected a quoted single element list, got: " + lhs;
 
                     if (consp(rhs)) {
                         final Object carRhs = car(rhs);
                         if (carRhs == sQuote) return new ListConsCell(sQuote, new ListConsCell(((ConsCell)cadr(lhs)).rplacd(cadr(rhs)), null));
+                        // (append '(a) (list 1 2 3)) -> (list 'a 1 2 3)
+                        if (carRhs == sList)    return new ListConsCell(sList,     new ListConsCell(quote(car(cadr(lhs))), cdr(rhs)));
+                        if (carRhs == sListStar
+                            || carRhs == sCons) return new ListConsCell(sListStar, new ListConsCell(quote(car(cadr(lhs))), cdr(rhs)));
                     }
+
+                    return list(sCons, quote(car(cadr(lhs))), rhs);
                 }
 
                 if (car(lhs) == sList) {
-                    assert cddr(lhs) == null : "expected single argument list call, got: " + lhs;
+                    assert cddr(lhs) == null : "expected a single argument list call, got: " + lhs;
 
                     if (consp(rhs)) {
                         final Object carRhs = car(rhs);

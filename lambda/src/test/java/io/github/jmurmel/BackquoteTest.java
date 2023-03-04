@@ -67,8 +67,7 @@ public class BackquoteTest {
     @Test
     public void testBQuotedQuotedSymbol() {
         eval("`'aaa", "(quote aaa)");
-        //assertExpansion("`'aaa", "(append (quote (quote)) (quote (aaa)))");
-        assertExpansion("`'aaa", "(list (quote quote) (quote aaa))");
+        assertExpansion("`'aaa", "(quote (quote aaa))");
     }
 
     @Test
@@ -87,7 +86,7 @@ public class BackquoteTest {
     @Test
     public void testUnquoteSplicedNil() {
         eval("`(a ,@nil)", "(a)");
-        assertExpansion("`(a ,@nil)", "(cons (quote a) nil)");
+        assertExpansion("`(a ,@nil)", "(quote (a))");
     }
 
 
@@ -99,19 +98,19 @@ public class BackquoteTest {
     @Test
     public void testBQuotedList() {
         eval("`(aaa bbb ccc)", "(aaa bbb ccc)");
-        assertExpansion("`(aaa bbb ccc)", "(list (quote aaa) (quote bbb) (quote ccc))");
+        assertExpansion("`(aaa bbb ccc)", "(quote (aaa bbb ccc))");
     }
 
     @Test
     public void testBQuotedDottedList() {
         eval("`(aaa bbb . ccc)", "(aaa bbb . ccc)");
-        assertExpansion("`(aaa bbb . ccc)", "(list* (quote aaa) (quote bbb) (quote ccc))");
+        assertExpansion("`(aaa bbb . ccc)", "(quote (aaa bbb . ccc))");
     }
 
     @Test
     public void testBQuotedListSplicedList() {
         eval("(define l '(1.0 2.0)) `(a ,@l b)", "(a 1.0 2.0 b)");
-        assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (cons (quote b) nil)))");
+        assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (quote (b))))");
     }
 
     // sample from CLHS
@@ -121,21 +120,20 @@ public class BackquoteTest {
     @Test
     public void testCHLSBackQuote() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,c ,@d)", "((\"A\" b) \"C\" \"D\" \"DD\")");
-        //assertExpansion("`((,a b) ,c ,@d)", "(append (list (append (list a) (quote (b)))) (append (list c) d))");
-        assertExpansion("`((,a b) ,c ,@d)", "(list* (list a (quote b)) c d)");
+        assertExpansion("`((,a b) ,c ,@d)", "(list* (cons a (quote (b))) c d)");
     }
 
     @Test
     public void testCHLSMod() {
         eval("(define a \"A\") (define c \"C\") (define d '(\"D\" \"DD\")) `((,a b) ,@d ,c)", "((\"A\" b) \"D\" \"DD\" \"C\")");
-        assertExpansion("`((,a b) ,@d ,c)", "(cons (list a (quote b)) (append d (cons c nil)))");
+        assertExpansion("`((,a b) ,@d ,c)", "(cons (cons a (quote (b))) (append d (cons c nil)))");
     }
 
     // sample from r7rs.pdf p. 21
     @Test
     public void testR7rs() {
         eval("(let ((a 3)) `((1 2) ,a ,4 ,'five 6))", "((1.0 2.0) 3.0 4.0 five 6.0)");
-        assertExpansion("`((1 2) ,a ,4 ,'five 6))", "(append (quote ((1 2))) (list* a 4 (quote five) (quote (6))))");
+        assertExpansion("`((1 2) ,a ,4 ,'five 6))", "(list* (quote (1 2)) a 4 (quote five) (quote (6)))");
     }
 
     // sample from Ansi Common Lisp pp413
@@ -151,7 +149,7 @@ public class BackquoteTest {
     @Test
     public void testBBquotedSymbol() {
         eval("``a", "(quote a)");
-        assertExpansion("``a", "(list (quote quote) (quote a))");
+        assertExpansion("``a", "(quote (quote a))");
     }
 
     // ``(aaa ,bbb ,,ccc) =>
@@ -167,10 +165,7 @@ public class BackquoteTest {
 
         // with optimization
         eval("(define ccc 'cccval) ``(aaa ,bbb ,,ccc)", "(list (quote aaa) bbb cccval)");
-        assertExpansion("``(aaa ,bbb ,,ccc)", "(list (quote list) " 
-                                                  + "(list (quote quote) (quote aaa)) " 
-                                                  + "(quote bbb) " 
-                                                  + "ccc)");
+        assertExpansion("``(aaa ,bbb ,,ccc)", "(list (quote list) (quote (quote aaa)) (quote bbb) ccc)");
     }
 
     @Test
