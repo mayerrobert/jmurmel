@@ -1890,16 +1890,20 @@ public class LambdaJ {
                     assert cddr(lhs) == null : "expected a single argument quote call, got: " + lhs;
                     assert cdr(cadr(lhs)) == null : "expected a quoted single element list, got: " + lhs;
 
+                    Object x = car(cadr(lhs));
+                    if (x == sT || x == sNil || (atom(x) && !symbolp(x) && !(x instanceof Object[]))) {}
+                    else x = quote(x);
+
                     if (consp(rhs)) {
                         final Object carRhs = car(rhs);
                         if (carRhs == sQuote) return new ListConsCell(sQuote, new ListConsCell(((ConsCell)cadr(lhs)).rplacd(cadr(rhs)), null));
                         // (append '(a) (list 1 2 3)) -> (list 'a 1 2 3)
-                        if (carRhs == sList)    return new ListConsCell(sList,     new ListConsCell(quote(car(cadr(lhs))), cdr(rhs)));
+                        if (carRhs == sList)    return new ListConsCell(sList,     new ListConsCell(x, cdr(rhs)));
                         if (carRhs == sListStar
-                            || carRhs == sCons) return new ListConsCell(sListStar, new ListConsCell(quote(car(cadr(lhs))), cdr(rhs)));
+                            || carRhs == sCons) return new ListConsCell(sListStar, new ListConsCell(x, cdr(rhs)));
                     }
 
-                    return list(sCons, quote(car(cadr(lhs))), rhs);
+                    return list(sCons, x, rhs);
                 }
 
                 if (car(lhs) == sList) {

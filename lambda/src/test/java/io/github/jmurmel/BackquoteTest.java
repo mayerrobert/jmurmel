@@ -102,6 +102,12 @@ public class BackquoteTest {
     }
 
     @Test
+    public void testBQuotedList2() {
+        eval("(let ((a 11.0)) `(1.0 2.0 3.0 ,a))", "(1.0 2.0 3.0 11.0)");
+        assertExpansion("(let ((a 11.0)) `(1.0 2.0 3.0 ,a))", "(let ((a 11.0)) (list 1.0 2.0 3.0 a))");
+    }
+
+    @Test
     public void testBQuotedDottedList() {
         eval("`(aaa bbb . ccc)", "(aaa bbb . ccc)");
         assertExpansion("`(aaa bbb . ccc)", "(quote (aaa bbb . ccc))");
