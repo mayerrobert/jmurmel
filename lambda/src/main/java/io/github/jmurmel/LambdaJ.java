@@ -1775,9 +1775,10 @@ public class LambdaJ {
         private Object qq_expand(Object x) {
             if (x == null)
                 return null;
-            if (x instanceof Object[]) { // this is effectively vectorp(x) (except string or bitvector)
+            if (x instanceof Object[]) // this is effectively vectorp(x) (except string or bitvector)
                 return qq_expandVector((Object[])x);
-            }
+            if (hashtablep(x))
+                return qq_expandHash(x);
             if (x == sT || x == sNil || (atom(x) && !symbolp(x)))
                 return x;
             if (atom(x))
@@ -1821,9 +1822,10 @@ public class LambdaJ {
         private Object qq_expand_list(Object x) {
             if (x == null)
                 return list(sQuote, new ListConsCell(null, null));
-            if (x instanceof Object[]) { // this is effectively vectorp(x) (except string or bitvector)
+            if (x instanceof Object[]) // this is effectively vectorp(x) (except string or bitvector)
                 return qq_expand_listVector((Object[])x);
-            }
+            if (hashtablep(x))
+                return qq_expand_listHash(x);
             if (atom(x)) // todo hashtables?
                 return list(sQuote, new ListConsCell(x, null));
 
@@ -1868,8 +1870,37 @@ public class LambdaJ {
         }
         */
 
-        private Object qq_expand_listVector(Object[] x) {
+        private ConsCell qq_expand_listVector(Object[] x) {
             return list(sList, qq_expandVector(x));
+        }
+
+        @SuppressWarnings("unchecked")
+        private Object qq_expandHash(Object x) {
+            final ListBuilder testAndPairs = new ListBuilder();
+            if (x instanceof IdentityHashMap)   testAndPairs.append(quote(st.intern("eq")));
+            else if (x instanceof EqlMap)       testAndPairs.append(quote(st.intern("eql")));
+            else if (x instanceof EqlTreeMap)   testAndPairs.append(quote(st.intern("compare-eql")));
+            else if (x instanceof EqualMap)     testAndPairs.append(quote(st.intern("equal")));
+            else if (x instanceof EqualTreeMap) testAndPairs.append(quote(st.intern("compare-equal")));
+            else testAndPairs.append(sT);
+            if (x instanceof MurmelMap) {
+                final MurmelMap hash = (MurmelMap)x;
+                for (Map.Entry<Object, Object> e : hash.entrySet()) {
+                    testAndPairs.append(hash.getKey(e)).append(e.getValue());
+                }
+            }
+            else {
+                final Map<Object, Object> hash = (Map<Object, Object>)x;
+                for (Map.Entry<Object, Object> e : hash.entrySet()) {
+                    testAndPairs.append(e.getKey()).append(e.getValue());
+                }
+            }
+            final ConsCell c = ConsCell.cons(st.intern("hash"), testAndPairs.first());
+            return qq_expand(c);
+        }
+
+        private ConsCell qq_expand_listHash(Object x) {
+            return list(sList, qq_expandHash(x));
         }
 
         /** create a form that will append lhs and rhs: "(append lhs rhs)"
@@ -1883,7 +1914,7 @@ public class LambdaJ {
          * (append (list lhsX) rhs)              -> (cons lhsX rhs)  
          * (append lhs (list rhsX))              -> (append lhs (cons rhsX nil))
          */
-        private ConsCell optimizedAppend(Object lhs, Object rhs) { // todo Object lhs nach ConsCell lhs aendern?!
+        private ConsCell optimizedAppend(Object lhs, Object rhs) {
             if (rhs == null) return (ConsCell)lhs;
             if (consp(lhs)) {
                 if (car(lhs) == sQuote) {
@@ -1891,8 +1922,8 @@ public class LambdaJ {
                     assert cdr(cadr(lhs)) == null : "expected a quoted single element list, got: " + lhs;
 
                     Object x = car(cadr(lhs));
-                    if (x == sT || x == sNil || (atom(x) && !symbolp(x) && !(x instanceof Object[]))) {}
-                    else x = quote(x);
+                    if (!(x == sT || x == sNil || (atom(x) && !symbolp(x) && !(x instanceof Object[]))))
+                        x = quote(x);
 
                     if (consp(rhs)) {
                         final Object carRhs = car(rhs);

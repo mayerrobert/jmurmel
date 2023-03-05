@@ -1,3 +1,12 @@
+unquote-splice in hash (und wsl auch vector) geht nicht richtig:
+JMurmel> (read) `#H(eql ,@l)
+Error: program-error - hash: malformed hash: last key/value pair is missing 'value'
+-> wsl. muss qq_expand iwie in readerMacro eingebaut werden, oder # und #H müssen ebenso wie ' in readObject verschoben werden
+   jedenfalls muss qq_expand gemacht werden bevor vector/ hash gebastelt wird
+-> `#H(,tst 1 11 2 22) wird wsl
+
+
+
 Scheme r7rs sagt:
 A quasiquote expression may return either newly allocated,
 mutable objects or literal structure for any structure that
