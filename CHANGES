@@ -1,6 +1,8 @@
 
 Changes in JMurmel-1.4.2 relative to JMurmel-1.4.1
 
+ * fixed backquote forms with vector- and hashliterals 
+
  * changed write, writeln, lnwrite, format, format-locale
    to also accept an adjustable string as destination
  * changed log to accept a second optional parameter

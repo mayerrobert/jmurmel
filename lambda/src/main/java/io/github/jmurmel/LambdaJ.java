@@ -1180,16 +1180,20 @@ public class LambdaJ {
             this.in = in;
             this.filePath = filePath;
 
-            sNot          = st.intern("not");
-            sAnd          = st.intern("and");
-            sOr           = st.intern("or");
+            sNot      = st.intern("not");
+            sAnd      = st.intern("and");
+            sOr       = st.intern("or");
 
-            sQuote          = st.intern("quote");
-            sAppend         = st.intern("append");
-            sList           = st.intern("list");
-            sListStar       = st.intern("list*");
-            sCons           = st.intern("cons");
-            sNil            = st.intern("nil");
+            sQuote    = st.intern("quote");
+            sAppend   = st.intern("append");
+            sList     = st.intern("list");
+            sListStar = st.intern("list*");
+            sCons     = st.intern("cons");
+            sNil      = st.intern("nil");
+
+            sVect     = st.intern("vect");
+            sHash     = st.intern("hash");
+            sApply    = st.intern("apply");
 
             this.featuresEnvEntry = featuresEnvEntry;
         }
@@ -1338,6 +1342,7 @@ public class LambdaJ {
 
             case '(':
                 final ConsCell vec = readList(lineNo, charNo, new Object());
+                if (backquote > 0) return ConsCell.listStar(sBqVector, arg, vec);
                 return arg >= 0 ? listToArray(vec, arg) : LambdaJ.listToArray(vec);
 
             case '*':
@@ -1347,7 +1352,9 @@ public class LambdaJ {
             case 'H':
                 if (look != '(') errorReaderError("expected '(' after '#H'");
                 look = getchar();
-                return hash(st, readList(lineNo, charNo, new Object()));
+                final ConsCell testAndPairs = readList(lineNo, charNo, new Object());
+                if (backquote > 0) return ConsCell.cons(sBqHash, testAndPairs);
+                return hash(st, testAndPairs);
 
             default:
                 look = getchar();
@@ -1377,23 +1384,6 @@ public class LambdaJ {
             return ret;
         }
 
-        private static Object[] listToArray(ConsCell lst, int len) {
-            if (lst == null) {
-                if (len == 0) return EMPTY_ARRAY;
-                errorReaderError("vector of length %d cannot be initialized from ()", len);
-                assert false; //notreached
-            }
-            final Object[] ret = new Object[len];
-            int i = 0;
-            for (Object o: lst) {
-                if (i == len) errorReaderError("vector is longer than the specified length: #%d%s", len, printSEx(lst));
-                ret[i++] = o;
-            }
-            final Object last = ret[i-1];
-            if (last != null) Arrays.fill(ret, i, len, last);
-            return ret;
-        }
-
         private String readerMacroToken() {
             int index = 0;
             while (look != EOF && !isSpace(look) && !isSyntax(look)) {
@@ -1403,9 +1393,7 @@ public class LambdaJ {
             return tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
         }
 
-        private final Object sNot;
-        private final Object sAnd;
-        private final Object sOr;
+        private final Object sNot, sAnd, sOr;
 
         private boolean featurep(Object next) {
             if (next == null) return false; // #+nil
@@ -1604,8 +1592,9 @@ public class LambdaJ {
             }
         }
 
-        private static final Object sQuasiquote = "quasiquote", sUnquote = "unquote", sUnquote_splice = "unquote-splice";
-        private final Object sQuote, sAppend, sList, sListStar, sCons, sNil;
+        private static final Object sQuasiquote = "quasiquote", sUnquote = "unquote", sUnquote_splice = "unquote-splice", sBqVector = "bq-vector", sBqHash = "bq-hash";
+        private final LambdaJSymbol sQuote, sAppend, sList, sListStar, sCons, sNil;
+        private final LambdaJSymbol sApply, sVect, sHash;
 
         private Object readObject(int startLine, int startChar, Object eof) throws IOException {
             if (tok == null) {
@@ -1775,10 +1764,6 @@ public class LambdaJ {
         private Object qq_expand(Object x) {
             if (x == null)
                 return null;
-            if (x instanceof Object[]) // this is effectively vectorp(x) (except string or bitvector)
-                return qq_expandVector((Object[])x);
-            if (hashtablep(x))
-                return qq_expandHash(x);
             if (x == sT || x == sNil || (atom(x) && !symbolp(x)))
                 return x;
             if (atom(x))
@@ -1795,6 +1780,11 @@ public class LambdaJ {
 
             if (op == sQuasiquote)
                 return qq_expand(qq_expand(cadr(xCons)));
+
+            if (op == sBqVector)
+                return qq_expandVector(qq_expand(cdr(xCons)));
+            if (op == sBqHash)
+                return qq_expandHash(qq_expand(cdr(xCons)));
 
             if (cdr(xCons) == null)
                 return qq_expand_list(op);
@@ -1822,11 +1812,7 @@ public class LambdaJ {
         private Object qq_expand_list(Object x) {
             if (x == null)
                 return list(sQuote, new ListConsCell(null, null));
-            if (x instanceof Object[]) // this is effectively vectorp(x) (except string or bitvector)
-                return qq_expand_listVector((Object[])x);
-            if (hashtablep(x))
-                return qq_expand_listHash(x);
-            if (atom(x)) // todo hashtables?
+            if (atom(x))
                 return list(sQuote, new ListConsCell(x, null));
 
             final ConsCell xCons = (ConsCell)x;
@@ -1841,66 +1827,42 @@ public class LambdaJ {
             if (op == sQuasiquote)
                 return qq_expand_list(qq_expand(cadr(xCons)));
 
+            if (op == sBqVector)
+                return toList(qq_expandVector(qq_expand(cdr(xCons))));
+            if (op == sBqHash)
+                return toList(qq_expandHash(qq_expand(cdr(xCons))));
+
             if (cdr(xCons) == null)
                 return list(sList, qq_expand_list(op));
 
             //return list(sList, list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons))));
             final ConsCell combined = optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons)));
-            if (car(combined) == sQuote) {
-                return list(sQuote, cdr(combined));
-            }
+            if (car(combined) == sQuote) return list(sQuote, cdr(combined));
             return list(sList, combined);
         }
 
-        private Object qq_expandVector(Object[] x) {
-            final ConsCell c = ConsCell.cons(st.intern("vector"), ConsCell.list(x));
-            return qq_expand(c);
-        }
-
-        /*
-        private Object qq_expandVector(Object[] x) {
-            final ConsCell elements = ConsCell.list(x);
-            final Object expanded = qq_expand_list(elements);
-            if (expanded instanceof ConsCell && car((ConsCell)expanded) == sQuote) {
-                final ConsCell ccExpanded = (ConsCell)expanded;
-                final ConsCell expandedElements = (ConsCell)cadr(ccExpanded);
-                return listToArray(expandedElements, listLength(expandedElements));
+        private Object qq_expandVector(Object args) {
+            ConsCell ccArgs = (ConsCell)args;
+            if (car(ccArgs) == sQuote) {
+                ccArgs = (ConsCell)cadr(ccArgs);
+                final int arg = (Integer)car(ccArgs);
+                return arg >= 0 ? listToArray((ConsCell)cdr(ccArgs), arg) : LambdaJ.listToArray(cdr(ccArgs));
             }
-            return ConsCell.cons(st.intern("vector"), expanded);
-        }
-        */
-
-        private ConsCell qq_expand_listVector(Object[] x) {
-            return list(sList, qq_expandVector(x));
+            if (car(ccArgs) == sList) return ConsCell.cons(sVect, cdr(ccArgs));
+            return ConsCell.cons(sApply, ConsCell.list(sVect, ccArgs));
         }
 
-        @SuppressWarnings("unchecked")
-        private Object qq_expandHash(Object x) {
-            final ListBuilder testAndPairs = new ListBuilder();
-            if (x instanceof IdentityHashMap)   testAndPairs.append(quote(st.intern("eq")));
-            else if (x instanceof EqlMap)       testAndPairs.append(quote(st.intern("eql")));
-            else if (x instanceof EqlTreeMap)   testAndPairs.append(quote(st.intern("compare-eql")));
-            else if (x instanceof EqualMap)     testAndPairs.append(quote(st.intern("equal")));
-            else if (x instanceof EqualTreeMap) testAndPairs.append(quote(st.intern("compare-equal")));
-            else testAndPairs.append(sT);
-            if (x instanceof MurmelMap) {
-                final MurmelMap hash = (MurmelMap)x;
-                for (Map.Entry<Object, Object> e : hash.entrySet()) {
-                    testAndPairs.append(hash.getKey(e)).append(e.getValue());
-                }
-            }
-            else {
-                final Map<Object, Object> hash = (Map<Object, Object>)x;
-                for (Map.Entry<Object, Object> e : hash.entrySet()) {
-                    testAndPairs.append(e.getKey()).append(e.getValue());
-                }
-            }
-            final ConsCell c = ConsCell.cons(st.intern("hash"), testAndPairs.first());
-            return qq_expand(c);
+        private Object qq_expandHash(Object args) {
+            final ConsCell ccArgs = (ConsCell)args;
+            if (car(ccArgs) == sQuote) return hash(st, (ConsCell)cadr(ccArgs));
+            if (car(ccArgs) == sList) return ConsCell.cons(sHash, cdr(ccArgs));
+            return ConsCell.cons(sApply, ConsCell.list(sHash, ccArgs));
         }
 
-        private ConsCell qq_expand_listHash(Object x) {
-            return list(sList, qq_expandHash(x));
+        private Object toList(Object expanded) {
+            assert !symbolp(expanded);
+            if (atom(expanded)) return list(sQuote, ConsCell.cons(expanded, null));
+            return list(sList, expanded);
         }
 
         /** create a form that will append lhs and rhs: "(append lhs rhs)"
@@ -2123,6 +2085,7 @@ public class LambdaJ {
         sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return simpleVectorToList(intp, car(args)); } },
         sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
         sVector("vector", Features.HAVE_VECTOR, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
+        sVect("vect", Features.HAVE_VECTOR, 1, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(requireList("vect", cdr(args)), toInt("vect", car(args))); } },
 
         sString("string", Features.HAVE_STRING, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return stringDesignatorToString(car(args)); } },
         sSLength("slength", Features.HAVE_STRING, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
@@ -3782,6 +3745,24 @@ public class LambdaJ {
         ((ConsCell) maybeList).forEach(ret::add); // todo forEach behandelt dotted und proper lists gleich -> im interpreter gibt (apply < '(1 2 3 4 . 5)) einen fehler, im compiler nicht
         //for (Object rest = maybeList; rest != null; rest = cdr(rest)) ret.add(car(rest));
         return ret.toArray();
+    }
+
+    static Object[] listToArray(ConsCell lst, int len) {
+        if (lst == null) {
+            if (len == 0) return EMPTY_ARRAY;
+            errorReaderError("vector of length %d cannot be initialized from ()", len);
+            assert false; //notreached
+        }
+        if (len < 0) len = listLength(lst);
+        final Object[] ret = new Object[len];
+        int i = 0;
+        for (Object o: lst) {
+            if (i == len) errorReaderError("vector is longer than the specified length: #%d%s", len, printSEx(lst));
+            ret[i++] = o;
+        }
+        final Object last = ret[i-1];
+        if (last != null) Arrays.fill(ret, i, len, last);
+        return ret;
     }
 
     enum CompareMode { NUMBER, EQL, EQUAL }
@@ -7585,6 +7566,7 @@ public class LambdaJ {
         }
         public final Object listToSimpleVector(Object... args) { values = null; oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
         public final Object _vector  (Object... args) { values = null; return args; }
+        public final Object _vect    (Object... args) { values = null; varargs1("vect", args.length); return LambdaJ.listToArray(arraySlice(args, 1), toInt(args[0])); }
 
         public final Object    _string (Object... args) { values = null; oneArg("string", args.length); return stringDesignatorToString(args[0]); }
         public final long      _slength(Object... args) { values = null; oneArg("slength", args.length); return slength(args[0]); }
@@ -8378,6 +8360,7 @@ public class LambdaJ {
             case "simple-vector->list": return (CompilerPrimitive)this::simpleVectorToList;
             case "list->simple-vector": return (CompilerPrimitive)this::listToSimpleVector;
             case "vector": return (CompilerPrimitive)this::_vector;
+            case "vect": return (CompilerPrimitive)this::_vect;
 
             case "string": return (CompilerPrimitive)this::_string;
             case "slength": return (CompilerPrimitive)this::_slength;
@@ -8609,7 +8592,7 @@ public class LambdaJ {
         "car", "cdr", "cons", "rplaca", "rplacd",
         /*"apply",*/ "eval", "eq", "eql", "equal", "null", "read", "write", "writeln", "lnwrite",
         "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp", "typep",
-        "assoc", "assq", "list", "vector", "seqref", "seqset", "svref", "svset", "svlength", "string", "slength", "sref", "sset", "bvref", "bvset", "bvlength",
+        "assoc", "assq", "list", "vect", "vector", "seqref", "seqset", "svref", "svset", "svlength", "string", "slength", "sref", "sset", "bvref", "bvset", "bvlength",
         "append", "values",
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",
@@ -9245,6 +9228,7 @@ public class LambdaJ {
         /** write atoms that are not symbols (and "nil" is acceptable, too) */
         private void emitAtom(WrappingWriter sb, Object form) {
             if (form == null || form == sNil) sb.append("(Object)null");
+            else if (form instanceof Integer) sb.append(Integer.toString((Integer) form));
             else if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
             else if (form instanceof Double) sb.append(Double.toString((Double) form));
             else if (form instanceof Character) {
