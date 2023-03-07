@@ -1869,11 +1869,16 @@ public class LambdaJ {
          * For some special case the form will be optimized:
          *
          * (append (quote lhsX) (quote rhsX...)) -> (quote lhsX rhsX...)
+         * (append (quote lhsX) (list rhsX...))  -> (list (quote lhsX) rhsX...)   ; only quote if needed
+         * (append (quote lhsX) (list* rhsX...)) -> (list* (quote lhsX) rhsX...)  ; only quote if needed
+         * (append (quote lhsX) (cons rhsX...))  -> (list* (quote lhsX) rhsX...)  ; only quote if needed
+         * (append (quote lhsX) rhs)             -> (cons (quote lhsX) rhs)       ; only quote if needed
          *
          * (append (list lhsX) (list rhsX...))   -> (list lhsX rhsX...)
          * (append (list lhsX) (list* rhsX...))  -> (list* lhsX rhsX...)
          * (append (list lhsX) (cons rhsX...))   -> (list* lhsX rhsX...)
-         * (append (list lhsX) rhs)              -> (cons lhsX rhs)  
+         * (append (list lhsX) rhs)              -> (cons lhsX rhs)
+         *
          * (append lhs (list rhsX))              -> (append lhs (cons rhsX nil))
          */
         private ConsCell optimizedAppend(Object lhs, Object rhs) {
@@ -1884,14 +1889,13 @@ public class LambdaJ {
                     assert cdr(cadr(lhs)) == null : "expected a quoted single element list, got: " + lhs;
 
                     Object x = car(cadr(lhs));
-                    if (!(x == sT || x == sNil || (atom(x) && !symbolp(x) && !(x instanceof Object[]))))
+                    if (!(x == sT || x == sNil || (atom(x) && !symbolp(x))))
                         x = quote(x);
 
                     if (consp(rhs)) {
                         final Object carRhs = car(rhs);
                         if (carRhs == sQuote) return new ListConsCell(sQuote, new ListConsCell(((ConsCell)cadr(lhs)).rplacd(cadr(rhs)), null));
-                        // (append '(a) (list 1 2 3)) -> (list 'a 1 2 3)
-                        if (carRhs == sList)    return new ListConsCell(sList,     new ListConsCell(x, cdr(rhs)));
+                        if (carRhs == sList)  return new ListConsCell(sList, new ListConsCell(x, cdr(rhs)));
                         if (carRhs == sListStar
                             || carRhs == sCons) return new ListConsCell(sListStar, new ListConsCell(x, cdr(rhs)));
                     }
