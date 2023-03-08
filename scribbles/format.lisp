@@ -27,7 +27,7 @@
                 car cadr caddr cdr cdddr cons rplacd list list*
 
                 error apply values eql equal functionp integerp stringp
-                < <= = >= > 1+ + - * abs ceiling truncate mod
+                < <= = >= > 1+ + - * ceiling truncate rem
                 char-code length nreverse
 
                 with-output-to-string
@@ -84,10 +84,10 @@
           (vector-add rev #\-))
 
         (labels ((loop (n)
-                  (when (> n 0)
-                    (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (mod n base)))
+                  (when (< n 0)
+                    (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (- (rem n base))))
                     (loop (truncate n base)))))
-          (loop (abs arg)))
+          (loop (if (> arg 0) (- arg) arg))) ; normalize integers to negative numbers because e.g. (abs most-negative-fixnum) would not fit in a fixnum
 
         ;; print sign and number
         (write (nreverse rev) nil output-stream))
@@ -108,23 +108,23 @@
             (let ((commachar (if (car params) (car params) #\,))
                   (comma-interval (if (cadr params) (cadr params) 3)))
               (labels ((loop (n pos)
-                        (when (> n 0)
+                        (when (< n 0)
                           (when (= pos comma-interval)
                             (vector-add rev commachar)
                             (incf len)
                             (setq pos 0))
-                          (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (mod n base)))
+                          (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (- (rem n base))))
                           (incf len)
                           (loop (truncate n base) (1+ pos)))))
-                (loop (abs arg) 0)))
+                (loop (if (> arg 0) (- arg) arg) 0)))
 
             ;; no grouping
             (labels ((loop (n)
-                      (when (> n 0)
-                        (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (mod n base)))
+                      (when (< n 0)
+                        (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (- (rem n base))))
                         (incf len)
                         (loop (truncate n base)))))
-              (loop (abs arg))))
+              (loop (if (> arg 0) (- arg) arg))))
 
         ;; padding
         (if mincol
