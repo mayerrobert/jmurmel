@@ -180,6 +180,11 @@ public class BackquoteTest {
     }
 
     @Test
+    public void testMultiSplice() {
+        assertExpansion("`(,@a ,@b ,@c ,@d)", "(append a b c d)");
+    }
+
+    @Test
     public void testNil() {
         eval("`(nil)", "(nil)");
     }

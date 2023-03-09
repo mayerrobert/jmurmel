@@ -1909,7 +1909,7 @@ public class LambdaJ {
 
                     if (consp(rhs)) {
                         final Object carRhs = car(rhs);
-                        if (carRhs == sList) return new ListConsCell(sList, new ListConsCell(cadr(lhs), cdr(rhs)));
+                        if (carRhs == sList)    return new ListConsCell(sList, new ListConsCell(cadr(lhs), cdr(rhs)));
                         if (carRhs == sListStar
                             || carRhs == sCons) return new ListConsCell(sListStar, new ListConsCell(cadr(lhs), cdr(rhs)));
                     }
@@ -1920,6 +1920,9 @@ public class LambdaJ {
 
             if (consp(rhs) && car(rhs) == sList && cddr(rhs) == null)
                 return list(sAppend, lhs, list(sCons, cadr(rhs), null));
+
+            if (consp(rhs) && car(rhs) == sAppend)
+                return new ListConsCell(sAppend, new ListConsCell(lhs, cdr(rhs)));
 
             return list(sAppend, lhs, rhs);
         }
