@@ -1660,6 +1660,7 @@ public class LambdaJ {
                     if (backquote == 0) errorReaderError("comma is not inside a backquote" + posInfo(startLine, startChar));
                     skipWs();
                     final boolean splice;
+                    if (look == '.') errorReaderError(",. is not supported" + posInfo(startLine, startChar));
                     if (look == '@') { splice = true; look = getchar(); }
                     else splice = false;
                     final int _startLine = lineNo, _startChar = charNo;
