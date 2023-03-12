@@ -1335,6 +1335,12 @@ public class LambdaJ {
                 skipWs();
                 return parseLong(readerMacroToken(), 8);
 
+            case 'r':
+            case 'R':
+                skipWs();
+                if (arg < Character.MIN_RADIX || arg > Character.MAX_RADIX) errorReaderError("%s is not a valid radix for #R", arg);
+                return parseLong(readerMacroToken(), arg);
+
             case 'x':
             case 'X':
                 skipWs();

@@ -1,3 +1,16 @@
+Murmel format    -> Murmel jformat ... nimmt Java format string
+Neu                 Mlib format und formatter
+
+Murmel error     -> Murmel jerror  ... (jerror datum . args) datum ist condition oder Java format string
+                 -> Mlib error     ... (error datum . args)  datum ist condition oder Murmel format string
+                                       (defun error (datum . args)
+                                         (if (stringp datum) (raise 'simple-error (apply format (list* nil datum args)))
+                                           (apply raise (cons datum args))))
+
+Neu: Murmel raise                  ... (raise condition-type arg . more-args) macht throw new condition-type(arg, more-args...)
+
+
+
 jmurmel + jrunscript dokumentieren: https://docs.oracle.com/en/java/javase/19/docs/specs/man/jrunscript.html
 $ jrunscript -cp jmurmel.jar -l jmurmel -f ../../samples.murmel/fizzbuzz.lisp
 1, 2, Fizz, 4, Buzz, Fizz, 7, 8, Fizz, Buzz, 11, Fizz, 13, 14, Fizz Buzz, 16, 17, Fizz, 19, Buzz, Fizz,

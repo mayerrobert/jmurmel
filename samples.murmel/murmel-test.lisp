@@ -211,6 +211,7 @@ multiline comment
 (deftest read.binary #b0101 5)
 (deftest read.octal  #o0101 65)
 (deftest read.hex    #xcafebabe 3405691582)
+(deftest read.radix  #3r222 26)
 (deftest read.bitvector #*0101
                         #+murmel (list->bit-vector '(0 1 0 1))
                         #-murmel (make-array 4 :element-type 'bit :initial-contents '(0 1 0 1))
@@ -227,15 +228,15 @@ multiline comment
 (deftest backquote.5  (let ((x 1)) `,x) 1)
 
 (deftest backquote.6  `(nil) '(nil))
-(deftest backquote.6  `(1) '(1))
-(deftest backquote.7  `(x) '(x))
-(deftest backquote.8  (let* ((x 1)) `(,x) ) '(1)) 
-(deftest backquote.9  (let* ((x '(1))) `(,@x) ) '(1)) 
-#+murmel (deftest backquote.10  (let* ((x '(1))) `(`,,@x) ) '(1)) 
-#+murmel (deftest backquote.11  (let* ((x '(1)) (y '(2))) `(`,,@x ,@y) ) '(1 2)) 
-#+murmel (deftest backquote.12 (let* ((x '(1)) (y '(2))) `(`,,@x ,y) ) '(1 (2))) 
+(deftest backquote.7  `(1) '(1))
+(deftest backquote.8  `(x) '(x))
+(deftest backquote.9  (let* ((x 1)) `(,x) ) '(1)) 
+(deftest backquote.10 (let* ((x '(1))) `(,@x) ) '(1)) 
+#+murmel (deftest backquote.11  (let* ((x '(1))) `(`,,@x) ) '(1)) 
+#+murmel (deftest backquote.12  (let* ((x '(1)) (y '(2))) `(`,,@x ,@y) ) '(1 2)) 
+#+murmel (deftest backquote.13 (let* ((x '(1)) (y '(2))) `(`,,@x ,y) ) '(1 (2))) 
 
-(deftest backquote
+(deftest backquote.14
   (let ((a "A") (c "C") (d '("D" "DD")))
     `((,a b) ,c ,@d))
   '(("A" b) "C" "D" "DD"))
