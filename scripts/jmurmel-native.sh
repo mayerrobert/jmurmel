@@ -6,8 +6,10 @@
 #
 # Needs a local installation of GraalVM:
 # download an appropriate GraalVM distribution
-# e.g. from https://github.com/graalvm/graalvm-ce-builds/releases/tag/vm-22.3.0
+# e.g. from https://github.com/graalvm/graalvm-ce-builds/releases/tag/vm-22.3.1
 # unzip it somewhere, adjust GRAAL_HOME accordingly and then do
+#
+# $ sudo $GRAAL_HOME/bin/gu install native-image
 #
 # $ mvn install
 # $ cd scripts
@@ -24,7 +26,7 @@
 # (as all GraalVM native binaries do).
 #
 
-export GRAAL_HOME=/usr/local/graalvm-ce-java19-22.3.0
+export GRAAL_HOME=/usr/local/graalvm-ce-java19-22.3.1
 export PATH=$GRAAL_HOME/bin:$PATH
 
 native-image \
