@@ -1,13 +1,15 @@
 Murmel format    -> Murmel jformat ... nimmt Java format string
+                 -> jformat-locale
 Neu                 Mlib format und formatter
 
-Murmel error     -> Murmel jerror  ... (jerror datum . args) datum ist condition oder Java format string
-                 -> Mlib error     ... (error datum . args)  datum ist condition oder Murmel format string
+Murmel error     -> Murmel jerror  ... (jerror datum . args) datum ist condition oder symbol (conditon-type) oder Java format string
+
+Neu              -> Mlib error     ... (error datum . args)  datum ist condition oder symbol (conditon-type) oder Murmel format string oder formatfunktion
                                        (defun error (datum . args)
                                          (if (stringp datum) (raise 'simple-error (apply format (list* nil datum args)))
-                                           (apply raise (cons datum args))))
+                                           (raise datum (apply format args))))
 
-Neu: Murmel raise                  ... (raise condition-type arg . more-args) macht throw new condition-type(arg, more-args...)
+Neu: Murmel raise                  ... (raise condition-type msg) macht throw new condition-type(msg)
 
 
 

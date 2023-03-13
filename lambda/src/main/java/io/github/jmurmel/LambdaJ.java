@@ -5434,8 +5434,6 @@ public class LambdaJ {
 
             if (stringp(datum)) { throw new SimpleError(requireString("error", datum), args); }
 
-            if (datum == st.intern("file-error"))   throw new InvalidPathException("(input)", "(reason)"); // todo args
-
             final String msg;
             switch (args.length) {
             case 0:  msg = null;  break;
@@ -5460,6 +5458,9 @@ public class LambdaJ {
 
             if (datum == st.intern("type-error")) throw new ClassCastException(msg);
             if (datum == st.intern("simple-type-error")) throw new SimpleTypeError(msg);
+            if (datum == st.intern("invalid-index-error")) throw new InvalidIndexError(msg);
+
+            if (datum == st.intern("file-error"))   throw new InvalidPathException("(filename)", msg == null ? "(unknown reason)" : msg);
 
             if (datum == st.intern("stream-error")) wrap(new IOException(msg));
             if (datum == st.intern("end-of-file"))  wrap(new EOFException(msg));
