@@ -204,7 +204,7 @@
                (start ()
                  (when (< i control-string-length)
                    (when (eql (sref control-string i) #\~)
-                     (when j
+                     (when (and j (< j i))
                        (collect (string-subseq control-string j i)))
                      (incf i)
                      (let* (code colonp atp arg
