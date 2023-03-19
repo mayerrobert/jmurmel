@@ -2302,6 +2302,10 @@
 
 ; logic, program structure ********************************************
 
+(defun m%symbol-or-lambda (x)
+  (or (symbolp x)
+      (and (consp x) (eq 'lambda (car x)))))
+
 ;;; = Macro: ->
 ;;;     (-> forms*) -> result
 ;;;
@@ -2320,7 +2324,7 @@
 (defmacro -> terms
   (labels ((apply-partials (partials expr)
              (if partials
-                   (if (symbolp (car partials))
+                   (if (m%symbol-or-lambda (car partials))
                          (list (car partials) (apply-partials (cdr partials) expr))
                      ; if it's a list with other parameters, insert expr (recursive call)
                      ; as second parameter into partial (note need to use cons to ensure same list for func args)
@@ -2347,7 +2351,7 @@
 (defmacro ->> terms
   (labels ((apply-partials (partials expr)
              (if partials
-                   (if (symbolp (car partials))
+                   (if (m%symbol-or-lambda (car partials))
                          (list (car partials) (apply-partials (cdr partials) expr))
                      ; if it's a list with other parameters, insert expr (recursive call)
                      ; as last form
@@ -2370,7 +2374,7 @@
         (let* ((temp (gensym))
                (init (car terms))
                (forms (let loop ((tail (cdr terms)))
-                         (if (symbolp (car tail))
+                         (if (m%symbol-or-lambda (car tail))
                                (if (cdr tail)
                                      (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
                                  (list (list (car tail) temp)))
@@ -2396,7 +2400,7 @@
         (let* ((temp (gensym))
                (init (car terms))
                (forms (let loop ((tail (cdr terms)))
-                         (if (symbolp (car tail))
+                         (if (m%symbol-or-lambda (car tail))
                                (if (cdr tail)
                                      (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
                                  (list (list (car tail) temp)))
