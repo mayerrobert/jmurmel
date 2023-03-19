@@ -3605,7 +3605,7 @@ public class LambdaJ {
     static Object   car(Object o)      { return o == null ? null
                                                           : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                           : o instanceof ConsCell ? ((ConsCell)o).car()
-                                                          : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0)
+                                                          : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0) // todo und andere strings char[], StringBuilder?
                                                           : carCdrError("car", o); }
 
     static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
@@ -4782,6 +4782,13 @@ public class LambdaJ {
             return ret.first();
         }
 
+        static String stringToImmutableString(Object o) {
+            if (o instanceof String) return (String)o;
+            if (o instanceof char[]) return new String((char[])o);
+            if (o instanceof CharSequence) return o.toString();
+            throw new SimpleTypeError("not a string: %s", printSEx(o));
+        }
+
         static Object stringDesignatorToString(Object o) {
             if (o == null) return new char[] { 'n', 'i', 'l' };
             if (o instanceof String) return ((String)o).toCharArray();
@@ -5330,14 +5337,14 @@ public class LambdaJ {
             if (locale) {
                 if (car(a) != null) {
                     stringArg(func, "first argument", a);
-                    locString = (String)car(a);
+                    locString = stringToImmutableString(car(a));
                 } else locString = null;
                 a = (ConsCell)cdr(a);
             }
             else locString = null;
 
             stringArg(func, locale ? "third argument" : "second argument", a);
-            final String s = String.valueOf(car(a));
+            final String s = stringToImmutableString(car(a));
             final Object[] args = listToArray(cdr(a));
             try {
                 if (locString == null) {
