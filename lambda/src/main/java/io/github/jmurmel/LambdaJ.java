@@ -5337,7 +5337,7 @@ public class LambdaJ {
             else locString = null;
 
             stringArg(func, locale ? "third argument" : "second argument", a);
-            final String s = (String) car(a);
+            final String s = String.valueOf(car(a));
             final Object[] args = listToArray(cdr(a));
             try {
                 if (locString == null) {
