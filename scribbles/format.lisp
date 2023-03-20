@@ -29,12 +29,14 @@
 
                 car cadr caddr cdr cdddr cons rplacd list list*
 
-                error apply values eql equal functionp integerp stringp
+                error apply values eql equal functionp floatp integerp stringp
                 < <= = >= > 1+ + - * ceiling truncate rem
                 char-code length nreverse
 
                 with-output-to-string
-                ))
+                )
+
+  (:import-from sb-impl dovector))
 
 #-murmel
 (in-package my-format)
@@ -65,6 +67,21 @@
 
 (defun string-subseq (str start end)
   (cl:subseq str start end))
+
+;; limited to: transform a Java format string for floats back to a CL format string
+(defun format-locale (os locale str cl:&rest args)
+  (cl:declare (cl:ignore locale))
+  (cl:nsubstitute #\~ #\% str)
+  (cl:nsubstitute #\, #\. str)
+  (when (eql (cl:aref str 1) #\+)
+    (if (= (length str) 3)
+        (cl:nsubstitute #\@ #\+ str)
+        (setq str (cl:concatenate 'cl:string
+                                  "~"
+                                  (cl:subseq str 2 (cl:1- (length str)))
+                                  "@"
+                                  (cl:subseq str (cl:1- (length str)))))))
+  (apply #'cl:format (list* os str args)))
 
 )
 
@@ -625,3 +642,15 @@
 (assert-equal (with-output-to-string (s)
                 (apply (formatter "x~4,20,'0,'_:@rx") (list s 65535)))
               "x000000000+33_333_333x")
+
+
+;; F
+(test "123.46"
+      "~5,2f" 123.456)
+
+(test "+123.46"
+      "~5,2@f" 123.456)
+
+(test #+murmel "+123.456789"
+      #-murmel "+123.45679"
+      "~@f" 123.456789)
