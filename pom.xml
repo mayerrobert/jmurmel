@@ -40,7 +40,7 @@
         <!-- dependency versions -->
         <junit.version>4.13.2</junit.version>
         <testng.version>7.4.0</testng.version> <!-- stick with 7.4.0 because 7.5 brings additional dependencies com.google.code.findbugs:jsr305 and org.slf4j:slf4j-api and needs an slf4j implementation -->
-        <slf4j-jdk14.version>2.0.6</slf4j-jdk14.version>
+        <slf4j-jdk14.version>2.0.7</slf4j-jdk14.version>
         <archunit.version>1.0.1</archunit.version>
         <jmh.version>1.36</jmh.version>
 
