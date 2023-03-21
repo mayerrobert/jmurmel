@@ -41,8 +41,10 @@
 
         ((member (car form) '(let let* letrec) eq)
          (if (symbolp (cadr form))
-               `(,(car form) ,(cadr form) ,(caddr form) ,@(mapcar expand (cdddr form)))
-           `(,(car form) ,(cadr form) ,@(mapcar expand (cddr form)))))
+               ;; named or dynamic letXX
+               `(,(car form) ,(cadr form) ,(expand (caddr form)) ,@(mapcar expand (cdddr form)))
+           ;; normal letXX
+           `(,(car form) ,(expand (cadr form)) ,@(mapcar expand (cddr form)))))
 
         ((eq 'setq (car form))
          `(setq ,(cadr form) ,(expand (caddr form))))
