@@ -573,15 +573,27 @@
               (t (error "unimplemented format character"))))))))
 
 
-(defun format (destination control-string #-murmel cl:&rest #+murmel . args)
-  (let ((f (if (functionp control-string)
-               control-string
-               (format-function control-string))))
-    (if destination
-        (apply f (cons destination args))
-        (with-output-to-string (destination)
-          (apply f (cons destination args))))))
+(defun m%format (destination f #-murmel cl:&rest #+murmel . args)
+  (if destination
+      (progn (apply f (cons destination args))
+             nil)
+      (with-output-to-string (destination)
+        (apply f (cons destination args)))))
 
+
+(defun format (destination control-string #-murmel cl:&rest #+murmel . args)
+  (apply #'m%format (list* destination
+                           (if (functionp control-string)
+                               control-string
+                               (format-function control-string))
+                           args)))
+
+
+#+murmel
+(defmacro format (destination control-string #-murmel cl:&rest #+murmel . args)
+  (if (stringp control-string)
+      `(m%format ,destination (formatter ,control-string) ,@args)
+      `(format ,destination ,control-string ,@args)))
 
 
 ;; Some tests:
