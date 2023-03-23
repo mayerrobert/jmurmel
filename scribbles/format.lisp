@@ -303,6 +303,11 @@
                  (dotimes (i n result)
                    (setf (sref result i) c))))
 
+             (do-integer (base colonp atp params)
+               (collect-shift (if (or colonp atp params)
+                                  `(print-integer        (car arguments) output-stream ,base ,colonp ,atp ',params)
+                                  `(print-simple-integer (car arguments) output-stream ,base))))
+
              (do-float (c atp params)
                `(setq arguments (m%print-float output-stream ,(m%float-fmtstring) arguments))))
 
@@ -348,9 +353,7 @@
                      ;; Tilde R: Radix
                      ;; ~nR prints arg in radix n. sbcl supports 2..36
                      ((#\r #\R)
-                      (collect-shift (if (or colonp atp (cdr params))
-                                         `(print-integer (car arguments) output-stream ,(car params) ,colonp ,atp ',(cdr params))
-                                         `(print-simple-integer (car arguments) output-stream ,(car params)))))
+                      (do-integer (car params) colonp atp (cdr params)))
 
                      ;; Tilde D: Decimal
                      ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
@@ -366,21 +369,15 @@
 
                      ;; Tilde B: Binary
                      ((#\b #\B)
-                      (collect-shift (if (or colonp atp params)
-                                         `(print-integer (car arguments) output-stream 2 ,colonp ,atp ',params)
-                                         `(print-simple-integer (car arguments) output-stream 2))))
+                      (do-integer 2 colonp atp params))
 
                      ;; Tilde O: Octal
                      ((#\o #\O)
-                      (collect-shift (if (or colonp atp params)
-                                         `(print-integer (car arguments) output-stream 8 ,colonp ,atp ',params)
-                                         `(print-simple-integer (car arguments) output-stream 8))))
+                      (do-integer 8 colonp atp params))
 
                      ;; Tilde X: Hexadecimal
                      ((#\x #\X)
-                      (collect-shift (if (or colonp atp params)
-                                         `(print-integer (car arguments) output-stream 16 ,colonp ,atp ',params)
-                                         `(print-simple-integer (car arguments) output-stream 16))))
+                      (do-integer 16 colonp atp params))
 
 
                      ;; Floating point
