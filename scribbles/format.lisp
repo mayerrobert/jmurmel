@@ -165,6 +165,8 @@
       (write arg nil output-stream)))
 
 
+;; todo jformatstring erzeugung in eine funktion rausziehen, das makro m%do-float und die beiden funktionen print-float und print-general-float inlinen
+;; die rausgezogene funktion kann auch in formatter verwendet werden
 (defmacro m%do-float ()
   `(let ((w (car params))
          (d (cadr params))
@@ -299,6 +301,14 @@
     (cdr result)))
 
 
+;; semi-private: used by the expansion of 'formatter'
+(defun m%print-float (output-stream jformat-string arguments)
+  (if (floatp (car arguments))
+      (format-locale output-stream "en-US" jformat-string (car arguments))
+      (write (car arguments) nil output-stream))
+  (cdr arguments))
+
+
 (defmacro formatter (control-string)
   (let* ((body (cons () ()))
          (append-to body))
@@ -329,9 +339,7 @@
                      (vector-add jformat-string d)))
                  (vector-add jformat-string c)
 
-                 `(if (floatp (car arguments))
-                        (format-locale output-stream "en-US" ,jformat-string (car arguments))
-                        (write (car arguments) nil output-stream)))))
+                 `(setq arguments (m%print-float output-stream ,jformat-string arguments)))))
 
       `(lambda (output-stream #-murmel cl:&rest #+murmel . arguments)
          ,@(dolist (elem (parse-control-string control-string) (cdr body))
@@ -414,17 +422,17 @@
 
                      ;; Tilde E: Exponential Floating-Point
                      ((#\e #\E)
-                      (collect-shift (do-float #\e atp params)))
+                      (collect (do-float #\e atp params)))
 
                      ;; Tilde F: Fixed-Format Floating-Point
                      ((#\f #\F)
-                      (collect-shift (do-float #\f atp params)))
+                      (collect (do-float #\f atp params)))
 
                      ;; Tilde G: General Floating-Point
                      ((#\g #\G)
-                      (collect-shift (if params
-                                         (do-float #\g atp params)
-                                         (if atp
+                      (if params
+                          (collect (do-float #\g atp params))
+                          (collect-shift (if atp
                                              `(progn
                                                 (when (floatp (car arguments))
                                                   (when (>= (car arguments) 0)
