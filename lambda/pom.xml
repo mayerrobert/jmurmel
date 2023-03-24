@@ -35,6 +35,28 @@
                 <maven.site.skip>false</maven.site.skip>
             </properties>
         </profile>
+        <profile>
+            <id>from-21</id>
+            <activation>
+                <jdk>[21,)</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+
+                        <configuration>
+                            <excludes>
+                                <exclude>**/*ManualTest.java</exclude>
+                                <!-- archunit's asm currently chokes on Java 21ea's class file major version 65 todo re-enable when archunit is updated -->
+                                <exclude>**/*ArchitectureTest.java</exclude>
+                            </excludes>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
     </profiles>
 
     <build>
