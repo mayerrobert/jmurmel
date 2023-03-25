@@ -28,10 +28,24 @@
 
     <build>
         <plugins>
+            <!-- skip install and deploy -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-install-plugin</artifactId>
+                <version>${maven-install-plugin.version}</version>
+                <configuration><skip>true</skip></configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <version>${maven-deploy-plugin.version}</version>
+                <configuration><skip>true</skip></configuration>
+            </plugin>
 
             <plugin>
                 <!-- can't use exec-maven-plugin because that doesn't support input redirection
                      ant exec task: https://ant.apache.org/manual/Tasks/exec.html -->
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-antrun-plugin</artifactId>
                 <version>${maven-antrun-plugin.version}</version>
                 <executions>

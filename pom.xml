@@ -124,7 +124,7 @@
     <modules>
         <module>lambda</module>
         <module>lambdajbm</module>
-        
+
         <module>samples.murmel</module>
         <module>samples.mlib</module>
 
