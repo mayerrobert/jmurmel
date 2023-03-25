@@ -15,6 +15,7 @@
     <properties>
         <maven.javadoc.skip>true</maven.javadoc.skip>
         <maven.site.skip>true</maven.site.skip>
+        <exec.skip>${skipTests}</exec.skip>
     </properties>
 
     <dependencies>
@@ -56,6 +57,7 @@
                             <goal>run</goal>
                         </goals>
                         <configuration>
+                            <skip>${skipTests}</skip>
                             <target name="run">
                                 <exec dir="${project.build.directory}" executable="java" input="../murmel-langref.lisp" failonerror="true">
                                     <arg value="-ea" />
