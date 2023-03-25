@@ -36,6 +36,8 @@ released: 2023-01-13
  * added the special form "try" and the function "typep"
  * added condition types, the global variable *condition-handler* and some condition handling
  * added hash-tables
+ * added a size argument to the "#(" and "#*" reader macros, e.g. "#5(1 2 3) ; ==> #(1 2 3 3 3)"
+ * added REPL command :desc
 
  * mlib: added the functions parse, parse-integer, min, max,
    string-trim, string-replace, string-split, string-join
