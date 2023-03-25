@@ -148,8 +148,10 @@ public class LambdaJ {
     }
 
     /** Main building block for Lisp-lists */
-    public abstract static class ConsCell implements Iterable<Object>, Serializable {
+    public abstract static class ConsCell implements Iterable<Object>, Serializable, Writeable {
         private static final long serialVersionUID = 1L;
+
+        @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { LambdaJ.printSEx(out, this, escapeAtoms); }
 
         public static ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
 
@@ -322,9 +324,37 @@ public class LambdaJ {
     }
 
     /** if an atom implements this interface then {@link Writeable#printSEx(LambdaJ.WriteConsumer, boolean)} will be used by the Murmel primitive {@code write} */
-    @FunctionalInterface public interface Writeable {
+    @FunctionalInterface public interface Writeable extends Formattable {
         /** will be used by the Murmel primitive {@code write} */
         void printSEx(WriteConsumer out, boolean escapeAtoms);
+
+        @Override
+        default void formatTo(Formatter formatter, int flags, int width, int precision) {
+            final boolean alternate = (flags & FormattableFlags.ALTERNATE) == FormattableFlags.ALTERNATE;
+
+            final StringBuilder sb = new StringBuilder();
+            printSEx(sb::append, alternate); // todo Writeable#printSEx() koennte maxwidth unterstuetzen statt erst erzeugen und dann abschneiden, wuerde auch list cycles erledigen
+
+            // apply precision
+            if (precision != -1 && sb.length() >= precision) {
+                sb.setLength(precision - 3); sb.append("...");
+            }
+
+            // apply width and justification
+            final int len = sb.length();
+            if (len >= width) { formatter.format(sb.toString()); return; }
+
+            final boolean leftJustified = (flags & FormattableFlags.LEFT_JUSTIFY) == FormattableFlags.LEFT_JUSTIFY;
+            if (leftJustified) {
+                for (int i = len; i < width; i++) sb.append(' ');
+                formatter.format(sb.toString());
+            }
+            else {
+                final StringBuilder blanks = new StringBuilder(width - len);
+                for (int i = len; i < width; i++) blanks.append(' ');
+                formatter.format(blanks.toString() + sb);
+            }
+        }
     }
 
     @FunctionalInterface public interface Primitive extends Writeable {
@@ -556,7 +586,7 @@ public class LambdaJ {
         private Object car, cdr;
 
         private AbstractConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
-        @Override public String toString() { return printSEx(this, false); }
+        @Override public String toString() { return LambdaJ.printSEx(this, false); }
         @Override public ConsIterator iterator() { return new ListConsCellIterator(this); }
 
         @Override public Object shallowCopyCdr() { if (consp(cdr)) cdr = ((ConsCell)cdr).copy(); return cdr; }
