@@ -103,15 +103,15 @@
       (let* ((arg (car arguments))
              (mincol (car params))
              (params (cdr params))
-             (padchar (if (car params) (car params) #\ ))
+             (tmp (car params))  (padchar (if tmp tmp #\ ))
              (params (cdr params))
              (rev (make-array 0 'character t))
              (len 0))
 
         (if colonp
             ;; grouping: separate 'comma-interval' digits with 'commachar'
-            (let ((commachar (if (car params) (car params) #\,))
-                  (comma-interval (if (cadr params) (cadr params) 3)))
+            (let* ((tmp (car params))   (commachar (if tmp tmp #\,))
+                   (tmp (cadr params))  (comma-interval (if tmp tmp 3)))
               (labels ((loop (n pos)
                         (when (< n 0)
                           (when (= pos comma-interval)
@@ -184,11 +184,11 @@
 (defun m%print-obj (arguments output-stream escapep atp params)
   (let* ((mincol  (car params))
          (params (cdr params))
-         (colinc  (if (car params) (car params) 1))
+         (tmp (car params))  (colinc  (if tmp tmp 1))
          (params (cdr params))
-         (minpad  (if (car params) (car params) 0))
+         (tmp (car params))  (minpad  (if tmp tmp 0))
          (params (cdr params))
-         (padchar (if (car params) (car params) #\ ))
+         (tmp (car params))  (padchar (if tmp tmp #\ ))
          (arg (car arguments))
          (str (write-to-string arg escapep)))
 
@@ -221,8 +221,8 @@
                        (collect (string-subseq control-string j i)))
                      (incf i)
                      (let* (code colonp atp arg
-                                 (args (cons () ()))
-                                 (append-to-args args))
+                            (args (cons () ()))
+                            (append-to-args args))
                        (labels ((collect-arg (arg)
                                   (setq append-to-args (cdr (rplacd append-to-args (cons arg ())))))
 
