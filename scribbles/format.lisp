@@ -217,8 +217,7 @@
                (start ()
                  (when (< i control-string-length)
                    (when (eql (sref control-string i) #\~)
-                     (when (and j (< j i))
-                       (collect (string-subseq control-string j i)))
+                     (and j (< j i) (collect (string-subseq control-string j i)))
                      (incf i)
                      (let* (code colonp atp arg
                             (args (cons () ()))
@@ -480,8 +479,7 @@
                        (if (and (floatp arg) params)
                            (format-locale output-stream "en-US" (m%float-fmtstring) arg)
                            (progn
-                             (when (and atp (floatp arg) (>= arg 0))
-                               (write #\+ nil output-stream))
+                             (and atp (floatp arg) (>= arg 0) (write #\+ nil output-stream))
                              (write arg nil output-stream)))
                        (setq arguments (cdr arguments))))
 
