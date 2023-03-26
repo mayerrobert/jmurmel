@@ -2551,8 +2551,8 @@ public class LambdaJ {
 
                 /// eval - (labels ((symbol (params...) forms...)...) forms...) -> object
                 case sLabels: {
-                    final ConsCell localFunctions = (ConsCell)car(ccArguments);
-                    env = localFunctions == null ? env : evalLabels(localFunctions, env);
+                    assert car(ccArguments) != null : "labels w/o local functions should have been transformed to progn";
+                    env = evalLabels((ConsCell)car(ccArguments), env);
                     ccForms = (ConsCell)cdr(ccArguments);
                     funcall = false;
                     break; // fall through to "eval a list of forms"
@@ -2793,7 +2793,7 @@ public class LambdaJ {
         if (form == null) return null;
         final Object expansion = expandForm(form);
         if (consp(expansion) && car(expansion) == sProgn) {
-            return expandAndEvalForms(listOrMalformed("progn", cdr(expansion)), env);
+            return expandAndEvalForms(listOrMalformed("progn", cdr(expansion)), env); // todo warum wird nochmal expanded?
         }
         return eval(expansion, env);
     }
@@ -2856,6 +2856,7 @@ public class LambdaJ {
 
                 case sLabels:
                     varargs1("labels", ccArgs);
+                    if (car(ccArgs) == null) return expandForm(cons(sProgn, cdr(ccArgs)));
                     for (ConsCell i = carShallowCopyList("labels", ccArgs); i != null; i = cdrShallowCopyList("labels", i)) {
                         if (!consp(car(i))) errorMalformed("labels", "a list (symbol (params...) forms...)", i);
                         final ConsCell localFunc = carShallowCopyList("labels", i);
@@ -2863,10 +2864,7 @@ public class LambdaJ {
                         final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
                         if (funcSymbol.macro != null) throw new ProgramError("local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
                         checkLambdaList(printSEx(funcSymbol), cadr(localFunc));
-                        if (cddr(localFunc) != null) {
-                            final ConsCell body = cddrShallowCopyList("labels", localFunc);
-                            expandForms("labels", body);
-                        }
+                        if (cddr(localFunc) != null) expandForms("labels", cddrShallowCopyList("labels", localFunc));
                     }
                     if (cdr(ccArgs) != null) expandForms("labels", cdrShallowCopyList("labels", ccArgs));
                     return ccForm;
