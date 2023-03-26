@@ -82,7 +82,7 @@
                                   (cl:subseq str 2 (cl:1- (length str)))
                                   "@"
                                   (cl:subseq str (cl:1- (length str)))))))
-  (apply #'cl:format (list* os str args)))
+  (apply #'cl:format os str args))
 
 )
 
