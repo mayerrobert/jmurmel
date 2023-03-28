@@ -641,6 +641,15 @@ public class LambdaJ {
         @Override public ConsCell copy() { return cons(car(), cdr()); }
     }
 
+    private static final class ImmutableConsCell extends AbstractConsCell {
+        private static final long serialVersionUID = 1L;
+        private ImmutableConsCell(Object car, Object cdr) { super(car, cdr); }
+
+        @Override public ConsCell copy() { return cons(car(), cdr()); }
+        @Override public ConsCell rplaca(Object ignored) { throw new ProgramError("cannot rplaca an immutable cons"); }
+        @Override public ConsCell rplacd(Object ignored) { throw new ProgramError("cannot rplacd an immutable cons"); }
+    }
+
     private static final class SExpConsCell extends AbstractConsCell {
         private static final long serialVersionUID = 1L;
         private final transient Path path;
@@ -2447,9 +2456,9 @@ public class LambdaJ {
                 // shortcut for (define symbol (lambda (params...) forms...))
                 case sDefun: {
                     final Object symbol = car(ccArguments);
-                    final ConsCell selfEnvEntry = cons(symbol, null);
+                    final AbstractConsCell selfEnvEntry = new ImmutableConsCell(symbol, null);
                     final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
-                    selfEnvEntry.rplacd(closure);
+                    selfEnvEntry.cdr = closure;
                     extendTopenv(symbol, closure);
                     return result = symbol;
                 }
@@ -3135,7 +3144,7 @@ public class LambdaJ {
         for (Object localFunction : localFunctions) {
             final ConsCell currentFunc = (ConsCell)localFunction;
             final ConsCell ccParamsAndForms = (ConsCell)cdr(currentFunc);
-            insertFront(extEnv, car(currentFunc), makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv));
+            insertFront(extEnv, new ImmutableConsCell(car(currentFunc), makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv)));
         }
         return extEnv;
     }
@@ -3188,7 +3197,7 @@ public class LambdaJ {
 
                 ConsCell newBinding = null;
                 if (letDynamic) newBinding = lookupEnvEntry(sym, null);
-                else if (letRec) newBinding = insertFront(extenv, sym, UNASSIGNED);
+                else if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
@@ -3257,8 +3266,7 @@ public class LambdaJ {
 
     /** Insert a new symbolentry at the front of env, env is modified in place, address of the list will not change.
      *  Returns the newly created (and inserted) symbolentry (symbol . value) */
-    private ConsCell insertFront(ConsCell env, Object symbol, Object value) {
-        final ConsCell symbolEntry = cons(symbol, value);
+    private ConsCell insertFront(ConsCell env, ConsCell symbolEntry) {
         final Object oldCar = car(env);
         final Object oldCdr = cdr(env);
         env.rplaca(symbolEntry);
