@@ -2793,17 +2793,14 @@ public class LambdaJ {
         if (form == null) return null;
         final Object expansion = expandForm(form);
         if (consp(expansion) && car(expansion) == sProgn) {
-            return expandAndEvalForms(listOrMalformed("progn", cdr(expansion)), env); // todo warum wird nochmal expanded?
+            ConsCell rest;
+            for (rest = (ConsCell)cdr(expansion); cdr(rest) != null; rest = (ConsCell)cdr(rest)) {
+                // must expand a second time in case the progn contained a load/require that contained defmacro
+                expandAndEval(car(rest), env);
+            }
+            return expandAndEval(car(rest), env);
         }
         return eval(expansion, env);
-    }
-
-    private Object expandAndEvalForms(ConsCell forms, ConsCell env) {
-        Object result = null;
-        for (ConsCell rest = forms; rest != null; rest = listOrMalformed("progn", cdr(rest))) {
-            result = expandAndEval(car(rest), env);
-        }
-        return result;
     }
 
     /** expand all macros within a form and do some syntax checks. Macro-expansion is done in a copy, i.e. form will not be modified. */
