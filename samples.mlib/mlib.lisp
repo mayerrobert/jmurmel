@@ -353,15 +353,15 @@
 
 (defun m%nonneg-integer-number (n)
   (cond ((integerp n)
-         (if (< n 0) (error "must be an integer >= 0: %s" n))
+         (if (< n 0) (error 'simple-type-error "must be an integer >= 0: %s" n))
          n)
 
         ((numberp n)
-         (if (< n 0) (error "must be an integer >= 0: %s" n))
-         (if (/= n (truncate n)) (error "must be an integer >= 0: %s" n))
+         (if (< n 0) (error 'simple-type-error "must be an integer >= 0: %s" n))
+         (if (/= n (truncate n)) (error 'simple-type-error "must be an integer >= 0: %s" n))
          (truncate n))
 
-        (t (error "must be an integer >= 0: %s" n))))
+        (t (error 'simple-type-error "must be an integer >= 0: %s" n))))
 
 
 ;;; = Function: nthcdr, nth
@@ -1424,7 +1424,7 @@
 
         ((consp arg)
          (when more-args
-           (setq arg (nthcdr (m%nonneg-integer-number (car more-args)) arg)))
+           (setq arg (nthcdr (car more-args) arg)))
 
          (if (cdr more-args)
                  (let* ((n (floor (- (m%nonneg-integer-number (cadr more-args)) (car more-args)))))
