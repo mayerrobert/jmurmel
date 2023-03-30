@@ -1171,6 +1171,9 @@ pi ; ==> 3.141592653589793
 ;     C:\> echo (read 'xyxxy)| java -jar lambda\target\jmurmel.jar
 ;     ==> xyxxy
 ;
+; Note that in an EOF occurs while reading an S-expression an error
+; will be thrown even when `eof-obj` was used. 
+;
 ; `write` accepts an optional boolean argument `print-escape-p`.
 ; `writeln` and `lnwrite` accept an optional argument `obj`
 ; and an optional boolean argument `print-escape-p`.

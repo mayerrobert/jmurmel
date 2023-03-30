@@ -1386,7 +1386,7 @@ public class LambdaJ {
                 return parseLong(readerMacroToken(), 16);
 
             case '(':
-                final ConsCell vec = readList(lineNo, charNo, new Object());
+                final ConsCell vec = readList(lineNo, charNo);
                 if (backquote > 0) return ConsCell.listStar(sBqVector, arg, vec);
                 return arg >= 0 ? listToArray(vec, arg) : LambdaJ.listToArray(vec);
 
@@ -1397,7 +1397,7 @@ public class LambdaJ {
             case 'H':
                 if (look != '(') errorReaderError("expected '(' after '#H'");
                 look = getchar();
-                final ConsCell testAndPairs = readList(lineNo, charNo, new Object());
+                final ConsCell testAndPairs = readList(lineNo, charNo);
                 if (backquote > 0) return ConsCell.cons(sBqHash, testAndPairs);
                 return hash(st, testAndPairs);
 
@@ -1659,10 +1659,10 @@ public class LambdaJ {
                 if (tok == Token.RP) errorReaderError("unexpected ')'");
                 if (tok == Token.LP) {
                     try {
-                        final Object list = readList(startLine, startChar, eof);
+                        final Object list = readList(startLine, startChar);
                         if (!tokEscape && tok == Token.DOT) {
                             skipWs();
-                            final Object cdr = readList(lineNo, charNo, eof);
+                            final Object cdr = readList(lineNo, charNo);
                             if (cdr == null) throw new ParseError("illegal end of dotted list: nothing appears after . in list");
                             if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
                             final Object cons = combine(startLine, startChar, list, car(cdr));
@@ -1731,8 +1731,7 @@ public class LambdaJ {
             return System.lineSeparator() + "error occurred in " + (filePath == null ? "line " : filePath.toString() + ':') + lineNo + ':' + charNo;
         }
 
-        // todo wozu brauchts den parameter eof?
-        private ConsCell readList(int listStartLine, int listStartChar, Object eof) throws IOException {
+        private ConsCell readList(int listStartLine, int listStartChar) throws IOException {
             AbstractConsCell first = null, appendTo = null;
             skipWs();
             for (;;) {
@@ -1748,8 +1747,8 @@ public class LambdaJ {
                 if (appendTo != null) appendTo.rplacd(newCell);
                 appendTo = newCell;
 
-                newCell.rplaca(readObject(carStartLine, carStartChar, eof));
-                if (newCell instanceof SExpConsCell && newCell.car() instanceof SExpConsCell) {
+                newCell.rplaca(readObject(carStartLine, carStartChar, null));
+                if (newCell.car() instanceof SExpConsCell) {
                     final SExpConsCell se = (SExpConsCell)newCell.car;
                     newCell.adjustEnd(se.lineNo, se.charNo);
                 }
