@@ -1,5 +1,6 @@
 
 Changes in JMurmel-1.4.2 relative to JMurmel-1.4.1
+released: 2023-02-16
 
  * changed write, writeln, lnwrite, format, format-locale
    to also accept an adjustable string as destination
