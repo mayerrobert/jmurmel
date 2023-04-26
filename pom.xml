@@ -68,7 +68,7 @@
         <pitest-maven-plugin.version>1.12.0</pitest-maven-plugin.version>
         <pitest-testng-plugin.version>1.0.0</pitest-testng-plugin.version>
 
-        <jacoco-maven-plugin.version>0.8.9</jacoco-maven-plugin.version>
+        <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
         <argLine />
 
         <launch4j-maven-plugin.version>2.3.3</launch4j-maven-plugin.version>
