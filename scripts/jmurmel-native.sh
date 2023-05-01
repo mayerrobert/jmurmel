@@ -12,6 +12,7 @@
 # $ sudo $GRAAL_HOME/bin/gu install native-image
 #
 # $ mvn install
+# $ mvn clean install -f graalvm/pom.xml
 # $ cd scripts
 # $ sh jmurmel-native.sh
 #
@@ -29,10 +30,17 @@
 export GRAAL_HOME=/usr/local/graalvm-ce-java19-22.3.1
 export PATH=$GRAAL_HOME/bin:$PATH
 
+test -d target || mkdir target
+
 native-image \
   -H:IncludeResources="META-INF/.*" \
   -H:ReflectionConfigurationFiles=../lambda/src/main/graalvm/reflectconfig \
   -H:DynamicProxyConfigurationFiles=../lambda/src/main/graalvm/proxyconfig \
+  --no-fallback \
   --report-unsupported-elements-at-runtime \
+  -cp ../graalvm/target/unsupported.jar \
   -jar ../lambda/target/jmurmel.jar \
   -o target/jmurmel
+
+# in case you want to use "jmurmel -XX:+DumpHeapAndExit"
+#  --enable-monitoring=heapdump \
