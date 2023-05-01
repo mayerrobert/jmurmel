@@ -33,13 +33,12 @@ jobs:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: 'true'
 
-      - name: Cache Maven packages
+      - name: Restore Maven repo
+        id: restore-maven
         uses: actions/cache/restore@v3
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
-          restore-keys: |
-            ${{ runner.os }}-maven-
 
       - name: Build and run JMurmelgraalvm
         run: |
@@ -47,6 +46,14 @@ jobs:
           mvn -V -B clean package -f graalvm/pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
           native-image --report-unsupported-elements-at-runtime -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./graalvm/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./graalvm/src/main/graalvm/proxyconfig -cp ./graalvm/target/unsupported.jar -jar ./lambda/target/jmurmel.jar
           ./jmurmel --version
+
+      - name: Save Maven repo
+        id: cache-maven
+        uses: actions/cache/save@v3
+        with:
+          path: |
+          path: ~/.m2/repository
+          key: ${{ steps.restore-maven.outputs.cache-primary-key }}
 
       - name: Upload binaries
         uses: actions/upload-artifact@v3
