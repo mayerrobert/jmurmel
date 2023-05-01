@@ -51,7 +51,6 @@ jobs:
         id: cache-maven
         uses: actions/cache/save@v3
         with:
-          path: |
           path: ~/.m2/repository
           key: ${{ steps.restore-maven.outputs.cache-primary-key }}
 
