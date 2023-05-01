@@ -71,7 +71,7 @@
         <jacoco-maven-plugin.version>0.8.10</jacoco-maven-plugin.version>
         <argLine />
 
-        <launch4j-maven-plugin.version>2.4.0</launch4j-maven-plugin.version>
+        <launch4j-maven-plugin.version>2.4.1</launch4j-maven-plugin.version>
         <launch4j.skip>true</launch4j.skip>
 
         <!-- report maven plugins -->
