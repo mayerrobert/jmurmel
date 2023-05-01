@@ -1,4 +1,5 @@
 GraalVM + Swing geht anscheinend doch, zumindest auf linux: https://www.praj.in/posts/2021/compiling-swing-apps-ahead-of-time/
+vielleicht auch Windows: https://www.reddit.com/r/java/comments/12yiebx/graalvm_native_image_faster_smarter_leaner/jhu6vtu/
 
 
 Steele and Sussman in "The Art of the Interpreter (1978)":
