@@ -1,3 +1,23 @@
+GraalVM + Swing geht anscheinend doch, zumindest auf linux: https://www.praj.in/posts/2021/compiling-swing-apps-ahead-of-time/
+
+
+Steele and Sussman in "The Art of the Interpreter (1978)":
+Statt environment als alist
+-> liste von frames, jeder frame ist ein var-list/ val-vector cons
+   -> vielleicht sogar statt liste mit frames -> ArrayList mit frames?
+   (Steele und Sussman hatten eine liste mit var-list/ val-list conses)
+   -> evlis sollte eine ArrayList oder Object[] liefern, zip brauchts überhaupt nicht mehr
+      primitives sollten Object[] nehmen, gleich wie bereits im Compiler (ggf. brauchts dann nicht mehr alle primitives doppelt?)
+   -> lookupEnvEntry bzw. fastassq müsste angepasst werden, ggf. kann das (zumindest teilweise) 1x zur macroexpansiontime gemacht werden?
+   -> bei lexikalischem environment wärs einfacher, einen frame wiederzuverwenden
+   -> bei dynamischem environment wärs einfacher bei tailcalls einen frame zu droppen oder wiederzuverwenden
+
+Mittelbar damit zusammenhängend:
+Das globale environment könnte statt aus einer Map aus Object[] (oder ArrayList?) mit Werten und einer Map Symbol->Offset bestehen
+-> der compiler könnte zur compilezeit bekannte offsets hardcodieren, der interpreter könnte die offsets zur macroexpansiontime auflösen
+-> vielleicht getrennte globale environments compiler vs. interpreter zusammenführen?
+
+
 Murmel format    -> Murmel jformat ... nimmt Java format string
                  -> jformat-locale
 Neu                 Mlib format und formatter
