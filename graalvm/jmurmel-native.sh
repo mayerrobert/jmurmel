@@ -38,10 +38,13 @@ native-image \
   -H:ReflectionConfigurationFiles=./src/main/graalvm/reflectconfig \
   -H:DynamicProxyConfigurationFiles=./src/main/graalvm/proxyconfig \
   --no-fallback \
-  --report-unsupported-elements-at-runtime \
+  --initialize-at-build-time=io.github.jmurmel \
   -cp ./target/unsupported.jar \
   -jar ../lambda/target/jmurmel.jar \
   -o target/jmurmel
+
+# to have reports written during compilation:
+#  -H:+PrintClassInitialization \
 
 # in case you want to use "jmurmel -XX:+DumpHeapAndExit"
 #  --enable-monitoring=heapdump \
