@@ -3,12 +3,17 @@
 # Please see the documentation for all configuration options:
 # https://help.github.com/github/administering-a-repository/configuration-options-for-dependency-updates
 
+name: "Dependabot"
+
 version: 2
 updates:
   - package-ecosystem: "maven" # See documentation for possible values
     directory: "/" # Location of package manifests
     schedule:
       interval: "daily"
+    ignore:
+      - dependency-name: "org.testng:testng"
+        versions: (7.6,)
 
   - package-ecosystem: "github-actions"
     directory: "/"
