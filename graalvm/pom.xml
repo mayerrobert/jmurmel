@@ -40,6 +40,11 @@
                 <version>${maven-jar-plugin.version}</version>
                 <configuration>
                     <finalName>unsupported</finalName>
+                    <includes>
+                        <include>**/JavaCompilerHelper.class</include>
+                        <include>**/TurtleFrame.class</include>
+                        <include>**/LambdaJ$Turtle.class</include>
+                    </includes>
                 </configuration>
             </plugin>
         </plugins>
