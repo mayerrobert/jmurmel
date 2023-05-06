@@ -1,7 +1,3 @@
-get-internal-cpu-time gibts in CL nicht
--> wegputzen
--> "get-internal-run-time" sollte getCurrentThreadCpuTime() rufen (getCurrentThreadUserTime() liefert -1 in GraalVM)
-
 
 GraalVM + Swing geht anscheinend doch, zumindest auf linux: https://www.praj.in/posts/2021/compiling-swing-apps-ahead-of-time/
 vielleicht auch Windows: https://www.reddit.com/r/java/comments/12yiebx/graalvm_native_image_faster_smarter_leaner/jhu6vtu/

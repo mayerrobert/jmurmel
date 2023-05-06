@@ -68,7 +68,7 @@
 (open-frame)
 
 (defun julia ()
-  (let ((*start* (get-internal-cpu-time)))
+  (let ((*start* (get-internal-run-time)))
 
   (let xloop ((x 0))
     (let yloop ((y 0))
@@ -87,7 +87,7 @@
   
   (flush-frame)
   (format t "CX: %g%nCX: %g%n" cx cy)
-  (format t "Used CPU: %g ms%n" (/ (- (get-internal-cpu-time) *start*)
+  (format t "Used CPU: %g ms%n" (/ (- (get-internal-run-time) *start*)
                                    (/ internal-time-units-per-second 1000)))))
 
 (define *l* '((-0.7 . 0.27015)

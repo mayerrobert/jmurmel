@@ -165,7 +165,6 @@ error
 
 get-internal-real-time
 get-internal-run-time
-get-internal-cpu-time
 sleep
 get-universal-time
 get-decoded-time

@@ -1239,15 +1239,12 @@ multiline comment
 ;;; test time functions
 (deftest time.1 (> (get-internal-real-time) 0)  t)  ; wall time
 (deftest time.2 (> (get-internal-run-time) 0)  t)   ; user time
-#+murmel
-(deftest time.3 (> (get-internal-cpu-time) 0)  t)   ; cpu time
-
-(deftest time.4 (> (get-universal-time) 0)  t)
+(deftest time.3 (> (get-universal-time) 0)  t)
 
 #+murmel
-(deftest time.5 (consp (get-decoded-time))  t)
+(deftest time.4 (consp (get-decoded-time))  t)
 
-(deftest time.6 (sleep 0.1) nil)
+(deftest time.5 (sleep 0.1) nil)
 
 
 ;;; test conditions, error and typep

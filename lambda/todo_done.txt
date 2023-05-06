@@ -2481,3 +2481,8 @@ Error: program-error - hash: malformed hash: last key/value pair is missing 'val
 -> wsl. muss qq_expand iwie in readerMacro eingebaut werden, oder # und #H müssen ebenso wie ' in readObject verschoben werden
    jedenfalls muss qq_expand gemacht werden bevor vector/ hash gebastelt wird
 -> `#H(,tst 1 11 2 22) wird wsl
+
+
+get-internal-cpu-time gibts in CL nicht
+-> wegputzen
+-> "get-internal-run-time" sollte getCurrentThreadCpuTime() rufen (getCurrentThreadUserTime() liefert -1 in GraalVM)

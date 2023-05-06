@@ -1343,12 +1343,6 @@ User cpu time in internal time units
 
     (get-internal-run-time)
 
-### (get-internal-cpu-time) -> number
-
-User + system cpu time in internal time units
-
-    (get-internal-cpu-time)
-
 ### (sleep desired-duration) -> nil
 
 Pause execution for approx. x seconds.

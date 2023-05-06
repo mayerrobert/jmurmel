@@ -2195,8 +2195,7 @@ public class LambdaJ {
 
         // time
         sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
-        sRuntime("get-internal-run-time", Features.HAVE_UTIL, 0)    { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalRunTime(); } }, // user
-        sCputime("get-internal-cpu-time", Features.HAVE_UTIL, 0)    { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalCpuTime(); } }, // user + system
+        sRuntime("get-internal-run-time", Features.HAVE_UTIL, 0)    { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalRunTime(); } }, // user + system
         sUniversalTime("get-universal-time", Features.HAVE_UTIL, 0) { @Override Object apply(LambdaJ intp, ConsCell args) { return getUniversalTime(); } },   // seconds since 1.1.1900
         sSleep("sleep", Features.HAVE_UTIL, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return sleep(car(args)); } },
         sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { @Override Object apply(LambdaJ intp, ConsCell args) { return getDecodedTime(intp.new CountingListBuilder(), intp::boolResult); } },
@@ -5405,11 +5404,7 @@ public class LambdaJ {
         }
 
         static long getInternalRunTime() {
-            return getThreadBean("get-internal-run-time").getCurrentThreadUserTime();
-        }
-
-        static long getInternalCpuTime() {
-            return getThreadBean("get-internal-cpu-time").getCurrentThreadCpuTime();
+            return getThreadBean("get-internal-run-time").getCurrentThreadCpuTime();
         }
 
         private static ThreadMXBean getThreadBean(final String func) {
@@ -7752,7 +7747,6 @@ public class LambdaJ {
         // time
         public final long   getInternalRealTime(Object... args) { values = null; noArgs("get-internal-real-time", args.length); return LambdaJ.Subr.getInternalRealTime(); }
         public final long   getInternalRunTime (Object... args) { values = null; noArgs("get-internal-run-time", args.length); return LambdaJ.Subr.getInternalRunTime(); }
-        public final long   getInternalCpuTime (Object... args) { values = null; noArgs("get-internal-cpu-time", args.length); return LambdaJ.Subr.getInternalCpuTime(); }
         public final Object sleep              (Object... args) { values = null; oneArg("sleep", args.length); return LambdaJ.Subr.sleep(args[0]); }
         public final long   getUniversalTime   (Object... args) { values = null; noArgs("get-universal-time", args.length); return LambdaJ.Subr.getUniversalTime(); }
         public final Object getDecodedTime     (Object... args) { values = null; noArgs("get-decoded-time", args.length); return LambdaJ.Subr.getDecodedTime(new ListBuilder(), this::bool); }
@@ -8473,7 +8467,6 @@ public class LambdaJ {
             // time
             case "get-internal-real-time": return (CompilerPrimitive)this::getInternalRealTime;
             case "get-internal-run-time": return (CompilerPrimitive)this::getInternalRunTime;
-            case "get-internal-cpu-time": return (CompilerPrimitive)this::getInternalCpuTime;
             case "sleep": return (CompilerPrimitive)this::sleep;
             case "get-universal-time": return (CompilerPrimitive)this::getUniversalTime;
             case "get-decoded-time": return (CompilerPrimitive)this::getDecodedTime;
@@ -8672,7 +8665,7 @@ public class LambdaJ {
 
         {"list*", "listStar"},
         //{ "macroexpand-1", "macroexpand1" },
-        {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" }, {"get-internal-cpu-time", "getInternalCpuTime" },
+        {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" },
         {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
 
         { "make-frame", "makeFrame" }, { "open-frame", "openFrame"}, { "close-frame", "closeFrame" },

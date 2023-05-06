@@ -1,4 +1,9 @@
 
+Changes in JMurmel-1.4.3 relative to JMurmel-1.4.2
+
+ * removed get-internal-cpu-time
+
+
 Changes in JMurmel-1.4.2 relative to JMurmel-1.4.1
 released: 2023-02-16
 
