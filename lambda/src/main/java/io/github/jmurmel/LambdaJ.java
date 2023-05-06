@@ -620,6 +620,7 @@ public class LambdaJ {
         }
 
         void adjustEnd(int endLineNo, int endCharNo) { /* default is: no-op */ }
+        void adjustEnd(SExpConsCell cell) { /* default is: no-op */ }
 
         /** avoid endless loop in case of circular lists or lists with embedded circles */
         @Override final int sxhashSigned(int rec) {
@@ -664,6 +665,7 @@ public class LambdaJ {
         }
 
         @Override void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
+        @Override void adjustEnd(SExpConsCell cell) { this.lineNo = cell.lineNo; this.charNo = cell.charNo; }
         @Override String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
 
         Path path() { return path; }
@@ -1749,8 +1751,7 @@ public class LambdaJ {
 
                 newCell.rplaca(readObject(carStartLine, carStartChar, null));
                 if (newCell.car() instanceof SExpConsCell) {
-                    final SExpConsCell se = (SExpConsCell)newCell.car;
-                    newCell.adjustEnd(se.lineNo, se.charNo);
+                    newCell.adjustEnd((SExpConsCell)newCell.car());
                 }
                 skipWs();
                 listStartLine = lineNo; listStartChar = charNo;
@@ -2161,8 +2162,8 @@ public class LambdaJ {
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // Hash tables
-        sHash("hash", Features.HAVE_HASH, -1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.symtab, args); } },
-        sMakeHash("make-hash-table", Features.HAVE_HASH, 0, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return makeHashTable(intp.symtab, car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); } },
+        sHash("hash", Features.HAVE_HASH, -1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.getSymbolTable(), args); } },
+        sMakeHash("make-hash-table", Features.HAVE_HASH, 0, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return makeHashTable(intp.getSymbolTable(), car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); } },
         sHashRef("hashref", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = hashref(car(args), cadr(args), cddr(args) == null ? NO_DEFAULT_VALUE : caddr(args)); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sHashSet("hashset", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { return hashset(args); } },
         sHashTableCount("hash-table-count", Features.HAVE_HASH, 1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashTableCount(car(args)); } },
@@ -2309,11 +2310,15 @@ public class LambdaJ {
 
     /// ### Global environment - define'd symbols go into this list
 
-    private final Map<Object, ConsCell> gcache = new IdentityHashMap<>(100);
+    final Map<Object, ConsCell> gcache = new IdentityHashMap<>(100);
 
     private ConsCell lookupEnvEntry(Object symbol, ConsCell lexenv) {
         final ConsCell lexEntry = fastassq(symbol, lexenv);
         if (lexEntry != null) return lexEntry;
+        return lookupTopenvEntry(symbol);
+    }
+
+    private ConsCell lookupTopenvEntry(Object symbol) {
         return gcache.get(symbol);
     }
 
@@ -2332,7 +2337,7 @@ public class LambdaJ {
         gcache.put(car(envEntry), envEntry);
     }
 
-    private void extendTopenv(String sym, Object value) {
+    void extendTopenv(String sym, Object value) {
         extendTopenv(intern(sym), value);
     }
 
@@ -3167,7 +3172,7 @@ public class LambdaJ {
         }
     }
 
-    Object prev() { if (handlers == null || handlers.isEmpty()) return null; return handlers.get(handlers.size()-1); }
+    private Object prev() { if (handlers == null || handlers.isEmpty()) return null; return handlers.get(handlers.size()-1); }
 
     private ConsCell[] evalLet(WellknownSymbol operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
         final Object maybeLoopSymbol = car(arguments);
@@ -3194,7 +3199,7 @@ public class LambdaJ {
                 final Object bindingForm = cadr(binding);
 
                 ConsCell newBinding = null;
-                if (letDynamic) newBinding = lookupEnvEntry(sym, null);
+                if (letDynamic) newBinding = lookupTopenvEntry(sym); // todo hier wird nur im global env gesucht. was ist wenns auch eine leical variable gibt?
                 else if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
@@ -3473,7 +3478,7 @@ public class LambdaJ {
             if (((LambdaJSymbol)sym).specialForm()) {
                 throw new ProgramError("trace: can't trace %s: it is a special form", printSEx(sym));
             }
-            final ConsCell envEntry = lookupEnvEntry(sym, null);
+            final ConsCell envEntry = lookupTopenvEntry(sym);
             if (envEntry == null) throw new UndefinedFunction("trace: can't trace %s: not bound", printSEx(sym));
             traced.put(cdr(envEntry), (LambdaJSymbol) sym);
         }
@@ -3486,7 +3491,7 @@ public class LambdaJ {
         if (traced != null) {
             for (Object sym: symbols) {
                 if (symbolp(sym)) {
-                    final ConsCell envEntry = lookupEnvEntry(sym, null);
+                    final ConsCell envEntry = lookupTopenvEntry(sym);
                     if (envEntry != null) {
                         final boolean wasTraced = traced.remove(cdr(envEntry)) != null;
                         if (wasTraced) ret = cons(sym, ret);
@@ -3503,7 +3508,7 @@ public class LambdaJ {
         if (traced == null) return traceStack;
         if (op instanceof LambdaJSymbol) {
             if (((LambdaJSymbol)op).specialForm()) return traceStack;
-            final ConsCell entry = lookupEnvEntry(op, null);
+            final ConsCell entry = lookupTopenvEntry(op);
             if (entry == null) return traceStack;
             op = cdr(entry);
         }
@@ -5703,7 +5708,7 @@ public class LambdaJ {
         private static void putWithAlias(String clsName, Object[] entry) { classByName.put(clsName, entry); classByName.put("java.lang." + clsName, entry); }
 
         /** find and load the class given by the (possibly abbreviated) name {@code clsName} */
-        static Class<?> findClass(String clsName) throws ClassNotFoundException {
+        private static Class<?> findClass(String clsName) throws ClassNotFoundException {
             final Object[] entry = classByName.get(clsName);
             if (entry != null) return (Class<?>)entry[0];
             return Class.forName(clsName);
@@ -5783,7 +5788,7 @@ public class LambdaJ {
             }
         }
 
-        private static MurmelFunction getFunction(LambdaJ intp, MurmelJavaProgram program, Object function, Class<?> returnType) {
+        static MurmelFunction getFunction(LambdaJ intp, MurmelJavaProgram program, Object function, Class<?> returnType) {
             final String funcName = printSEx(function);
             if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType(funcName, ((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args), returnType); }
             if (function instanceof Primitive)                            { return args -> convertReturnType(funcName, ((Primitive)function).applyPrimitiveVarargs(args), returnType); }
@@ -5970,7 +5975,7 @@ public class LambdaJ {
             lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, null, null);
             environment();
         }
-        final ConsCell envEntry = lookupEnvEntry(intern(globalSymbol), null);
+        final ConsCell envEntry = lookupTopenvEntry(intern(globalSymbol));
         if (envEntry != null) return cdr(envEntry);
         throw new UnboundVariable("%s: '%s' is not bound", "getValue", globalSymbol);
     }
@@ -5979,7 +5984,7 @@ public class LambdaJ {
         private final Closure lambda;
         CallLambda(Closure lambda) { this.lambda = lambda; }
         @Override public Object apply(Object... args) {
-            return eval(cons(lambda, arraySlice(args, 0)), null, 0, 0, 0);
+            return eval(cons(lambda, arraySlice(args, 0)), null);
         }
     }
 
@@ -6602,7 +6607,7 @@ public class LambdaJ {
                         if (exp == cmdDesc)   { final Object name = parser.readObj(eof);  if (name == eof) continue;
                                                 if (!symbolp(name)) { System.out.println(name + " is not a symbol"); continue; }
                                                 final LambdaJSymbol symbol = (LambdaJSymbol)name;
-                                                final ConsCell envEntry = interpreter.lookupEnvEntry(name, null);
+                                                final ConsCell envEntry = interpreter.gcache.get(name);
                                                 if (envEntry == null && symbol.macro == null) {
                                                     System.out.println(name + " is not bound"); continue;
                                                 }
@@ -6631,8 +6636,7 @@ public class LambdaJ {
                         if (exp == cmdMacros) {
                             final ArrayList<LambdaJSymbol> names = new ArrayList<>();
                             for (LambdaJSymbol entry: interpreter.getSymbolTable()) {
-                                if (entry == null) continue;
-                                if (entry.macro != null) names.add(entry);
+                                if (entry != null && entry.macro != null) names.add(entry);
                             }
                             names.sort(Comparator.comparing(Object::toString));
                             for (LambdaJSymbol name: names) System.out.println(name + ": " + printSEx(ConsCell.cons(name.macro.params, name.macro.body)));
