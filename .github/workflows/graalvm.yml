@@ -12,8 +12,8 @@ on:
       - "scribbles/**"
 
 env:
-  JAVA_VERSION: 19
-  GRAAL_VERSION: 22.3.1
+  JAVA_VERSION: 11
+  GRAAL_VERSION: 22.3.2
 
 jobs:
   build:
