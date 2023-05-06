@@ -6631,8 +6631,11 @@ public class LambdaJ {
                         if (exp == cmdJar)    { compileToJar(interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
                         //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); continue; }
                         if (exp == cmdEnv)    {
-                            for (Map.Entry<Object, ConsCell> entry: interpreter.gcache.entrySet()) System.out.println(entry.getValue());
-                            System.out.println("env length: " + interpreter.gcache.size());  System.out.println(); continue; }
+                            interpreter.gcache.entrySet().stream().sorted(Comparator.comparing(entry -> entry.getKey().toString()))
+                                              .forEach(e -> System.out.println(e.getValue()));
+                            System.out.println("env length: " + interpreter.gcache.size());  System.out.println();
+                            continue;
+                        }
                         if (exp == cmdMacros) {
                             final ArrayList<LambdaJSymbol> names = new ArrayList<>();
                             for (LambdaJSymbol entry: interpreter.getSymbolTable()) {
@@ -6640,8 +6643,8 @@ public class LambdaJ {
                             }
                             names.sort(Comparator.comparing(Object::toString));
                             for (LambdaJSymbol name: names) System.out.println(name + ": " + printSEx(ConsCell.cons(name.macro.params, name.macro.body)));
-                            System.out.println("number of macros: " + names.size());
-                            System.out.println(); continue;
+                            System.out.println("number of macros: " + names.size());  System.out.println();
+                            continue;
                         }
                     }
 
