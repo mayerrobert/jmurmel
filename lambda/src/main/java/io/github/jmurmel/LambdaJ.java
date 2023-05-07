@@ -687,7 +687,7 @@ public class LambdaJ {
             private final int len;
             private int cursor;
 
-            private ArraySliceIterator(Object[] arry, int offset) { this.arry = arry; this.len = arry.length; this.cursor = offset; }
+            ArraySliceIterator(Object[] arry, int offset) { this.arry = arry; this.len = arry.length; this.cursor = offset; }
             @Override public boolean hasNext() { return cursor != -1; }
 
             @Override public Object next() {
@@ -706,7 +706,7 @@ public class LambdaJ {
         private final int offset;
 
         /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
-        private ArraySlice(Object[] arry, int offset) {
+        ArraySlice(Object[] arry, int offset) {
             assert arry != null && offset < arry.length;
             this.arry = arry;  this.offset = offset;
         }
@@ -720,7 +720,7 @@ public class LambdaJ {
         @Override public Object     car() { return arry[offset]; }
         @Override public ConsCell rplaca(Object car) { arry[offset] = car; return this; }
 
-        @Override public ArraySlice cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this); }
+        @Override public Object cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this); }
 
         @Override public Object elt(long idx) {
             checkSequenceBounds(idx);
