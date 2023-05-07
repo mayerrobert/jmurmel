@@ -44,8 +44,8 @@ public class ScannerTest {
     private static String stringify(Object result) {
         if (result == null) return "nil";
         if (result instanceof String) return "\"" + result + "\"";
-        if (LambdaJ.vectorp(result)) return LambdaJ.printSEx(result, false);
-        if (LambdaJ.hashtablep(result)) return LambdaJ.printSEx(result, false);
+        if (LambdaJ.vectorp(result)) return LambdaJ.printSEx(result, false).toString();
+        if (LambdaJ.hashtablep(result)) return LambdaJ.printSEx(result, false).toString();
         return String.valueOf(result);
     }
 

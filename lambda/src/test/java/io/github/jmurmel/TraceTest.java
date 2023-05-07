@@ -10,7 +10,7 @@ import org.junit.Test;
 public class TraceTest {
 
     @Test
-    public void testTailRec() throws Exception {
+    public void testTailRec() {
         final ByteArrayOutputStream myOut = new ByteArrayOutputStream();
         System.setErr(new PrintStream(myOut));
 
@@ -28,11 +28,11 @@ public class TraceTest {
                         + "  (2 exit  f: nil)\n"
                         + "(1 exit  f: nil)\n";
 
-        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()));
+        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()).toString());
     }
 
     @Test
-    public void testTailCall2() throws Exception {
+    public void testTailCall2() {
         final ByteArrayOutputStream myOut = new ByteArrayOutputStream();
         System.setErr(new PrintStream(myOut));
 
@@ -48,11 +48,11 @@ public class TraceTest {
                 + "  (2 exit  f1: 2.0)\n"
                 + "(1 exit  f2: 2.0)\n";
 
-        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()));
+        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()).toString());
     }
 
     @Test
-    public void testTailCall3() throws Exception {
+    public void testTailCall3() {
         final ByteArrayOutputStream myOut = new ByteArrayOutputStream();
         System.setErr(new PrintStream(myOut));
 
@@ -70,11 +70,11 @@ public class TraceTest {
                 + "  (2 exit  f2: 2.0)\n"
                 + "(1 exit  f3: 2.0)\n";
 
-        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()));
+        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()).toString());
     }
 
     @Test
-    public void testCall() throws Exception {
+    public void testCall() {
         final ByteArrayOutputStream myOut = new ByteArrayOutputStream();
         System.setErr(new PrintStream(myOut));
 
@@ -94,6 +94,6 @@ public class TraceTest {
                         + "  (2 exit  f2: 2.0)\n"
                         + "(1 exit  f3: 2.0)\n";
 
-        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()));
+        assertEquals(expectedTrace, EolUtil.anyToUnixEol(myOut.toString()).toString());
     }
 }

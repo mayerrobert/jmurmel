@@ -279,7 +279,7 @@ public class LambdaJ {
 
         @Override public String toString() { return name; }
 
-        private static String escapeSymbol(LambdaJSymbol s) {
+        private static CharSequence escapeSymbol(LambdaJSymbol s) {
             final String name = s.name;
             if (name == null) return null;
             if (name.isEmpty()) return "";
@@ -294,7 +294,7 @@ public class LambdaJ {
                 default: ret.append(c);
                 }
             }
-            return ret.toString();
+            return ret;
         }
     }
 
@@ -305,8 +305,8 @@ public class LambdaJ {
     }
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
-    @FunctionalInterface public interface WriteConsumer { void print(String s); }
-    @FunctionalInterface public interface TraceConsumer { void println(String msg); }
+    @FunctionalInterface public interface WriteConsumer { void print(CharSequence s); }
+    @FunctionalInterface public interface TraceConsumer { void println(CharSequence msg); }
 
     @FunctionalInterface public interface ObjectReader {
         Object readObj(Object eof);
@@ -319,7 +319,7 @@ public class LambdaJ {
     public interface ObjectWriter {
         void printObj(Object o, boolean printEscape);
         default void printObj(Object o) { printObj(o, true); }
-        default void printString(String s) { printObj(s, false); }
+        default void printString(CharSequence s) { printObj(s, false); }
         void printEol();
     }
 
@@ -586,7 +586,7 @@ public class LambdaJ {
         private Object car, cdr;
 
         private AbstractConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
-        @Override public String toString() { return LambdaJ.printSEx(this, false); }
+        @Override public String toString() { return LambdaJ.printSEx(this, false).toString(); }
         @Override public ConsIterator iterator() { return new ListConsCellIterator(this); }
 
         @Override public Object shallowCopyCdr() { if (consp(cdr)) cdr = ((ConsCell)cdr).copy(); return cdr; }
@@ -681,8 +681,8 @@ public class LambdaJ {
         @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { out.print("#<interpreted closure>"); }
     }
 
-    private static class ArraySlice extends ConsCell {
-        private static class ArraySliceIterator implements ConsIterator {
+    private static final class ArraySlice extends ConsCell {
+        private static final class ArraySliceIterator implements ConsIterator {
             private final Object[] arry;
             private final int len;
             private int cursor;
@@ -740,10 +740,10 @@ public class LambdaJ {
 
         private int length() { return arry.length - offset; }
 
-        @Override public String toString() { return printSEx(true, false); }
+        @Override public String toString() { return printSEx(true, false).toString(); }
         @Override public ConsIterator iterator() { return new ArraySliceIterator(this.arry, this.offset); }
 
-        String printSEx(boolean headOfList, boolean escapeAtoms) {
+        CharSequence printSEx(boolean headOfList, boolean escapeAtoms) {
             final Object[] arry = this.arry;
             final int alen = arry.length, offset = this.offset;
 
@@ -760,7 +760,7 @@ public class LambdaJ {
                 else _printSEx(append, arry, obj, escapeAtoms);
             }
             ret.append(')');
-            return ret.toString();
+            return ret;
         }
 
         Object[] listToArray() {
@@ -1027,7 +1027,7 @@ public class LambdaJ {
 
         @Override public void printObj(Object o, boolean printEscape) { printSEx(out, o, printEscape); }
         @Override public void printEol() { out.print("\n"); }
-        @Override public void printString(String s) { out.print(s); }
+        @Override public void printString(CharSequence s) { out.print(s); }
     }
 
 
@@ -2872,7 +2872,7 @@ public class LambdaJ {
                         varargsMin("labels", localFunc, 2);
                         final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
                         if (funcSymbol.macro != null) throw new ProgramError("local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
-                        checkLambdaList(printSEx(funcSymbol), cadr(localFunc));
+                        checkLambdaList(funcSymbol.toString(), cadr(localFunc));
                         if (cddr(localFunc) != null) expandForms("labels", cddrShallowCopyList("labels", localFunc));
                     }
                     if (cdr(ccArgs) != null) expandForms("labels", cdrShallowCopyList("labels", ccArgs));
@@ -3533,7 +3533,7 @@ public class LambdaJ {
         sb.append('(').append(level+1).append(" enter ").append(op);
         printArgs(sb, args);
         sb.append(')');
-        tracer.println(sb.toString());
+        tracer.println(sb);
     }
 
     private static void printArgs(StringBuilder sb, ConsCell args) {
@@ -3562,7 +3562,7 @@ public class LambdaJ {
         sb.append('(').append(level+1).append(" exit  ").append(op).append(": ");
         printSEx(sb::append, result);
         sb.append(')');
-        tracer.println(sb.toString());
+        tracer.println(sb);
     }
 
     private static void tracePfx(StringBuilder sb, int level) {
@@ -3887,15 +3887,15 @@ public class LambdaJ {
     }
 
     /** transform {@code obj} into an S-expression, atoms are escaped */
-    static String printSEx(Object obj) {
+    static CharSequence printSEx(Object obj) {
         return printSEx(obj, true);
     }
 
-    static String printSEx(Object obj, boolean printEscape) {
+    static CharSequence printSEx(Object obj, boolean printEscape) {
         if (obj == null) return "nil";
         final StringBuilder sb = new StringBuilder();
         _printSEx(sb::append, obj, obj, printEscape);
-        return sb.toString();
+        return sb;
     }
 
     static void printSEx(WriteConsumer w, Object obj) {
@@ -3909,8 +3909,7 @@ public class LambdaJ {
     static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean escapeAtoms) {
         boolean headOfList = true;
         while (true) {
-            if (obj == null) { sb.print("nil"); return; }
-            else if (obj instanceof ArraySlice) { sb.print(((ArraySlice)obj).printSEx(headOfList, escapeAtoms)); return; }
+            if (obj instanceof ArraySlice) { sb.print(((ArraySlice)obj).printSEx(headOfList, escapeAtoms)); return; }
             else if (consp(obj)) {
                 if (headOfList) sb.print("(");
                 final Object first = car(obj);
@@ -3936,6 +3935,8 @@ public class LambdaJ {
         else if (escapeAtoms && characterp(atom)) { sb.print(printChar((int)(Character)atom)); }
         else if (vectorp(atom))                   { printVector(sb, atom, escapeAtoms); }
         else if (hashtablep(atom))                { printHash(sb, (Map<?, ?>)atom, escapeAtoms); }
+        else if (atom == null)                    { sb.print("nil"); }
+        else if (atom instanceof CharSequence)    { sb.print((CharSequence)atom); }
         else                                      { sb.print(atom.toString()); }
     }
 
@@ -3947,7 +3948,7 @@ public class LambdaJ {
     }
 
     /** prepend " and \ by a \ */
-    static String escapeString(CharSequence s) {
+    static CharSequence escapeString(CharSequence s) {
         if (s == null) return null;
         if (s.length() == 0) return "";
 
@@ -3961,7 +3962,7 @@ public class LambdaJ {
             default: ret.append(c);
             }
         }
-        return ret.toString();
+        return ret;
     }
 
     @SuppressWarnings("rawtypes")
@@ -3980,7 +3981,7 @@ public class LambdaJ {
         }
         if (vector instanceof CharSequence) {
             if (escapeAtoms) sb.print("\"" + escapeString((CharSequence)vector) + "\"");
-            else             sb.print(((CharSequence)vector).toString());
+            else             sb.print(((CharSequence)vector));
             return;
         }
 
@@ -4680,7 +4681,10 @@ public class LambdaJ {
                 if (vector instanceof Object[]) return new ArrayList<>(Arrays.asList((Object[])vector));
                 if (vector instanceof boolean[]) return new Bitvector((boolean[])vector);
                 if (vector instanceof Bitvector) return new Bitvector(((Bitvector)vector).toBooleanArray());
-                if (vector instanceof char[]) return new StringBuilder(String.valueOf((char[])vector));
+                if (vector instanceof char[]) {
+                    final char[] ca = (char[])vector;
+                    return new StringBuilder(ca.length + 16).append(ca);
+                }
                 if (vector instanceof CharSequence) return new StringBuilder((CharSequence)vector);
                 if (vector instanceof List<?>) return new ArrayList<>((List<?>)vector);
             }
@@ -4689,7 +4693,17 @@ public class LambdaJ {
                 if (vector instanceof boolean[]) return Arrays.copyOf((boolean[])vector, length);
                 if (vector instanceof Bitvector) return ((Bitvector)vector).toBooleanArray();
                 if (vector instanceof char[]) return Arrays.copyOf((char[])vector, length);
-                if (vector instanceof CharSequence) return vector.toString().toCharArray();
+                if (vector instanceof StringBuilder) {
+                    final StringBuilder sb = (StringBuilder)vector;  final int len = sb.length();  final char[] ret = new char[len];
+                    sb.getChars(0, len, ret, 0);
+                    return sb;
+                }
+                if (vector instanceof StringBuffer) {
+                    final StringBuffer sb = (StringBuffer)vector;  final int len = sb.length();  final char[] ret = new char[len];
+                    sb.getChars(0, len, ret, 0);
+                    return sb;
+                }
+                if (vector instanceof CharSequence) return vector.toString().toCharArray(); // sadly this creates an intermediate String and copies the char[] twice
                 if (vector instanceof List<?>) return ((List<?>)vector).toArray(new Object[0]);
             }
             throw errorNotAVector("vector-copy", vector);
@@ -5384,14 +5398,14 @@ public class LambdaJ {
             final Object[] args = listToArray(cdr(a));
             try {
                 if (locString == null) {
-                    if (toString) return EolUtil.anyToUnixEol(String.format(s, args));
+                    if (toString) return EolUtil.anyToUnixEol(String.format(s, args)).toString();
                     if (!haveIO) throw new LambdaJError(true, "%s: I/O is disabled", func);
                     if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
                     lispPrinter.printString(EolUtil.anyToUnixEol(String.format(s, args)));
                     return null;
                 }
                 final Locale loc = Locale.forLanguageTag(locString);
-                if (toString) return EolUtil.anyToUnixEol(String.format(loc, s, args));
+                if (toString) return EolUtil.anyToUnixEol(String.format(loc, s, args)).toString();
                 if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
                 lispPrinter.printString(EolUtil.anyToUnixEol(String.format(loc, s, args)));
                 return null;
@@ -5789,7 +5803,7 @@ public class LambdaJ {
         }
 
         static MurmelFunction getFunction(LambdaJ intp, MurmelJavaProgram program, Object function, Class<?> returnType) {
-            final String funcName = printSEx(function);
+            final String funcName = printSEx(function).toString();
             if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType(funcName, ((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args), returnType); }
             if (function instanceof Primitive)                            { return args -> convertReturnType(funcName, ((Primitive)function).applyPrimitiveVarargs(args), returnType); }
             if (function instanceof Closure && intp != null)              { final CallLambda callLambda = intp.new CallLambda((Closure)function);
@@ -7188,7 +7202,7 @@ public class LambdaJ {
                 reader = null;
                 if (old != null) old.close();
                 final Path p = paths.next();
-                if (verbose) System.out.println("parsing " + p.toString() + "...");
+                if (verbose) System.out.println("parsing " + p + "...");
                 reader = Files.newBufferedReader(p);
                 delegate.setInput(this, p);
                 intp.currentSource = p;
@@ -9304,9 +9318,9 @@ public class LambdaJ {
             else errorInternal("emitAtom: atom %s is not implemented", form.toString());
         }
 
-        private static void stringToJava(WrappingWriter sb, String s, int maxlen) {
-            if (s == null)   { sb.append("null"); return; }
-            if (s.isEmpty()) { sb.append(""); return; }
+        private static void stringToJava(WrappingWriter sb, CharSequence s, int maxlen) {
+            if (s == null)       { sb.append("null"); return; }
+            if (s.length() == 0) { sb.append(""); return; }
 
             final int length = s.length();
             for (int i = 0; i < length; i++) {
@@ -10393,7 +10407,7 @@ public class LambdaJ {
 
             ret.name = name.toString();
             ret.args = args;
-            ret.strArgs = LambdaJ.printSEx(args, false);
+            ret.strArgs = LambdaJ.printSEx(args, false).toString();
             ret.begin();
             return ret;
         }
@@ -10402,7 +10416,7 @@ public class LambdaJ {
             call.end();
             if (!call.shouldCommit()) return ret;
 
-            final String strRet = LambdaJ.printSEx(ret, false);
+            final String strRet = LambdaJ.printSEx(ret, false).toString();
             call.info = LambdaJ.printSEx(ConsCell.cons(call.name, call.args), false) + " -> " + strRet;
             call.ret = strRet;
             call.commit();
@@ -10566,11 +10580,17 @@ final class EolUtil {
      * @param inputValue input value that may or may not contain new lines
      * @return the input value that has new lines normalized
      */
-    static String anyToUnixEol(String inputValue){
+    static CharSequence anyToUnixEol(CharSequence inputValue){
         if (inputValue == null) return null;
-        if (inputValue.isEmpty()) return "";
+        if (inputValue.length() == 0) return "";
 
-        int index = inputValue.indexOf('\r');
+        int index = -1;
+        for (int i = 0; i < inputValue.length(); i++) {
+            if (inputValue.charAt(i) == '\r') {
+                index = i;
+                break;
+            }
+        }
         if (index == -1) return inputValue;
 
         final int len = inputValue.length();
@@ -10600,7 +10620,7 @@ final class EolUtil {
             index++;
         }
 
-        return stringBuilder.toString();
+        return stringBuilder;
     }
 }
 
@@ -10614,10 +10634,10 @@ final class UnixToAnyEol implements LambdaJ.WriteConsumer {
         this.eol = eol;
     }
 
-    @Override public void print(String s) {
+    @Override public void print(CharSequence s) {
         if (s == null
-            || s.isEmpty()
-            || s.charAt(0) != '\n' && s.charAt(s.length() - 1) != '\n' && s.indexOf('\n') == -1) {
+            || s.length() == 0
+            || s.charAt(0) != '\n' && s.charAt(s.length() - 1) != '\n' && !hasNewline(s)) {
             // fast path for null, empty string or strings w/o '\n'
             // the check for '\n' also has a fast path for strings beginning or ending with '\n'
             wrapped.print(s); return;
@@ -10628,6 +10648,13 @@ final class UnixToAnyEol implements LambdaJ.WriteConsumer {
             if (c == '\n') wrapped.print(eol);
             else wrapped.print(String.valueOf(c));
         }
+    }
+    
+    private static boolean hasNewline(CharSequence s) {
+        for (int i = 1; i < s.length(); i++) {
+            if (s.charAt(i) == '\n') return true;
+        }
+        return false;
     }
 }
 

@@ -9,7 +9,7 @@ import io.github.jmurmel.LambdaJ.ConsCell;
 public class TestUtils {
 
     static String sexp(Object exp) {
-        return LambdaJ.printSEx(exp);
+        return LambdaJ.printSEx(exp).toString();
     }
 
     static ConsCell cdr(Object l) {

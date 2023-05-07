@@ -79,11 +79,11 @@ public class CmdlineTest {
 
         final int rc = LambdaJ.Cli.mainInternal(args);
 
-        final String actualStderr = EolUtil.anyToUnixEol(captureStderr.toString());
+        final String actualStderr = EolUtil.anyToUnixEol(captureStderr.toString()).toString();
         Assert.assertTrue(expectStderr.isEmpty() && actualStderr.isEmpty() || actualStderr.matches(expectStderr),
         name + " " + failMsg("stderr", expectStderr, actualStderr));
 
-        final String actualStdout = EolUtil.anyToUnixEol(captureStdout.toString());
+        final String actualStdout = EolUtil.anyToUnixEol(captureStdout.toString()).toString();
         Assert.assertTrue(expectStdout.isEmpty() && actualStdout.isEmpty() || actualStdout.matches(expectStdout),
                           name + " " + failMsg("stdout", expectStdout, actualStdout));
 

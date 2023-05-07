@@ -34,6 +34,6 @@ public class EolUtilTest {
 
     @Test(dataProvider = "test")
     public void testEolUtil(String arg, String expected) {
-        assertEquals(EolUtil.anyToUnixEol(arg), expected);
+        assertEquals(String.valueOf(EolUtil.anyToUnixEol(arg)), String.valueOf(expected));
     }
 }

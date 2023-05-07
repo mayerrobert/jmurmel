@@ -40,7 +40,7 @@ public class ParamsTest {
         LambdaJBenchmark.compileAll();
         for (int prog = 0; prog < COMPILED_PROGRAMS.length; prog++) {
             for (int n = 0; n < 3; n++)
-                assertEquals("prog " + prog, RESULTS[prog], LambdaJ.printSEx(COMPILED_PROGRAMS[prog].body(), false));
+                assertEquals("prog " + prog, RESULTS[prog], LambdaJ.printSEx(COMPILED_PROGRAMS[prog].body(), false).toString());
         }
     }
 }
