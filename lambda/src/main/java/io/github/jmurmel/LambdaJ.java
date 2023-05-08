@@ -53,6 +53,7 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.SimpleJavaFileObject;
 
+import static io.github.jmurmel.JavaUtil.*;
 import static io.github.jmurmel.LambdaJ.Chk.*;
 import static io.github.jmurmel.LambdaJ.Subr.*;
 
@@ -1035,7 +1036,7 @@ public class LambdaJ {
     /// ## Scanner, symboltable and S-expression reader
 
     static class ListSymbolTable implements SymbolTable {
-        private final Map<String,LambdaJSymbol> symbols = new HashMap<>(100, 0.75f);
+        private final Map<String,LambdaJSymbol> symbols = newHashMap(WellknownSymbol.values().length + 10);
 
         @Override public LambdaJSymbol intern(LambdaJSymbol sym) {
             final String symNameLC = sym.name.toLowerCase();
@@ -2262,7 +2263,7 @@ public class LambdaJ {
         private static final Map<String, WellknownSymbol> valuesBySymbolName;
         static {
             final WellknownSymbol[] values = values();
-            final HashMap<String, WellknownSymbol> m = new HashMap<>((int)(values.length / 0.75f), 0.75f);
+            final HashMap<String, WellknownSymbol> m = newHashMap(values.length);
             for (WellknownSymbol s: values) {
                 m.put(s.sym, s);
             }
@@ -5026,7 +5027,7 @@ public class LambdaJ {
 
         /** Note: getEntrySet(), getKeySet() and maybe more Map methods will NOT work as expected! */
         abstract static class MurmelMap extends HashMap<Object, Object> implements Writeable {
-            MurmelMap(int size) { super((int)(size / 0.75f)); }
+            MurmelMap(int size) { super(hashMapCapacity(size), DEFAULT_LOAD_FACTOR); }
 
             abstract String pfx();
             abstract Object makeKey(Object key);
@@ -5092,7 +5093,7 @@ public class LambdaJ {
         }
 
         static Map<Object,Object> makeHashTable(SymbolTable st, Object test, int size) {
-            if (test == sT) return new HashMap<>((int)(size/0.75f), 0.75f);
+            if (test == sT) return newHashMap(size);
             if (test == null || test == st.intern("eql")) return new EqlMap(size);
             if (test == st.intern("compare-eql")) return new EqlTreeMap();
             if (test == st.intern("equal")) return new EqualMap(size);
@@ -5657,7 +5658,7 @@ public class LambdaJ {
             catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method %s.%s: %s", className, methodName, e.getMessage()); }
         }
 
-        static final Map<String, Object[]> classByName = new HashMap<>(100, 0.75f);
+        static final Map<String, Object[]> classByName = newHashMap(50);
 
         static {
             classByName.put("boolean",      new Object[] { boolean.class,        "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
@@ -10422,6 +10423,23 @@ public class LambdaJ {
             call.commit();
             return ret;
         }
+    }
+}
+
+
+/** a utility class with things that Java should support out of the box */
+final class JavaUtil {
+    static final float DEFAULT_LOAD_FACTOR = 0.75f;
+
+    private JavaUtil() {}
+
+    // from Java 20 HashMap#calculateHashMapCapacity()
+    static int hashMapCapacity(int numMappings) {
+        return (int) Math.ceil(numMappings / (double)DEFAULT_LOAD_FACTOR);
+    }
+
+    static <K, V> HashMap<K, V> newHashMap(int numMappings) {
+        return new HashMap<>(hashMapCapacity(numMappings), DEFAULT_LOAD_FACTOR);
     }
 }
 
