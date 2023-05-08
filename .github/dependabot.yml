@@ -11,7 +11,7 @@ updates:
       interval: "daily"
     ignore:
       - dependency-name: "org.testng:testng"
-        versions: (7.6,)
+        versions: (7.6.0,)
 
   - package-ecosystem: "github-actions"
     directory: "/"
