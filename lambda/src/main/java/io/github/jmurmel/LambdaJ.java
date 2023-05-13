@@ -7253,14 +7253,14 @@ public class LambdaJ {
     /** Base class for compiled Murmel programs, contains Murmel runtime as well as embed API support for compiled Murmel programs. */
     public abstract static class MurmelJavaProgram implements MurmelProgram {
 
-        public class CompilerGlobal {
+        public static class CompilerGlobal {
             private Object value;
             private ConsCell dynamicStack;
 
             public CompilerGlobal(Object value) { this.value = value; }
 
             public Object get() { return value; }
-            public Object set(Object value) { values = null; return this.value = value; }
+            public Object set(Object value) { return this.value = value; }
             public Object setForTry(Object value) { return this.value = value; }
 
             public void push() { dynamicStack = ConsCell.cons(value, dynamicStack); }
@@ -7268,7 +7268,7 @@ public class LambdaJ {
             public void pop() { value = car(dynamicStack); dynamicStack = (ConsCell)cdr(dynamicStack); }
         }
 
-        public final CompilerGlobal UNASSIGNED_GLOBAL = new CompilerGlobal(null) { @Override public Object get() { throw new LambdaJError(false, "unassigned value"); } };
+        public static final CompilerGlobal UNASSIGNED_GLOBAL = new CompilerGlobal(null) { @Override public Object get() { throw new LambdaJError(false, "unassigned value"); } };
         public static final Object UNASSIGNED_LOCAL = "#<value is not assigned>";
 
         public static final Object[] NOARGS = new Object[0];
@@ -7281,7 +7281,7 @@ public class LambdaJ {
         private final SymbolTable symtab = new ListSymbolTable();
         private static final LambdaJSymbol sBit = new LambdaJSymbol(true, "bit"), sCharacter = new LambdaJSymbol(true, "character");
 
-        private final ConsCell featuresEnvEntry, conditionHandlerEnvEntry;
+        private final ConsCell featuresEnvEntry;
         private ObjectReader lispReader;
         private ObjectWriter lispPrinter;
         private TurtleFrame current_frame;
@@ -7301,28 +7301,37 @@ public class LambdaJ {
             symtab.intern(sBit);
             symtab.intern(sCharacter);
 
-            // vor/nach eval features hintri/firi kopieren, values auch
-            __42_features_42_.set(makeFeatureList(symtab)); // todo wenn kompilierter code *features* ändert, bekommt das der reader des interpreters nicht mit: eval '(read), und umgekehrt: eval '(push 'bla *features*)
+            __42_features_42_.set(makeFeatureList(symtab));
             featuresEnvEntry = ConsCell.cons(intern("*features*"), __42_features_42_.get());
-            conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), __42_condition_45_handler_42_.get());
 
             lispReader = LambdaJ.makeReader(System.in::read, symtab, featuresEnvEntry);
             lispPrinter = LambdaJ.makeWriter(System.out::print);
         }
 
         private LambdaJ intpForEval() {
+            LambdaJ intp = this.intp;
             if (intp == null) {
-                intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, null);
+                final ConsCell conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), __42_condition_45_handler_42_.get());
+                this.intp = intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, null);
                 intp.compiledProgram = this;
                 intp.init(lispReader, lispPrinter, null);
                 intp.extendTopenv(intern("*command-line-argument-list*"), commandlineArgumentList);
             }
             else {
+                intp.conditionHandlerEnvEntry.rplacd(__42_condition_45_handler_42_.get());
                 intp.setReaderPrinter(lispReader, lispPrinter);
             }
             intp.featuresEnvEntry.rplacd(__42_features_42_.get());
-            intp.conditionHandlerEnvEntry.rplacd(__42_condition_45_handler_42_.get());
+            intp.current_frame = current_frame;
             return intp;
+        }
+
+        private void afterEval() {
+            final LambdaJ intp = this.intp;
+            if (intp.values == LambdaJ.NO_VALUES) values = null;
+            else values = toArray(intp.values);
+            __42_features_42_.set(cdr(intp.featuresEnvEntry));
+            current_frame = intp.current_frame;
         }
 
         private ObjectWriter getLispPrinter(Object[] args, int nth, ObjectWriter defaultIfNull) {
@@ -7330,7 +7339,7 @@ public class LambdaJ {
             if (nth >= args.length || (consumer = args[nth]) == null) return defaultIfNull;
             if (consumer == sT) return lispPrinter;
             if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { throw wrap(e); } });
-            throw new SimpleTypeError("cannot coerce %s into a printer");
+            throw new SimpleTypeError("cannot coerce %s into a printer", consumer);
         }
 
         /// JMurmel native embed API - Java calls compiled Murmel
@@ -7384,8 +7393,8 @@ public class LambdaJ {
         // *COMMAND-LINE-ARGUMENT-LIST*: will be assigned/ accessed from generated code
         public ConsCell commandlineArgumentList;
 
-        public CompilerGlobal __42_features_42_ = new CompilerGlobal(null);
-        public CompilerGlobal __42_condition_45_handler_42_ = new CompilerGlobal(null);
+        public final CompilerGlobal __42_features_42_ = new CompilerGlobal(null);
+        public final CompilerGlobal __42_condition_45_handler_42_ = new CompilerGlobal(null);
 
         /// predefined primitives
 
@@ -7421,8 +7430,7 @@ public class LambdaJ {
             varargs1_2("eval",     args.length);
             final LambdaJ intp = intpForEval();
             final Object ret = intp.expandAndEval(args[0], args.length == 2 ? LambdaJ.requireList("eval", args[1]) : null);
-            if (intp.values == LambdaJ.NO_VALUES) values = null;
-            else values = toArray(intp.values);
+            afterEval();
             return ret;
         }
 
@@ -8122,10 +8130,7 @@ public class LambdaJ {
         public final Object funcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
-            if (fn instanceof Primitive)         { final Object ret = ((Primitive)fn).applyPrimitive(arraySlice(args));
-                                                   if (intp.values == LambdaJ.NO_VALUES) values = null;
-                                                   else values = toArray(intp.values);
-                                                   return ret; }
+            if (fn instanceof Primitive)         { final Object ret = ((Primitive)fn).applyPrimitive(arraySlice(args));  afterEval();  return ret; }
             if (fn instanceof Closure)           return interpret(fn, args);
 
             throw errorNotAFunction(fn);
@@ -8140,8 +8145,7 @@ public class LambdaJ {
                                                                                                                null)),
                                                                                    null))),
                                          null);
-            if (intp.values == LambdaJ.NO_VALUES) values = null;
-            else values = toArray(intp.values);
+            afterEval();
             return ret;
         }
 
