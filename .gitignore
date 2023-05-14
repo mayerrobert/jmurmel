@@ -43,3 +43,4 @@ core
 /samples.murmel/target/
 /target/
 /graalvm/target/
+/graalvm/reports/

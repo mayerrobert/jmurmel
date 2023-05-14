@@ -323,7 +323,7 @@ pi ; ==> 3.141592653589793
 ;
 ;           character               ; #\A                            -> java.lang.Character
 ;
-;           random-state            ; todo                           -> java.util.Random
+;           random-state            ; (make-random-state)            -> java.util.Random
 ;
 ;           vector                  ; (make-array NN t t)            -> java.util.ArrayList
 ;                                   ; (make-array NN t CC)           -> java.util.ArrayList

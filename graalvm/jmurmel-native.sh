@@ -46,5 +46,8 @@ native-image \
 # to have reports written during compilation:
 #  -H:+PrintClassInitialization \
 
+# to have verbose info printed during build
+#  -H:+PrintUniverse \
+
 # in case you want to use "jmurmel -XX:+DumpHeapAndExit"
 #  --enable-monitoring=heapdump \
