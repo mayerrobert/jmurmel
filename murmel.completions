@@ -67,6 +67,7 @@ numberp
 floatp
 integerp
 characterp
+random-state-p
 vectorp
 simple-vector-p
 stringp
@@ -111,6 +112,8 @@ exp
 expt
 mod
 rem
+random
+make-random-state
 
 make-array
 vector-length

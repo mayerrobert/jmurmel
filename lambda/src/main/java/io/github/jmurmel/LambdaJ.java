@@ -53,7 +53,6 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.SimpleJavaFileObject;
 
-import static io.github.jmurmel.JavaUtil.*;
 import static io.github.jmurmel.LambdaJ.Chk.*;
 import static io.github.jmurmel.LambdaJ.Subr.*;
 
@@ -1036,7 +1035,7 @@ public class LambdaJ {
     /// ## Scanner, symboltable and S-expression reader
 
     static class ListSymbolTable implements SymbolTable {
-        private final Map<String,LambdaJSymbol> symbols = newHashMap(WellknownSymbol.values().length + 10);
+        private final Map<String,LambdaJSymbol> symbols = JavaUtil.newHashMap(WellknownSymbol.values().length + 10);
 
         @Override public LambdaJSymbol intern(LambdaJSymbol sym) {
             final String symNameLC = sym.name.toLowerCase();
@@ -2055,6 +2054,7 @@ public class LambdaJ {
         sFloatp("floatp", Features.HAVE_NUMBERS, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
         sIntegerp("integerp", Features.HAVE_NUMBERS, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
         sCharacterp("characterp", Features.HAVE_STRING, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(characterp(car(args))); } },
+        sRandomstatep("random-state-p", Features.HAVE_NUMBERS, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(randomstatep(car(args))); } },
 
         sVectorp("vectorp", Features.HAVE_VECTOR, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(vectorp(car(args))); } },
         sSimpleVectorP("simple-vector-p", Features.HAVE_VECTOR, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(svectorp(car(args))); } },
@@ -2122,6 +2122,15 @@ public class LambdaJ {
 
         sMod("mod", Features.HAVE_NUMBERS, 2)                { @Override Object apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
         sRem("rem", Features.HAVE_NUMBERS, 2)                { @Override Object apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
+        sRandom("random", Features.HAVE_NUMBERS, 1, 2)       { @Override Object apply(LambdaJ intp, ConsCell args) {
+            Object state = cadr(args);
+            if (state == null) state = intp.getRandom();
+            return random(car(args), state);
+        } },
+        sMakeRandomState("make-random-state", Features.HAVE_NUMBERS, 0, 1) { @Override Object apply(LambdaJ intp, ConsCell args) {
+            final Object state = car(args);
+            return makeRandomState(state == null ? intp.getRandom() : null, state);
+        } },
 
         // vectors, sequences
         sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeArray(intp.sBit, intp.sCharacter, args); } },
@@ -2263,7 +2272,7 @@ public class LambdaJ {
         private static final Map<String, WellknownSymbol> valuesBySymbolName;
         static {
             final WellknownSymbol[] values = values();
-            final HashMap<String, WellknownSymbol> m = newHashMap(values.length);
+            final HashMap<String, WellknownSymbol> m = JavaUtil.newHashMap(values.length);
             for (WellknownSymbol s: values) {
                 m.put(s.sym, s);
             }
@@ -3692,6 +3701,8 @@ public class LambdaJ {
 
     static boolean characterp(Object o)  { return o instanceof Character; }
 
+    static boolean randomstatep(Object o){ return o instanceof Random; }
+
     static boolean vectorp(Object o)     { return stringp(o) || bitvectorp(o) || svectorp(o) || o instanceof List; }
     static boolean svectorp(Object o)    { return o != null && o.getClass().isArray() && !bitvectorp(o) && !stringp(o); }
     static boolean stringp(Object o)     { return sstringp(o) || o instanceof CharSequence; }
@@ -3938,6 +3949,7 @@ public class LambdaJ {
         else if (hashtablep(atom))                { printHash(sb, (Map<?, ?>)atom, escapeAtoms); }
         else if (atom == null)                    { sb.print("nil"); }
         else if (atom instanceof CharSequence)    { sb.print((CharSequence)atom); }
+        else if (randomstatep((atom)))            { sb.print("#<random-state>"); }
         else                                      { sb.print(atom.toString()); }
     }
 
@@ -4167,6 +4179,17 @@ public class LambdaJ {
             throw errorNotANumber(func, n);
         }
 
+        static void requirePositiveNumber(String func, Object n) {
+            if (n instanceof Long && (Long)n > 0L
+                || n instanceof Double && (Double)n > 0.0
+                || n instanceof Byte && (Byte)n > 0
+                || n instanceof Short && (Short)n > 0
+                || n instanceof Integer && (Integer)n > 0
+                || n instanceof Float && (Float)n > 0
+                || n instanceof BigInteger && ((BigInteger)n).compareTo(BigInteger.ZERO) > 0) return;
+            throw new SimpleTypeError("%s: expected a positive float or integer argument but got %s", func, printSEx(n));
+        }
+
         static Number requireIntegralNumber(String func, Object n, long minIncl, long maxIncl) {
             if (n == null) errorNotAnInteger(func, null);
             if (n instanceof Long)    { return requireIntegralNumber(func, (Long) n, n, minIncl, maxIncl); }
@@ -4188,6 +4211,11 @@ public class LambdaJ {
         private static Number requireIntegralNumber(String func, long l, Object originalValue, long minIncl, long maxIncl) {
             if (l >= minIncl && l <= maxIncl) return l;
             throw errorNotAnInteger(func, originalValue);
+        }
+        
+        static Random requireRandom(String func, Object r) {
+            if (r instanceof Random) return (Random)r;
+            throw new SimpleTypeError("%s: expected a random argument but got %s", func, printSEx(r));
         }
 
 
@@ -4307,6 +4335,8 @@ public class LambdaJ {
             }
 
             if (typespec == st.intern("character")) return characterp(o);
+
+            if (typespec == st.intern("random-state")) return randomstatep(o);
 
             if (typespec == st.intern("vector")) return vectorp(o);
             if (typespec == st.intern("simple-vector")) return svectorp(o);
@@ -4556,6 +4586,50 @@ public class LambdaJ {
                 return l - 1;
             }
             return toDouble("1-", n) - 1;
+        }
+
+        static Number random(Object limit, Object _state) {
+            requirePositiveNumber("random", limit);
+            final Random state = requireRandom("random", _state);
+            if (limit instanceof Long)    return (long)(state.nextDouble() * (Long)limit);
+            if (limit instanceof Double)  return state.nextDouble() * (Double)limit;
+            if (limit instanceof Byte)    return state.nextInt((Byte)limit);
+            if (limit instanceof Short)   return state.nextInt((Short)limit);
+            if (limit instanceof Integer) return state.nextInt((Integer)limit);
+            if (limit instanceof Float)   return state.nextFloat() * (Float)limit;
+            if (limit instanceof BigInteger) {
+                // see https://stackoverflow.com/questions/2290057/how-to-generate-a-random-biginteger-value-in-java
+                final BigInteger upperLimit = (BigInteger)limit;
+                final int nlen = upperLimit.bitLength();
+                final BigInteger nm1 = upperLimit.subtract(BigInteger.ONE);
+                BigInteger randomNumber, temp;
+                do {
+                    temp = new BigInteger(nlen + 100, state);
+                    randomNumber = temp.mod(upperLimit);
+                } while (temp.subtract(randomNumber).add(nm1).bitLength() >= nlen + 100);
+                return randomNumber;
+            }
+            throw errorInternal("cannot happen");
+        }
+
+        static Random makeRandomState(Random currentState, Object state) {
+            if (state == sT) return new Random();
+            if (state == null) return copy(currentState);
+            if (state instanceof Random) return copy((Random)state);
+            if (state instanceof Number) return new Random(((Number)state).longValue());
+            throw new SimpleTypeError("make-random-state: expected a random or t or nil or number argument but got %s", printSEx(state));
+        }
+
+        private static Random copy(Random rnd) {
+            try {
+                final ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                final ObjectOutputStream oos = new ObjectOutputStream(bo);
+                oos.writeObject(rnd);
+                oos.close();
+                final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bo.toByteArray()));
+                return (Random)(ois.readObject());
+            }
+            catch (Exception e) { throw errorInternal(e, "unexpected Exception cloning random"); }
         }
 
 
@@ -5027,7 +5101,7 @@ public class LambdaJ {
 
         /** Note: getEntrySet(), getKeySet() and maybe more Map methods will NOT work as expected! */
         abstract static class MurmelMap extends HashMap<Object, Object> implements Writeable {
-            MurmelMap(int size) { super(hashMapCapacity(size), DEFAULT_LOAD_FACTOR); }
+            MurmelMap(int size) { super(JavaUtil.hashMapCapacity(size), JavaUtil.DEFAULT_LOAD_FACTOR); }
 
             abstract String pfx();
             abstract Object makeKey(Object key);
@@ -5093,7 +5167,7 @@ public class LambdaJ {
         }
 
         static Map<Object,Object> makeHashTable(SymbolTable st, Object test, int size) {
-            if (test == sT) return newHashMap(size);
+            if (test == sT) return JavaUtil.newHashMap(size);
             if (test == null || test == st.intern("eql")) return new EqlMap(size);
             if (test == st.intern("compare-eql")) return new EqlTreeMap();
             if (test == st.intern("equal")) return new EqualMap(size);
@@ -5658,7 +5732,7 @@ public class LambdaJ {
             catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method %s.%s: %s", className, methodName, e.getMessage()); }
         }
 
-        static final Map<String, Object[]> classByName = newHashMap(50);
+        static final Map<String, Object[]> classByName = JavaUtil.newHashMap(50);
 
         static {
             classByName.put("boolean",      new Object[] { boolean.class,        "toBoolean",           (UnaryOperator<Object>)(MurmelJavaProgram::toBoolean) });
@@ -5894,6 +5968,9 @@ public class LambdaJ {
 
 
     ConsCell values = NO_VALUES;
+
+    Random random;
+    Random getRandom() { if (random == null) random = new Random();  return random; }
 
     TurtleFrame current_frame;
 
@@ -7284,6 +7361,7 @@ public class LambdaJ {
         private final ConsCell featuresEnvEntry;
         private ObjectReader lispReader;
         private ObjectWriter lispPrinter;
+        private Random random;
         private TurtleFrame current_frame;
 
         private LambdaJ intp;
@@ -7322,6 +7400,7 @@ public class LambdaJ {
                 intp.setReaderPrinter(lispReader, lispPrinter);
             }
             intp.featuresEnvEntry.rplacd(__42_features_42_.get());
+            intp.random = random;
             intp.current_frame = current_frame;
             return intp;
         }
@@ -7331,7 +7410,13 @@ public class LambdaJ {
             if (intp.values == LambdaJ.NO_VALUES) values = null;
             else values = toArray(intp.values);
             __42_features_42_.set(cdr(intp.featuresEnvEntry));
+            random = intp.random;
             current_frame = intp.current_frame;
+        }
+
+        private Random getRandom() {
+            if (random == null) random = new Random();
+            return random;
         }
 
         private ObjectWriter getLispPrinter(Object[] args, int nth, ObjectWriter defaultIfNull) {
@@ -7460,6 +7545,7 @@ public class LambdaJ {
         public final Object _integerp  (Object... args) { oneArg("integerp",     args.length);        return bool(integerp(args[0])); }
         public final Object _integerp  (Object    arg)  {                                             return bool(integerp(arg)); }
         public final Object _characterp(Object... args) { oneArg("characterp",   args.length);        return bool(characterp(args[0])); }
+        public final Object _randomstatep(Object... args){oneArg("random-state-p", args.length);      return bool(randomstatep(args[0])); }
 
         public final Object _vectorp   (Object... args) { oneArg("vectorp",      args.length);        return bool(vectorp(args[0])); }
         public final Object _vectorp   (Object    arg)  {                                             return bool(vectorp(arg)); }
@@ -7596,6 +7682,22 @@ public class LambdaJ {
         public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(toDouble(args[0]), toDouble(args[1])); }
         public final double cl_mod(double lhs, double rhs) { values = null; return LambdaJ.Subr.cl_mod(lhs, rhs); }
         public final double   _rem     (Object... args) { twoArgs("rem",          args.length); values = null; return toDouble(args[0]) % toDouble(args[1]); }
+        
+        public final Number _random(Object... args) {
+            varargs1_2("random", args.length); values = null;
+            final Object state;
+            if (args.length == 2) state = args[1];
+            else state = getRandom();
+            return random(args[0], state);
+        }
+        public final Random makeRandomState(Object... args) {
+            varargs0_1("make-random-state", args.length); values = null;
+            final Object state;
+            final Random current;
+            if (args.length == 1) { state = args[0]; current = null; }
+            else                  { state = null;    current = getRandom(); }
+            return Subr.makeRandomState(current, state);
+        }
 
 
         // vectors, sequences
@@ -8354,6 +8456,7 @@ public class LambdaJ {
             case "floatp": return (CompilerPrimitive)this::_floatp;
             case "integerp": return (CompilerPrimitive)this::_integerp;
             case "characterp": return (CompilerPrimitive)this::_characterp;
+            case "random-state-p": return (CompilerPrimitive)this::_randomstatep;
 
             case "vectorp": return (CompilerPrimitive)this::_vectorp;
             case "simple-vector-p": return (CompilerPrimitive)this::svectorp;
@@ -8417,6 +8520,8 @@ public class LambdaJ {
             case "expt": return (CompilerPrimitive)this::_expt;
             case "mod": return (CompilerPrimitive)this::_mod;
             case "rem": return (CompilerPrimitive)this::_rem;
+            case "random": return (CompilerPrimitive)this::_random;
+            case "make-random-state": return (CompilerPrimitive)this::makeRandomState;
 
             // vectors, sequences
             case "make-array": return (CompilerPrimitive)this::makeArray;
@@ -8669,7 +8774,7 @@ public class LambdaJ {
         "append", "values",
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",
-        "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum",
+        "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum", "random",
         "gensym", "trace", "untrace",
         "error", "jmethod", "jproxy",
         };
@@ -8684,7 +8789,7 @@ public class LambdaJ {
         {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
         {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
         {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"}, 
-        {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"},
+        {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"}, {"random-state-p", "randomstatep"}, {"make-random-state", "makeRandomState"},
         {"bit-vector-p", "bitvectorp"}, {"bv=", "bvEq"}, {"simple-bit-vector-p", "sbitvectorp"}, {"hash-table-p", "hashtablep"}, {"make-array", "makeArray"},
         {"hash", "_hash"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
         {"hash-table-count", "hashTableCount"}, {"clrhash", "_clrhash"}, {"hash-table-remove", "hashRemove"}, {"sxhash", "_sxhash"}, {"scan-hash-table", "scanHash"},

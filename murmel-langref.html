@@ -327,6 +327,8 @@ Murmel's type system (and the corresponding host types) look like so:
 
           character               ; #\A                            -> java.lang.Character
 
+          random-state            ; todo                           -> java.util.Random
+
           vector                  ; (make-array NN t t)            -> java.util.ArrayList
                                   ; (make-array NN t CC)           -> java.util.ArrayList
                                   ; makes an ArrayList w/ size NN and initial capacity CC
@@ -880,6 +882,10 @@ Return `t` if any of the following is true:
 - `floatp` returns `t` for Murmel and Java decimal number types.
 
 ### characterp
+
+### random-state-p
+
+Since: 1.4.3
 
 ### hash-table-p
 
@@ -1444,6 +1450,21 @@ The numeric comparison operators take one or more number arguments.
     (= 1 1.0)         ; ==> t
     (< 1 2 3.0 4 5.0) ; ==> t
     (< 1 2 3 3 4 5)   ; ==> nil
+
+### (random limit random-state?) -> random-number
+
+Since: 1.4.3
+
+Similar to CL's `random`.
+
+### (make-random-state state?) -> new-state
+
+Since: 1.4.3
+
+Similar to CL's `make-random-state` with the following differences:
+- If `state` is a number then it will be truncated to an integer
+  and used as a seed for the newly created random state.
+- Murmel's `random-state` objects will print unreadably.
 
 
 ## Predefined Graphics Primitives 
