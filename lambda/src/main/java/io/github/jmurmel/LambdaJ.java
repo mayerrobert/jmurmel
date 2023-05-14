@@ -3645,7 +3645,7 @@ public class LambdaJ {
 
     private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
-    private static Object carCdrError(String func, Object o) { throw new SimpleTypeError("%s: expected one list or string argument but got %s", func, printSEx(o)); }
+    private static Object carCdrError(String func, Object o) { throw errorArgTypeError("list or string", func, o); }
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     static Object   car(Object o)      { return o == null ? null
@@ -4045,16 +4045,18 @@ public class LambdaJ {
     static RuntimeException errorMalformed       (String func, String expected, Object actual)  { throw new ProgramError("%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual)); }
     static void             errorReserved        (String op, Object sym)                        { errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym == null ? "nil" : sym); }
 
-    static RuntimeException errorNotANumber      (String func, Object n)                        { throw new SimpleTypeError("%s: expected a number argument but got %s", func, printSEx(n)); }
-    static RuntimeException errorNotAnInteger    (String func, Object n)                        { throw new SimpleTypeError("%s: expected an integral number argument but got %s", func, printSEx(n)); }
-    static RuntimeException errorNotABit         (String func, Object n)                        { throw new SimpleTypeError("%s: expected a bit argument but got %s", func, printSEx(n)); }
-    static RuntimeException errorNotAVector      (String func, Object n)                        { throw new SimpleTypeError("%s: expected a vector argument but got %s", func, printSEx(n)); }
-    static RuntimeException errorNotASimpleVector(String func, Object n)                        { throw new SimpleTypeError("%s: expected a simple vector argument but got %s", func, printSEx(n)); }
-    static RuntimeException errorNotAString      (String func, Object n)                        { throw new SimpleTypeError("%s: expected a string argument but got %s", func, printSEx(n)); }
-    static RuntimeException errorNotABitVector   (String func, Object n)                        { throw new SimpleTypeError("%s: expected a bitvector argument but got %s", func, printSEx(n)); }
-    static void             errorNotACons        (String func, Object n)                        { throw new SimpleTypeError("%s: expected a cons argument but got %s", func, printSEx(n)); }
-    static void             errorNotAList        (String func, Object n)                        { throw new SimpleTypeError("%s: expected a list argument but got %s", func, printSEx(n)); }
-    static void             errorNotASequence    (String func, Object n)                        { throw new SimpleTypeError("%s: expected a list or vector argument but got %s", func, printSEx(n)); }
+    /** throws a {@link SimpleTypeError} with a message of "'func': expected a 'expected' argument but got 'actual'" */
+    static RuntimeException errorArgTypeError(String expected, String func, Object actual)      { throw new SimpleTypeError("%s: expected a %s argument but got %s", func, expected, printSEx(actual)); }
+    static RuntimeException errorNotANumber      (String func, Object actual)                   { throw errorArgTypeError("number", func, actual); }
+    static RuntimeException errorNotAnInteger    (String func, Object actual)                   { throw errorArgTypeError("integral number", func, actual); }
+    static RuntimeException errorNotABit         (String func, Object actual)                   { throw errorArgTypeError("bit", func, actual); }
+    static RuntimeException errorNotAVector      (String func, Object actual)                   { throw errorArgTypeError("vector", func, actual); }
+    static RuntimeException errorNotASimpleVector(String func, Object actual)                   { throw errorArgTypeError("simple vector", func, actual); }
+    static RuntimeException errorNotAString      (String func, Object actual)                   { throw errorArgTypeError("string", func, actual); }
+    static RuntimeException errorNotABitVector   (String func, Object actual)                   { throw errorArgTypeError("bitvector", func, actual); }
+    static void             errorNotACons        (String func, Object actual)                   { throw errorArgTypeError("cons", func, actual); }
+    static void             errorNotAList        (String func, Object actual)                   { throw errorArgTypeError("list", func, actual); }
+    static void             errorNotASequence    (String func, Object actual)                   { throw errorArgTypeError("list or vector", func, actual); }
 
     static RuntimeException errorOverflow        (String func, String targetType, Object n)     { throw new ArithmeticException(String.format("%s: value cannot be represented as a %s: %s", func, targetType, n)); }
     static RuntimeException errorIndexTooLarge   (long idx, long actualLength)                  { throw new InvalidIndexError("index %d is too large for a sequence of length %d", idx, actualLength); }
@@ -4187,7 +4189,7 @@ public class LambdaJ {
                 || n instanceof Integer && (Integer)n > 0
                 || n instanceof Float && (Float)n > 0
                 || n instanceof BigInteger && ((BigInteger)n).compareTo(BigInteger.ZERO) > 0) return;
-            throw new SimpleTypeError("%s: expected a positive float or integer argument but got %s", func, printSEx(n));
+            throw errorArgTypeError("positive float or integer", func, n);
         }
 
         static Number requireIntegralNumber(String func, Object n, long minIncl, long maxIncl) {
@@ -4215,13 +4217,13 @@ public class LambdaJ {
         
         static Random requireRandom(String func, Object r) {
             if (r instanceof Random) return (Random)r;
-            throw new SimpleTypeError("%s: expected a random argument but got %s", func, printSEx(r));
+            throw errorArgTypeError("random", func, r);
         }
 
 
         /** Return {@code c} as a Character, error if {@code c} is not a Character. */
         static Character requireChar(String func, Object c) {
-            if (!(c instanceof Character)) throw new SimpleTypeError("%s: expected a character argument but got %s", func, printSEx(c));
+            if (!(c instanceof Character)) throw errorArgTypeError("character", func, c);
             return (Character)c;
         }
 
@@ -4230,7 +4232,7 @@ public class LambdaJ {
         }
 
         static Object[] requireSimpleVector(String func, Object c) {
-            if (!svectorp(c)) throw new SimpleTypeError("%s: expected a simple vector argument but got %s", func, printSEx(c));
+            if (!svectorp(c)) throw errorNotASimpleVector(func, c);
             return (Object[])c;
         }
 
@@ -4255,7 +4257,7 @@ public class LambdaJ {
 
         @SuppressWarnings("unchecked")
         static Map<Object, Object> requireHash(String func, Object a) {
-            if (!hashtablep(a)) throw new SimpleTypeError("%s: expected a hashtable argument but got %s", func, printSEx(a));
+            if (!hashtablep(a)) errorArgTypeError("hashtable", func, a);
             return (Map<Object, Object>)a;
         }
 
@@ -4617,7 +4619,7 @@ public class LambdaJ {
             if (state == null) return copy(currentState);
             if (state instanceof Random) return copy((Random)state);
             if (state instanceof Number) return new Random(((Number)state).longValue());
-            throw new SimpleTypeError("make-random-state: expected a random or t or nil or number argument but got %s", printSEx(state));
+            throw errorArgTypeError("random or t or nil or number", "make-random-state", state);
         }
 
         private static Random copy(Random rnd) {
@@ -5365,7 +5367,7 @@ public class LambdaJ {
             final Iterator<Object> it;
             if (svectorp(seq)) it = Arrays.asList((Object[])seq).iterator();
             else if (seq instanceof Iterable) it = ((Iterable<Object>)seq).iterator(); // covers ConCell and adjustable array which are ArrayLists
-            else throw new SimpleTypeError("expected a sequence of strings but got %s", printSEx(seq));
+            else throw errorArgTypeError("sequence of strings", "write-textfile-lines", seq);
             final Path p = Paths.get(fileName);
             try (Writer w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
                                                     appendp
@@ -5981,7 +5983,7 @@ public class LambdaJ {
             ret = current_frame;
         }
         else {
-            if (!(a instanceof TurtleFrame)) throw new SimpleTypeError("%s: expected a frame argument but got %s", func, printSEx(a));
+            if (!(a instanceof TurtleFrame)) throw errorArgTypeError("frame", func, a);
             ret = (TurtleFrame) a;
         }
         if (ret == null) throw new UnboundVariable("%s: no frame argument and no current frame", func);
