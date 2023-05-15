@@ -7401,7 +7401,7 @@ public class LambdaJ {
                 intp.conditionHandlerEnvEntry.rplacd(__42_condition_45_handler_42_.get());
                 intp.setReaderPrinter(lispReader, lispPrinter);
             }
-            intp.featuresEnvEntry.rplacd(__42_features_42_.get());
+            featuresEnvEntry.rplacd(__42_features_42_.get());
             intp.random = random;
             intp.current_frame = current_frame;
             return intp;
@@ -7411,7 +7411,8 @@ public class LambdaJ {
             final LambdaJ intp = this.intp;
             if (intp.values == LambdaJ.NO_VALUES) values = null;
             else values = toArray(intp.values);
-            __42_features_42_.set(cdr(intp.featuresEnvEntry));
+            __42_features_42_.set(cdr(featuresEnvEntry));
+            __42_condition_45_handler_42_.set(cdr(intp.conditionHandlerEnvEntry));
             random = intp.random;
             current_frame = intp.current_frame;
         }
