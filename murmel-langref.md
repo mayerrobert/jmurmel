@@ -504,7 +504,7 @@ The second argument to `define` is optional and defaults to `nil`.
     (define *global-var* 42)               ; ==> *gloval-var*
     (define f1 (lambda (p1 p2) (+ p1 p2))) ; ==> f1
 
-### (defun symbol (params\*) forms\*) -> symbol
+### (defun symbol (params\*) docstring? forms\*) -> symbol
 
 `defun` is a shorthand for defining functions:
 
@@ -512,11 +512,12 @@ The second argument to `define` is optional and defaults to `nil`.
        <=>
     (define symbol (lambda (params*) forms*))
 
+An optional docstring is ignored.
 Arguments to `defun` are not evaluated.
 
     (defun f2 (p1 p2) (+ p1 p2)) ; ==> f2
 
-### (defmacro name (params\*) forms\*) -> symbol<br/>(defmacro name) -> prev-name
+### (defmacro name (params\*) docstring? forms\*) -> symbol<br/>(defmacro name) -> prev-name
 
 `defmacro` defines a macro, similar to CL's `defmacro`.
 Macros are somewhat similar to functions:
@@ -533,6 +534,8 @@ are not scoped but once defined they are visible everywhere.
 
 `(defmacro name)` can be used to unbind previously
 defined macros.
+
+An optional docstring is ignored.
 
     (defmacro twice (arg) (list '* arg 2))  ; ==> twice
     (twice 3) ; ==> 6.0

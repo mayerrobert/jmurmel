@@ -2900,6 +2900,7 @@ public class LambdaJ {
                 case sDefun:
                     varargsMin("defun", ccArgs, 2);
                     checkLambdaList("defun", cadr(ccArgs));
+                    if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList("defun", ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
                     if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
                     return ccForm;
 
@@ -2908,6 +2909,7 @@ public class LambdaJ {
                     final LambdaJSymbol sym1 = symbolOrMalformed("defmacro", car(ccArgs));
                     if (cdr(ccArgs) == null) sym1.macro = null;
                     else {
+                        if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList("defmacro", ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
                         if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
                         final Object params = cadr(ccArgs);
                         checkLambdaList("defmacro", params);
