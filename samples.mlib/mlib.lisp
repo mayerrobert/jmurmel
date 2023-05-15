@@ -622,19 +622,19 @@
 
 (defmacro m%mapx-nconc (name acc accn)
   `(defun ,name (func lst . more-lists)
-     (let* ((result (cons () ())) (append-to result) tmp)
+     (let* ((result (cons () ())) (append-to result))
        (if more-lists
                (let loop ((args (cons lst more-lists)))
                  (when (m%notany-null args)
-                   (setq tmp (apply func ,(if accn (list accn 'args) 'args)))
-                   (nconc append-to tmp)
-                   (when tmp (setq append-to tmp))
+                   (when (consp (cdr append-to))
+                     (setq append-to (last append-to)))
+                   (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
                    (loop (unzip-tails args))))
          (let loop ((lst lst))
            (when lst
-             (setq tmp (func ,(if acc (list acc 'lst) 'lst)))
-             (nconc append-to tmp)
-             (when tmp (setq append-to tmp))
+             (when (consp (cdr append-to))
+               (setq append-to (last append-to)))
+             (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
              (loop (cdr lst)))))
 
        (cdr result))))
