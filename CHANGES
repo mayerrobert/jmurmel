@@ -5,6 +5,8 @@ Changes in JMurmel-1.4.3 relative to JMurmel-1.4.2
  * added random, make-random-state, random-state-p
  * defun and defmacro now accept (and ignore) optional docstrings
 
+ * mlib: "last" now has an optional parameter n
+
 
 Changes in JMurmel-1.4.2 relative to JMurmel-1.4.1
 released: 2023-02-16

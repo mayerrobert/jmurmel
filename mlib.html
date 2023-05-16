@@ -256,12 +256,16 @@ Returns the length of `list-or-string` if it is a string or proper list.
 Returns `nil` if `list-or-string` is a circular list.
 
 ### Function: last
-    (last lst) -> last-cons-or-nil
+    (last lst n?) -> last-cons-or-nil
 
 Since: 1.2
 
-`last` returns the last cons of a proper or dotted list
-or `nil` for the empty list.
+`last` returns the last `n` conses (not the last `n` elements)
+of a proper or dotted list or `nil` for the empty list.
+
+If `n` is zero, the atom that terminates list is returned.
+If `n` is greater than or equal to the number of cons cells in list,
+the result is `lst`.
 
 ### Function: nconc
     (nconc lists*) -> concatenated-list

@@ -463,15 +463,83 @@
 
 
 ;;; = Function: last
-;;;     (last lst) -> last-cons-or-nil
+;;;     (last lst n?) -> last-cons-or-nil
 ;;;
 ;;; Since: 1.2
 ;;;
-;;; `last` returns the last cons of a proper or dotted list
-;;; or `nil` for the empty list.
-(defun last (lst)
-  (if (consp (cdr lst)) (last (cdr lst))
-    lst))
+;;; `last` returns the last `n` conses (not the last `n` elements)
+;;; of a proper or dotted list or `nil` for the empty list.
+;;;
+;;; If `n` is zero, the atom that terminates list is returned.
+;;; If `n` is greater than or equal to the number of cons cells in list,
+;;; the result is `lst`.
+(defmacro last0-macro ()
+  `(let loop ((rest lst))
+     (if (consp rest)
+       (loop (cdr rest))
+       rest)))
+
+(defun last0 (lst)
+  (last0-macro))
+
+(defmacro last1-macro ()
+  `(let loop ((rest lst))
+     (if (consp (cdr rest))
+       (loop (cdr rest))
+       rest)))
+
+(defun last1 (lst)
+  (last1-macro))
+
+; lastn-macro won't work for n <= 0.
+; This causes no ill effect because the code below avoids this,
+; and then lastn-macro is undefined so that user code doesn't see it.
+(defmacro lastn-macro ()
+  (let ((scan (gensym "scan"))
+        (pop (gensym "pop")))
+    `(let ((returned-lst lst)
+           (checked-lst lst)
+           (n n))
+       (let ,scan ()
+            (setq checked-lst (cdr checked-lst))
+            (if (atom checked-lst)
+
+                returned-lst
+
+                (if (= (setq n (1- n)) 0)
+                    (let ,pop ()
+                         (setq returned-lst (cdr returned-lst))
+                         (setq checked-lst (cdr checked-lst))
+                         (if (atom checked-lst)
+                             returned-lst
+                             (,pop)))
+                    (,scan)))))))
+
+(defun lastn (lst n)
+  (cond
+    ((= n 1) (last1-macro))
+    ((> n 1) (lastn-macro))
+    ((= n 0) (last0-macro))
+    (t (error 'type-error "last: n must be >= 0"))))
+
+(defun last (lst . n)
+  (if n
+      (lastn lst (car n))
+      (last1-macro)))
+
+(defmacro last (lst . n)
+  (if n
+      (if (integerp (setq n (car n)))
+          (cond
+            ((= n 1) `(last1 ,lst))
+            ((= 0 1) `(last0 ,lst))
+            (t `(lastn ,lst ,n)))
+          `(lastn ,lst ,n))
+      `(last1 ,lst)))
+
+(defmacro last0-macro)
+(defmacro last1-macro)
+(defmacro lastn-macro)
 
 
 ;;; = Function: nconc
