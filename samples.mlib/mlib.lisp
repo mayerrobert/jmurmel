@@ -626,14 +626,12 @@
        (if more-lists
                (let loop ((args (cons lst more-lists)))
                  (when (m%notany-null args)
-                   (when (consp (cdr append-to))
-                     (setq append-to (last append-to)))
+                   (setq append-to (last append-to))
                    (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
                    (loop (unzip-tails args))))
          (let loop ((lst lst))
            (when lst
-             (when (consp (cdr append-to))
-               (setq append-to (last append-to)))
+             (setq append-to (last append-to))
              (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
              (loop (cdr lst)))))
 
