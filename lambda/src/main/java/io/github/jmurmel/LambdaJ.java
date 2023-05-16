@@ -9855,8 +9855,9 @@ public class LambdaJ {
                 else if (symbolp(params)) {
                     LambdaJ.notReserved(func, (LambdaJSymbol)params);
                     if (!seen.add(params)) errorMalformedFmt(func, "duplicate symbol %s", params);
-                    env = extenv(func, params, rsfx, env);
-                    sb.append("        final Object ").append(javasym(params, env)).append(" = arrayToList(args").append(rsfx).append(", ").append(n).append(");\n");
+                    final String javaName = "varargs" + rsfx;
+                    env = extenvIntern((LambdaJSymbol)params, javaName + "[0]", env);
+                    sb.append("        final Object[] ").append(javaName).append(" = new Object[] { arrayToList(args").append(rsfx).append(", ").append(n).append(") };\n");
                     return env;
                 }
 
