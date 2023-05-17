@@ -778,7 +778,7 @@ public class LambdaJ {
                 final Object o = arry[j];
                 if (zero.equals(o)) ret[i] = false;
                 else if (one.equals(o)) ret[i] = true;
-                else throw new SimpleTypeError("not a valid value for bitvector: %s", o);
+                else throw new SimpleTypeError("not a valid value for bitvector: %s", LambdaJ.printSEx(o));
             }
             return ret;
         }
@@ -1550,6 +1550,7 @@ public class LambdaJ {
                         look = getchar();
                     }
                     String s = tokenToString(token, 0, index);
+                    //noinspection ConstantConditions
                     if (!tokEscape && ".".equals(s)) {
                         tok = Token.DOT;
                     } else if (!escapeSeen && have(Features.HAVE_DOUBLE) && isDouble(s)) {
@@ -2087,7 +2088,7 @@ public class LambdaJ {
         sAssoc("assoc", Features.HAVE_UTIL, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
 
         // numbers, characters
-        sAdd("+", Features.HAVE_NUMBERS, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, (lhs, rhs) -> lhs + rhs); } },
+        sAdd("+", Features.HAVE_NUMBERS, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, Double::sum); } },
         sMul("*", Features.HAVE_NUMBERS, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "*", 1.0, (lhs, rhs) -> lhs * rhs); } },
         sSub("-", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "-", 0.0, (lhs, rhs) -> lhs - rhs); } },
         sDiv("/", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return subOp(args, "/", 1.0, (lhs, rhs) -> lhs / rhs); } },
@@ -4430,7 +4431,7 @@ public class LambdaJ {
         static Object append(LambdaJ intp, ConsCell args) {
             if (args == null) return null;
             if (cdr(args) == null) return car(args);
-            if (!listp(car(args))) throw new SimpleTypeError("append: first argument %s is not a list", car(args));
+            if (!listp(car(args))) throw new SimpleTypeError("append: first argument %s is not a list", printSEx(car(args)));
 
             while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
 
@@ -5010,7 +5011,7 @@ public class LambdaJ {
                 final Object o = car(rest);
                 if (zero.equals(o)) ret[i] = false;
                 else if (one.equals(o)) ret[i] = true;
-                else throw new SimpleTypeError("not a valid value for bitvector: %s", o);
+                else throw new SimpleTypeError("not a valid value for bitvector: %s", printSEx(o));
                 i++;
             }
             return Arrays.copyOf(ret, i);
@@ -5820,14 +5821,17 @@ public class LambdaJ {
             }
         }
 
+        @FunctionalInterface interface ThrowingBiFunction<T, U> { Object apply(T t, U u) throws Exception; }
+
         // todo ConsCell args umstellen auf Object... args?
         static Object makeProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
             final String intf = requireString("jproxy", car(args));
             final String method = requireString("jproxy", cadr(args));
             if ("java.util.Comparator".equals(intf) && "compare".equals(method)) {
-                return new Comparator<Object>() { private final MurmelFunction f = getFunction(intp, program, caddr(args), int.class);
+                return new Comparator<Object>() { private final ThrowingBiFunction<Object, Object> compare = getFunction(intp, program, caddr(args), int.class)::apply;
                                                   @Override public String toString() { return "#<Java proxy: java.util.Comparator>"; }
-                                                  @Override public int compare(Object o1, Object o2) { try { return (int)f.apply(o1, o2); }
+                                                  @Override public int compare(Object o1, Object o2) { // the (int)-cast is safe because JFFI#getFunction() constructs a function that contains a type conversion
+                                                                                                       try { return (int)compare.apply(o1, o2); }
                                                                                                        catch (Exception e) { throw wrap(e); } } };
             }
             else if ("java.lang.Runnable".equals(intf) && "run".equals(method)) {
@@ -6005,7 +6009,7 @@ public class LambdaJ {
         if (consumer == null) return defaultIfNull;
         if (consumer == sT) return lispPrinter;
         if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { throw wrap(e); } });
-        throw new SimpleTypeError("cannot coerce %s into a printer");
+        throw new SimpleTypeError("cannot coerce %s into a printer", printSEx(consumer));
     }
 
     /** set new stdin/stdout */
@@ -7429,7 +7433,7 @@ public class LambdaJ {
             if (nth >= args.length || (consumer = args[nth]) == null) return defaultIfNull;
             if (consumer == sT) return lispPrinter;
             if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { throw wrap(e); } });
-            throw new SimpleTypeError("cannot coerce %s into a printer", consumer);
+            throw new SimpleTypeError("cannot coerce %s into a printer", printSEx(consumer));
         }
 
         /// JMurmel native embed API - Java calls compiled Murmel
@@ -7604,7 +7608,7 @@ public class LambdaJ {
             int nArgs;
             if (args == null || (nArgs = args.length) == 0) return null;
             if (nArgs == 1) return args[0];
-            if (!listp(args[0])) throw new SimpleTypeError("append: first argument %s is not a list", args[0]);
+            if (!listp(args[0])) throw new SimpleTypeError("append: first argument %s is not a list", printSEx(args[0]));
 
             nArgs--;
             int first = 0;
@@ -8364,7 +8368,7 @@ public class LambdaJ {
         private static void errorNotAList(Object s)   { throw new SimpleTypeError("not a cons/list: %s", printSEx(s)); }
         private static void errorNotACharacter(Object s) { throw new SimpleTypeError("not a character: %s", printSEx(s)); }
         private static void errorNotAString(Object s) { throw new SimpleTypeError("not a string: %s", printSEx(s)); }
-        private static RuntimeException errorNotAFunction(Object fn) { throw new UndefinedFunction("not a function: %s", fn); }
+        private static RuntimeException errorNotAFunction(Object fn) { throw new UndefinedFunction("not a function: %s", printSEx(fn)); }
         private static RuntimeException errorNotAFrame(String s, Object o) {
             if (o != null) throw new SimpleTypeError("%s: not a frame: %s", s, printSEx(o));
             throw new SimpleTypeError("%s: no frame argument and no current frame", s);
@@ -9829,7 +9833,7 @@ public class LambdaJ {
 
         /** optionally emit an arg count check, check that there are no duplicates
          *  and return an environment extended by accesses to the arg array */
-        private ConsCell params(String func, WrappingWriter sb, Object paramList, ConsCell env, int rsfx, String expr, boolean check) {
+        private static ConsCell params(String func, WrappingWriter sb, Object paramList, ConsCell env, int rsfx, String expr, boolean check) {
             if (paramList == null) {
                 if (check) sb.append("        argCheck(\"").append(expr).append("\", 0, args").append(rsfx).append(".length);\n");
                 return env;
@@ -10123,9 +10127,9 @@ public class LambdaJ {
         private boolean emitJmethod(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean emitCall, ConsCell ccArguments) {
             varargsMin("jmethod", args, 2);
             final Object strClazz = car(args), strMethod = cadr(args);
-            // if class and method are stringliterals then we can do this at compiletime.
+            // if class and method are stringliterals (i.e. java.lang.String objects) then we can do this at compiletime.
             // else jmethod() will check the runtime type at runtime
-            if (!stringp(strClazz) || !stringp(strMethod)) return false;
+            if (!(strClazz instanceof String) || !(strMethod instanceof String)) return false;
 
             final Object[] clazzDesc = JFFI.classByName.get(strClazz);
             if (clazzDesc == null) return false; // todo warn re: performance
