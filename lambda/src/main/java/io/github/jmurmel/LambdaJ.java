@@ -2321,7 +2321,7 @@ public class LambdaJ {
 
     /// ### Global environment - define'd symbols go into this list
 
-    final Map<Object, ConsCell> gcache = new IdentityHashMap<>(100);
+    final Map<Object, ConsCell> gcache = new IdentityHashMap<>(200);
 
     private ConsCell lookupEnvEntry(Object symbol, ConsCell lexenv) {
         final ConsCell lexEntry = fastassq(symbol, lexenv);
@@ -2393,7 +2393,7 @@ public class LambdaJ {
     private Object eval(Object form, ConsCell env, int stack, int level, int traceLvl) {
         final boolean doOpencode = speed >= 1;
         Object func = null;
-        Object result = null;  /* should be assigned even if followed by a "return" because it will be used in the "finally" clause*/
+        Object result = null;  /* should be assigned even if followed by a "return" because it will be used in the "finally" clause */
         Deque<Object> traceStack = null;
         ConsCell restore = null;
         ConsCell localCatchTags = null;
@@ -2550,7 +2550,8 @@ public class LambdaJ {
 
                 /// eval - (cond (condform forms...)... ) -> object
                 case sCond: {
-                    for (Object c: ccArguments) {
+                    for (ConsCell l = ccArguments; l != null; l = (ConsCell)cdr(l)) {
+                        final ConsCell c = (ConsCell)car(l);
                         if (eval(car(c), env, stack, level, traceLvl) != null) {
                             ccForms = (ConsCell) cdr(c);
                             break;
@@ -2595,11 +2596,7 @@ public class LambdaJ {
 
                 /// eval - (multiple-value-bind (symbols...) values-form bodyforms...) -> object
                 case sMultipleValueBind: {
-                    final Object prim = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                    final ConsCell newValues;
-                    if (values == NO_VALUES) newValues = cons(prim, null);
-                    else { newValues = values; values = NO_VALUES; }
-                    env = zip(car(ccArguments), newValues, env, false);
+                    env = evalMultipleValueBind(ccArguments, env, stack, level, traceLvl);
                     ccForms = (ConsCell)cddr(ccArguments);
                     funcall = false;
                     break; // fall through to "eval a list of forms"
@@ -2609,21 +2606,7 @@ public class LambdaJ {
                 case sMultipleValueCall: {
                     final Object funcOrSymbol = car(ccArguments);
                     func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
-                    ConsCell allArgs = null, appendPos = null;
-                    final Object valueForms = cdr(ccArguments);
-                    if (valueForms != null) for (Object valueForm : listOrMalformed("multiple-value-call", valueForms)) {
-                        final Object prim = eval(valueForm, env, stack, level, traceLvl);
-                        final ConsCell newValues;
-                        if (values == NO_VALUES) newValues = cons(prim, null);
-                        else { newValues = values; values = NO_VALUES; }
-
-                        if (allArgs == null) allArgs = appendPos = newValues;
-                        else if (newValues != null) {
-                            while (cdr(appendPos) != null) appendPos = (ConsCell)cdr(appendPos);
-                            appendPos.rplacd(newValues);
-                        }
-                    }
-                    argList = allArgs;
+                    argList = evalMultipleValuesArgs(cdr(ccArguments), env, stack, level, traceLvl);
                     if (doOpencode && funcOrSymbol instanceof LambdaJSymbol && ((LambdaJSymbol)funcOrSymbol).primitive()) {
                         return result = ((LambdaJSymbol)funcOrSymbol).wellknownSymbol.apply(this, argList);
                     }
@@ -2777,7 +2760,7 @@ public class LambdaJ {
         }
         finally {
             if (traceOn) dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
-            if (traced != null && func != null) traceLvl = traceExit(func, result, traceLvl);
+            if (func != null && traced != null) traceLvl = traceExit(func, result, traceLvl);
             if (traceStack != null) {
                 Object s;
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
@@ -2792,7 +2775,7 @@ public class LambdaJ {
                 }
             }
             if (e != null) {
-                if (e instanceof ReturnException) { return nonlocalReturn((ReturnException)e, localCatchTags); }
+                if (e instanceof ReturnException) return nonlocalReturn((ReturnException)e, localCatchTags);
                 throw e;
             }
         }
@@ -3090,17 +3073,14 @@ public class LambdaJ {
 
     private Object evalSymbol(Object form, ConsCell env) {
         if (form == null || form == sNil) return null;
-        else if (form == sT) return sT;
-        else {
-            final Object value;
-            final ConsCell envEntry = lookupEnvEntry(form, env);
-            if (envEntry != null) {
-                value = cdr(envEntry);
-                if (value == UNASSIGNED) throw new UnboundVariable("%s: '%s' is bound but has no assigned value", "eval", printSEx(form));
-                return value;
-            }
-            else throw new UnboundVariable("%s: '%s' is not bound", "eval", printSEx(form));
+        if (form == sT) return form;
+        final ConsCell envEntry = lookupEnvEntry(form, env);
+        if (envEntry != null) {
+            final Object value = cdr(envEntry);
+            if (value == UNASSIGNED) errorUnassigned("eval", form);
+            return value;
         }
+        throw errorUnbound("eval", form);
     }
 
     private Object evalSetq(ConsCell pairs, ConsCell env, int stack, int level, int traceLvl) {
@@ -3212,7 +3192,7 @@ public class LambdaJ {
                 final Object bindingForm = cadr(binding);
 
                 ConsCell newBinding = null;
-                if (letDynamic) newBinding = lookupTopenvEntry(sym); // todo hier wird nur im global env gesucht. was ist wenns auch eine leical variable gibt?
+                if (letDynamic) newBinding = lookupTopenvEntry(sym); // todo hier wird nur im global env gesucht. was ist wenns auch eine lexical variable gibt?
                 else if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
@@ -3316,19 +3296,8 @@ public class LambdaJ {
             if (params == paramList) errorMalformed("lambda", "bindings are a circular list");
 
             args = (ConsCell) cdr(args);
-            if (args == null) {
-                if (params == null) return env;
-                else if (consp(params)) {
-                    if (match) throw new ProgramError("%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
-                    else env = acons(params, null, env);
-                }
-                else {
-                    // paramList is a dotted list, no argument for vararg parm: assign nil
-                    return acons(params, null, env);
-                }
-            }
         }
-        if (match) throw new ProgramError("%s: too many arguments. Remaining arguments: %s", "function application", printSEx(args));
+        if (match && args != null) throw new ProgramError("%s: too many arguments. Remaining arguments: %s", "function application", printSEx(args));
         return env;
     }
 
@@ -3340,8 +3309,7 @@ public class LambdaJ {
         for (ConsCell rest = forms; rest != null; rest = (ConsCell)cdr(rest)) {
             final ListConsCell currentArg = cons(eval(car(rest), env, stack, level, traceLvl), null);
             if (head == null) {
-                head = currentArg;
-                insertPos = head;
+                insertPos = head = currentArg;
             }
             else {
                 insertPos.rplacd(currentArg);
@@ -3351,6 +3319,33 @@ public class LambdaJ {
         values = NO_VALUES; // todo oder doch besser im loop nach jedem eval?
         if (traceOn) dbgEvalDone("evlis", forms, head, stack, level);
         return head;
+    }
+
+    /** eval a list of forms and return a list that is all individual values appended */
+    private ConsCell evalMultipleValuesArgs(Object valueForms, ConsCell env, int stack, int level, int traceLvl) {
+        ConsCell allArgs = null, appendPos = null;
+        if (valueForms != null) for (Object valueForm : listOrMalformed("multiple-value-call", valueForms)) {
+            final Object prim = eval(valueForm, env, stack, level, traceLvl);
+            final ConsCell newValues;
+            if (values == NO_VALUES) newValues = cons(prim, null);
+            else { newValues = values; values = NO_VALUES; }
+
+            if (allArgs == null) allArgs = appendPos = newValues;
+            else if (newValues != null) {
+                while (cdr(appendPos) != null) appendPos = (ConsCell)cdr(appendPos);
+                appendPos.rplacd(newValues);
+            }
+        }
+        return allArgs;
+    }
+
+    private ConsCell evalMultipleValueBind(ConsCell varsAndValuesForm, ConsCell env, int stack, int level, int traceLvl) {
+        final Object prim = eval(cadr(varsAndValuesForm), env, stack, level, traceLvl);
+        final ConsCell newValues;
+        if (values == NO_VALUES) newValues = cons(prim, null);
+        else { newValues = values; values = NO_VALUES; }
+        env = zip(car(varsAndValuesForm), newValues, env, false);
+        return env;
     }
 
     /** make a lexical closure (if enabled) or lambda from a lambda-form,
@@ -4047,6 +4042,8 @@ public class LambdaJ {
     static RuntimeException errorMalformedFmt    (String func, String msg, Object... params)    { return errorMalformed(func, String.format(msg, params)); }
     static RuntimeException errorMalformed       (String func, String expected, Object actual)  { throw new ProgramError("%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual)); }
     static void             errorReserved        (String op, Object sym)                        { errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym == null ? "nil" : sym); }
+    static RuntimeException errorUnbound         (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is not bound", func, printSEx(form)); }
+    static RuntimeException errorUnassigned      (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is bound but has no assigned value", func, printSEx(form)); }
 
     /** throws a {@link SimpleTypeError} with a message of "'func': expected a 'expected' argument but got 'actual'" */
     static RuntimeException errorArgTypeError(String expected, String func, Object actual)      { throw new SimpleTypeError("%s: expected a %s argument but got %s", func, expected, printSEx(actual)); }
@@ -4472,10 +4469,10 @@ public class LambdaJ {
 
         /** compare subsequent pairs of the given list of numbers with the given predicate */
         static boolean compare(ConsCell args, String opName, DoubleBiPred pred) {
-            Object prev = car(args);
+            double prev = toDouble(opName, car(args));
             for (ConsCell rest = (ConsCell)cdr(args); rest != null; rest = (ConsCell)cdr(rest)) {
-                final Object next = car(rest);
-                if (!pred.test(toDouble(opName, prev), toDouble(opName, next))) return false;
+                final double next = toDouble(opName, car(rest));
+                if (!pred.test(prev, next)) return false;
                 prev = next;
             }
             return true;
@@ -6077,7 +6074,7 @@ public class LambdaJ {
         }
         final ConsCell envEntry = lookupTopenvEntry(intern(globalSymbol));
         if (envEntry != null) return cdr(envEntry);
-        throw new UnboundVariable("%s: '%s' is not bound", "getValue", globalSymbol);
+        throw errorUnbound("getValue", globalSymbol);
     }
 
     private class CallLambda implements MurmelFunction {
@@ -8649,7 +8646,7 @@ public class LambdaJ {
             case "rgb-to-pixel": return (CompilerPrimitive)this::rgbToPixel;
             case "hsb-to-pixel": return (CompilerPrimitive)this::hsbToPixel;
 
-            default: throw new UnboundVariable("%s: '%s' not bound", "getValue", symbol);
+            default: throw errorUnbound("getValue", symbol);
             }
         }
     }

@@ -18,13 +18,13 @@ import org.openjdk.jmh.infra.Blackhole;
  * java -jar target/benchmarks.jar
  *
  * oder:
- * java -jar target/benchmarks.jar LambdaJBenchmark.eval -prof stack:lines=3
+ * java -jar target/benchmarks.jar LambdaJBenchmark.evalSame -prof stack:lines=3
  *
  * oder:
- * java -jar target/benchmarks.jar LambdaJBenchmark.eval -prof gc
+ * java -jar target/benchmarks.jar LambdaJBenchmark.evalSame -prof gc
  *
  * oder:
- * java  -jar target/benchmarks.jar -p prog=4 -prof stack:lines=3 LambdaJBenchmark.eval ... prog=4 laesst nur das factorial programm laufen
+ * java  -jar target/benchmarks.jar -p prog=4 -prof stack:lines=3 LambdaJBenchmark.evalSame ... prog=4 laesst nur das factorial programm laufen
  *
  * oder:
  * java  -jar target/benchmarks.jar -p prog=4 LambdaJBenchmark.fiveTimesEval
@@ -116,7 +116,7 @@ public class LambdaJBenchmark {
     }
 
     @Benchmark
-    public Object eval() {
+    public Object evalSame() {
         return interpreter.interpretExpression(new StringReader(PROGRAMS[prog])::read, (s) -> {});
     }
 
@@ -152,13 +152,13 @@ public class LambdaJBenchmark {
         final Reader reader = new StringReader(source);
         final LambdaJ.ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable(), null);
 
-        Class<LambdaJ.MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
+        final Class<LambdaJ.MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
 
         return murmelClass.getDeclaredConstructor().newInstance();
     }
 
     static Path getTmpDir() throws IOException {
-        Path tmpDir = Files.createTempDirectory("jmurmelbm");
+        final Path tmpDir = Files.createTempDirectory("jmurmelbm");
         tmpDir.toFile().deleteOnExit();
         return tmpDir;
     }
