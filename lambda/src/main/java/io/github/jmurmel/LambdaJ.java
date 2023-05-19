@@ -1251,6 +1251,7 @@ public class LambdaJ {
         private boolean isDQuote(int x) { return !escape && x == '"'; }
         private boolean isBar(int x)    { return !escape && x == '|'; }
 
+        @SuppressWarnings("BooleanMethodIsAlwaysInverted")
         private boolean isSyntax(int x) { return !escape && isSExSyntax(x); }
 
         /*java.io.PrintWriter debug;
@@ -2568,7 +2569,6 @@ public class LambdaJ {
                     } else {
                         form = caddr(ccArguments);
                     }
-                    if (form == null) return result = null;
                     isTc = true; continue tailcall;
                 }
 
@@ -2616,7 +2616,7 @@ public class LambdaJ {
 
                 /// eval - function call
                 /// eval - (operatorform argforms...) -> object
-                default:
+                default: {
                     // check if we forgot to handle a special form. All special forms should be handled in the cases above.
                     assert !symOperator.specialForm() : ccForm.lineInfo() + "unexpected special form " + symOperator;
 
@@ -2634,6 +2634,7 @@ public class LambdaJ {
 
                     funcall = true;
                     // fall through to "actually perform..."
+                }
                 }
                 else {
                     /// eval - apply a function to an argument list
@@ -3513,7 +3514,7 @@ public class LambdaJ {
 
     /** stack of tco'd function calls */
     private Deque<Object> push(Object op, Deque<Object> traceStack) {
-        if (traced == null) return traceStack;
+        assert traced != null;
         if (op instanceof LambdaJSymbol) {
             if (((LambdaJSymbol)op).specialForm()) return traceStack;
             final ConsCell entry = lookupTopenvEntry(op);
@@ -3527,8 +3528,9 @@ public class LambdaJ {
     }
 
     private int traceEnter(Object op, ConsCell args, int level) {
+        assert traced != null;
         final LambdaJSymbol sym;
-        if (traced == null || null == (sym = traced.get(op))) return level;
+        if (null == (sym = traced.get(op))) return level;
         enter(sym, args, level);
         return level + 1;
     }
@@ -3718,7 +3720,9 @@ public class LambdaJ {
 
     // these *should* have no usages as these checks would be superfluous.
     // The purpose of these functions is: if such extra checks were made then this would be discovered during testing.
+    @SuppressWarnings("unused")
     static boolean consp(ConsCell ignored)  { throw errorInternal("consp(ConsCell c) should NOT be called"); }
+    @SuppressWarnings("unused")
     static boolean listp(ConsCell ignored)  { throw errorInternal("listp(ConsCell c) should NOT be called"); }
 
 
@@ -3859,7 +3863,8 @@ public class LambdaJ {
 
         if (bitvectorp(o1) && bitvectorp(o2)) { return Bitvector.of(o1).compareTo(Bitvector.of(o2)); }
 
-        if (consp(o1) && consp(o2)) { return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
+        if (consp(o1) && consp(o2)) { //noinspection ConstantConditions
+                                      return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
 
         return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
     }
@@ -4043,7 +4048,7 @@ public class LambdaJ {
     static RuntimeException errorMalformed       (String func, String expected, Object actual)  { throw new ProgramError("%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual)); }
     static void             errorReserved        (String op, Object sym)                        { errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym == null ? "nil" : sym); }
     static RuntimeException errorUnbound         (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is not bound", func, printSEx(form)); }
-    static RuntimeException errorUnassigned      (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is bound but has no assigned value", func, printSEx(form)); }
+    static void             errorUnassigned      (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is bound but has no assigned value", func, printSEx(form)); }
 
     /** throws a {@link SimpleTypeError} with a message of "'func': expected a 'expected' argument but got 'actual'" */
     static RuntimeException errorArgTypeError(String expected, String func, Object actual)      { throw new SimpleTypeError("%s: expected a %s argument but got %s", func, expected, printSEx(actual)); }
@@ -9164,19 +9169,19 @@ public class LambdaJ {
 
                         /// eval - (catch tagform forms...) -> object
                         case sCatch: {
-                            emitCatch(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            emitCatch(sb, ccArguments, env, topEnv, rsfx);
                             return;
                         }
 
                         /// eval - (throw tagform resultform) -> |
                         case sThrow: {
-                            emitThrow(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            emitThrow(sb, ccArguments, env, topEnv, rsfx);
                             return;
                         }
 
                         /// try - (try protected-form . errorobj) -> result
                         case sTry: {
-                            emitTry(sb, ccArguments, env, topEnv, rsfx, isLast);
+                            emitTry(sb, ccArguments, env, topEnv, rsfx);
                             return;
                         }
 
@@ -9505,17 +9510,17 @@ public class LambdaJ {
             }
         }
 
-        private void emitCatch(WrappingWriter sb, ConsCell tagAndForms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+        private void emitCatch(WrappingWriter sb, ConsCell tagAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
             final ConsCell body = cons(intern("lambda"), cons(null, cdr(tagAndForms)));
             final ConsCell args = cons(car(tagAndForms), cons(body, null));
             emitCallPrimitive(sb, "doCatch", args, env, topEnv, rsfx);
         }
 
-        private void emitThrow(WrappingWriter sb, ConsCell tagAndResultForm, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+        private void emitThrow(WrappingWriter sb, ConsCell tagAndResultForm, ConsCell env, ConsCell topEnv, int rsfx) {
             emitCallPrimitive(sb, "doThrow", tagAndResultForm, env, topEnv, rsfx);
         }
 
-        private void emitTry(WrappingWriter sb, ConsCell formAndErrorobj, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
+        private void emitTry(WrappingWriter sb, ConsCell formAndErrorobj, ConsCell env, ConsCell topEnv, int rsfx) {
             final Object protectedForm = car(formAndErrorobj);
             final Object errorObj = cadr(formAndErrorobj);
 
@@ -10225,7 +10230,9 @@ public class LambdaJ {
                         final Object[] desc = JFFI.classByName.get(paramTypeNames.get(params.length-1));
                         final int varargPos = params.length + startArg - 1;
                         final String conv = "(java.util.function.UnaryOperator<Object>)(MurmelJavaProgram::" + desc[1] + ")";
-                        sb.append("\n        , toVarargs(args, " + varargPos + ", " + conv + ", new " + ((Class<?>)desc[0]).getComponentType().getCanonicalName() + "[args.length - " + varargPos + "])");
+                        sb.append("\n        , toVarargs(args, ").append(String.valueOf(varargPos))
+                          .append(", ").append(conv)
+                          .append(", new ").append(((Class<?>)desc[0]).getComponentType().getCanonicalName()).append("[args.length - ").append(String.valueOf(varargPos)).append("])");
                     }
                     else {
                         for (int i = startArg; i < params.length + startArg; i++) {
@@ -10453,6 +10460,7 @@ public class LambdaJ {
             @jdk.jfr.Description("Event Information")
             @jdk.jfr.Label("Information") String info;
 
+            @SuppressWarnings("CopyConstructorMissesField")
             BaseEvent(BaseEvent parent) {
                 id = counter.getAndIncrement();
                 if (parent != null) this.parent = parent.id;
