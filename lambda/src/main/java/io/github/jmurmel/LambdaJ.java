@@ -642,15 +642,6 @@ public class LambdaJ {
         @Override public ConsCell copy() { return cons(car(), cdr()); }
     }
 
-    private static final class ImmutableConsCell extends AbstractConsCell {
-        private static final long serialVersionUID = 1L;
-        private ImmutableConsCell(Object car, Object cdr) { super(car, cdr); }
-
-        @Override public ConsCell copy() { return cons(car(), cdr()); }
-        @Override public ConsCell rplaca(Object ignored) { throw new ProgramError("cannot rplaca an immutable cons"); }
-        @Override public ConsCell rplacd(Object ignored) { throw new ProgramError("cannot rplacd an immutable cons"); }
-    }
-
     private static final class SExpConsCell extends AbstractConsCell {
         private static final long serialVersionUID = 1L;
         private final transient Path path;
@@ -2471,7 +2462,7 @@ public class LambdaJ {
                 // shortcut for (define symbol (lambda (params...) forms...))
                 case sDefun: {
                     final Object symbol = car(ccArguments);
-                    final AbstractConsCell selfEnvEntry = new ImmutableConsCell(symbol, null);
+                    final AbstractConsCell selfEnvEntry = new ListConsCell(symbol, null);
                     final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
                     selfEnvEntry.cdr = closure;
                     extendTopenv(symbol, closure);
@@ -2552,9 +2543,9 @@ public class LambdaJ {
                 /// eval - (cond (condform forms...)... ) -> object
                 case sCond: {
                     for (ConsCell l = ccArguments; l != null; l = (ConsCell)cdr(l)) {
-                        final ConsCell c = (ConsCell)car(l);
-                        if (eval(car(c), env, stack, level, traceLvl) != null) {
-                            ccForms = (ConsCell) cdr(c);
+                        final ConsCell clause = (ConsCell)car(l); final Object condition = car(clause);
+                        if (condition == sT || eval(condition, env, stack, level, traceLvl) != null) {
+                            ccForms = (ConsCell) cdr(clause);
                             break;
                         }
                     }
@@ -2569,6 +2560,7 @@ public class LambdaJ {
                     } else {
                         form = caddr(ccArguments);
                     }
+                    if (form == null) return result = null;
                     isTc = true; continue tailcall;
                 }
 
@@ -2817,208 +2809,16 @@ public class LambdaJ {
             final ConsCell ccForm = ((ConsCell)form).copy();
             final Object op = car(ccForm);
             if (op == null) throw new UndefinedFunction("function application: not a primitive or lambda: nil");
-            final ConsCell ccArgs = cdrShallowCopyList("eval", ccForm);
 
-            if (symbolp(op)) {
-                final LambdaJSymbol symOp = (LambdaJSymbol)op;
-                if (symOp.specialForm()) switch (symOp.wellknownSymbol) {
-                case sQuote:
-                    oneArg("quote", ccArgs);
-                    return form;
+            if (consp(op)) {
+                expandForms("function application", ccForm);
+                return ccForm;
+            }
+            
+            if (!symbolp(op)) throw new UndefinedFunction("function application: not a primitive or lambda: %s", printSEx(op));
+            final LambdaJSymbol symOp = (LambdaJSymbol)op;
 
-                case sLambda:
-                    if (car(ccArgs) == sDynamic) {
-                        varargsMin("lambda dynamic", ccArgs, 2);
-                        checkLambdaList("lambda dynamic", cadr(ccArgs));
-                        expandForms("lambda dynamic", cddrShallowCopyList("lambda dynamic", ccArgs));
-                    }
-                    else {
-                        varargsMin("lambda", ccArgs, 1);
-                        checkLambdaList("lambda", car(ccArgs));
-                        expandForms("lambda", cdrShallowCopyList("lambda", ccArgs));
-                    }
-                    return ccForm;
-
-                case sIf:
-                    varargsMinMax("if", ccArgs, 2, 3);
-                    expandForms("if", ccArgs);
-                    return ccForm;
-
-                case sCond:
-                    if (ccArgs == null) return null;
-                    for (ConsCell i = ccArgs; i != null; i = cdrShallowCopyList("cond", i)) {
-                        if (!consp(car(i))) errorMalformed("cond", "a list (condexpr forms...)", car(i));
-                        expandForms("cond", carShallowCopyList("cond", i));
-                    }
-                    return ccForm;
-
-                case sProgn:
-                    if (ccArgs == null) return null;
-                    if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
-                    expandForms("progn", ccArgs);
-                    return ccForm;
-
-                case sLabels:
-                    varargs1("labels", ccArgs);
-                    if (car(ccArgs) == null) return expandForm(cons(sProgn, cdr(ccArgs)));
-                    for (ConsCell i = carShallowCopyList("labels", ccArgs); i != null; i = cdrShallowCopyList("labels", i)) {
-                        if (!consp(car(i))) errorMalformed("labels", "a list (symbol (params...) forms...)", i);
-                        final ConsCell localFunc = carShallowCopyList("labels", i);
-                        varargsMin("labels", localFunc, 2);
-                        final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
-                        if (funcSymbol.macro != null) throw new ProgramError("local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
-                        checkLambdaList(funcSymbol.toString(), cadr(localFunc));
-                        if (cddr(localFunc) != null) expandForms("labels", cddrShallowCopyList("labels", localFunc));
-                    }
-                    if (cdr(ccArgs) != null) expandForms("labels", cdrShallowCopyList("labels", ccArgs));
-                    return ccForm;
-
-                case sDefine:
-                    varargs1_2("define", ccArgs);
-                    symbolOrMalformed("define", car(ccArgs));
-                    if (cdr(ccArgs) != null) {
-                        final ConsCell valueForm = cdrShallowCopyList("define", ccArgs);
-                        valueForm.rplaca(expandForm(car(valueForm)));
-                    }
-                    return ccForm;
-
-                case sDefun:
-                    varargsMin("defun", ccArgs, 2);
-                    checkLambdaList("defun", cadr(ccArgs));
-                    if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList("defun", ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
-                    if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
-                    return ccForm;
-
-                case sDefmacro:
-                    varargs1("defmacro", ccArgs);
-                    final LambdaJSymbol sym1 = symbolOrMalformed("defmacro", car(ccArgs));
-                    if (cdr(ccArgs) == null) sym1.macro = null;
-                    else {
-                        if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList("defmacro", ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
-                        if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
-                        final Object params = cadr(ccArgs);
-                        checkLambdaList("defmacro", params);
-                        sym1.macro = makeClosure(params, (ConsCell)cddr(ccArgs), null);
-                    }
-                    return ccForm;
-
-                case sLet:
-                case sLetStar:
-                case sLetrec:
-                    final String sfName = symOp.toString();
-                    final boolean letDynamic, namedLet;
-                    final Object tag;
-                    final ConsCell bindingsAndBody;
-                    if (car(ccArgs) != null && symbolp(car(ccArgs))) {
-                        tag = car(ccArgs);
-                        if (tag == sDynamic) {
-                            letDynamic = true;
-                            namedLet = false;
-                        }
-                        else {
-                            notReserved(sfName, (LambdaJSymbol)tag);
-                            letDynamic = false;
-                            namedLet = true;
-                        }
-                        if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, "dynamic is not allowed with letrec");
-                        bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
-                    }
-                    else {
-                        letDynamic = false;
-                        namedLet = false;
-                        tag = null;
-                        bindingsAndBody = ccArgs;
-                    }
-                    if (car(bindingsAndBody) != null) {
-                        if (!listp(car(bindingsAndBody))) throw errorMalformed(getOp(sfName, letDynamic, namedLet), "a list of bindings", car(bindingsAndBody));
-                        final ConsCell bindings = carShallowCopyList(sfName, bindingsAndBody);
-
-                        // check for duplicate variable names for let and letrec with more than one binding
-                        final boolean useLookup = symOp.wellknownSymbol != WellknownSymbol.sLetStar && cdr(bindings) != null;
-                        final ArrayList<Object> seen = useLookup ? new ArrayList<>() : null;
-
-                        for (ConsCell i = bindings; i != null; i = cdrShallowCopyList(sfName, i)) {
-                            final Object binding = car(i);
-                            if (consp(binding)) {
-                                if (cddr(binding) != null) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
-                                if (consp(cadr(binding))) {
-                                    final ConsCell ccBinding = carShallowCopyList(sfName, i);
-                                    assert ccBinding != null;
-                                    final ConsCell valueFormList = cdrShallowCopyList(sfName, ccBinding);
-                                    valueFormList.rplaca(expandForm(car(valueFormList)));
-                                }
-                            }
-                            else if (symbolp(binding)) i.rplaca(cons(binding, null)); // change (let (a) ...) -> (let ((a)) ...)
-                            else throw errorMalformed(getOp(sfName, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
-                            final LambdaJSymbol sym = symbolOrMalformed(sfName, caar(i));
-
-                            // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
-                            if (reserved(sym)) errorReserved(getOp(sfName, letDynamic, namedLet), sym);
-                            if (sym == tag) errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
-
-                            if (seen != null) {
-                                if (seen.contains(sym)) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "duplicate symbol %s", sym);
-                                seen.add(sym);
-                            }
-                        }
-                    }
-                    if (cdr(bindingsAndBody) != null) {
-                        final ConsCell bodyCopy = cdrShallowCopyList(sfName, bindingsAndBody);
-                        expandForms(sfName, bodyCopy);
-                    }
-                    return ccForm;
-
-                case sMultipleValueBind:
-                    varargsMin("multiple-value-bind", ccArgs, 2);
-                    expandForms("multiple-value-bind", cdrShallowCopyList("multiple-value-bind", ccArgs));
-                    return ccForm;
-
-                case sCatch:
-                    varargs1("catch", ccArgs);
-                    if (cdr(ccArgs) == null) return null;
-                    expandForms("catch", cdrShallowCopyList("catch", ccArgs));
-                    return ccForm;
-
-                case sThrow:
-                    twoArgs("throw", ccArgs);
-                    expandForms("throw", ccArgs);
-                    return ccForm;
-
-                case sUnwindProtect:
-                    varargs1("unwind-protect", ccArgs);
-                    if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
-                    expandForms("unwind-protect", ccArgs);
-                    return ccForm;
-
-                case sTry:
-                    varargs1_2("try", ccArgs);
-                    expandForms("throw", ccArgs);
-                    return ccForm;
-
-                case sSetQ:
-                    for (ConsCell pairs = ccArgs; pairs != null; pairs = cdrShallowCopyList("setq", pairs)) {
-                        symbolOrMalformed("setq", car(pairs));
-                        if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
-                        pairs = cdrShallowCopyList("setq", pairs);
-                        pairs.rplaca(expandForm(car(pairs)));
-                    }
-                    return ccForm;
-
-                case sDeclaim:
-                case sLoad:
-                case sRequire:
-                case sProvide:
-                    return form; // no macroexpansion in declaim, load, require, provide forms
-
-                case sMultipleValueCall:
-                    varargs1("multiple-value-call", ccArgs);
-                    expandForms("multiple-value-call", ccArgs);
-                    return ccForm;
-
-                default:
-                    assert false : ccForm.lineInfo() + "special form " + symOp + " is not implemented";
-                }
-
+            if (!symOp.specialForm()) {
                 // not a special form, must be a function or macro application
                 if (symOp.macro != null) {
                     final Object expansion = macroexpandImpl(this, ccForm);
@@ -3027,11 +2827,210 @@ public class LambdaJ {
                     values = NO_VALUES;
                     return expandForm(expansion);
                 }
-                if (symOp.primitive())
-                    symOp.wellknownSymbol.argCheck(ccArgs);
+                expandForms("function application", ccForm);
+                if (symOp.primitive()) symOp.wellknownSymbol.argCheck(listOrMalformed("function application", cdr(ccForm)));
+                return ccForm;
             }
-            expandForms("function application", ccForm);
-            return ccForm;
+
+            final ConsCell ccArgs = cdrShallowCopyList("eval", ccForm);
+            switch (symOp.wellknownSymbol) {
+            case sQuote:
+                oneArg("quote", ccArgs);
+                return form;
+
+            case sLambda:
+                if (car(ccArgs) == sDynamic) {
+                    varargsMin("lambda dynamic", ccArgs, 2);
+                    checkLambdaList("lambda dynamic", cadr(ccArgs));
+                    expandForms("lambda dynamic", cddrShallowCopyList("lambda dynamic", ccArgs));
+                }
+                else {
+                    varargsMin("lambda", ccArgs, 1);
+                    checkLambdaList("lambda", car(ccArgs));
+                    expandForms("lambda", cdrShallowCopyList("lambda", ccArgs));
+                }
+                return ccForm;
+
+            case sIf:
+                varargsMinMax("if", ccArgs, 2, 3);
+                expandForms("if", ccArgs);
+                return ccForm;
+
+            case sCond:
+                if (ccArgs == null) return null;
+                for (ConsCell i = ccArgs; i != null; i = cdrShallowCopyList("cond", i)) {
+                    if (!consp(car(i))) errorMalformed("cond", "a list (condexpr forms...)", car(i));
+                    expandForms("cond", carShallowCopyList("cond", i));
+                }
+                return ccForm;
+
+            case sProgn:
+                if (ccArgs == null) return null;
+                if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
+                expandForms("progn", ccArgs);
+                return ccForm;
+
+            case sLabels:
+                varargs1("labels", ccArgs);
+                if (car(ccArgs) == null) return expandForm(cons(sProgn, cdr(ccArgs)));
+                for (ConsCell i = carShallowCopyList("labels", ccArgs); i != null; i = cdrShallowCopyList("labels", i)) {
+                    if (!consp(car(i))) errorMalformed("labels", "a list (symbol (params...) forms...)", i);
+                    final ConsCell localFunc = carShallowCopyList("labels", i);
+                    varargsMin("labels", localFunc, 2);
+                    final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
+                    if (funcSymbol.macro != null) throw new ProgramError("local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
+                    checkLambdaList(funcSymbol.toString(), cadr(localFunc));
+                    if (cddr(localFunc) != null) expandForms("labels", cddrShallowCopyList("labels", localFunc));
+                }
+                if (cdr(ccArgs) != null) expandForms("labels", cdrShallowCopyList("labels", ccArgs));
+                return ccForm;
+
+            case sDefine:
+                varargs1_2("define", ccArgs);
+                symbolOrMalformed("define", car(ccArgs));
+                if (cdr(ccArgs) != null) {
+                    final ConsCell valueForm = cdrShallowCopyList("define", ccArgs);
+                    valueForm.rplaca(expandForm(car(valueForm)));
+                }
+                return ccForm;
+
+            case sDefun:
+                varargsMin("defun", ccArgs, 2);
+                checkLambdaList("defun", cadr(ccArgs));
+                if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList("defun", ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
+                if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
+                return ccForm;
+
+            case sDefmacro:
+                varargs1("defmacro", ccArgs);
+                final LambdaJSymbol sym1 = symbolOrMalformed("defmacro", car(ccArgs));
+                if (cdr(ccArgs) == null) sym1.macro = null;
+                else {
+                    if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList("defmacro", ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
+                    if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
+                    final Object params = cadr(ccArgs);
+                    checkLambdaList("defmacro", params);
+                    sym1.macro = makeClosure(params, (ConsCell)cddr(ccArgs), null);
+                }
+                return ccForm;
+
+            case sLet:
+            case sLetStar:
+            case sLetrec:
+                final String sfName = symOp.toString();
+                final boolean letDynamic, namedLet;
+                final Object tag;
+                final ConsCell bindingsAndBody;
+                if (car(ccArgs) != null && symbolp(car(ccArgs))) {
+                    tag = car(ccArgs);
+                    if (tag == sDynamic) {
+                        letDynamic = true;
+                        namedLet = false;
+                    }
+                    else {
+                        notReserved(sfName, (LambdaJSymbol)tag);
+                        letDynamic = false;
+                        namedLet = true;
+                    }
+                    if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, "dynamic is not allowed with letrec");
+                    bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
+                }
+                else {
+                    letDynamic = false;
+                    namedLet = false;
+                    tag = null;
+                    bindingsAndBody = ccArgs;
+                }
+                if (car(bindingsAndBody) != null) {
+                    if (!listp(car(bindingsAndBody))) throw errorMalformed(getOp(sfName, letDynamic, namedLet), "a list of bindings", car(bindingsAndBody));
+                    final ConsCell bindings = carShallowCopyList(sfName, bindingsAndBody);
+
+                    // check for duplicate variable names for let and letrec with more than one binding
+                    final boolean useLookup = symOp.wellknownSymbol != WellknownSymbol.sLetStar && cdr(bindings) != null;
+                    final ArrayList<Object> seen = useLookup ? new ArrayList<>() : null;
+
+                    for (ConsCell i = bindings; i != null; i = cdrShallowCopyList(sfName, i)) {
+                        final Object binding = car(i);
+                        if (consp(binding)) {
+                            if (cddr(binding) != null) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "illegal variable specification %s", printSEx(binding));
+                            if (consp(cadr(binding))) {
+                                final ConsCell ccBinding = carShallowCopyList(sfName, i);
+                                assert ccBinding != null;
+                                final ConsCell valueFormList = cdrShallowCopyList(sfName, ccBinding);
+                                valueFormList.rplaca(expandForm(car(valueFormList)));
+                            }
+                        }
+                        else if (symbolp(binding)) i.rplaca(cons(binding, null)); // change (let (a) ...) -> (let ((a)) ...)
+                        else throw errorMalformed(getOp(sfName, letDynamic, namedLet), "bindings to contain lists and/or symbols", binding);
+                        final LambdaJSymbol sym = symbolOrMalformed(sfName, caar(i));
+
+                        // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
+                        if (reserved(sym)) errorReserved(getOp(sfName, letDynamic, namedLet), sym);
+                        if (sym == tag) errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
+
+                        if (seen != null) {
+                            if (seen.contains(sym)) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "duplicate symbol %s", sym);
+                            seen.add(sym);
+                        }
+                    }
+                }
+                if (cdr(bindingsAndBody) != null) {
+                    final ConsCell bodyCopy = cdrShallowCopyList(sfName, bindingsAndBody);
+                    expandForms(sfName, bodyCopy);
+                }
+                return ccForm;
+
+            case sMultipleValueBind:
+                varargsMin("multiple-value-bind", ccArgs, 2);
+                expandForms("multiple-value-bind", cdrShallowCopyList("multiple-value-bind", ccArgs));
+                return ccForm;
+
+            case sCatch:
+                varargs1("catch", ccArgs);
+                if (cdr(ccArgs) == null) return null;
+                expandForms("catch", cdrShallowCopyList("catch", ccArgs));
+                return ccForm;
+
+            case sThrow:
+                twoArgs("throw", ccArgs);
+                expandForms("throw", ccArgs);
+                return ccForm;
+
+            case sUnwindProtect:
+                varargs1("unwind-protect", ccArgs);
+                if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
+                expandForms("unwind-protect", ccArgs);
+                return ccForm;
+
+            case sTry:
+                varargs1_2("try", ccArgs);
+                expandForms("throw", ccArgs);
+                return ccForm;
+
+            case sSetQ:
+                for (ConsCell pairs = ccArgs; pairs != null; pairs = cdrShallowCopyList("setq", pairs)) {
+                    symbolOrMalformed("setq", car(pairs));
+                    if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
+                    pairs = cdrShallowCopyList("setq", pairs);
+                    pairs.rplaca(expandForm(car(pairs)));
+                }
+                return ccForm;
+
+            case sDeclaim:
+            case sLoad:
+            case sRequire:
+            case sProvide:
+                return form; // no macroexpansion in declaim, load, require, provide forms
+
+            case sMultipleValueCall:
+                varargs1("multiple-value-call", ccArgs);
+                expandForms("multiple-value-call", ccArgs);
+                return ccForm;
+
+            default:
+                assert false : ccForm.lineInfo() + "unexpected special form " + symOp;
+                return null; // can't happen
+            }
         }
         catch (LambdaJError e) {
             throw new LambdaJError(e, form);
@@ -3141,7 +3140,7 @@ public class LambdaJ {
         for (Object localFunction : localFunctions) {
             final ConsCell currentFunc = (ConsCell)localFunction;
             final ConsCell ccParamsAndForms = (ConsCell)cdr(currentFunc);
-            insertFront(extEnv, new ImmutableConsCell(car(currentFunc), makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv)));
+            insertFront(extEnv, new ListConsCell(car(currentFunc), makeClosure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), extEnv)));
         }
         return extEnv;
     }
@@ -7519,6 +7518,7 @@ public class LambdaJ {
         }
         public final Object apply(Object... args) {
             Object fn = args[0];
+            if (fn == null) errorNotAFunction(sNil);
             if (symbolp(fn)) fn = getValue(fn.toString());
             return tailcall(fn, listToArray(args[1]));
         }
@@ -9128,264 +9128,261 @@ public class LambdaJ {
                     emitAtom(sb, form);  return;
                 }
 
-                if (consp(form)) {
-                    final ConsCell ccForm = (ConsCell)form;
-                    final Object op = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
-                    final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ expressions
+                assert consp(form);
+                final ConsCell ccForm = (ConsCell)form;
+                final Object op = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
+                final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ expressions
 
-                    if (op != null && symbolp(op)) {
-                        final LambdaJSymbol symop = (LambdaJSymbol)op;
-                        switch (symop.wellknownSymbol) {
+                if (symbolp(op)) {
+                    final LambdaJSymbol symop = (LambdaJSymbol)op;
+                    switch (symop.wellknownSymbol) {
 
-                        /// * special forms:
+                    /// * special forms:
 
-                        ///     - quote
-                        case sQuote: {
-                            emitQuotedForm(sb, car(ccArguments), true);
-                            return;
-                        }
-
-                        ///     - if
-                        case sIf: {
-                            if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
-                                // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                                final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
-                                emitForm(sb, transformed, env, topEnv, rsfx, isLast);
-                                return;
-                            }
-                            sb.append("(");
-                            emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
-                            sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
-                            if (caddr(ccArguments) != null) { sb.append(")\n        : ("); emitForm(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
-                            else sb.append(")\n        : (Object)null)");
-                            return;
-                        }
-
-                        ///     - cond
-                        case sCond: {
-                            emitCond(sb, ccArguments, env, topEnv, rsfx, isLast);
-                            return;
-                        }
-
-                        /// eval - (catch tagform forms...) -> object
-                        case sCatch: {
-                            emitCatch(sb, ccArguments, env, topEnv, rsfx);
-                            return;
-                        }
-
-                        /// eval - (throw tagform resultform) -> |
-                        case sThrow: {
-                            emitThrow(sb, ccArguments, env, topEnv, rsfx);
-                            return;
-                        }
-
-                        /// try - (try protected-form . errorobj) -> result
-                        case sTry: {
-                            emitTry(sb, ccArguments, env, topEnv, rsfx);
-                            return;
-                        }
-
-                        ///     - lambda
-                        case sLambda: {
-                            emitLambda(sb, ccArguments, env, topEnv, rsfx, true);
-                            return;
-                        }
-
-                        ///     - setq
-                        case sSetQ: {
-                            if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
-                            else if (cddr(ccArguments) == null)
-                                emitSetq(sb, ccArguments, env, topEnv, rsfx);
-                            else {
-                                sb.append("((Supplier<Object>)(() -> {\n");
-                                String javaName = null;
-                                for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
-                                    sb.append("        ");
-                                    javaName = emitSetq(sb, pairs, env, topEnv, rsfx - 1);
-                                    sb.append(";\n");
-                                }
-                                sb.append("        return ").append(javaName).append(";})).get()");
-                            }
-                            return;
-                        }
-
-                        case sDefine: {
-                            if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not yet implemented");
-                            defined("define", car(ccArguments), env);
-                            final String javasym = mangle(car(ccArguments).toString(), 0);
-                            sb.append("define_").append(javasym).append("()");
-                            return;
-                        }
-
-                        case sDefun: {
-                            if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not yet implemented");
-                            defined("defun", car(ccArguments), env);
-                            final String javasym = mangle(car(ccArguments).toString(), 0);
-                            sb.append("defun_").append(javasym).append("()");
-                            return;
-                        }
-
-                        case sDefmacro: {
-                            if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
-                            intp.expandForm(form); // this will process the macro definition as a side effect in case macroexpand-1 was used
-                            sb.append("intern(\"").append(car(ccArguments)).append("\")");
-                            return;
-                        }
-
-                        ///     - progn
-                        case sProgn: {
-                            emitProgn(sb, ccArguments, env, topEnv, rsfx, isLast);
-                            return;
-                        }
-
-                        ///     - unwind-protect
-                        case sUnwindProtect: {
-                            emitUnwindProtect(sb, ccArguments, env, topEnv, rsfx, isLast);
-                            return;
-                        }
-
-                        ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
-                        // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
-                        case sLabels: {
-                            emitLabels(sb, ccArguments, env, topEnv, rsfx, isLast);
-                            return;
-                        }
-
-                        ///     - let: (let ((sym form)...) forms...) -> object
-                        ///     - named let: (let sym ((sym form)...) forms...) -> object
-                        case sLet: {
-                            if (car(ccArguments) == intp.sDynamic)
-                                emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, false, isLast);
-                            else
-                                emitLet(sb, ccArguments, env, topEnv, rsfx, isLast);
-                            return;
-                        }
-
-                        ///     - let*: (let* ((sym form)...) forms...) -> Object
-                        ///     - named let*: (let sym ((sym form)...) forms...) -> Object
-                        case sLetStar: {
-                            if (car(ccArguments) == intp.sDynamic)
-                                emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, true, isLast);
-                            else
-                                emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, false, isLast);
-                            return;
-                        }
-
-                        ///     - letrec:       (letrec ((sym form)...) forms) -> Object
-                        ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
-                        case sLetrec: {
-                            emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, true, isLast);
-                            return;
-                        }
-
-                        case sMultipleValueCall: {
-                            sb.append(isLast ? "tailcall(" : "funcall(");
-                            emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
-                            if (cdr(ccArguments) != null) {
-                                sb.append(", rt().new ValuesBuilder()");
-                                for (Object arg : listOrMalformed("multiple-value-call", cdr(ccArguments))) {
-                                    sb.append("\n        .add(");
-                                    emitForm(sb, arg, env, topEnv, rsfx, false);
-                                    sb.append(')');
-                                }
-                                sb.append("\n        .build()");
-                            }
-                            else sb.append(", NOARGS");
-                            sb.append(')');
-                            return;
-                        }
-
-                        ///     - multiple-value-bind: (multiple-value-bind (var*) value-form forms)
-                        case sMultipleValueBind: {
-                            final Object vars = car(ccArguments);
-                            int length;
-                            final boolean varargs;
-                            if (consp(vars)) {
-                                varargs = dottedList(vars);
-                                length = listLength((ConsCell)vars);
-                                if (varargs) length--;
-                            }
-                            else if (symbolp(vars)) {
-                                varargs = true;
-                                length = 0;
-                            }
-                            else throw errorMalformedFmt("multiple-value-bind", "expected a list or a symbol but got %s", printSEx(vars));
-                            sb.append(isLast ? "tailcall(" : "funcall(");
-                            emitLambda(sb, cons(vars, cddr(ccArguments)), env, topEnv, rsfx, false);
-                            if (cadr(ccArguments) != null) {
-                                sb.append(", rt().new ValuesBuilder()\n        .add(");
-                                emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, false);
-                                sb.append(")\n        .build(").append(length).append(',').append(String.valueOf(!varargs)).append(")");
-                            }
-                            else sb.append(", NOARGS");
-                            sb.append(')');
-                            return;
-                        }
-
-                        case sLoad: {
-                            varargs1("load", ccArguments);
-                            // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
-                            loadFile("load", sb, car(ccArguments), env, topEnv, rsfx - 1, isLast, null, null);
-                            return;
-                        }
-
-                        case sRequire: {
-                            // pass1 has replaced all toplevel (require)s with the file contents
-                            throw errorNotImplemented("require as non-toplevel form is not implemented");
-                        }
-
-                        case sProvide: {
-                            // pass 2 shouldn't see this
-                            throw errorNotImplemented("provide as non-toplevel form is not implemented");
-                        }
-
-                        case sDeclaim: {
-                            intp.evalDeclaim(rsfx, ccArguments);
-                            sb.append("(Object)null");
-                            return;
-                        }
-
-                        default:
-                            /// * macro expansion - all macros were already expanded
-                            if (null != symop.macro) throw new UndefinedFunction("function application: not a primitive or lambda: %s is a macro not a function", symop, form);
-
-                            /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
-                            if (symbolEq(symop, "macroexpand-1")) {
-                                oneArg("macroexpand-1", ccArguments);
-                                if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
-                                final Object expandedForm, expanded;
-                                final Object maybeMacroCall = car((ConsCell)cdar(ccArguments));
-                                if (consp(maybeMacroCall)) { expandedForm = macroexpandImpl(intp, (ConsCell)maybeMacroCall); expanded = cadr(intp.values) == sT ? "rt()._t" : "null"; }
-                                else { expandedForm = maybeMacroCall; expanded = "null"; }
-                                sb.append("rt()._values(");  emitQuotedForm(sb, expandedForm, true);  sb.append(", ").append(expanded).append(")");
-                                return;
-                            }
-
-                            /// * some functions and operators are opencoded:
-                            if (intp.speed >= 1 && opencode(sb, symop, ccArguments, env, topEnv, rsfx, isLast)) return;
-                        }
-                    }
-
-                    if (intp.speed >= 1 && consp(op) && symbolEq(car(op), "jmethod")
-                        && emitJmethod(sb, listOrMalformed("jmethod application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
+                    ///     - quote
+                    case sQuote: {
+                        emitQuotedForm(sb, car(ccArguments), true);
                         return;
                     }
 
-                    /// * function call
-                    sb.append(isLast ? "tailcall(" : "funcall(");
-                    emitForm(sb, op, env, topEnv, rsfx, false);
-                    if (ccArguments != null) {
-                        for (Object arg: ccArguments) {
-                            sb.append("\n        , ");
-                            emitForm(sb, arg, env, topEnv, rsfx, false);
+                    ///     - if
+                    case sIf: {
+                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
+                            // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
+                            final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
+                            emitForm(sb, transformed, env, topEnv, rsfx, isLast);
+                            return;
                         }
+                        sb.append("(");
+                        emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
+                        sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
+                        if (caddr(ccArguments) != null) { sb.append(")\n        : ("); emitForm(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
+                        else sb.append(")\n        : (Object)null)");
+                        return;
                     }
-                    else sb.append(", NOARGS");
-                    sb.append(')');
+
+                    ///     - cond
+                    case sCond: {
+                        emitCond(sb, ccArguments, env, topEnv, rsfx, isLast);
+                        return;
+                    }
+
+                    /// eval - (catch tagform forms...) -> object
+                    case sCatch: {
+                        emitCatch(sb, ccArguments, env, topEnv, rsfx);
+                        return;
+                    }
+
+                    /// eval - (throw tagform resultform) -> |
+                    case sThrow: {
+                        emitThrow(sb, ccArguments, env, topEnv, rsfx);
+                        return;
+                    }
+
+                    /// try - (try protected-form . errorobj) -> result
+                    case sTry: {
+                        emitTry(sb, ccArguments, env, topEnv, rsfx);
+                        return;
+                    }
+
+                    ///     - lambda
+                    case sLambda: {
+                        emitLambda(sb, ccArguments, env, topEnv, rsfx, true);
+                        return;
+                    }
+
+                    ///     - setq
+                    case sSetQ: {
+                        if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
+                        else if (cddr(ccArguments) == null)
+                            emitSetq(sb, ccArguments, env, topEnv, rsfx);
+                        else {
+                            sb.append("((Supplier<Object>)(() -> {\n");
+                            String javaName = null;
+                            for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
+                                sb.append("        ");
+                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx - 1);
+                                sb.append(";\n");
+                            }
+                            sb.append("        return ").append(javaName).append(";})).get()");
+                        }
+                        return;
+                    }
+
+                    case sDefine: {
+                        if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not yet implemented");
+                        defined("define", car(ccArguments), env);
+                        final String javasym = mangle(car(ccArguments).toString(), 0);
+                        sb.append("define_").append(javasym).append("()");
+                        return;
+                    }
+
+                    case sDefun: {
+                        if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not yet implemented");
+                        defined("defun", car(ccArguments), env);
+                        final String javasym = mangle(car(ccArguments).toString(), 0);
+                        sb.append("defun_").append(javasym).append("()");
+                        return;
+                    }
+
+                    case sDefmacro: {
+                        if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
+                        intp.expandForm(form); // this will process the macro definition as a side effect in case macroexpand-1 was used
+                        sb.append("intern(\"").append(car(ccArguments)).append("\")");
+                        return;
+                    }
+
+                    ///     - progn
+                    case sProgn: {
+                        emitProgn(sb, ccArguments, env, topEnv, rsfx, isLast);
+                        return;
+                    }
+
+                    ///     - unwind-protect
+                    case sUnwindProtect: {
+                        emitUnwindProtect(sb, ccArguments, env, topEnv, rsfx, isLast);
+                        return;
+                    }
+
+                    ///     - labels: (labels ((symbol (params...) forms...)...) forms...) -> object
+                    // note how labels is similar to let: let binds values to symbols, labels binds functions to symbols
+                    case sLabels: {
+                        emitLabels(sb, ccArguments, env, topEnv, rsfx, isLast);
+                        return;
+                    }
+
+                    ///     - let: (let ((sym form)...) forms...) -> object
+                    ///     - named let: (let sym ((sym form)...) forms...) -> object
+                    case sLet: {
+                        if (car(ccArguments) == intp.sDynamic)
+                            emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, false, isLast);
+                        else
+                            emitLet(sb, ccArguments, env, topEnv, rsfx, isLast);
+                        return;
+                    }
+
+                    ///     - let*: (let* ((sym form)...) forms...) -> Object
+                    ///     - named let*: (let sym ((sym form)...) forms...) -> Object
+                    case sLetStar: {
+                        if (car(ccArguments) == intp.sDynamic)
+                            emitLetLetStarDynamic(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, true, isLast);
+                        else
+                            emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, false, isLast);
+                        return;
+                    }
+
+                    ///     - letrec:       (letrec ((sym form)...) forms) -> Object
+                    ///     - named letrec: (letrec sym ((sym form)...) forms) -> Object
+                    case sLetrec: {
+                        emitLetStarLetrec(sb, ccArguments, env, topEnv, rsfx, true, isLast);
+                        return;
+                    }
+
+                    case sMultipleValueCall: {
+                        sb.append(isLast ? "tailcall(" : "funcall(");
+                        emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
+                        if (cdr(ccArguments) != null) {
+                            sb.append(", rt().new ValuesBuilder()");
+                            for (Object arg : listOrMalformed("multiple-value-call", cdr(ccArguments))) {
+                                sb.append("\n        .add(");
+                                emitForm(sb, arg, env, topEnv, rsfx, false);
+                                sb.append(')');
+                            }
+                            sb.append("\n        .build()");
+                        }
+                        else sb.append(", NOARGS");
+                        sb.append(')');
+                        return;
+                    }
+
+                    ///     - multiple-value-bind: (multiple-value-bind (var*) value-form forms)
+                    case sMultipleValueBind: {
+                        final Object vars = car(ccArguments);
+                        int length;
+                        final boolean varargs;
+                        if (consp(vars)) {
+                            varargs = dottedList(vars);
+                            length = listLength((ConsCell)vars);
+                            if (varargs) length--;
+                        }
+                        else if (symbolp(vars)) {
+                            varargs = true;
+                            length = 0;
+                        }
+                        else throw errorMalformedFmt("multiple-value-bind", "expected a list or a symbol but got %s", printSEx(vars));
+                        sb.append(isLast ? "tailcall(" : "funcall(");
+                        emitLambda(sb, cons(vars, cddr(ccArguments)), env, topEnv, rsfx, false);
+                        if (cadr(ccArguments) != null) {
+                            sb.append(", rt().new ValuesBuilder()\n        .add(");
+                            emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, false);
+                            sb.append(")\n        .build(").append(length).append(',').append(String.valueOf(!varargs)).append(")");
+                        }
+                        else sb.append(", NOARGS");
+                        sb.append(')');
+                        return;
+                    }
+
+                    case sLoad: {
+                        varargs1("load", ccArguments);
+                        // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
+                        loadFile("load", sb, car(ccArguments), env, topEnv, rsfx - 1, isLast, null, null);
+                        return;
+                    }
+
+                    case sRequire: {
+                        // pass1 has replaced all toplevel (require)s with the file contents
+                        throw errorNotImplemented("require as non-toplevel form is not implemented");
+                    }
+
+                    case sProvide: {
+                        // pass 2 shouldn't see this
+                        throw errorNotImplemented("provide as non-toplevel form is not implemented");
+                    }
+
+                    case sDeclaim: {
+                        intp.evalDeclaim(rsfx, ccArguments);
+                        sb.append("(Object)null");
+                        return;
+                    }
+
+                    default:
+                        /// * macro expansion - all macros were already expanded
+                        if (null != symop.macro) throw new UndefinedFunction("function application: not a primitive or lambda: %s is a macro not a function", symop, form);
+
+                        /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
+                        if (symbolEq(symop, "macroexpand-1")) {
+                            oneArg("macroexpand-1", ccArguments);
+                            if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
+                            final Object expandedForm, expanded;
+                            final Object maybeMacroCall = car((ConsCell)cdar(ccArguments));
+                            if (consp(maybeMacroCall)) { expandedForm = macroexpandImpl(intp, (ConsCell)maybeMacroCall); expanded = cadr(intp.values) == sT ? "rt()._t" : "null"; }
+                            else { expandedForm = maybeMacroCall; expanded = "null"; }
+                            sb.append("rt()._values(");  emitQuotedForm(sb, expandedForm, true);  sb.append(", ").append(expanded).append(")");
+                            return;
+                        }
+
+                        /// * some functions and operators are opencoded:
+                        if (intp.speed >= 1 && opencode(sb, symop, ccArguments, env, topEnv, rsfx, isLast)) return;
+                    }
+                }
+
+                if (intp.speed >= 1 && consp(op) && symbolEq(car(op), "jmethod")
+                    && emitJmethod(sb, listOrMalformed("jmethod application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
                     return;
                 }
-                throw new LambdaJError("emitForm: form not implemented: " + printSEx(form));
 
+                /// * function call
+                sb.append(isLast ? "tailcall(" : "funcall(");
+                emitForm(sb, op, env, topEnv, rsfx, false);
+                if (ccArguments != null) {
+                    for (Object arg: ccArguments) {
+                        sb.append("\n        , ");
+                        emitForm(sb, arg, env, topEnv, rsfx, false);
+                    }
+                }
+                else sb.append(", NOARGS");
+                sb.append(')');
             }
             catch (ArithmeticException | ClassCastException | IndexOutOfBoundsException | LambdaJError e) {
                 throw new LambdaJError(e, form);
@@ -9919,6 +9916,7 @@ public class LambdaJ {
                 final Object applyOp = car(args);
                 final Object applyArg = cadr(args);
 
+                if (applyOp == null || applyOp == sNil) throw new UndefinedFunction("function application: not a primitive or lambda: nil");
                 if (applyOp == intp.intern("list")) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(")"); return true; }
 
                 if (applyOp != sApply) { // apply needs special treatment for TCO
