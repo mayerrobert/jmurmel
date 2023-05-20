@@ -1,5 +1,6 @@
 
 Changes in JMurmel-1.4.3 relative to JMurmel-1.4.2
+released: 20.5.2023
 
  * removed get-internal-cpu-time
  * added random, make-random-state, random-state-p
