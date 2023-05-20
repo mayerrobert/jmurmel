@@ -12,12 +12,11 @@
     <packaging>jar</packaging>
 
     <description>Empty implementations for JMurmel features not supported on GraalVM</description>
-    <licenses>
-        <license>
-            <name>MIT License</name>
-            <url>../LICENSE</url>
-        </license>
-    </licenses>
+
+    <properties>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <maven.site.skip>true</maven.site.skip>
+    </properties>
 
     <build>
         <plugins>
