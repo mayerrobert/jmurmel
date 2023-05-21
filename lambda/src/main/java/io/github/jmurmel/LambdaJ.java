@@ -2009,7 +2009,7 @@ public class LambdaJ {
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
      *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
     static final LambdaJSymbol sT = new LambdaJSymbol("t", true), sNil = new LambdaJSymbol("nil", true),
-                               sLambda = new LambdaJSymbol("lambda", true), sProgn = new LambdaJSymbol("progn", true);
+                               sLambda = new LambdaJSymbol("lambda", true), sLambdaDynamic = new LambdaJSymbol("lambda-dynamic", true), sProgn = new LambdaJSymbol("progn", true);
 
     /** some more well known symbols. These symbols are not reserved, the LambdaJSymbol objects could be used to store a macro closure, so the symbols must be instance members of LambdaJ. */
     final LambdaJSymbol sDynamic, sBit, sCharacter, sConditionHandler;
@@ -2019,7 +2019,7 @@ public class LambdaJ {
         notInterned("", null), interned("", null),
 
         // basic special forms
-        sQuote("quote", WellknownSymbolKind.SF), sLambda("lambda", WellknownSymbolKind.SF),
+        sQuote("quote", WellknownSymbolKind.SF), sLambda("lambda", WellknownSymbolKind.SF), sLambdaDynamic("lambda-dynamic", WellknownSymbolKind.SF),
 
         // additional special forms
         sCond("cond", WellknownSymbolKind.SF), sLabels("labels", WellknownSymbolKind.SF), sIf("if", WellknownSymbolKind.SF),
@@ -2437,6 +2437,11 @@ public class LambdaJ {
                     return makeClosureFromForm(ccForm, env);
                 }
 
+                case sLambdaDynamic: {
+                    result = "#<lambda dynamic>";
+                    return makeDynamicClosureFromForm(ccForm);
+                }
+
                 case sSetQ: {
                     result = evalSetq(ccArguments, env, stack, level, traceLvl);
                     values = NO_VALUES;
@@ -2843,13 +2848,20 @@ public class LambdaJ {
                     varargsMin("lambda dynamic", ccArgs, 2);
                     checkLambdaList("lambda dynamic", cadr(ccArgs));
                     expandForms("lambda dynamic", cddrShallowCopyList("lambda dynamic", ccArgs));
+                    return cons(sLambdaDynamic, cdr(ccArgs));
+                }
+                else if (!have(Features.HAVE_LEXC)) {
+                    varargsMin("lambda dynamic", ccArgs, 1);
+                    checkLambdaList("lambda dynamic", car(ccArgs));
+                    expandForms("lambda dynamic", cdrShallowCopyList("lambda dynamic", ccArgs));
+                    return cons(sLambdaDynamic, ccArgs);
                 }
                 else {
                     varargsMin("lambda", ccArgs, 1);
                     checkLambdaList("lambda", car(ccArgs));
                     expandForms("lambda", cdrShallowCopyList("lambda", ccArgs));
+                    return ccForm;
                 }
-                return ccForm;
 
             case sIf:
                 varargsMinMax("if", ccArgs, 2, 3);
@@ -3357,16 +3369,19 @@ public class LambdaJ {
         return env;
     }
 
-    /** make a lexical closure (if enabled) or lambda from a lambda-form,
-     *  considering whether or not "dynamic" was specified after "lambda" */
+    /** make a lexical closure */
     private Closure makeClosureFromForm(final ConsCell form, ConsCell env) {
-        Object paramsAndForms = cdr(form);
-        if (car(paramsAndForms) == sDynamic) {
-            paramsAndForms = cdr(paramsAndForms);
-            env = DYNAMIC_ENV;
-        }
-        final ConsCell ccParamsAndForms = (ConsCell)paramsAndForms;
-        return makeClosure(car(ccParamsAndForms), listOrMalformed("lambda", cdr(ccParamsAndForms)), env);
+        final ConsCell ccParamsAndForms = (ConsCell)cdr(form);
+        nCells++;
+        return new Closure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), env);
+    }
+
+    /** make a dynamic lambda (if lexical was disabled),
+     *  or "dynamic" was specified after "lambda" */
+    private Closure makeDynamicClosureFromForm(final ConsCell form) {
+        final ConsCell ccParamsAndForms = (ConsCell)cdr(form);
+        nCells++;
+        return new Closure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), DYNAMIC_ENV);
     }
 
     /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
@@ -9199,6 +9214,10 @@ public class LambdaJ {
                     case sLambda: {
                         emitLambda(sb, ccArguments, env, topEnv, rsfx, true);
                         return;
+                    }
+
+                    case sLambdaDynamic: {
+                        errorNotImplemented("lambda dynamic is not supported in compiled Murmel");
                     }
 
                     ///     - setq
