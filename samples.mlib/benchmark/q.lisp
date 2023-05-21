@@ -21,4 +21,15 @@
     (+ (q2 (- x (q2 (1- x) y)) y)
        (q2 x (- y (q2 x (1- y)))))))
 
-(bench "q2" (q2 7 8) *default-duration*) ; ==> 31 
+(bench "q2" (q2 7 8) *default-duration*) ; ==> 31
+
+
+; Same as Q2 but faster because Mlib's "or" is inefficient because it expands into a let
+; (and/ or jmurmel's let is inefficient)
+(defun q2* (x y)
+  (if (< x 1) 1
+    (if (< y 1) 1
+      (+ (q2* (- x (q2* (1- x) y)) y)
+         (q2* x (- y (q2* x (1- y))))))))
+
+(bench "q2*" (q2* 7 8) *default-duration*) ; ==> 31 
