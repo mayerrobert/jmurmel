@@ -26,21 +26,7 @@ _$*
 *.ln
 core
 # CVS default ignores end
+*.iml
 /.idea/
-/jmurmel-all.iml
-/scripts/scripts.iml
-/scripts/target/
-/doc/target/
-/lambda/jmurmel.iml
-/lambda/target/
-/lambdajbm/jmurmelbm.iml
-/lambdajbm/target/
-/parent/definitions/definitions.iml
-/parent/definitions/target/
-/samples.mlib/samples.mlib.iml
-/samples.mlib/target/
-/samples.murmel/samples.murmel.iml
-/samples.murmel/target/
-/target/
-/graalvm/target/
+target/
 /graalvm/reports/
