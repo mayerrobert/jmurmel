@@ -659,7 +659,7 @@
          t))))
 
 
-; Helper macros to generate defuns for the various maxXX functions
+; Helper macros to generate defuns for the various mapXX functions
 (defmacro m%mapx (name acc accn)
   `(defun ,name (func lst . more-lists)
      (if more-lists
