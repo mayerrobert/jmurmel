@@ -2580,8 +2580,8 @@ public class LambdaJ {
                 case sLet:
                 case sLetStar:
                 case sLetrec: {
-                    final ConsCell[] formsAndEnv = evalLet(symOperator.wellknownSymbol, ccArguments, env, restore, stack, level, traceLvl);
-                    ccForms = formsAndEnv[0];  env = formsAndEnv[1];  restore = formsAndEnv[2];
+                    final LetRetVal formsAndEnv = evalLet(symOperator.wellknownSymbol, ccArguments, env, restore, stack, level, traceLvl);
+                    ccForms = formsAndEnv.body;  env = formsAndEnv.env;  restore = formsAndEnv.restore;
                     funcall = false;
                     break; // fall through to "eval a list of forms"
                 }
@@ -2928,7 +2928,9 @@ public class LambdaJ {
                         namedLet = false;
                     }
                     else {
-                        notReserved(sfName, (LambdaJSymbol)tag);
+                        final LambdaJSymbol sTag = (LambdaJSymbol)tag;
+                        notReserved(sfName, sTag);
+                        if (sTag.macro != null) throw new ProgramError("named-let label %s is also a macro which would shadow the local function", sTag);
                         letDynamic = false;
                         namedLet = true;
                     }
@@ -3167,33 +3169,40 @@ public class LambdaJ {
 
     private Object prev() { if (handlers == null || handlers.isEmpty()) return null; return handlers.get(handlers.size()-1); }
 
-    private ConsCell[] evalLet(WellknownSymbol operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
+    private static class LetRetVal { final ConsCell body, env, restore; LetRetVal(ConsCell b, ConsCell e, ConsCell r) { body = b; env = e; restore = r; } }
+
+    private LetRetVal evalLet(WellknownSymbol operator, final ConsCell arguments, ConsCell env, ConsCell restore, int stack, int level, int traceLvl) {
         final Object maybeLoopSymbol = car(arguments);
         final boolean letDynamic, namedLet;
-        if (maybeLoopSymbol == sDynamic) { letDynamic = true; namedLet = false; }
-        else if (maybeLoopSymbol instanceof LambdaJSymbol) { letDynamic = false; namedLet = true; }
-        else { letDynamic = false; namedLet = false; }
+        final ConsCell bindingsAndBodyForms;
+        final ArrayList<Object> seen;
+        if (maybeLoopSymbol == sDynamic) {
+            letDynamic = true; namedLet = false;
+            bindingsAndBodyForms = (ConsCell)cdr(arguments);
+            seen = cdar(bindingsAndBodyForms) != null ? new ArrayList<>() : null;
+        }
+        else if (maybeLoopSymbol instanceof LambdaJSymbol) { letDynamic = false; namedLet = true; bindingsAndBodyForms = (ConsCell)cdr(arguments); seen = null; }
+        else { letDynamic = false; namedLet = false; bindingsAndBodyForms = arguments; seen = null; }
 
-        final ConsCell bindingsAndBodyForms = namedLet || letDynamic ? (ConsCell)cdr(arguments) : arguments;
         final ConsCell ccBindings = (ConsCell)car(bindingsAndBodyForms);
 
-        ConsCell params = null;
+        ListConsCell params = null;
         ConsCell extenv = env;
         if (ccBindings != null) {
             final boolean letStar  = operator == WellknownSymbol.sLetStar;
             final boolean letRec   = operator == WellknownSymbol.sLetrec;
-            final ArrayList<Object> seen = letDynamic && cdr(ccBindings) != null ? new ArrayList<>() : null;
 
-            ConsCell newValues = null; // used for let dynamic
-            ConsCell insertPos = null; // used for named let
+            ListConsCell newValues = null; // used for let dynamic
+            ListConsCell insertPos = null; // used for named let
             if (letRec) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
                 final LambdaJSymbol sym = (LambdaJSymbol)car(binding);
                 final Object bindingForm = cadr(binding);
 
                 ConsCell newBinding = null;
-                if (letDynamic) newBinding = lookupTopenvEntry(sym); // todo hier wird nur im global env gesucht. was ist wenns auch eine lexical variable gibt?
-                else if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
+                if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
+                else if (letDynamic) newBinding = lookupTopenvEntry(sym); // todo hier wird nur im global env gesucht. was ist wenns auch eine lexical variable gibt?
+                else if (letStar) newBinding = fastassq(sym, extenv);
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
@@ -3208,31 +3217,31 @@ public class LambdaJ {
                     if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
                     else newValues = acons(newBinding, val, newValues);
                 }
-                else if (letRec) newBinding.rplacd(val);
+                else if (letStar && newBinding != null || letRec) newBinding.rplacd(val);
                 else extenv = acons(sym, val, extenv);
 
                 if (namedLet) {
                     if (params == null) {
                         insertPos = params = cons(sym, null);
                     } else {
-                        final ConsCell c;
+                        final ListConsCell c;
                         insertPos.rplacd(c = cons(sym, null));
                         insertPos = c;
                     }
                 }
             }
             if (newValues != null) for (Object o: newValues) {
-                final ConsCell c = (ConsCell)o;
+                final ListConsCell c = (ListConsCell)o;
                 ((ConsCell)car(c)).rplacd(cdr(c));
             }
         }
         final ConsCell bodyForms = (ConsCell)cdr(bindingsAndBodyForms);
         if (namedLet) {
-            final ConsCell c;
+            final ListConsCell c;
             extenv = cons(c = cons(maybeLoopSymbol, null), extenv);
             c.rplacd(makeClosure(params, bodyForms, extenv));
         }
-        return new ConsCell[] {bodyForms, extenv, restore};
+        return new LetRetVal(bodyForms, extenv, restore);
     }
 
     private static String getOp(Object operator, boolean letDynamic, boolean namedLet) {
@@ -3316,7 +3325,7 @@ public class LambdaJ {
                 insertPos = currentArg;
             }
         }
-        values = NO_VALUES; // todo oder doch besser im loop nach jedem eval?
+        values = NO_VALUES;
         if (traceOn) dbgEvalDone("evlis", forms, head, stack, level);
         return head;
     }
@@ -4278,7 +4287,7 @@ public class LambdaJ {
             return (long)d;
         }
 
-        /** convert {@code a} to a double, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
+        /** convert {@code a} to a double, error if {@code a} is not a number and/ or cannot be represented as a double (reducing precision is allowed). */
         static double toDouble(String func, Object a) {
             final Number n = requireNumber(func, a);
 
@@ -4490,10 +4499,10 @@ public class LambdaJ {
 
             for (;;) {
                 final Object next = cdr(args);
-                if (!listp(next) || next == _args) // missing nested loop check
+                if (next == null) break;
+                if (!consp(next) || next == _args) // missing nested loop check
                     throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
                 args = (ConsCell) next;
-                if (args == null) break;
                 result = op.applyAsDouble(result, toDouble(opName, car(args)));
             }
             return result;
@@ -4508,10 +4517,10 @@ public class LambdaJ {
 
             for (;;) {
                 final Object next = cdr(args);
-                if (!listp(next) || next == args) // missing nested loop check
+                if (next == null) break;
+                if (!consp(next) || next == args) // missing nested loop check
                     throw new ProgramError("%s: expected a proper list of numbers but got %s", opName, printSEx(_args));
                 args = (ConsCell) next;
-                if (args == null) break;
                 result = op.applyAsDouble(result, toDouble(opName, car(args)));
             }
             return result;
