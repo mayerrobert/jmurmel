@@ -2690,7 +2690,7 @@ public class LambdaJ {
                     else if (func instanceof Closure) {
                         final Closure ccFunc = (Closure)func;
                         final ConsCell closure = ccFunc.closure;
-                        env = zip(ccFunc.params, argList, closure == DYNAMIC_ENV ? env : closure, true);
+                        env = zip("function application", ccFunc.params, argList, closure == DYNAMIC_ENV ? env : closure, true);
 
                         if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + ccFunc.params + "> " + printSEx(argList));
                         ccForms = ccFunc.body;
@@ -2715,7 +2715,7 @@ public class LambdaJ {
                      */
                     else if (have(Features.HAVE_OLDLAMBDA) && consp(func) && car(func) == sLambda) {
                         final Object paramsAndBody = cdr(func);
-                        env = zip(car(paramsAndBody), argList, env, true);
+                        env = zip("function application", car(paramsAndBody), argList, env, true);
 
                         if (traceFunc)  tracer.println(pfx(stack, level) + " #<list lambda " + paramsAndBody + "> " + printSEx(argList));
                         ccForms = (ConsCell) cdr(paramsAndBody);
@@ -2796,9 +2796,9 @@ public class LambdaJ {
     final Object expandAndEval(Object form, ConsCell env) {
         if (form == null) return null;
         final Object expansion = expandForm(form);
-        if (consp(expansion) && car(expansion) == sProgn) {
+        if (consp(expansion) && car((ConsCell)expansion) == sProgn) {
             ConsCell rest;
-            for (rest = (ConsCell)cdr(expansion); cdr(rest) != null; rest = (ConsCell)cdr(rest)) {
+            for (rest = (ConsCell)cdr((ConsCell)expansion); cdr(rest) != null; rest = (ConsCell)cdr(rest)) {
                 // must expand a second time in case the progn contained a load/require that contained defmacro
                 expandAndEval(car(rest), env);
             }
@@ -2997,6 +2997,7 @@ public class LambdaJ {
             case sMultipleValueBind:
                 varargsMin("multiple-value-bind", ccArgs, 2);
                 expandForms("multiple-value-bind", cdrShallowCopyList("multiple-value-bind", ccArgs));
+                checkLambdaList("multiple-value-bind", car(ccArgs));
                 return ccForm;
 
             case sCatch:
@@ -3208,8 +3209,8 @@ public class LambdaJ {
             ListConsCell insertPos = null; // used for named let
             if (letRec) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
-                final LambdaJSymbol sym = (LambdaJSymbol)car(binding);
-                final Object bindingForm = cadr(binding);
+                final LambdaJSymbol sym = (LambdaJSymbol)car((ConsCell)binding);
+                final Object bindingForm = cadr((ConsCell)binding);
 
                 ConsCell newBinding = null;
                 if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
@@ -3274,7 +3275,7 @@ public class LambdaJ {
     Object evalMacro(Object operator, final Closure macroClosure, final ConsCell arguments) {
         if (traceFunc)  tracer.println(pfx(0, 0) + " #<macro " + operator + "> " + printSEx(arguments));
 
-        final ConsCell menv = zip(macroClosure.params, arguments, null, true);
+        final ConsCell menv = zip("macro application", macroClosure.params, arguments, null, true);
         Object expansion = null;
         if (macroClosure.body != null) for (Object macroform: macroClosure.body) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, 0, 0, 0);
@@ -3299,27 +3300,24 @@ public class LambdaJ {
      *
      *  Similar to CL pairlis, but {@code #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
      *  e.g. (zip '(a b . c) '(1 2 3 4 5)) -> ((a . 1) (b . 2) (c 3 4 5)) */
-    private ConsCell zip(Object paramList, ConsCell args, ConsCell env, boolean match) {
-        if (paramList == null && args == null) return env; // shortcut for no params/ no args
+    private ConsCell zip(String func, Object params, ConsCell args, ConsCell env, boolean match) {
+        if (params == null && args == null) return env; // shortcut for no params/ no args
 
-        for (Object params = paramList; params != null; ) {
-            if (consp(params)) {
-                if (match && args == null) throw new ProgramError("%s: not enough arguments. Parameters w/o argument: %s", "function application", printSEx(params));
-                // regular param/arg: add to env
-                env = acons(car(params), car(args), env);
-            }
-            else {
-                // paramList is a dotted list: the last param will be bound to the list of remaining args
-                return acons(params, args, env);
-            }
-
-            params = cdr(params);
-            if (params == paramList) errorMalformed("lambda", "bindings are a circular list");
-
-            args = (ConsCell) cdr(args);
+        while (consp(params)) {
+            if (match && args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", func, params);
+            env = acons(car((ConsCell)params), car(args), env);
+            params = cdr((ConsCell)params);
+            args = (ConsCell)cdr(args);
         }
-        if (match && args != null) throw new ProgramError("%s: too many arguments. Remaining arguments: %s", "function application", printSEx(args));
+        // if paramList is a dotted list whose last cdr is a non-nil symbol: the last param will be bound to the list of remaining args
+        if (params != null && symbolp(params)) return acons(params, args, env);
+
+        if (match && args != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", func, args);
         return env;
+    }
+
+    private static void errorApplicationArgCount(String msg, String func, Object params) {
+        throw new ProgramError(msg, func, printSEx(params));
     }
 
     /** eval a list of forms and return a list of results */
@@ -3365,7 +3363,7 @@ public class LambdaJ {
         final ConsCell newValues;
         if (values == NO_VALUES) newValues = cons(prim, null);
         else { newValues = values; values = NO_VALUES; }
-        env = zip(car(varsAndValuesForm), newValues, env, false);
+        env = zip("multiple-value-bind", car(varsAndValuesForm), newValues, env, false);
         return env;
     }
 
@@ -3794,7 +3792,6 @@ public class LambdaJ {
 
     /** faster assq for internal use for environment lookup. ccList must be a proper list that only contains cons cells. */
     static ConsCell fastassq(Object atom, ConsCell ccList) {
-        if (ccList == null) return null;
         //int n = 0;
         for (; ccList != null; ccList = (ConsCell)ccList.cdr()) {
             //n++;
@@ -4577,8 +4574,8 @@ public class LambdaJ {
                 if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
                 return l + 1;
             }
-            if (n instanceof Byte) return ((Byte)n).longValue() + 1;
-            if (n instanceof Short) return ((Short)n).longValue() + 1;
+            if (n instanceof Byte) return ((Byte)n).intValue() + 1;
+            if (n instanceof Short) return ((Short)n).intValue() + 1;
             if (n instanceof Integer) return ((Integer)n).longValue() + 1;
             if (n instanceof BigInteger) {
                 final long l;
@@ -4601,8 +4598,8 @@ public class LambdaJ {
                 if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
                 return l - 1;
             }
-            if (n instanceof Byte) return ((Byte)n).longValue() - 1;
-            if (n instanceof Short) return ((Short)n).longValue() - 1;
+            if (n instanceof Byte) return ((Byte)n).intValue() - 1;
+            if (n instanceof Short) return ((Short)n).intValue() - 1;
             if (n instanceof Integer) return ((Integer)n).longValue() - 1;
             if (n instanceof BigInteger) {
                 final long l;
