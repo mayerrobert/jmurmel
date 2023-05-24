@@ -662,14 +662,144 @@ public class LambdaJ {
         Path path() { return path; }
     }
 
-    private static final class Closure implements Serializable, Writeable {
+    private static class Closure implements Serializable, Writeable {
         private static final long serialVersionUID = 1L;
         final Object params;
         final ConsCell body, closure; // todo es sollten nur macros serialisiert werden. beim serialisieren sollte fuer closure!=topEnv ein fehler geworfen werden, beim einlesen sollte closure=topEnv gesetzt werden
 
         private Closure(Object params, ConsCell body, ConsCell closure)    { this.params = params; this.body = body; this.closure = closure; }
-
+        Object params() { return params; }
+        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) { return intp.zip("function application", params, args, closure, true); }
         @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { out.print("#<interpreted closure>"); }
+
+        static Closure of(Object params, ConsCell body, ConsCell closure) {
+            if (params == null) return new Closure0(body, closure);
+            if (symbolp(params)) return new ClosureVararg(params, body, closure);
+
+            final ConsCell ccParams = (ConsCell)params;
+            final Object cdrParams = cdr(ccParams);
+            if (cdrParams == null) return new Closure1(ccParams, body, closure);
+            if (symbolp(cdrParams)) return new Closure1Varargs(ccParams, body, closure);
+
+            final Object cddrParams = cdr((ConsCell)cdrParams);
+            if (cddrParams == null) return new Closure2(ccParams, body, closure);
+            if (symbolp(cddrParams)) return new Closure2Varargs(ccParams, body, closure);
+
+            if (cdr((ConsCell)cddrParams) == null) return new Closure3(ccParams, body, closure);
+
+            return new Closure(ccParams, body, closure);
+        }
+    }
+
+    // no arguments
+    private static final class Closure0 extends Closure {
+        Closure0(ConsCell body, ConsCell closure) { super(null, body, closure); }
+
+        @Override
+        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", args);
+            return closure;
+        }
+    }
+
+    // one argument
+    private static final class Closure1 extends Closure {
+        Closure1(ConsCell params, ConsCell body, ConsCell closure) { super(car(params), body, closure); }
+
+        @Override Object params() { return ConsCell.cons(params, null); }
+
+        @Override
+        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", intp.cons(params, null));
+            final Object cdrArgs = cdr(args);
+            if (cdrArgs != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", cdrArgs);
+            return intp.acons(params, car(args), closure);
+        }
+    }
+
+    // two arguments
+    private static final class Closure2 extends Closure {
+        final Object p1, p2;
+        Closure2(ConsCell params, ConsCell body, ConsCell closure) { 
+            super(params, body, closure);
+            p1 = car(params); p2 = cadr(params);
+        }
+
+        @Override
+        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
+            final Object cdrArgs = cdr(args);
+            if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: (%s)", "function application", p2);
+            final Object cddrArgs = cdr(cdrArgs);
+            if (cddrArgs != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", cddrArgs);
+            return intp.acons(p2, car(cdrArgs), intp.acons(p1, car(args), closure));
+        }
+    }
+
+    // three arguments
+    private static final class Closure3 extends Closure {
+        final Object p1, p2, p3;
+        Closure3(ConsCell params, ConsCell body, ConsCell closure) {
+            super(params, body, closure);
+            p1 = car(params); p2 = cadr(params); p3 = caddr(params);
+        }
+
+        @Override
+        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
+            final Object cdrArgs = cdr(args);
+            if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cdr(params));
+            final Object cddrArgs = cdr(cdrArgs);
+            if (cddrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cddr(params));
+            final Object cdddrArgs = cdr(cddrArgs);
+            if (cdddrArgs != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", cdddrArgs);
+            return intp.acons(p3, car(cddrArgs), intp.acons(p2, car(cdrArgs), intp.acons(p1, car(args), closure)));
+        }
+    }
+
+    // 0 or more arguments
+    private static final class ClosureVararg extends Closure {
+        ClosureVararg(Object param, ConsCell body, ConsCell closure) { super(param, body, closure); }
+
+        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) { return intp.acons(params, args, closure); }
+    }
+
+    // one or more arguments
+    private static final class Closure1Varargs extends Closure {
+        final Object p, more;
+        Closure1Varargs(ConsCell params, ConsCell body, ConsCell closure) {
+            super(params, body, closure);
+            p = car(params); more = cdr(params);
+        }
+
+        @Override
+        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
+            return intp.acons(more, cdr(args), intp.acons(p, car(args), closure));
+        }
+    }
+
+    // two or more arguments
+    private static final class Closure2Varargs extends Closure {
+        final Object p1, p2, more;
+        Closure2Varargs(ConsCell params, ConsCell body, ConsCell closure) {
+            super(params, body, closure);
+            p1 = car(params); p2 = cadr(params); more = cddr(params);
+        }
+
+        @Override
+        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
+            final Object cdrArgs = cdr(args);
+            if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cdr(params));
+            return intp.acons(more, cdr(cdrArgs), intp.acons(p2, car(cdrArgs), intp.acons(p1, car(args), closure)));
+        }
+    }
+
+    private static final class DynamicLambda extends Closure {
+        DynamicLambda(Object paramss, ConsCell body) { super(paramss, body, null); }
+        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) { return intp.zip("dynamic function application", params, args, env, true); }
+        @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { out.print("#<interpreted dynamic closure>"); }
     }
 
     private static final class ArraySlice extends ConsCell {
@@ -2345,8 +2475,6 @@ public class LambdaJ {
     }
 
 
-    private static final ConsCell DYNAMIC_ENV = new ListConsCell(null, null);
-
     /** Build environment, setup Lisp reader and writer.
      *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
     ObjectReader init(ReadSupplier in, WriteConsumer out) {
@@ -2433,13 +2561,17 @@ public class LambdaJ {
 
                 /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
                 case sLambda: {
+                    final ConsCell ccParamsAndForms = (ConsCell)cdr(ccForm);
+                    nCells++;
                     result = "#<lambda>";
-                    return makeClosureFromForm(ccForm, env);
+                    return Closure.of(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), env);
                 }
 
                 case sLambdaDynamic: {
+                    final ConsCell ccParamsAndForms = (ConsCell)cdr(ccForm);
+                    nCells++;
                     result = "#<lambda dynamic>";
-                    return makeDynamicClosureFromForm(ccForm);
+                    return new DynamicLambda(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms));
                 }
 
                 case sSetQ: {
@@ -2689,10 +2821,9 @@ public class LambdaJ {
 
                     else if (func instanceof Closure) {
                         final Closure ccFunc = (Closure)func;
-                        final ConsCell closure = ccFunc.closure;
-                        env = zip("function application", ccFunc.params, argList, closure == DYNAMIC_ENV ? env : closure, true);
+                        env = ccFunc.zip(this, argList, env);
 
-                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + ccFunc.params + "> " + printSEx(argList));
+                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + ccFunc.params() + "> " + printSEx(argList));
                         ccForms = ccFunc.body;
                         // fall through to "eval a list of forms"
                     }
@@ -2715,7 +2846,7 @@ public class LambdaJ {
                      */
                     else if (have(Features.HAVE_OLDLAMBDA) && consp(func) && car(func) == sLambda) {
                         final Object paramsAndBody = cdr(func);
-                        env = zip("function application", car(paramsAndBody), argList, env, true);
+                        env = zip("old lambda application", car(paramsAndBody), argList, env, true);
 
                         if (traceFunc)  tracer.println(pfx(stack, level) + " #<list lambda " + paramsAndBody + "> " + printSEx(argList));
                         ccForms = (ConsCell) cdr(paramsAndBody);
@@ -3275,7 +3406,7 @@ public class LambdaJ {
     Object evalMacro(Object operator, final Closure macroClosure, final ConsCell arguments) {
         if (traceFunc)  tracer.println(pfx(0, 0) + " #<macro " + operator + "> " + printSEx(arguments));
 
-        final ConsCell menv = zip("macro application", macroClosure.params, arguments, null, true);
+        final ConsCell menv = macroClosure.zip(this, arguments, null);
         Object expansion = null;
         if (macroClosure.body != null) for (Object macroform: macroClosure.body) // loop over macro body so that e.g. "(defmacro m (a b) (write 'hallo) `(+ ,a ,b))" will work
             expansion = eval(macroform, menv, 0, 0, 0);
@@ -3367,21 +3498,6 @@ public class LambdaJ {
         return env;
     }
 
-    /** make a lexical closure */
-    private Closure makeClosureFromForm(final ConsCell form, ConsCell env) {
-        final ConsCell ccParamsAndForms = (ConsCell)cdr(form);
-        nCells++;
-        return new Closure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), env);
-    }
-
-    /** make a dynamic lambda (if lexical was disabled),
-     *  or "dynamic" was specified after "lambda" */
-    private Closure makeDynamicClosureFromForm(final ConsCell form) {
-        final ConsCell ccParamsAndForms = (ConsCell)cdr(form);
-        nCells++;
-        return new Closure(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), DYNAMIC_ENV);
-    }
-
     /** check that 'a' is a symbol or a proper or dotted list of only symbols (empty list is fine, too).
      *  Also 'a' must not contain reserved symbols or duplicate symbols. */
     private static void checkLambdaList(String func, Object a) {
@@ -3412,7 +3528,7 @@ public class LambdaJ {
     /** make a lexical closure (if enabled) or lambda */
     private Closure makeClosure(Object params, ConsCell body, ConsCell env) {
         nCells++;
-        return new Closure(params, body, have(Features.HAVE_LEXC) ? env : DYNAMIC_ENV);
+        return have(Features.HAVE_LEXC) ? Closure.of(params, body, env) : new DynamicLambda(params, body);
     }
 
     private Object applyPrimitive(Primitive primfn, ConsCell args, int stack, int level) {
@@ -6764,7 +6880,7 @@ public class LambdaJ {
                                 if (entry != null && entry.macro != null) names.add(entry);
                             }
                             names.sort(Comparator.comparing(Object::toString));
-                            for (LambdaJSymbol name: names) System.out.println(name + ": " + printSEx(ConsCell.cons(name.macro.params, name.macro.body)));
+                            for (LambdaJSymbol name: names) System.out.println(name + ": " + printSEx(ConsCell.cons(name.macro.params(), name.macro.body)));
                             System.out.println("number of macros: " + names.size());  System.out.println();
                             continue;
                         }
@@ -6830,7 +6946,7 @@ public class LambdaJ {
         }
 
         private static void printClosureInfo(Closure closure) {
-            final ConsCell form = ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params, closure.body));
+            final ConsCell form = ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params(), closure.body));
             if (closure.body instanceof SExpConsCell) {
                 final String info = ((SExpConsCell)closure.body).lineInfo();
                 if (!info.isEmpty()) System.out.println(info);
