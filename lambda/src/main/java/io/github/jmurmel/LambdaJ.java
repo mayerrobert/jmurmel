@@ -2144,7 +2144,7 @@ public class LambdaJ {
     /** some more well known symbols. These symbols are not reserved, the LambdaJSymbol objects could be used to store a macro closure, so the symbols must be instance members of LambdaJ. */
     final LambdaJSymbol sDynamic, sBit, sCharacter, sConditionHandler;
 
-    enum WellknownSymbolKind { SF, PRIM, OC_PRIM, SYMBOL}
+    enum WellknownSymbolKind { SF, PRIM, SYMBOL}
     enum WellknownSymbol {
         notInterned("", null), interned("", null),
 
@@ -2757,6 +2757,8 @@ public class LambdaJ {
                         return result = symOperator.wellknownSymbol.apply(this, evlis(ccArguments, env, stack, level, traceLvl));
                     }
                     else {
+                        // respect evaluation order: the operator could be an undefined symbol, and we want that to fail before evaluation the arguments.
+                        // E.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
                         func = evalSymbol(symOperator, env);
                         argList = evlis(ccArguments, env, stack, level, traceLvl);
                     }
