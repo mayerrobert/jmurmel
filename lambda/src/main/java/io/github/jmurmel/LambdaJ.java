@@ -3319,42 +3319,36 @@ public class LambdaJ {
         final Object maybeLoopSymbol = car(arguments);
         final boolean letDynamic, namedLet;
         final ConsCell bindingsAndBodyForms;
-        final ArrayList<Object> seen;
-        if (maybeLoopSymbol == sDynamic) {
-            letDynamic = true; namedLet = false;
-            bindingsAndBodyForms = (ConsCell)cdr(arguments);
-            seen = cdar(bindingsAndBodyForms) != null ? new ArrayList<>() : null;
-        }
-        else if (maybeLoopSymbol instanceof LambdaJSymbol) { letDynamic = false; namedLet = true; bindingsAndBodyForms = (ConsCell)cdr(arguments); seen = null; }
-        else { letDynamic = false; namedLet = false; bindingsAndBodyForms = arguments; seen = null; }
+        if (maybeLoopSymbol == sDynamic)                   { letDynamic = true;  namedLet = false; bindingsAndBodyForms = (ConsCell)cdr(arguments); }
+        else if (maybeLoopSymbol instanceof LambdaJSymbol) { letDynamic = false; namedLet = true;  bindingsAndBodyForms = (ConsCell)cdr(arguments); }
+        else                                               { letDynamic = false; namedLet = false; bindingsAndBodyForms = arguments; }
+        final ArrayList<Object> seen = new ArrayList<>(); // hopefully Hotspot will stackallocate this
 
         final ConsCell ccBindings = (ConsCell)car(bindingsAndBodyForms);
 
-        ListConsCell params = null;
+        final ListConsCell params = new ListConsCell(null, null);
         ConsCell extenv = env;
         if (ccBindings != null) {
             final boolean letStar  = operator == WellknownSymbol.sLetStar;
             final boolean letRec   = operator == WellknownSymbol.sLetrec;
 
             ListConsCell newValues = null; // used for let dynamic
-            ListConsCell insertPos = null; // used for named let
+            ListConsCell insertPos = params; // used for named let
             if (letRec) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
                 final LambdaJSymbol sym = (LambdaJSymbol)car((ConsCell)binding);
                 final Object bindingForm = cadr((ConsCell)binding);
 
-                ConsCell newBinding = null;
+                final ConsCell newBinding;
                 if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
-                else if (letDynamic) newBinding = lookupTopenvEntry(sym); // todo hier wird nur im global env gesucht. was ist wenns auch eine lexical variable gibt?
+                else if (letDynamic) newBinding = lookupTopenvEntry(sym); // hier wird nur im global env gesucht. wenns gleichnamige globale UND lexical variablen gibt, bleibt die lexical unveraendert
                 else if (letStar) newBinding = fastassq(sym, extenv);
+                else newBinding = null;
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
                 if (letDynamic && newBinding != null) {
-                    final boolean isNewSymbol;
-                    if (seen != null) { isNewSymbol = !seen.contains(sym); if (isNewSymbol) seen.add(sym); }
-                    else isNewSymbol = true; // ignored/ not needed for "let*", true for a single binding
-
-                    if (isNewSymbol) {
+                    if (!seen.contains(sym)) {
+                        seen.add(sym);
                         if (sym == sConditionHandler) restore = cons(new RestoreHandler(newBinding, cdr(newBinding)), restore);
                         else restore = cons(new RestoreDynamic(newBinding, cdr(newBinding)), restore);
                     }
@@ -3364,26 +3358,15 @@ public class LambdaJ {
                 else if (letStar && newBinding != null || letRec) newBinding.rplacd(val);
                 else extenv = acons(sym, val, extenv);
 
-                if (namedLet) {
-                    if (params == null) {
-                        insertPos = params = cons(sym, null);
-                    } else {
-                        final ListConsCell c;
-                        insertPos.rplacd(c = cons(sym, null));
-                        insertPos = c;
-                    }
-                }
+                if (namedLet) { final ListConsCell c; insertPos.rplacd(c = cons(sym, null)); insertPos = c; }
             }
-            if (newValues != null) for (Object o: newValues) {
-                final ListConsCell c = (ListConsCell)o;
-                ((ConsCell)car(c)).rplacd(cdr(c));
-            }
+            if (newValues != null) for (Object o: newValues) { final ListConsCell c = (ListConsCell)o; ((ConsCell)car(c)).rplacd(cdr(c)); }
         }
         final ConsCell bodyForms = (ConsCell)cdr(bindingsAndBodyForms);
         if (namedLet) {
             final ListConsCell c;
             extenv = cons(c = cons(maybeLoopSymbol, null), extenv);
-            c.rplacd(makeClosure(params, bodyForms, extenv));
+            c.rplacd(makeClosure(params.cdr(), bodyForms, extenv));
         }
         return new LetRetVal(bodyForms, extenv, restore);
     }
