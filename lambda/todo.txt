@@ -1,3 +1,5 @@
+compare könnte char[] und CharSequence gesondert behandeln statt immer String kopien zu ziehen
+
 Docker images nach ghcr.io pushen, siehe https://github.com/clasp-developers/clasp/blob/main/.github/workflows/docker.yml
 und https://github.blog/2020-09-01-introducing-github-container-registry/#:~:text=GitHub%20Container%20Registry%20is%20free%20for%20public%20images.&text=By%20publishing%20container%20images%20with,other%20developers%20on%20the%20team.
 und https://docs.github.com/de/packages/working-with-a-github-packages-registry/working-with-the-container-registry

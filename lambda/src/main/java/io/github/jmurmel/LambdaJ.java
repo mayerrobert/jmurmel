@@ -4748,16 +4748,20 @@ public class LambdaJ {
             throw errorArgTypeError("random or t or nil or number", "make-random-state", state);
         }
 
+        private static final class BOS extends ByteArrayOutputStream {
+            BOS() { super(104); }             // Java 1.1 through 20's java.util.Random will be serialized to 104 bytes. Other Roandom classes may be larger, BOS will grow as needed.
+            byte[] getBuf() { return buf; }   // provide direct access to buf to avoid copying
+        }
         private static Random copy(Random rnd) {
             try {
-                final ByteArrayOutputStream bo = new ByteArrayOutputStream();
+                final BOS bo = new BOS();
                 final ObjectOutputStream oos = new ObjectOutputStream(bo);
                 oos.writeObject(rnd);
                 oos.close();
-                final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bo.toByteArray()));
+                final ObjectInputStream ois = new ObjectInputStream(new ByteArrayInputStream(bo.getBuf()));
                 return (Random)(ois.readObject());
             }
-            catch (Exception e) { throw errorInternal(e, "unexpected Exception cloning random"); }
+            catch (Exception e) { throw errorInternal(e, "unexpected Exception copying random"); }
         }
 
 
