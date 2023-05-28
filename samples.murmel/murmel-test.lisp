@@ -922,6 +922,24 @@ multiline comment
   (deftest nan.4 (/= nan nan) t)
 )
 
+(deftest random.1 (random-state-p (make-random-state t)) t)
+(deftest random.2 (random-state-p (make-random-state nil)) t)
+(deftest random.3
+  (let* ((r1 (make-random-state t))
+         (r2 (make-random-state r1))
+         (results-1 (list (random 10 r1) (random 2.3 r1) (random 10 r1) (random 10 r1)))
+         (results-2 (list (random 10 r2) (random 2.3 r2) (random 10 r2) (random 10 r2))))
+    (equal results-1 results-2))
+  t)
+#+murmel
+(deftest random.4
+  (let* ((r1 (make-random-state 42))
+         (r2 (make-random-state 42))
+         (results-1 (list (random 10 r1) (random 2.3 r1) (random 10 r1) (random 10 r1)))
+         (results-2 (list (random 10 r2) (random 2.3 r2) (random 10 r2) (random 10 r2))))
+    (equal results-1 results-2))
+  t)
+
 
 ; *******************************************************************
 ;;; - vectors, sequences

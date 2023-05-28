@@ -1,5 +1,8 @@
 compare könnte char[] und CharSequence gesondert behandeln statt immer String kopien zu ziehen
 
+mlib splitten: CL-compat rausziehen
+
+
 Docker images nach ghcr.io pushen, siehe https://github.com/clasp-developers/clasp/blob/main/.github/workflows/docker.yml
 und https://github.blog/2020-09-01-introducing-github-container-registry/#:~:text=GitHub%20Container%20Registry%20is%20free%20for%20public%20images.&text=By%20publishing%20container%20images%20with,other%20developers%20on%20the%20team.
 und https://docs.github.com/de/packages/working-with-a-github-packages-registry/working-with-the-container-registry
@@ -9,13 +12,21 @@ GraalVM + Swing geht anscheinend doch, zumindest auf linux: https://www.praj.in/
 vielleicht auch Windows: https://www.reddit.com/r/java/comments/12yiebx/graalvm_native_image_faster_smarter_leaner/jhu6vtu/
 
 
+ProGuard abchecken, wsl. ohne obfuscation nur simplification: https://www.guardsquare.com/manual/home
+CRaC abchecken: https://docs.azul.com/core/crac/crac-guideline
+
+
 Steele and Sussman in "The Art of the Interpreter (1978)":
 Statt environment als alist
 -> liste von frames, jeder frame ist ein var-list/ val-vector cons
    -> vielleicht sogar statt liste mit frames -> ArrayList mit frames?
    (Steele und Sussman hatten eine liste mit var-list/ val-list conses)
-   -> evlis sollte eine ArrayList oder Object[] liefern, zip brauchts überhaupt nicht mehr
-      primitives sollten Object[] nehmen, gleich wie bereits im Compiler (ggf. brauchts dann nicht mehr alle primitives doppelt?)
+   -> neue klasse Frame mit 2 arrays: symbols und values, env ist dann eine liste mit Frame objekten
+   -> evalLet, evalLabels, evalMultipleValueBind sollten statt env->extenv einfach ein Frame objekt liefern, env als parameter brauchts nicht mehr
+   -> evlis, evalMultipleValuesArgs sollten eine ArrayList oder Object[] liefern
+      variable argList in eval sollte statt ConsCell ArrayList oder Object[] werden
+      zip brauchts überhaupt nicht mehr
+      primitives sollten Object[] nehmen, gleich wie bereits im Compiler (ggf. brauchts dann nicht mehr alle primitives/ argcountcheck methoden doppelt?)
    -> lookupEnvEntry bzw. fastassq müsste angepasst werden, ggf. kann das (zumindest teilweise) 1x zur macroexpansiontime gemacht werden?
    -> bei lexikalischem environment wärs einfacher, einen frame wiederzuverwenden
    -> bei dynamischem environment wärs einfacher bei tailcalls einen frame zu droppen oder wiederzuverwenden
