@@ -1,4 +1,9 @@
 
+Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
+
+ * fixed compiled random-state-p and make-random-state
+
+
 Changes in JMurmel-1.4.3 relative to JMurmel-1.4.2
 released: 20.5.2023
 

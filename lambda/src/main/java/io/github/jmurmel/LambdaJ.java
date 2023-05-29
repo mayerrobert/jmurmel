@@ -7831,8 +7831,8 @@ public class LambdaJ {
             varargs0_1("make-random-state", args.length); values = null;
             final Object state;
             final Random current;
-            if (args.length == 1) { state = args[0]; current = null; }
-            else                  { state = null;    current = getRandom(); }
+            if (args.length == 1 && args[0] != null) { state = args[0]; current = null; }
+            else                                     { state = null;    current = getRandom(); }
             return Subr.makeRandomState(current, state);
         }
 
@@ -8929,7 +8929,7 @@ public class LambdaJ {
         {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
         {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
         {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"}, 
-        {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"}, {"random-state-p", "randomstatep"}, {"make-random-state", "makeRandomState"},
+        {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"}, {"random-state-p", "_randomstatep"}, {"make-random-state", "makeRandomState"},
         {"bit-vector-p", "bitvectorp"}, {"bv=", "bvEq"}, {"simple-bit-vector-p", "sbitvectorp"}, {"hash-table-p", "hashtablep"}, {"make-array", "makeArray"},
         {"hash", "_hash"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
         {"hash-table-count", "hashTableCount"}, {"clrhash", "_clrhash"}, {"hash-table-remove", "hashRemove"}, {"sxhash", "_sxhash"}, {"scan-hash-table", "scanHash"},
