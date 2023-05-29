@@ -8091,9 +8091,11 @@ public class LambdaJ {
         public final  long hsbToPixel    (Object h, Object s, Object b) { values = null; return Color.HSBtoRGB(toFloat(h), toFloat(s), toFloat(b)); }
 
 
-        /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        final Object ret(Object[] _values) { values = _values; if (_values.length == 0) return null; return _values[0]; }
+        private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
+        private Object ret(Object[] _values) { values = _values; if (_values.length == 0) return null; return _values[0]; }
 
+
+        /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
         public final LambdaJSymbol intern(String symName) { return symtab.intern(symName); }
 
         public final Object arrayToList(Object[] args, int start) {
@@ -8396,9 +8398,7 @@ public class LambdaJ {
 
         private final Tailcall tailcall = new Tailcall();
         /** used for function calls */
-        public final Tailcall tailcall(MurmelFunction fn, Object... args) {
-            return tailcallWithCleanup(fn, null, args);
-        }
+        public final Tailcall tailcall(MurmelFunction fn, Object... args) { return tailcallWithCleanup(fn, null, args); }
 
         public final Tailcall tailcallWithCleanup(MurmelFunction fn, MurmelFunction cleanup, Object... args) {
             final Tailcall tailcall = this.tailcall;
@@ -8408,9 +8408,7 @@ public class LambdaJ {
             return tailcall;
         }
 
-        public final Object tailcall(Object fn, Object... args) {
-            return tailcallWithCleanup(fn, null, args);
-        }
+        public final Object tailcall(Object fn, Object... args) { return tailcallWithCleanup(fn, null, args); }
 
         public final Object tailcallWithCleanup(Object fn, MurmelFunction cleanup, Object... args) {
             if (fn instanceof MurmelFunction)    {
@@ -8461,34 +8459,8 @@ public class LambdaJ {
         }
 
 
-        private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
 
-        private static void noArgs(String expr, int argCount)      { if (0 != argCount)               errorArgCount(expr, 0, 0, argCount); }
-        private static void oneArg(String expr, int argCount)      { if (1 != argCount)               errorArgCount(expr, 1, 1, argCount); }
-        private static void twoArgs(String expr, int argCount)     { if (2 != argCount)               errorArgCount(expr, 2, 2, argCount); }
-        private static void threeArgs(String expr, int argCount)   { if (3 != argCount)               errorArgCount(expr, 3, 3, argCount); }
-
-        /** 0..1 args */
-        private static void varargs0_1(String expr, int argCount) { if (argCount > 1)                 errorArgCount(expr, 0, 1, argCount); }
-        /** 0..2 args */
-        private static void varargs0_2(String expr, int argCount) { if (argCount > 2)                 errorArgCount(expr, 0, 2, argCount); }
-        /** 1..2 args */
-        private static void varargs1_2(String expr, int argCount) { if (argCount < 1 || argCount > 2) errorArgCount(expr, 1, 2, argCount); }
-        /** one or more arguments */
-        private static void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, -1, 0); }
-        /** two or more arguments */
-        private static void varargs2(String expr, int argCount)   { if (argCount < 2)                 errorArgCount(expr, 2, -1, argCount); }
-        private static void varargs3(String expr, int argCount)   { if (argCount < 3)                 errorArgCount(expr, 3, -1, argCount); }
-
-        private static void varargsMinMax(String expr, int argCount, int min, int max) {
-            if (argCount < min || argCount > max)
-                errorArgCount(expr, min, max, argCount);
-        }
-
-        private static void errorArgCount(String expr, int expectedMin, int expectedMax, int actual) {
-            if (actual < expectedMin) throw new ProgramError("%s: not enough arguments", expr);
-            if (expectedMax != -1 && actual > expectedMax) throw new ProgramError("%s: too many arguments", expr);
-        }
+        /// ## Error "handlers" for compiled code, see also LambdaJ.error...()
 
         private static RuntimeException errorNotANumber(Object n) { throw new SimpleTypeError("not a number: %s", printSEx(n)); }
         private static RuntimeException errorNotABit(Object n) { throw new SimpleTypeError("not a bit: %s", printSEx(n)); }
@@ -8500,6 +8472,37 @@ public class LambdaJ {
         private static RuntimeException errorNotAFrame(String s, Object o) {
             if (o != null) throw new SimpleTypeError("%s: not a frame: %s", s, printSEx(o));
             throw new SimpleTypeError("%s: no frame argument and no current frame", s);
+        }
+
+        private static void errorArgCount(String expr, int expectedMin, int expectedMax, int actual) {
+            if (actual < expectedMin) throw new ProgramError("%s: not enough arguments", expr);
+            if (expectedMax != -1 && actual > expectedMax) throw new ProgramError("%s: too many arguments", expr);
+        }
+
+
+
+        /// ##  Error checking functions, see also LambdaJ.varargs...()
+
+        private static void noArgs(String expr, int argCount)      { if (0 != argCount)               errorArgCount(expr, 0, 0, argCount); }
+        private static void oneArg(String expr, int argCount)      { if (1 != argCount)               errorArgCount(expr, 1, 1, argCount); }
+        private static void twoArgs(String expr, int argCount)     { if (2 != argCount)               errorArgCount(expr, 2, 2, argCount); }
+        private static void threeArgs(String expr, int argCount)   { if (3 != argCount)               errorArgCount(expr, 3, 3, argCount); }
+
+        /** 0..1 args */
+        private static void varargs0_1(String expr, int argCount) { if (argCount > 1)                 errorArgCount(expr, 0, 1, argCount); }
+        /** 0..2 args */
+        private static void varargs0_2(String expr, int argCount) { if (argCount > 2)                 errorArgCount(expr, 0, 2, argCount); }
+        /** one or more arguments */
+        private static void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, -1, 0); }
+        /** 1..2 args */
+        private static void varargs1_2(String expr, int argCount) { if (argCount < 1 || argCount > 2) errorArgCount(expr, 1, 2, argCount); }
+        /** two or more arguments */
+        private static void varargs2(String expr, int argCount)   { if (argCount < 2)                 errorArgCount(expr, 2, -1, argCount); }
+        private static void varargs3(String expr, int argCount)   { if (argCount < 3)                 errorArgCount(expr, 3, -1, argCount); }
+
+        private static void varargsMinMax(String expr, int argCount, int min, int max) {
+            if (argCount < min || argCount > max)
+                errorArgCount(expr, min, max, argCount);
         }
 
 
