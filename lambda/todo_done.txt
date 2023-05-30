@@ -2486,3 +2486,6 @@ Error: program-error - hash: malformed hash: last key/value pair is missing 'val
 get-internal-cpu-time gibts in CL nicht
 -> wegputzen
 -> "get-internal-run-time" sollte getCurrentThreadCpuTime() rufen (getCurrentThreadUserTime() liefert -1 in GraalVM)
+
+
+compare könnte char[] und CharSequence gesondert behandeln statt immer String kopien zu ziehen

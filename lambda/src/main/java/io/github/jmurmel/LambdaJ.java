@@ -3980,7 +3980,14 @@ public class LambdaJ {
         if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
         if (mode == CompareMode.EQL) return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
 
-        if (stringp(o1) && stringp(o2)) { return requireString("?", o1).compareTo(requireString("?", o2)); }
+        if (o1 instanceof CharSequence) {
+            if (o2 instanceof CharSequence) return JavaUtil.compare((CharSequence)o1, (CharSequence)o2);
+            if (o2 instanceof char[])       return JavaUtil.compare((CharSequence)o1, (char[])o2);
+        }
+        if (o1 instanceof char[]) {
+            if (o2 instanceof CharSequence) return -JavaUtil.compare((CharSequence)o2, (char[])o1);
+            if (o2 instanceof char[])       return JavaUtil.compare((char[])o1, (char[])o2);
+        }
 
         if (bitvectorp(o1) && bitvectorp(o2)) { return Bitvector.of(o1).compareTo(Bitvector.of(o2)); }
 
@@ -10695,6 +10702,34 @@ final class JavaUtil {
 
     static <K, V> HashMap<K, V> newHashMap(int numMappings) {
         return new HashMap<>(hashMapCapacity(numMappings), DEFAULT_LOAD_FACTOR);
+    }
+
+    // Java 11 has CharSequence#compare
+    public static int compare(CharSequence cs1, CharSequence cs2) {
+        for (int i = 0, len = Math.min(cs1.length(), cs2.length()); i < len; i++) {
+            final char a = cs1.charAt(i);
+            final char b = cs2.charAt(i);
+            if (a != b) { return a - b; }
+        }
+        return cs1.length() - cs2.length();
+    }
+
+    public static int compare(CharSequence cs1, char[] cs2) {
+        for (int i = 0, len = Math.min(cs1.length(), cs2.length); i < len; i++) {
+            final char a = cs1.charAt(i);
+            final char b = cs2[i];
+            if (a != b) { return a - b; }
+        }
+        return cs1.length() - cs2.length;
+    }
+
+    public static int compare(char[] cs1, char[] cs2) {
+        for (int i = 0, len = Math.min(cs1.length, cs2.length); i < len; i++) {
+            final char a = cs1[i];
+            final char b = cs2[i];
+            if (a != b) { return a - b; }
+        }
+        return cs1.length - cs2.length;
     }
 }
 

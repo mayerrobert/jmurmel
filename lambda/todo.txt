@@ -1,4 +1,3 @@
-compare könnte char[] und CharSequence gesondert behandeln statt immer String kopien zu ziehen
 
 mlib splitten: CL-compat rausziehen
 
