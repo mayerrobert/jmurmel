@@ -25,17 +25,15 @@
     </properties>
 
     <profiles>
-        <!--
         <profile>
-            <id>up-to-17</id>
+            <id>up-to-21</id>
             <activation>
-                <jdk>[1.8,21]</jdk>
+                <jdk>[1.8,20]</jdk>
             </activation>
             <properties>
                 <maven.site.skip>false</maven.site.skip>
             </properties>
         </profile>
-        -->
         <profile>
             <id>from-21</id>
             <activation>
