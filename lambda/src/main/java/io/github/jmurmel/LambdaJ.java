@@ -1307,7 +1307,7 @@ public class LambdaJ {
         private final @NotNull SymbolTable st;
         private final ConsCell featuresEnvEntry;
 
-        private ReadSupplier in;    // readObj() will read from this
+        private @NotNull ReadSupplier in;    // readObj() will read from this
         private Path filePath;
         private boolean init;
         private boolean pos;
@@ -1326,7 +1326,7 @@ public class LambdaJ {
          *            {@code InputStream::read} won't work because that supplies bytes but not (Unicode-) characters,
          *            {@code Reader::read} will work
          */
-        SExpressionReader(ReadSupplier in, @NotNull SymbolTable st, ConsCell featuresEnvEntry, Path filePath) {
+        SExpressionReader(@NotNull ReadSupplier in, @NotNull SymbolTable st, ConsCell featuresEnvEntry, Path filePath) {
             this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, st, featuresEnvEntry, in, filePath);
         }
 
@@ -1336,7 +1336,7 @@ public class LambdaJ {
          *            {@code Reader::read} will work
          *
          */
-        SExpressionReader(int features, @NotNull TraceLevel trace, TraceConsumer tracer, @NotNull SymbolTable st, ConsCell featuresEnvEntry, ReadSupplier in, Path filePath) {
+        SExpressionReader(int features, @NotNull TraceLevel trace, TraceConsumer tracer, @NotNull SymbolTable st, ConsCell featuresEnvEntry, @NotNull ReadSupplier in, Path filePath) {
             this.features = features;
             this.trace = trace; this.tracer = tracer;
             this.st = st;
@@ -1366,7 +1366,7 @@ public class LambdaJ {
 
         private boolean have(Features features) { return (this.features & features.bits()) != 0; }
 
-        @Override public void setInput(ReadSupplier input, Path filePath) { in = input; this.filePath = filePath; lineNo = 1; charNo = 0; }
+        @Override public void setInput(@NotNull ReadSupplier input, Path filePath) { in = input; this.filePath = filePath; lineNo = 1; charNo = 0; }
 
         /// Scanner
         private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
