@@ -1301,10 +1301,10 @@ public class LambdaJ {
      *  from the given {@link ReadSupplier} */
     static class SExpressionReader implements ObjectReader {
         private final int features;
-        private final TraceLevel trace;
+        private final @NotNull TraceLevel trace;
         private final TraceConsumer tracer;
 
-        private final SymbolTable st;
+        private final @NotNull SymbolTable st;
         private final ConsCell featuresEnvEntry;
 
         private ReadSupplier in;    // readObj() will read from this
@@ -1326,7 +1326,7 @@ public class LambdaJ {
          *            {@code InputStream::read} won't work because that supplies bytes but not (Unicode-) characters,
          *            {@code Reader::read} will work
          */
-        SExpressionReader(ReadSupplier in, SymbolTable st, ConsCell featuresEnvEntry, Path filePath) {
+        SExpressionReader(ReadSupplier in, @NotNull SymbolTable st, ConsCell featuresEnvEntry, Path filePath) {
             this(Features.HAVE_ALL_DYN.bits(), TraceLevel.TRC_NONE, null, st, featuresEnvEntry, in, filePath);
         }
 
@@ -1336,7 +1336,7 @@ public class LambdaJ {
          *            {@code Reader::read} will work
          *
          */
-        SExpressionReader(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable st, ConsCell featuresEnvEntry, ReadSupplier in, Path filePath) {
+        SExpressionReader(int features, @NotNull TraceLevel trace, TraceConsumer tracer, @NotNull SymbolTable st, ConsCell featuresEnvEntry, ReadSupplier in, Path filePath) {
             this.features = features;
             this.trace = trace; this.tracer = tracer;
             this.st = st;
@@ -11040,8 +11040,8 @@ final class TurtleFrame {
 
     private static class Text {
         private final double x, y;
-        private final String s;
-        Text(double x, double y, String s) { this.x = x; this.y = y; this.s = s; }
+        private final @NotNull String s;
+        Text(double x, double y, @NotNull String s) { this.x = x; this.y = y; this.s = s; }
     }
     private static class Pos {
         private final double x, y, angle;
@@ -11068,8 +11068,8 @@ final class TurtleFrame {
     private double dirtyxl, dirtyyl, dirtyxr, dirtyyu;
 
     private boolean open;
-    private final Frame f;
-    private final LineComponent component;
+    private final @NotNull Frame f;
+    private final @NotNull LineComponent component;
 
     TurtleFrame(String title, Number width, Number height, Number padding) {
         f = new Frame(title);

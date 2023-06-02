@@ -1,3 +1,5 @@
+read-from-string ignoriert features:
+(read-from-string "#+murmel 1 2) ; -> 2, sollte 1 sein
 
 mlib splitten: CL-compat rausziehen
 
