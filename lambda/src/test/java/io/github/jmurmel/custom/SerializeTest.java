@@ -7,6 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import io.github.jmurmel.LambdaJ;
+import jakarta.validation.constraints.NotNull;
 import org.junit.Test;
 
 public class SerializeTest {
@@ -46,7 +47,7 @@ public class SerializeTest {
         }
 
         @Override
-        public LambdaJ.LambdaJSymbol intern(LambdaJ.LambdaJSymbol symbol) {
+        public LambdaJ.LambdaJSymbol intern(@NotNull LambdaJ.LambdaJSymbol symbol) {
             LambdaJ.LambdaJSymbol prev = symbols.putIfAbsent(symbol.toString(), symbol);
             if (prev != null) return prev;
             return symbol;

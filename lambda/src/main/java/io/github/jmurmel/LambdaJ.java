@@ -5,6 +5,8 @@ For a copy, see https://opensource.org/licenses/MIT. */
 
 package io.github.jmurmel;
 
+import jakarta.validation.constraints.NotNull;
+
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Line2D;
@@ -224,23 +226,23 @@ public class LambdaJ {
     /** A murmel symbol name */
     public static final class LambdaJSymbol implements Serializable, Writeable {
         private static final long serialVersionUID = 1L;
-        final String name;
-        final WellknownSymbol wellknownSymbol;
+        final @NotNull String name;
+        final @NotNull WellknownSymbol wellknownSymbol;
         Closure macro;
 
-        public LambdaJSymbol(String symbolName) {
+        public LambdaJSymbol(@NotNull String symbolName) {
             this(symbolName, WellknownSymbol.notInterned);
         }
 
-        public LambdaJSymbol(boolean intern, String symbolName) {
+        public LambdaJSymbol(boolean intern, @NotNull String symbolName) {
             this(symbolName, intern ? WellknownSymbol.interned : WellknownSymbol.notInterned);
         }
 
-        LambdaJSymbol(String symbolName, boolean wellknown) {
+        LambdaJSymbol(@NotNull String symbolName, boolean wellknown) {
             this(symbolName, wellknown ? WellknownSymbol.of(symbolName) : WellknownSymbol.notInterned);
         }
 
-        private LambdaJSymbol(String symbolName, WellknownSymbol ws) {
+        private LambdaJSymbol(@NotNull String symbolName, @NotNull WellknownSymbol ws) {
             name = Objects.requireNonNull(symbolName, "can't use null symbolname");
             wellknownSymbol = ws;
         }
@@ -281,7 +283,6 @@ public class LambdaJ {
 
         private static CharSequence escapeSymbol(LambdaJSymbol s) {
             final String name = s.name;
-            if (name == null) return null;
             if (name.isEmpty()) return "";
 
             final StringBuilder ret = new StringBuilder();
@@ -299,9 +300,9 @@ public class LambdaJ {
     }
 
     public interface SymbolTable extends Iterable<LambdaJSymbol> {
-        LambdaJSymbol intern(LambdaJSymbol symbol);
+        LambdaJSymbol intern(@NotNull LambdaJSymbol symbol);
         @Override Iterator<LambdaJSymbol> iterator();
-        default LambdaJSymbol intern(String symbolName) { return intern(new LambdaJSymbol(symbolName)); }
+        default LambdaJSymbol intern(@NotNull String symbolName) { return intern(new LambdaJSymbol(symbolName)); }
     }
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -1158,7 +1159,7 @@ public class LambdaJ {
     static class ListSymbolTable implements SymbolTable {
         private final Map<String,LambdaJSymbol> symbols = JavaUtil.newHashMap(WellknownSymbol.values().length + 10);
 
-        @Override public LambdaJSymbol intern(LambdaJSymbol sym) {
+        @Override public LambdaJSymbol intern(@NotNull LambdaJSymbol sym) {
             final String symNameLC = sym.name.toLowerCase();
             final LambdaJSymbol existing = symbols.get(symNameLC);
             if (existing != null) return existing;
@@ -1168,7 +1169,7 @@ public class LambdaJ {
             return sym;
         }
 
-        @Override public LambdaJSymbol intern(String symName) {
+        @Override public LambdaJSymbol intern(@NotNull String symName) {
             final String symNameLC = symName.toLowerCase();
             final LambdaJSymbol existing = symbols.get(symNameLC);
             if (existing != null) return existing;
@@ -2403,7 +2404,7 @@ public class LambdaJ {
         }
 
         /** case sensitive lookup because it's faster, and this should only used from Java code during initialisation with the correct case */
-        static WellknownSymbol of(String name) {
+        static @NotNull WellknownSymbol of(@NotNull String name) {
             final WellknownSymbol ret = valuesBySymbolName.get(name);
             if (ret == null) throw errorInternal("Wellknown symbol %s not found", name);
             return ret;
@@ -2418,20 +2419,20 @@ public class LambdaJ {
         else throw new UnboundVariable("truthiness needs support for 't' or 'quote'");
     }
 
-    final LambdaJSymbol intern(String sym) {
+    final @NotNull LambdaJSymbol intern(@NotNull String sym) {
         return symtab.intern(sym);
     }
 
-    final LambdaJSymbol internWellknown(String sym) {
+    final @NotNull LambdaJSymbol internWellknown(@NotNull String sym) {
         final LambdaJSymbol ret = symtab.intern(new LambdaJSymbol(sym, true));
         assert ret.wellknownSymbol != WellknownSymbol.interned : "cannot intern wellknown symbol " + sym + ": was already interned as regular symbol";
         return ret;
     }
 
     private static class OpenCodedPrimitive implements Primitive {
-        private final LambdaJSymbol symbol;
+        private final @NotNull LambdaJSymbol symbol;
 
-        private OpenCodedPrimitive(LambdaJSymbol symbol) { this.symbol = symbol; }
+        private OpenCodedPrimitive(@NotNull LambdaJSymbol symbol) { this.symbol = symbol; }
 
         @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
         @Override public String toString() { return "#<opencoded primitive: " + symbol + '>'; }
@@ -2445,13 +2446,13 @@ public class LambdaJ {
 
     final Map<Object, ConsCell> gcache = new IdentityHashMap<>(200);
 
-    private ConsCell lookupEnvEntry(Object symbol, ConsCell lexenv) {
+    private ConsCell lookupEnvEntry(@NotNull Object symbol, ConsCell lexenv) {
         final ConsCell lexEntry = fastassq(symbol, lexenv);
         if (lexEntry != null) return lexEntry;
         return lookupTopenvEntry(symbol);
     }
 
-    private ConsCell lookupTopenvEntry(Object symbol) {
+    private ConsCell lookupTopenvEntry(@NotNull Object symbol) {
         return gcache.get(symbol);
     }
 
@@ -2462,15 +2463,15 @@ public class LambdaJ {
         }
     }
 
-    final void extendTopenv(Object sym, Object value) {
+    final void extendTopenv(@NotNull Object sym, Object value) {
         gcache.put(sym, cons(sym, value));
     }
 
-    private void extendTopenv(ConsCell envEntry) {
+    private void extendTopenv(@NotNull ConsCell envEntry) {
         gcache.put(car(envEntry), envEntry);
     }
 
-    void extendTopenv(String sym, Object value) {
+    void extendTopenv(@NotNull String sym, Object value) {
         extendTopenv(intern(sym), value);
     }
 

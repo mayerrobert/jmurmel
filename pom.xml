@@ -43,6 +43,7 @@
         <slf4j-jdk14.version>2.0.7</slf4j-jdk14.version>
         <archunit.version>1.0.1</archunit.version>
         <jmh.version>1.36</jmh.version>
+        <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
 
         <!-- maven plugins -->
         <maven-compiler-plugin.version>3.11.0</maven-compiler-plugin.version>
@@ -86,6 +87,12 @@
     </properties>
 
     <dependencies>
+        <dependency>
+            <groupId>jakarta.validation</groupId>
+            <artifactId>jakarta.validation-api</artifactId>
+            <version>${jakarta.validation-api.version}</version>
+            <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.testng</groupId>
             <artifactId>testng</artifactId>
