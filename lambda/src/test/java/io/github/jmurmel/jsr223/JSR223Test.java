@@ -95,7 +95,7 @@ public class JSR223Test {
         final ScriptEngineManager manager = new ScriptEngineManager();
         final ScriptEngine engine = manager.getEngineByName("jmurmel");
 
-        //engine.eval("1");
+        engine.eval("1"); // "eval" initializes the interpreter, only after that invokeFunction() will work
         final Object result = ((Invocable)engine).invokeFunction("+", 1, 2, 3);
         assertEquals(6.0, result);
     }

@@ -6206,10 +6206,6 @@ public class LambdaJ {
 
     /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
-        if (gcache.isEmpty()) {
-            lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, null, null);
-            environment();
-        }
         final ConsCell envEntry = lookupTopenvEntry(intern(globalSymbol));
         if (envEntry != null) return cdr(envEntry);
         throw errorUnbound("getValue", globalSymbol);
@@ -6292,21 +6288,19 @@ public class LambdaJ {
 
     /// JMurmel JSR-223 embed API - Java calls Murmel with JSR223 eval
 
-    /** <p>evalScript is for JSR-223 support.
-     *  <p>First call creates a new parser (parsers contain the symbol table) and inits the global environment
-     *  <p>Subsequent calls will re-use the parser (including symbol table) and global environment. */
+    /** <p>evalScript is for JSR-223 support. */
     public Object evalScript(Reader program, Reader in, Writer out, Map<String, Object> engineBindings) {
-        if (gcache.isEmpty()) {
-            lispReader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in::read, null);
-            environment();
-        }
+        final SExpressionReader lispStdin = makeReader(in::read, null);
+        final SExpressionWriter lispStdout = new SExpressionWriter(new WrappingWriter(out)::append);
+
+        if (gcache.isEmpty()) init(lispStdin, lispStdout, null);
+        else setReaderPrinter(lispStdin, lispStdout);
         if (engineBindings != null) for (Map.Entry<String, Object> entry: engineBindings.entrySet()) {
             extendTopenv(entry.getKey(), entry.getValue()); // create new or replace existing binding
         }
-        final ObjectReader scriptParser = lispReader;
-        scriptParser.setInput(program::read, null);
+
+        final ObjectReader scriptParser = makeReader(program::read, null);
         currentSource = null;
-        setReaderPrinter(makeReader(in::read, null), new SExpressionWriter(new WrappingWriter(out)::append));
         final Object eof = "EOF";
         Object result = null;
         Object exp;
