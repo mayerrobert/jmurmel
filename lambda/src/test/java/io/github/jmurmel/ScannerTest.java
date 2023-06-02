@@ -34,7 +34,7 @@ public class ScannerTest {
 
     // behaves somewhat similar to LambdaJTest.runTest() but form is only "read" not eval'd, and line ends are Unix style (as are Murmel's internal line ends)
     private static void runTest(String name, String form, String expectedResult, Object ignored) {
-        final LambdaJ.ObjectReader reader = LambdaJ.makeReader(new StringReader(form)::read);
+        final LambdaJ.ObjectReader reader = LambdaJ.makeReader(new StringReader(form)::read, new LambdaJ.ListSymbolTable(), null);;
         final Object result = reader.readObj("eof");
         Assert.assertEquals(stringify(result), expectedResult, name + "failed: ");
     }

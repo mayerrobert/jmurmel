@@ -1192,6 +1192,13 @@ multiline comment
 
 ;;; test read-from-string
 (deftest read-from-string.1 (read-from-string "1") 1)
+(deftest read-from-string.2 (eq 'x (read-from-string "x")) t)              ; read-from-string should intern symbols in the right symboltable
+(deftest read-from-string.3 (read-from-string "#+murmel 1 #+sbcl 1 2") 1)  ; read-from-string should honor feature-expressions
+(deftest read-from-string.4
+  (progn
+    (setq *features* (cons ':test *features*))
+    (read-from-string "#+:test 1 2"))
+  1)
 
 #+murmel (progn
 (defun expect (expect-error-obj expect-cnd-type actual-error-obj actual-condition)

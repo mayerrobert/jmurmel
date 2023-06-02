@@ -1182,9 +1182,8 @@ public class LambdaJ {
         @Override public Iterator<LambdaJSymbol> iterator() { return symbols.values().iterator(); }
     }
 
-    public static ObjectReader makeReader(ReadSupplier in) { return new SExpressionReader(in, new ListSymbolTable(), null, null); }
-    public static ObjectReader makeReader(ReadSupplier in, SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry, null); }
-    final SExpressionReader makeReader(ReadSupplier in, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
+    public static ObjectReader makeReader(@NotNull ReadSupplier in, @NotNull SymbolTable symtab, @NotNull ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry, null); }
+    final SExpressionReader makeReader(@NotNull ReadSupplier in, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
 
     static boolean isDigit(int c) {
         return Character.isDigit(c);
@@ -1305,7 +1304,7 @@ public class LambdaJ {
         private final TraceConsumer tracer;
 
         private final @NotNull SymbolTable st;
-        private final ConsCell featuresEnvEntry;
+        private final @NotNull ConsCell featuresEnvEntry;
 
         private @NotNull ReadSupplier in;    // readObj() will read from this
         private Path filePath;
@@ -1358,7 +1357,7 @@ public class LambdaJ {
             sHash     = st.intern("hash");
             sApply    = st.intern("apply");
 
-            this.featuresEnvEntry = featuresEnvEntry;
+            this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : ConsCell.cons(null, null);
         }
 
         // this is really only useful for the repl. If parser.charNo != 0 the next thing the parser reads is the lineseparator following the previous sexp that was not consumed.
@@ -2308,7 +2307,7 @@ public class LambdaJ {
 
         // I/O
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
-        sReadFromString("read-from-string", Features.HAVE_IO, 1, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(args); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
+        sReadFromString("read-from-string", Features.HAVE_IO, 1, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(intp.getSymbolTable(), intp.featuresEnvEntry, args); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sReadallLines("read-textfile-lines", Features.HAVE_IO, 1, 2)   { @Override Object apply(LambdaJ intp, ConsCell args) { return readTextfileLines(args); } },
         sReadString("read-textfile", Features.HAVE_IO, 1, 2)           { @Override Object apply(LambdaJ intp, ConsCell args) { return readTextfile(args); } },
         sWriteLines("write-textfile-lines", Features.HAVE_IO, 2, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeTextfileLines(args); } },
@@ -5408,7 +5407,7 @@ public class LambdaJ {
         }
 
         /** (read-from-string str [eof-obj [start [end]]]) -> result, position */
-        static Object[] readFromString(ConsCell a) {
+        static Object[] readFromString(SymbolTable st, ConsCell featuresEnvEntry, ConsCell a) {
             final String str = requireString("read-from-string", car(a));
             final StringReader strReader = new StringReader(str);
             a = (ConsCell)cdr(a);
@@ -5437,7 +5436,7 @@ public class LambdaJ {
             }
             else { eof = null; end = -1; }
 
-            final ObjectReader reader = makeReader(() -> { if (end != -1 && count[0] == end) return EOF; final int c = strReader.read(); if (c != EOF) count[0]++; return c; });
+            final ObjectReader reader = makeReader(() -> { if (end != -1 && count[0] == end) return EOF; final int c = strReader.read(); if (c != EOF) count[0]++; return c; }, st, featuresEnvEntry);
             final Object ret;
             if (eof == null) {
                 final Object myeof = new Object();
@@ -7992,7 +7991,9 @@ public class LambdaJ {
 
         // I/O
         public final Object _read             (Object... args)  { varargs0_1("read",                    args.length);       values = null; return LambdaJ.Subr.read(lispReader, arraySlice(args)); }
-        public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args.length, 1, 4); return ret(LambdaJ.Subr.readFromString(arraySlice(args))); }
+        public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args.length, 1, 4);
+                                                                  featuresEnvEntry.rplacd(__42_features_42_.get());
+                                                                  return ret(LambdaJ.Subr.readFromString(symtab, featuresEnvEntry, arraySlice(args))); }
         public final Object readTextfileLines (Object... args)  { varargs1_2("read-textfile-lines",     args.length);       values = null; return LambdaJ.Subr.readTextfileLines(arraySlice(args)); }
         public final Object readTextfile      (Object... args)  { varargs1_2("read-textfile",           args.length);       values = null; return LambdaJ.Subr.readTextfile(arraySlice(args)); }
         public final Object writeTextfileLines(Object... args)  { varargsMinMax("write-textfile-lines", args.length, 2, 4); values = null; return LambdaJ.Subr.writeTextfileLines(arraySlice(args)); }

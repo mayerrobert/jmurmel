@@ -2489,3 +2489,8 @@ get-internal-cpu-time gibts in CL nicht
 
 
 compare könnte char[] und CharSequence gesondert behandeln statt immer String kopien zu ziehen
+
+read-from-string ignoriert features:
+  (read-from-string "#+murmel 1 2) ; -> 2, sollte 1 sein
+read-from-string hat seine eigene symboltabelle:
+  (eq 'x (read-from-string "x")) ; nil, sollte t sein

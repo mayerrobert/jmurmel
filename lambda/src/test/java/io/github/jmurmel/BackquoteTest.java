@@ -235,7 +235,7 @@ public class BackquoteTest {
     }
 
     private static Object expand(String s) {
-        final LambdaJ.ObjectReader reader = LambdaJ.makeReader(new StringReader(s)::read);
+        final LambdaJ.ObjectReader reader = LambdaJ.makeReader(new StringReader(s)::read, new LambdaJ.ListSymbolTable(), null);
         return reader.readObj(null);
     }
 
