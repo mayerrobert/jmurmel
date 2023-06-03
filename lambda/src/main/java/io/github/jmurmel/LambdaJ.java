@@ -6,6 +6,7 @@ For a copy, see https://opensource.org/licenses/MIT. */
 package io.github.jmurmel;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Null;
 
 import java.awt.*;
 import java.awt.event.*;
@@ -804,11 +805,11 @@ public class LambdaJ {
 
     private static final class ArraySlice extends ConsCell {
         private static final class ArraySliceIterator implements ConsIterator {
-            private final Object[] arry;
+            private final @NotNull Object[] arry;
             private final int len;
             private int cursor;
 
-            ArraySliceIterator(Object[] arry, int offset) { this.arry = arry; this.len = arry.length; this.cursor = offset; }
+            ArraySliceIterator(@NotNull Object[] arry, int offset) { this.arry = arry; this.len = arry.length; this.cursor = offset; }
             @Override public boolean hasNext() { return cursor != -1; }
 
             @Override public Object next() {
@@ -823,11 +824,11 @@ public class LambdaJ {
 
         private static final long serialVersionUID = 1L;
 
-        private final Object[] arry;
+        private final @NotNull Object[] arry;
         private final int offset;
 
         /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
-        ArraySlice(Object[] arry, int offset) {
+        ArraySlice(@NotNull Object[] arry, int offset) {
             assert arry != null && offset < arry.length;
             this.arry = arry;  this.offset = offset;
         }
@@ -924,7 +925,7 @@ public class LambdaJ {
     static final Object[] EMPTY_ARRAY = new Object[0];
     static final boolean[] EMPTY_BITVECTOR = new boolean[0];
 
-    final ConsCell featuresEnvEntry, conditionHandlerEnvEntry;
+    final @NotNull ConsCell featuresEnvEntry, conditionHandlerEnvEntry;
 
     static final String[] CTRL = {
     "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
@@ -968,11 +969,11 @@ public class LambdaJ {
         TRC_NONE, TRC_STATS, TRC_ENVSTATS, TRC_EVAL, TRC_FUNC, TRC_ENV, TRC_PARSE, TRC_TOK, TRC_LEX;
         public boolean ge(TraceLevel l) { return ordinal() >= l.ordinal(); }
     }
-    final TraceLevel trace;
+    final @NotNull TraceLevel trace;
     private final boolean traceOn;
     private final boolean traceFunc;
 
-    final TraceConsumer tracer;
+    final @NotNull TraceConsumer tracer;
 
     public enum Features {
         HAVE_QUOTE,          // quote will allow to distinguish code and data. without quote use cons.
@@ -1045,7 +1046,7 @@ public class LambdaJ {
     }
 
     /** constructor */
-    LambdaJ(int features, TraceLevel trace, TraceConsumer tracer, SymbolTable symtab, ConsCell featuresEnvEntry, ConsCell conditionHandlerEnvEntry, Path libDir) {
+    LambdaJ(int features, @NotNull TraceLevel trace, TraceConsumer tracer, @Null SymbolTable symtab, ConsCell featuresEnvEntry, ConsCell conditionHandlerEnvEntry, Path libDir) {
         this.features = features;
 
         this.trace = trace;
@@ -1336,6 +1337,7 @@ public class LambdaJ {
          */
         SExpressionReader(int features, @NotNull TraceLevel trace, TraceConsumer tracer, @NotNull SymbolTable st, ConsCell featuresEnvEntry, @NotNull ReadSupplier in, Path filePath) {
             this.features = features;
+            assert trace == TraceLevel.TRC_NONE || tracer != null;
             this.trace = trace; this.tracer = tracer;
             this.st = st;
             this.in = in;
@@ -2128,7 +2130,7 @@ public class LambdaJ {
 
 
     /// Symboltable
-    private final SymbolTable symtab;
+    private final @NotNull SymbolTable symtab;
     public SymbolTable getSymbolTable() { return symtab; }
 
     private static final Object UNASSIGNED = "#<value is not assigned>";          // only relevant in letrec
@@ -2409,7 +2411,7 @@ public class LambdaJ {
         }
     }
 
-    private Supplier<Object> expTrue;
+    private @NotNull Supplier<Object> expTrue;
 
     private Object makeExpTrue() {
         if (have(Features.HAVE_T)) return sT; // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
@@ -2454,13 +2456,6 @@ public class LambdaJ {
         return gcache.get(symbol);
     }
 
-    private void setTopEnv(ConsCell env) {
-        gcache.clear();
-        if (env != null) for (Object o: env) {
-            gcache.put(car(o), (ConsCell)o);
-        }
-    }
-
     final void extendTopenv(@NotNull Object sym, Object value) {
         gcache.put(sym, cons(sym, value));
     }
@@ -2489,7 +2484,10 @@ public class LambdaJ {
         modules.clear();
         handlers = null;
         setReaderPrinter(inReader, outWriter);
-        setTopEnv(customEnv);
+        gcache.clear();
+        if (customEnv != null) for (Object o: customEnv) {
+            gcache.put(car(o), (ConsCell)o);
+        }
         featuresEnvEntry.rplacd(makeFeatureList(symtab));
         conditionHandlerEnvEntry.rplacd(null);
         environment();
@@ -2497,14 +2495,14 @@ public class LambdaJ {
     }
 
     void clearMacros() {
-        if (symtab == null) return;
         for (LambdaJSymbol entry: symtab) {
             if (entry != null) entry.macro = null;
         }
     }
 
     final Set<Object> modules = new HashSet<>();
-    short speed = 1; // changed by (declaim (optimize (speed...
+    /** will be set to 1 by {@link #init}, changed by (declaim (optimize (speed... */
+    short speed = -1;
 
 
     /// ###  eval - the heart of most if not all Lisp interpreters
@@ -3339,9 +3337,9 @@ public class LambdaJ {
                 final Object bindingForm = cadr((ConsCell)binding);
 
                 final ConsCell newBinding;
-                if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
-                else if (letDynamic) newBinding = lookupTopenvEntry(sym); // hier wird nur im global env gesucht. wenns gleichnamige globale UND lexical variablen gibt, bleibt die lexical unveraendert
+                if (letDynamic) newBinding = lookupTopenvEntry(sym); // hier wird nur im global env gesucht. wenns gleichnamige globale UND lexical variablen gibt, bleibt die lexical unveraendert
                 else if (letStar) newBinding = fastassq(sym, extenv);
+                else if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
                 else newBinding = null;
 
                 final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
@@ -3354,7 +3352,9 @@ public class LambdaJ {
                     if (letStar) newBinding.rplacd(val); // das macht effektiv ein let* dynamic
                     else newValues = acons(newBinding, val, newValues);
                 }
-                else if (letStar && newBinding != null || letRec) newBinding.rplacd(val);
+                else if (letStar && newBinding != null || letRec)
+                    //noinspection ConstantConditions
+                    newBinding.rplacd(val);
                 else extenv = acons(sym, val, extenv);
 
                 if (namedLet) { final ListConsCell c; insertPos.rplacd(c = cons(sym, null)); insertPos = c; }
@@ -4173,6 +4173,7 @@ public class LambdaJ {
     static RuntimeException errorMalformed       (String func, String expected, Object actual)  { throw new ProgramError("%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual)); }
     static void             errorReserved        (String op, Object sym)                        { errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym == null ? "nil" : sym); }
     static RuntimeException errorUnbound         (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is not bound", func, printSEx(form)); }
+    @SuppressWarnings("SameParameterValue")
     static void             errorUnassigned      (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is bound but has no assigned value", func, printSEx(form)); }
 
     /** throws a {@link SimpleTypeError} with a message of "'func': expected a 'expected' argument but got 'actual'" */
@@ -4186,6 +4187,7 @@ public class LambdaJ {
     static RuntimeException errorNotABitVector   (String func, Object actual)                   { throw errorArgTypeError("bitvector", func, actual); }
     static void             errorNotACons        (String func, Object actual)                   { throw errorArgTypeError("cons", func, actual); }
     static void             errorNotAList        (String func, Object actual)                   { throw errorArgTypeError("list", func, actual); }
+    @SuppressWarnings("SameParameterValue")
     static void             errorNotASequence    (String func, Object actual)                   { throw errorArgTypeError("list or vector", func, actual); }
 
     static RuntimeException errorOverflow        (String func, String targetType, Object n)     { throw new ArithmeticException(String.format("%s: value cannot be represented as a %s: %s", func, targetType, n)); }
@@ -4298,6 +4300,7 @@ public class LambdaJ {
                 throw new SimpleTypeError("%s: expected %s to be a string but got %s", func, arg, printSEx(car(a)));
         }
 
+        @SuppressWarnings("SameParameterValue")
         static Number requireNumberOrNull(String func, Object a) {
             if (a == null) return null;
             return requireNumber(func, a);
@@ -4311,6 +4314,7 @@ public class LambdaJ {
             throw errorNotANumber(func, n);
         }
 
+        @SuppressWarnings("SameParameterValue")
         static void requirePositiveNumber(String func, Object n) {
             if (n instanceof Long && (Long)n > 0L
                 || n instanceof Double && (Double)n > 0.0
@@ -4345,6 +4349,7 @@ public class LambdaJ {
             throw errorNotAnInteger(func, originalValue);
         }
         
+        @SuppressWarnings("SameParameterValue")
         static Random requireRandom(String func, Object r) {
             if (r instanceof Random) return (Random)r;
             throw errorArgTypeError("random", func, r);
@@ -4361,12 +4366,14 @@ public class LambdaJ {
             return requireIntegralNumber(func, value, 0, 1).intValue() != 0;
         }
 
+        @SuppressWarnings("SameParameterValue")
         static Object[] requireSimpleVector(String func, Object c) {
             if (!svectorp(c)) throw errorNotASimpleVector(func, c);
             return (Object[])c;
         }
 
         /** return {@code c} as a String, error if {@code c} is not a string, character or symbol */
+        @SuppressWarnings("SameParameterValue")
         static String requireStringDesignator(String func, Object c) {
             if (c == null) return "nil";
             if (c instanceof Character || c instanceof LambdaJSymbol) return c.toString();
@@ -4417,6 +4424,7 @@ public class LambdaJ {
         }
 
         /** convert {@code a} to a float, error if {@code a} is not a number and/ or cannot be represented as a float (reducing precision is allowed). */
+        @SuppressWarnings("SameParameterValue")
         static float toFloat(String func, Object a) {
             final Number n = requireNumber(func, a);
 
@@ -5637,6 +5645,7 @@ public class LambdaJ {
             return getThreadBean("get-internal-run-time").getCurrentThreadCpuTime();
         }
 
+        @SuppressWarnings("SameParameterValue")
         private static ThreadMXBean getThreadBean(final String func) {
             final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             if (threadBean == null)
@@ -6095,6 +6104,7 @@ public class LambdaJ {
             intp.extendTopenv("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap", a);       return intp.requireFrame("discard-bitmap", car(a)).discardBitmap(); });
             intp.extendTopenv("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",   a, 3, 4); return intp.requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  });
             intp.extendTopenv("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",    a);
+                                                                  //noinspection RedundantCast
                                                                   return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
                                                                                      | toInt("rgb-to-pixel", cadr(a)) << 8
                                                                                      | toInt("rgb-to-pixel", caddr(a))); });
@@ -6289,7 +6299,7 @@ public class LambdaJ {
         final SExpressionReader lispStdin = makeReader(in::read, null);
         final SExpressionWriter lispStdout = new SExpressionWriter(new WrappingWriter(out)::append);
 
-        if (gcache.isEmpty()) init(lispStdin, lispStdout, null);
+        if (speed == -1) init(lispStdin, lispStdout, null);
         else setReaderPrinter(lispStdin, lispStdout);
         if (engineBindings != null) for (Map.Entry<String, Object> entry: engineBindings.entrySet()) {
             extendTopenv(entry.getKey(), entry.getValue()); // create new or replace existing binding
@@ -8085,6 +8095,7 @@ public class LambdaJ {
         public final Object setPixel     (Object x, Object y, Object rgb, Object frame) { values = null; return requireFrame("set-pixel", frame).setRGB(toInt(x), toInt(y), toInt(rgb));  }
 
         public final  long rgbToPixel    (Object... args) { threeArgs("rgb-to-pixel", args.length); return rgbToPixel(args[0], args[1], args[2]); }
+        @SuppressWarnings("RedundantCast")
         public final  long rgbToPixel    (Object red, Object green, Object blue) { values = null; return (int)((toInt(red) << 16) | (toInt(green) << 8) | toInt(blue)); }
 
         public final  long hsbToPixel    (Object... args) { threeArgs("hsb-to-pixel", args.length); return hsbToPixel(args[0], args[1], args[2]); }
@@ -8487,6 +8498,7 @@ public class LambdaJ {
         /** 0..1 args */
         private static void varargs0_1(String expr, int argCount) { if (argCount > 1)                 errorArgCount(expr, 0, 1, argCount); }
         /** 0..2 args */
+        @SuppressWarnings("SameParameterValue")
         private static void varargs0_2(String expr, int argCount) { if (argCount > 2)                 errorArgCount(expr, 0, 2, argCount); }
         /** one or more arguments */
         private static void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, -1, 0); }
@@ -8863,7 +8875,8 @@ public class LambdaJ {
                 implicitDecl.add(form);
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
             }
-            else if (!passTwo && globalDecl.contains(form)) implicitDecl.remove(form);
+            else //noinspection SuspiciousMethodCalls
+                if (!passTwo && globalDecl.contains(form)) implicitDecl.remove(form);
 
             final String javasym;
             if (listp(cdr(symentry))) javasym = (String)cadr(symentry); // function: symentry is (sym . (javasym . (params...)))
@@ -9039,9 +9052,8 @@ public class LambdaJ {
             // for (String[] alias:  aliasedPrimitives) ret.append("        case \"").append(alias[0]).append("\": return (CompilerPrimitive)rt()::").append(alias[1]).append(";\n");
             // ret.append("        default: throw new LambdaJError(true, \"%s: '%s' is undefined\", \"getValue\", symbol);\n"
             //          + "        }\n");
-            ret.append("        return super.getValue(symbol);\n");
-
-            ret.append("    }\n\n"
+            ret.append("        return super.getValue(symbol);\n"
+                       + "    }\n\n"
                        + "    // toplevel forms\n"
                        + "    protected Object runbody() throws Exception {\n");
 
@@ -9193,8 +9205,8 @@ public class LambdaJ {
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
                       + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                       + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate defun\"));\n"
-                      + "        final MurmelFunction func = new MurmelFunction() {\n" 
-                      + "        private final MurmelFunction " + javasym + " = this;\n"
+                      + "        final MurmelFunction func = new MurmelFunction() {\n"
+                      + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
                       + "        public Object apply(Object... args0) {\n");
             final ConsCell extenv = params("defun", sb, params, localEnv, 0, symbol.toString(), true);
             emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false);
@@ -9665,17 +9677,17 @@ public class LambdaJ {
             if (isLast) {
                 sb.append("tailcallWithCleanup(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
                 emitForm(sb, protectedForm, env, topEnv, rsfx, false);
-                sb.append("; },\n");
-                sb.append("        (MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
+                sb.append("; },\n"
+                        + "        (MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
                 emitForms(sb, cleanupForms, env, topEnv, rsfx, false);
-                sb.append("        },\n");
-                sb.append("        (Object[])null)");
+                sb.append("        },\n"
+                        + "        (Object[])null)");
             }
             else {
                 sb.append("funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n        try { return ");
                 emitForm(sb, protectedForm, env, topEnv, rsfx, true);
-                sb.append("; }\n");
-                sb.append("        finally {\n");
+                sb.append("; }\n"
+                        + "        finally {\n");
                 final String tmp = "tmp" + rsfx;
                 sb.append("        Object ").append(tmp).append(";\n");
                 for (Object cleanup: cleanupForms) {
@@ -9683,8 +9695,8 @@ public class LambdaJ {
                     emitForm(sb, cleanup, env, topEnv, rsfx, false);
                     sb.append(";\n");
                 }
-                sb.append("        } },\n");
-                sb.append("        (Object[])null)");
+                sb.append("        } },\n"
+                        + "        (Object[])null)");
             }
         }
 
@@ -9710,9 +9722,9 @@ public class LambdaJ {
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(func, car(symbolParamsAndForms));
             env = extenv(func, symbol, rsfx, env);
 
-            sb.append("new MurmelFunction() {\n");
-            sb.append("        private final MurmelFunction ").append(javasym(symbol, env)).append(" = this;\n"); // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"
-            sb.append("        public Object apply(Object... args").append(rsfx).append(") {\n");
+            sb.append("new MurmelFunction() {\n"
+                    + "        private final MurmelFunction ").append(javasym(symbol, env)).append(" = this;\n" // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"
+                    + "        public Object apply(Object... args").append(rsfx).append(") {\n");
             env = params(func, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
             emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false);
             sb.append("        } }");

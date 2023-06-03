@@ -13,6 +13,7 @@ vielleicht auch Windows: https://www.reddit.com/r/java/comments/12yiebx/graalvm_
 
 ProGuard abchecken, wsl. ohne obfuscation nur simplification: https://www.guardsquare.com/manual/home
 CRaC abchecken: https://docs.azul.com/core/crac/crac-guideline
+apptainer abchecken, https://apptainer.org/, ähnlich wie docker
 
 
 Steele and Sussman in "The Art of the Interpreter (1978)":
