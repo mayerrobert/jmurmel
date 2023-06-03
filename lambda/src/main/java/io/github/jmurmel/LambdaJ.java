@@ -379,20 +379,19 @@ public class LambdaJ {
         public LambdaJError(Throwable cause, Object errorForm)                             { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
 
         public String conditionName() {
-            if (getCause() instanceof LambdaJError) return ((LambdaJError)getCause()).conditionName();
+            final Throwable cause = getCause();
+            if (cause instanceof LambdaJError) return ((LambdaJError)cause).conditionName();
 
-            if (getCause() != null) {
-                final Throwable t = getCause();
-                if (t instanceof ArithmeticException) return "arithmetic-error";
-                if (t instanceof SimpleTypeError) return "simple-type-error";
-                if (t instanceof IndexOutOfBoundsException) return "invalid-index-error";
-                if (t instanceof ClassCastException) return "type-error";
-                if (t instanceof InvalidPathException) return "file-error";
-                if (t instanceof EOFException) return "end-of-file";
-                if (t instanceof ReaderError) return "reader-error";
-                if (t instanceof IOException) return "stream-error";
-                if (t instanceof LambdaJError) return "(murmel-error)";
-                if (t instanceof Exception) return "error";
+            if (cause != null) {
+                if (cause instanceof ArithmeticException) return "arithmetic-error";
+                if (cause instanceof SimpleTypeError) return "simple-type-error";
+                if (cause instanceof IndexOutOfBoundsException) return "invalid-index-error";
+                if (cause instanceof ClassCastException) return "type-error";
+                if (cause instanceof InvalidPathException) return "file-error";
+                if (cause instanceof EOFException) return "end-of-file";
+                if (cause instanceof ReaderError) return "reader-error";
+                if (cause instanceof IOException) return "stream-error";
+                if (cause instanceof Exception) return "error";
             }
             return "condition";
         }
@@ -1182,7 +1181,7 @@ public class LambdaJ {
         @Override public Iterator<LambdaJSymbol> iterator() { return symbols.values().iterator(); }
     }
 
-    public static ObjectReader makeReader(@NotNull ReadSupplier in, @NotNull SymbolTable symtab, @NotNull ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry, null); }
+    public static ObjectReader makeReader(@NotNull ReadSupplier in, @NotNull SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry, null); }
     final SExpressionReader makeReader(@NotNull ReadSupplier in, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
 
     static boolean isDigit(int c) {
@@ -2877,13 +2876,11 @@ public class LambdaJ {
         catch (Exception e) {
             if (have(Features.HAVE_UTIL)) {
                 final Object handler = cdr(conditionHandlerEnvEntry);
-                conditionHandlerEnvEntry.rplacd(prev());
-                try {
-                    if (functionp(handler)) eval(list(handler, e), env);
-                }
-                catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
-                finally {
-                    conditionHandlerEnvEntry.rplacd(handler);
+                if (functionp(handler)) {
+                    conditionHandlerEnvEntry.rplacd(prev());
+                    try { eval(list(handler, e), env); }
+                    catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
+                    finally { conditionHandlerEnvEntry.rplacd(handler); }
                 }
             }
             if (e instanceof InterruptedException) Thread.currentThread().interrupt(); // wenn der conditionhandler ein nonlocal return macht, geht das verschütt
@@ -8318,16 +8315,12 @@ public class LambdaJ {
         /** invoke *condition-handler* if any or rethrow, similar to Java's throw fling() doesn't return */
         private void fling(Exception e) {
             final Object handler = __42_condition_45_handler_42_.get();
-            __42_condition_45_handler_42_.pop(); // disable current handler, make previous handler active
-            //__42_condition_45_handler_42_.set(null);
-            try {
-                if (LambdaJ.functionp0(handler)) funcall(handler, e);
-                throw wrap(e);
+            if (LambdaJ.functionp0(handler)) {
+                __42_condition_45_handler_42_.pop(); // disable current handler, make previous handler active
+                try { funcall(handler, e); }
+                finally { __42_condition_45_handler_42_.push(handler); /* restore current handler */ }
             }
-            finally {
-                __42_condition_45_handler_42_.push(handler); // restore current handler
-                //__42_condition_45_handler_42_.set(handler);
-            }
+            throw wrap(e);
         }
 
         public static Object tailcall(CompilerPrimitive fn, Object... args) { return funcall(fn, args); }
