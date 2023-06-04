@@ -7522,8 +7522,8 @@ public class LambdaJ {
             symtab.intern(sBit);
             symtab.intern(sCharacter);
 
-            __42_features_42_.set(makeFeatureList(symtab));
-            featuresEnvEntry = ConsCell.cons(intern("*features*"), __42_features_42_.get());
+            features.set(makeFeatureList(symtab));
+            featuresEnvEntry = ConsCell.cons(intern("*features*"), features.get());
 
             lispReader = LambdaJ.makeReader(System.in::read, symtab, featuresEnvEntry);
             lispPrinter = LambdaJ.makeWriter(System.out::print);
@@ -7532,17 +7532,17 @@ public class LambdaJ {
         private LambdaJ intpForEval() {
             LambdaJ intp = this.intp;
             if (intp == null) {
-                final ConsCell conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), __42_condition_45_handler_42_.get());
+                final ConsCell conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), conditionHandler.get());
                 this.intp = intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, null);
                 intp.compiledProgram = this;
                 intp.init(lispReader, lispPrinter, null);
                 intp.extendTopenv(intern("*command-line-argument-list*"), commandlineArgumentList);
             }
             else {
-                intp.conditionHandlerEnvEntry.rplacd(__42_condition_45_handler_42_.get());
+                intp.conditionHandlerEnvEntry.rplacd(conditionHandler.get());
                 intp.setReaderPrinter(lispReader, lispPrinter);
             }
-            featuresEnvEntry.rplacd(__42_features_42_.get());
+            featuresEnvEntry.rplacd(features.get());
             intp.random = random;
             intp.current_frame = current_frame;
             return intp;
@@ -7552,8 +7552,8 @@ public class LambdaJ {
             final LambdaJ intp = this.intp;
             if (intp.values == LambdaJ.NO_VALUES) values = null;
             else values = toArray(intp.values);
-            __42_features_42_.set(cdr(featuresEnvEntry));
-            __42_condition_45_handler_42_.set(cdr(intp.conditionHandlerEnvEntry));
+            features.set(cdr(featuresEnvEntry));
+            conditionHandler.set(cdr(intp.conditionHandlerEnvEntry));
             random = intp.random;
             current_frame = intp.current_frame;
         }
@@ -7622,8 +7622,8 @@ public class LambdaJ {
         // *COMMAND-LINE-ARGUMENT-LIST*: will be assigned/ accessed from generated code
         public ConsCell commandlineArgumentList;
 
-        public final CompilerGlobal __42_features_42_ = new CompilerGlobal(null);
-        public final CompilerGlobal __42_condition_45_handler_42_ = new CompilerGlobal(null);
+        public final CompilerGlobal features = new CompilerGlobal(null);
+        public final CompilerGlobal conditionHandler = new CompilerGlobal(null);
 
         /// predefined primitives
 
@@ -7999,7 +7999,7 @@ public class LambdaJ {
         // I/O
         public final Object _read             (Object... args)  { varargs0_1("read",                    args.length);       values = null; return LambdaJ.Subr.read(lispReader, arraySlice(args)); }
         public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args.length, 1, 4);
-                                                                  featuresEnvEntry.rplacd(__42_features_42_.get());
+                                                                  featuresEnvEntry.rplacd(features.get());
                                                                   return ret(LambdaJ.Subr.readFromString(symtab, featuresEnvEntry, arraySlice(args))); }
         public final Object readTextfileLines (Object... args)  { varargs1_2("read-textfile-lines",     args.length);       values = null; return LambdaJ.Subr.readTextfileLines(arraySlice(args)); }
         public final Object readTextfile      (Object... args)  { varargs1_2("read-textfile",           args.length);       values = null; return LambdaJ.Subr.readTextfile(arraySlice(args)); }
@@ -8325,11 +8325,11 @@ public class LambdaJ {
 
         /** invoke *condition-handler* if any or rethrow, similar to Java's throw fling() doesn't return */
         private void fling(Exception e) {
-            final Object handler = __42_condition_45_handler_42_.get();
+            final Object handler = conditionHandler.get();
             if (LambdaJ.functionp0(handler)) {
-                __42_condition_45_handler_42_.pop(); // disable current handler, make previous handler active
+                conditionHandler.pop(); // disable current handler, make previous handler active
                 try { funcall(handler, e); }
-                finally { __42_condition_45_handler_42_.push(handler); /* restore current handler */ }
+                finally { conditionHandler.push(handler); /* restore current handler */ }
             }
             throw wrap(e);
         }
@@ -8452,8 +8452,8 @@ public class LambdaJ {
         }
 
         public final Object doTry(MurmelFunction protectedForm, Object errorObj) {
-            final Object oldHandler = __42_condition_45_handler_42_.get();
-            __42_condition_45_handler_42_.set(null);
+            final Object oldHandler = conditionHandler.get();
+            conditionHandler.set(null);
             try {
                 return protectedForm.apply(NOARGS);
             }
@@ -8462,7 +8462,7 @@ public class LambdaJ {
                 values = new Object[] { errorObj, e };
                 return errorObj;
             }
-            finally { __42_condition_45_handler_42_.setForTry(oldHandler); }
+            finally { conditionHandler.setForTry(oldHandler); }
         }
 
 
@@ -8584,8 +8584,8 @@ public class LambdaJ {
             case "internal-time-units-per-second": return itups;
 
             case "*command-line-argument-list*": return commandlineArgumentList; // this will be assigned by genereted code at runtime
-            case "*features*": return __42_features_42_.get();
-            case "*condition-handler*": return __42_condition_45_handler_42_.get();
+            case "*features*": return features.get();
+            case "*condition-handler*": return conditionHandler.get();
 
             // basic primitives
             case "apply": return (CompilerPrimitive)this::_apply;
@@ -8913,7 +8913,7 @@ public class LambdaJ {
         { "most-positive-fixnum", "mostPositiveFixnum"}, { "most-negative-fixnum", "mostNegativeFixnum"},
         { "internal-time-units-per-second", "itups" },
         { "*command-line-argument-list*", "commandlineArgumentList" },
-        { "*features*", "__42_features_42_.get()" }, { "*condition-handler*", "__42_condition_45_handler_42_.get()" },
+        { "*features*", "features.get()" }, { "*condition-handler*", "conditionHandler.get()" },
         };
         private static final String[] primitives = {
         "car", "cdr", "cons", "rplaca", "rplacd",
@@ -9709,8 +9709,15 @@ public class LambdaJ {
 
             notAPrimitive("setq", symbol, javaName);
             if (fastassq(symbol, env) == fastassq(symbol, topEnv)) {
-                final String symName = mangle(symbol.toString(), 0);
-                sb.append(symName).append(".set("); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
+                if (javaName.endsWith(".get()")) {
+                    // either a userdefined global or a 
+                    final String symName = javaName.substring(0, javaName.length()-6);
+                    sb.append(symName).append(".set("); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
+                }
+                else {
+                    // immutable runtime globals such as pi are implemented as regular Java class members (and not as objects of class CompilerGlobal)
+                    errorMalformed("setq", "cannot modify constant " + symbol);
+                }
             } else {
                 sb.append(javaName).append(" = ");  emitForm(sb, valueForm, env, topEnv, rsfx, false);
             }
@@ -9872,8 +9879,10 @@ public class LambdaJ {
                         final boolean seen = !seenSymbols.add(sym);
                         final ConsCell maybeGlobal = fastassq(sym, topEnv);
                         if (maybeGlobal != null) {
-                            notAPrimitive("let* dynamic", sym, cdr(maybeGlobal).toString());
-                            final String globalName = mangle(sym.toString(), 0);
+                            final String javaName = cdr(maybeGlobal).toString();
+                            notAPrimitive("let* dynamic", sym, javaName);
+                            if (!javaName.endsWith(".get()")) errorMalformed("let* dynamic", "cannot modify constant " + cdr(maybeGlobal));
+                            final String globalName = javaName.substring(0, javaName.length()-6);
                             if (!seen) {
                                 globals.add(globalName);
                                 sb.append("        ").append(globalName).append(".push();\n");
@@ -9900,8 +9909,10 @@ public class LambdaJ {
                     for (final Object sym: params) {
                         final ConsCell maybeGlobal = fastassq(sym, topEnv);
                         if (maybeGlobal != null) {
-                            notAPrimitive("let dynamic", sym, cdr(maybeGlobal).toString());
-                            final String globalName = mangle(sym.toString(), 0);
+                            final String javaName = cdr(maybeGlobal).toString();
+                            notAPrimitive("let dynamic", sym, javaName);
+                            if (!javaName.endsWith(".get()")) errorMalformed("let* dynamic", "cannot modify constant " + cdr(maybeGlobal));
+                            final String globalName = javaName.substring(0, javaName.length()-6);
                             globals.add(globalName);
                             sb.append("        ").append(globalName).append(".push(").append(javasym(sym, __env)).append(");\n");
                         }
