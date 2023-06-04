@@ -7501,7 +7501,7 @@ public class LambdaJ {
         private final SymbolTable symtab = new ListSymbolTable();
         private static final LambdaJSymbol sBit = new LambdaJSymbol(true, "bit"), sCharacter = new LambdaJSymbol(true, "character");
 
-        private final ConsCell featuresEnvEntry;
+        private final @NotNull ConsCell featuresEnvEntry;
         private ObjectReader lispReader;
         private ObjectWriter lispPrinter;
         private Random random;
@@ -8800,8 +8800,8 @@ public class LambdaJ {
     /// class MurmelJavaCompiler - compile Murmel to Java or to a in-memory Class-object and optionally to a .jar file
     ///
     public static class MurmelJavaCompiler {
-        private final JavaCompilerHelper javaCompiler;
-        final LambdaJ intp;
+        private final @NotNull JavaCompilerHelper javaCompiler;
+        final @NotNull LambdaJ intp;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, null, libDir);
@@ -10579,8 +10579,7 @@ public class LambdaJ {
         @jdk.jfr.Relational
         @Target({ ElementType.FIELD })
         @Retention(RetentionPolicy.RUNTIME)
-        @interface ParentId {
-        }
+        @interface ParentId {}
 
         @jdk.jfr.Category({"JMurmel", "User Events"})
         @jdk.jfr.StackTrace(false)
@@ -10740,7 +10739,7 @@ final class JavaUtil {
 /// used by MurmelJavaCompiler to compile the generated Java to an in-memory class and optionally a .jar file.
 final class JavaCompilerHelper {
     private static final Map<String, String> ENV = Collections.singletonMap("create", "true");
-    private final MurmelClassLoader murmelClassLoader;
+    private final @NotNull MurmelClassLoader murmelClassLoader;
 
     JavaCompilerHelper(Path outPath) {
         murmelClassLoader = new MurmelClassLoader(outPath);
@@ -10846,9 +10845,9 @@ final class JavaSourceFromString extends SimpleJavaFileObject {
 }
 
 final class MurmelClassLoader extends ClassLoader {
-    private final Path outPath;
+    private final @NotNull Path outPath;
 
-    MurmelClassLoader(Path outPath) { this.outPath = outPath; }
+    MurmelClassLoader(@NotNull Path outPath) { this.outPath = outPath; }
 
     @Override public Class<?> findClass(String name) throws ClassNotFoundException {
         try {
@@ -10861,7 +10860,7 @@ final class MurmelClassLoader extends ClassLoader {
         }
     }
 
-    Path getOutPath() { return outPath; }
+    @NotNull Path getOutPath() { return outPath; }
 
     private byte[] getBytes(String name) throws IOException {
         final String path = name.replace('.', '/');
@@ -10935,10 +10934,10 @@ final class EolUtil {
 
 /** A wrapping {@link LambdaJ.WriteConsumer} that translates '\n' to the given line separator {@code eol}. */
 final class UnixToAnyEol implements LambdaJ.WriteConsumer {
-    final LambdaJ.WriteConsumer wrapped;
-    final String eol;
+    private final @NotNull LambdaJ.WriteConsumer wrapped;
+    private final String eol;
 
-    UnixToAnyEol(LambdaJ.WriteConsumer wrapped, String eol) {
+    UnixToAnyEol(@NotNull LambdaJ.WriteConsumer wrapped, String eol) {
         this.wrapped = wrapped;
         this.eol = eol;
     }
@@ -10969,9 +10968,9 @@ final class UnixToAnyEol implements LambdaJ.WriteConsumer {
 
 /** Wrap a java.io.Writer, methods throw unchecked LambdaJError, also add {@code append()} methods for basic data types. */
 final class WrappingWriter extends Writer {
-    private final Writer wrapped;
+    private final @NotNull Writer wrapped;
 
-    WrappingWriter(Writer w) { wrapped = w; }
+    WrappingWriter(@NotNull Writer w) { wrapped = w; }
 
     @Override public WrappingWriter append(CharSequence c) {
         try { wrapped.append(c); }
