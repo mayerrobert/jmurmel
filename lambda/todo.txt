@@ -53,6 +53,9 @@ Neu              -> Mlib error     ... (error datum . args)  datum ist condition
 
 Neu: Murmel raise                  ... (raise condition-type msg) macht throw new condition-type(msg)
 
+format könnte noch "Tilde Slash: Call Function ~/name/" unterstützen: http://www.lispworks.com/documentation/HyperSpec/Body/22_ced.htm
+parameter reihenfolge: stream arg colonp at-sign-p more-params
+
 
 
 jmurmel + jrunscript dokumentieren: https://docs.oracle.com/en/java/javase/19/docs/specs/man/jrunscript.html
