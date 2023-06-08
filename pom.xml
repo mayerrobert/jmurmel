@@ -83,7 +83,7 @@
         <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
 
         <jdepend-plugin.version>2.0</jdepend-plugin.version>
-        <versions-plugin.version>2.15.0</versions-plugin.version>
+        <versions-plugin.version>2.16.0</versions-plugin.version>
     </properties>
 
     <dependencies>
