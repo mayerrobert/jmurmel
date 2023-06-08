@@ -1,7 +1,4 @@
 
-commandLineArgumentList umstellen auf CompilerGlobal, dann ists auch im compiler mutable
-und in afterEval zurückkopieren
-
 mlib splitten: CL-compat rausziehen
 
 

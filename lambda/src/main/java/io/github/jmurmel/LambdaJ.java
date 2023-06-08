@@ -7502,6 +7502,7 @@ public class LambdaJ {
         private static final LambdaJSymbol sBit = new LambdaJSymbol(true, "bit"), sCharacter = new LambdaJSymbol(true, "character");
 
         private final @NotNull ConsCell featuresEnvEntry;
+        private final @NotNull ConsCell commandlineArgumentListEnvEntry;
         private ObjectReader lispReader;
         private ObjectWriter lispPrinter;
         private Random random;
@@ -7524,6 +7525,7 @@ public class LambdaJ {
 
             features.set(makeFeatureList(symtab));
             featuresEnvEntry = ConsCell.cons(intern("*features*"), features.get());
+            commandlineArgumentListEnvEntry = ConsCell.cons(intern("*command-line-argument-list*"), null);
 
             lispReader = LambdaJ.makeReader(System.in::read, symtab, featuresEnvEntry);
             lispPrinter = LambdaJ.makeWriter(System.out::print);
@@ -7536,13 +7538,14 @@ public class LambdaJ {
                 this.intp = intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, null);
                 intp.compiledProgram = this;
                 intp.init(lispReader, lispPrinter, null);
-                intp.extendTopenv(intern("*command-line-argument-list*"), commandlineArgumentList);
+                intp.extendTopenv(commandlineArgumentListEnvEntry);
             }
             else {
                 intp.conditionHandlerEnvEntry.rplacd(conditionHandler.get());
                 intp.setReaderPrinter(lispReader, lispPrinter);
             }
             featuresEnvEntry.rplacd(features.get());
+            commandlineArgumentListEnvEntry.rplacd(commandlineArgumentList.get());
             intp.random = random;
             intp.current_frame = current_frame;
             return intp;
@@ -7554,6 +7557,7 @@ public class LambdaJ {
             else values = toArray(intp.values);
             features.set(cdr(featuresEnvEntry));
             conditionHandler.set(cdr(intp.conditionHandlerEnvEntry));
+            commandlineArgumentList.set(commandlineArgumentListEnvEntry);
             random = intp.random;
             current_frame = intp.current_frame;
         }
@@ -7620,7 +7624,7 @@ public class LambdaJ {
         // internal-time-units-per-second: itups doesn't have a leading _ because it is avaliable under an alias name
         public static final long itups = (long)1e9;
         // *COMMAND-LINE-ARGUMENT-LIST*: will be assigned/ accessed from generated code
-        public ConsCell commandlineArgumentList;
+        public final CompilerGlobal commandlineArgumentList = new CompilerGlobal(null);
 
         public final CompilerGlobal features = new CompilerGlobal(null);
         public final CompilerGlobal conditionHandler = new CompilerGlobal(null);
@@ -8567,7 +8571,7 @@ public class LambdaJ {
         }
 
         @Override public void setCommandlineArgumentList(ConsCell args) {
-            commandlineArgumentList = args;
+            commandlineArgumentList.set(args);
         }
 
         @Override public Object getValue(String symbol) {
@@ -8583,7 +8587,7 @@ public class LambdaJ {
             case "most-negative-fixnum": return mostNegativeFixnum;
             case "internal-time-units-per-second": return itups;
 
-            case "*command-line-argument-list*": return commandlineArgumentList; // this will be assigned by genereted code at runtime
+            case "*command-line-argument-list*": return commandlineArgumentList.get(); // this will be assigned by genereted code at runtime
             case "*features*": return features.get();
             case "*condition-handler*": return conditionHandler.get();
 
@@ -8912,7 +8916,7 @@ public class LambdaJ {
         { "array-dimension-limit", "arrayDimensionLimit" },
         { "most-positive-fixnum", "mostPositiveFixnum"}, { "most-negative-fixnum", "mostNegativeFixnum"},
         { "internal-time-units-per-second", "itups" },
-        { "*command-line-argument-list*", "commandlineArgumentList" },
+        { "*command-line-argument-list*", "commandlineArgumentList.get()" },
         { "*features*", "features.get()" }, { "*condition-handler*", "conditionHandler.get()" },
         };
         private static final String[] primitives = {
@@ -9006,7 +9010,7 @@ public class LambdaJ {
                        + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
                                                                   + "    public static void main(String[] args) {\n"
                                                                   + "        final ").append(clsName).append(" program = new ").append(clsName).append("();\n"
-                                                                  + "        program.commandlineArgumentList = arraySlice(args);\n"
+                                                                  + "        program.commandlineArgumentList.set(program.arrayToList(args,0));\n"
                                                                   + "        main(program);\n"
                                                                   + "    }\n\n");
 

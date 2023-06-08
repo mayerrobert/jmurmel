@@ -583,6 +583,9 @@ multiline comment
 
 (deftest eval.7 (eval ''hello) 'hello)
 
+;; *command-line-argument-list* was immutable in compiled Murmel, changing it with eval had no effect
+(deftest eval.8 (eval '(setq *commandline-argument-list* (list 1 2))) '(1 2))
+
 
 ;;; test apply
 #+murmel

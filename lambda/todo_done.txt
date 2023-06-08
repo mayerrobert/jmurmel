@@ -2494,3 +2494,6 @@ read-from-string ignoriert features:
   (read-from-string "#+murmel 1 2) ; -> 2, sollte 1 sein
 read-from-string hat seine eigene symboltabelle:
   (eq 'x (read-from-string "x")) ; nil, sollte t sein
+
+commandLineArgumentList umstellen auf CompilerGlobal, dann ists auch im compiler mutable
+und in afterEval zurückkopieren
