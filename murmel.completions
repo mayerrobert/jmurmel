@@ -52,6 +52,7 @@ internal-time-units-per-second
 *command-line-argument-list*
 *features*
 *condition-handler*
+*random-state*
 
 apply
 eval

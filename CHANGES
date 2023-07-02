@@ -1,6 +1,8 @@
 
 Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
 
+ * added *random-state*
+
  * changed *command-line-argument-list* in compiled Murmel to a regular mutable list
 
  * fixed read-from-string: handle feature-expressions correctly, intern symbols correctly

@@ -243,6 +243,14 @@ pi ; ==> 3.141592653589793
 ; then the previous handler will be temporarily restored.
 
 
+; = \*random-state\*
+;
+; Since: 1.4.4
+;
+; Will initially be `nil`. Will be lazily created by one-arg `random`
+; or zero-arg `make-random-state`.
+ 
+
 ; = REPL variables
 ;     @-, @+, @++, @+++, @\*, @\*\*, @\*\*\*, @/, @//, @///
 ;

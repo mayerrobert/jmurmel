@@ -925,7 +925,7 @@ public class LambdaJ {
     static final Object[] EMPTY_ARRAY = new Object[0];
     static final boolean[] EMPTY_BITVECTOR = new boolean[0];
 
-    final @NotNull ConsCell featuresEnvEntry, conditionHandlerEnvEntry;
+    final @NotNull ConsCell featuresEnvEntry, conditionHandlerEnvEntry, randomStateEnvEntry;
 
     static final String[] CTRL = {
     "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
@@ -1037,16 +1037,18 @@ public class LambdaJ {
     }
 
     public LambdaJ(SymbolTable symtab) {
-        this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, null, null, null);
+        this(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, null, null, null, null);
     }
 
     /** constructor */
     public LambdaJ(int features, TraceLevel trace, TraceConsumer tracer) {
-        this(features, trace, tracer, null, null, null, null);
+        this(features, trace, tracer, null, null, null, null, null);
     }
 
     /** constructor */
-    LambdaJ(int features, @NotNull TraceLevel trace, TraceConsumer tracer, @Null SymbolTable symtab, ConsCell featuresEnvEntry, ConsCell conditionHandlerEnvEntry, Path libDir) {
+    LambdaJ(int features, @NotNull TraceLevel trace, TraceConsumer tracer, @Null SymbolTable symtab,
+            ConsCell featuresEnvEntry, ConsCell conditionHandlerEnvEntry, ConsCell randomStateEnvEntry,
+            Path libDir) {
         this.features = features;
 
         this.trace = trace;
@@ -1064,6 +1066,9 @@ public class LambdaJ {
 
         sConditionHandler = intern("*condition-handler*");
         this.conditionHandlerEnvEntry = conditionHandlerEnvEntry != null ? conditionHandlerEnvEntry : cons(sConditionHandler, null);
+
+        sRandomState = intern("*random-state*");
+        this.randomStateEnvEntry = randomStateEnvEntry != null ? randomStateEnvEntry : cons(sRandomState, null);
 
         if (have(Features.HAVE_T)) symtab.intern(sT);
         if (have(Features.HAVE_NIL)) symtab.intern(sNil);
@@ -2143,7 +2148,7 @@ public class LambdaJ {
                                sLambda = new LambdaJSymbol("lambda", true), sLambdaDynamic = new LambdaJSymbol("lambda-dynamic", true), sProgn = new LambdaJSymbol("progn", true);
 
     /** some more well known symbols. These symbols are not reserved, the LambdaJSymbol objects could be used to store a macro closure, so the symbols must be instance members of LambdaJ. */
-    final LambdaJSymbol sDynamic, sBit, sCharacter, sConditionHandler;
+    final LambdaJSymbol sDynamic, sBit, sCharacter, sConditionHandler, sRandomState;
 
     enum WellknownSymbolKind { SF, PRIM, SYMBOL}
     enum WellknownSymbol {
@@ -2490,6 +2495,7 @@ public class LambdaJ {
         }
         featuresEnvEntry.rplacd(makeFeatureList(symtab));
         conditionHandlerEnvEntry.rplacd(null);
+        randomStateEnvEntry.rplacd(null);
         environment();
         return inReader;
     }
@@ -6118,8 +6124,11 @@ public class LambdaJ {
 
     ConsCell values = NO_VALUES;
 
-    Random random;
-    Random getRandom() { if (random == null) random = new Random();  return random; }
+    Random getRandom() {
+        if (cdr(randomStateEnvEntry) == null)
+            randomStateEnvEntry.rplacd(new Random());
+        return (Random)cdr(randomStateEnvEntry);
+    }
 
     TurtleFrame current_frame;
 
@@ -6197,6 +6206,7 @@ public class LambdaJ {
             extendTopenv("pi", Math.PI);
             extendTopenv("most-positive-fixnum", MOST_POSITIVE_FIXNUM);
             extendTopenv("most-negative-fixnum", MOST_NEGATIVE_FIXNUM);
+            extendTopenv(randomStateEnvEntry);
         }
     }
 
@@ -6453,7 +6463,7 @@ public class LambdaJ {
 
                 final Path libPath = getLibPath(libDir);
 
-                final LambdaJ interpreter = new LambdaJ(features, trace, null, null, null, null, libPath);
+                final LambdaJ interpreter = new LambdaJ(features, trace, null, null, null, null, null, libPath);
 
                 final List<Object> history = repl ? new ArrayList<>() : null;
 
@@ -7505,7 +7515,6 @@ public class LambdaJ {
         private final @NotNull ConsCell commandlineArgumentListEnvEntry;
         private ObjectReader lispReader;
         private ObjectWriter lispPrinter;
-        private Random random;
         private TurtleFrame current_frame;
 
         private LambdaJ intp;
@@ -7535,18 +7544,19 @@ public class LambdaJ {
             LambdaJ intp = this.intp;
             if (intp == null) {
                 final ConsCell conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), conditionHandler.get());
-                this.intp = intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, null);
+                final ConsCell randomStateEnvEntry = ConsCell.cons(intern("*random-state*"), randomState.get());
+                this.intp = intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, randomStateEnvEntry, null);
                 intp.compiledProgram = this;
                 intp.init(lispReader, lispPrinter, null);
                 intp.extendTopenv(commandlineArgumentListEnvEntry);
             }
             else {
                 intp.conditionHandlerEnvEntry.rplacd(conditionHandler.get());
+                intp.randomStateEnvEntry.rplacd(randomState.get());
                 intp.setReaderPrinter(lispReader, lispPrinter);
             }
             featuresEnvEntry.rplacd(features.get());
             commandlineArgumentListEnvEntry.rplacd(commandlineArgumentList.get());
-            intp.random = random;
             intp.current_frame = current_frame;
             return intp;
         }
@@ -7557,14 +7567,15 @@ public class LambdaJ {
             else values = toArray(intp.values);
             features.set(cdr(featuresEnvEntry));
             conditionHandler.set(cdr(intp.conditionHandlerEnvEntry));
+            randomState.set(cdr(intp.randomStateEnvEntry));
             commandlineArgumentList.set(commandlineArgumentListEnvEntry);
-            random = intp.random;
+            randomState.set(cdr(intp.randomStateEnvEntry));
             current_frame = intp.current_frame;
         }
 
         private Random getRandom() {
-            if (random == null) random = new Random();
-            return random;
+            if (randomState.get() == null) randomState.set(new Random());
+            return (Random)randomState.get();
         }
 
         private ObjectWriter getLispPrinter(Object[] args, int nth, ObjectWriter defaultIfNull) {
@@ -7616,18 +7627,20 @@ public class LambdaJ {
         public static final LambdaJSymbol _dynamic = new LambdaJSymbol(true, "dynamic");
 
         public static final double _pi = Math.PI;
+
+        /// predefined aliased global variables
         public static final int arrayDimensionLimit = MAX_ARRAY_SIZE;
         public static final long mostPositiveFixnum = MOST_POSITIVE_FIXNUM;
         public static final long mostNegativeFixnum = MOST_NEGATIVE_FIXNUM;
 
-        /// predefined aliased global variables
-        // internal-time-units-per-second: itups doesn't have a leading _ because it is avaliable under an alias name
         public static final long itups = (long)1e9;
+
         // *COMMAND-LINE-ARGUMENT-LIST*: will be assigned/ accessed from generated code
         public final CompilerGlobal commandlineArgumentList = new CompilerGlobal(null);
 
         public final CompilerGlobal features = new CompilerGlobal(null);
         public final CompilerGlobal conditionHandler = new CompilerGlobal(null);
+        public final CompilerGlobal randomState = new CompilerGlobal(null);
 
         /// predefined primitives
 
@@ -8590,6 +8603,7 @@ public class LambdaJ {
             case "*command-line-argument-list*": return commandlineArgumentList.get(); // this will be assigned by genereted code at runtime
             case "*features*": return features.get();
             case "*condition-handler*": return conditionHandler.get();
+            case "*random-state*": return randomState.get();
 
             // basic primitives
             case "apply": return (CompilerPrimitive)this::_apply;
@@ -8808,7 +8822,7 @@ public class LambdaJ {
         final @NotNull LambdaJ intp;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
-            final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, null, libDir);
+            final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, null, null, libDir);
             intp.init(NULL_READCHARS, System.out::print);
             this.intp = intp;
 
@@ -8917,7 +8931,7 @@ public class LambdaJ {
         { "most-positive-fixnum", "mostPositiveFixnum"}, { "most-negative-fixnum", "mostNegativeFixnum"},
         { "internal-time-units-per-second", "itups" },
         { "*command-line-argument-list*", "commandlineArgumentList.get()" },
-        { "*features*", "features.get()" }, { "*condition-handler*", "conditionHandler.get()" },
+        { "*features*", "features.get()" }, { "*condition-handler*", "conditionHandler.get()" }, { "*random-state*", "randomState.get()" },
         };
         private static final String[] primitives = {
         "car", "cdr", "cons", "rplaca", "rplacd",
