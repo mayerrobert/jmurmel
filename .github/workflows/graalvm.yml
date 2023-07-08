@@ -13,7 +13,6 @@ on:
 
 env:
   JAVA_VERSION: 17
-  GRAAL_VERSION: 22.3.2
 
 jobs:
   build:
@@ -27,7 +26,7 @@ jobs:
 
       - uses: graalvm/setup-graalvm@v1
         with:
-          version: ${{ env.GRAAL_VERSION }}
+          distribution: 'graalvm-community'
           java-version: ${{ env.JAVA_VERSION }}
           components: 'native-image'
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -38,9 +37,9 @@ jobs:
         uses: actions/cache/restore@v3
         with:
           path: ~/.m2/repository
-          key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
+          key: ${{ runner.os }}-graalvm-maven-${{ hashFiles('**/pom.xml') }}
 
-      - name: Build and run JMurmelgraalvm
+      - name: Build and run JMurmel graalvm
         run: |
           mvn -V -B clean package -pl lambda "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
           mvn -V -B clean package -f graalvm/pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
