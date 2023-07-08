@@ -31,7 +31,6 @@ public class ArchitectureTest {
         checkUsers(LambdaJ.Chk.class,
                    LambdaJ.Subr.class,
                    LambdaJ.JFFI.class,
-                   LambdaJ.Turtle.class,
                    LambdaJ.WellknownSymbol.class,
                    LambdaJ.MurmelJavaProgram.class);
 
@@ -39,9 +38,6 @@ public class ArchitectureTest {
                    LambdaJ.WellknownSymbol.class,
                    LambdaJ.MurmelJavaProgram.class,
                    LambdaJ.MurmelJavaCompiler.class);
-
-        checkUsers(LambdaJ.Turtle.class,
-                   LambdaJ.class);
 
         checkUsers(JavaCompilerHelper.class, LambdaJ.MurmelJavaCompiler.class);
         checkUsers(JavaSourceFromString.class, JavaCompilerHelper.class);

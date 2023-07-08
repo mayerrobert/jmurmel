@@ -20,16 +20,6 @@ final class JavaCompilerHelper {
     }
 }
 
-final class LambdaJ {
-    static final class Turtle {
-        private Turtle() {}
-
-        static void turtlePrimitives(LambdaJ intp) {
-            // nothing
-        }
-    }
-}
-
 final class TurtleFrame {
     TurtleFrame(String title, Number width, Number height, Number padding) {
         throw new UnsupportedOperationException("Turtle graphics are not supported");

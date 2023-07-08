@@ -2343,6 +2343,56 @@ public class LambdaJ {
         // Java FFI
         sJmethod("jmethod", Features.HAVE_FFI, 2, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
         sJproxy("jproxy",   Features.HAVE_FFI, 3, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.makeProxy(intp, intp.compiledProgram, args); } },
+
+        // Turtle graphics
+        sMakeFrame("make-frame", Features.HAVE_GUI, 1, 4)        { @Override Object apply(LambdaJ intp, ConsCell args) { final String title = requireString("make-frame", car(args));
+                                                                                                                         final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull("make-frame", cadr(args)), requireNumberOrNull("make-frame", caddr(args)), requireNumberOrNull("make-frame", cadddr(args)));
+                                                                                                                         intp.current_frame = ret;
+                                                                                                                         return ret; } },
+        sOpenFrame("open-frame", Features.HAVE_GUI, 0, 1)        { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("open-frame",    car(a)).open();    } },
+        sCloseFrame("close-frame", Features.HAVE_GUI, 0, 1)      { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("close-frame",   car(a)).close();   } },
+        sResetFrame("reset-frame", Features.HAVE_GUI, 0, 1)      { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("reset-frame",   car(a)).reset();   } },
+        sClearFrame("clear-frame", Features.HAVE_GUI, 0, 1)      { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("clear-frame",   car(a)).clear();   } },
+        sRepaintFrame("repaint-frame", Features.HAVE_GUI, 0, 1)  { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("repaint-frame", car(a)).repaint(); } },
+        sFlushFrame("flush-frame", Features.HAVE_GUI, 0, 1)      { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("flush-frame",   car(a)).flush();   } },
+                                                                 
+        // set new current frame, return previous frame          
+        sCurrentFrame("current-frame", Features.HAVE_GUI, 0, 1)  { @Override Object apply(LambdaJ intp, ConsCell a) { final Object prev = intp.current_frame; if (car(a) != null) intp.current_frame = intp.requireFrame("current-frame", car(a)); return prev; } },
+
+        sPushPos("push-pos", Features.HAVE_GUI, 0, 1)            { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("push-pos",car(a)).pushPos(); } },
+        sPopPos("pop-pos", Features.HAVE_GUI, 0, 1)              { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("pop-pos", car(a)).popPos();  } },
+
+        sPenUp("pen-up", Features.HAVE_GUI, 0, 1)                { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("pen-up",   car(a)).penUp();   } },
+        sPenDown("pen-down", Features.HAVE_GUI, 0, 1)            { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("pen-down", car(a)).penDown(); } },
+
+        sColor("color", Features.HAVE_GUI, 1, 2)                 { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); } },
+        sBgColor("bgcolor", Features.HAVE_GUI, 1, 2)             { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); } },
+
+        sText("text", Features.HAVE_GUI, 1, 2)                   { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("text",    cadr(a)).text   (car(a).toString()); } },
+
+        sRight("right", Features.HAVE_GUI, 1, 2)                 { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); } },
+        sLeft("left", Features.HAVE_GUI, 1, 2)                   { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); } },
+        sForward("forward", Features.HAVE_GUI, 1, 2)             { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); } },
+
+        sMoveTo("move-to", Features.HAVE_GUI, 2, 3)              { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  } },
+        sLineTo("line-to", Features.HAVE_GUI, 2, 3)              { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  } },
+        sMoveRel("move-rel", Features.HAVE_GUI, 2, 3)            { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); } },
+        sLineRel("line-rel", Features.HAVE_GUI, 2, 3)            { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); } },
+
+        sMakeBitmap("make-bitmap",   Features.HAVE_GUI, 2, 3)    { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); } },
+        sDiscardBitmap("discard-bitmap",Features.HAVE_GUI, 0, 1) { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("discard-bitmap", car(a)).discardBitmap(); } },
+
+
+
+        sSetPixel("set-pixel", Features.HAVE_GUI, 3, 4)          { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.requireFrame("set-pixel", cadddr(args)).setRGB(toInt("set-pixel", car(args)), toInt("set-pixel", cadr(args)), toInt("set-pixel", caddr(args))); } },
+        sRgbToPixel("rgb-to-pixel", Features.HAVE_GUI, 3)        { @Override Object apply(LambdaJ intp, ConsCell args) { //noinspection RedundantCast
+                                                                                                                         return (long)(int)(toInt("rgb-to-pixel", car(args)) << 16
+                                                                                                                                            | toInt("rgb-to-pixel", cadr(args)) << 8
+                                                                                                                                            | toInt("rgb-to-pixel", caddr(args))); } },
+        sHsbToPixel("hsb-to-pixel", Features.HAVE_GUI, 3)        { @Override Object apply(LambdaJ intp, ConsCell args) { return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(args)),
+                                                                                                                                                     toFloat("hsb-to-pixel", cadr(args)),
+                                                                                                                                                     toFloat("hsb-to-pixel", caddr(args))); } },
+
         ;
 
         final WellknownSymbolKind kind;
@@ -6063,65 +6113,6 @@ public class LambdaJ {
 
 
 
-    /// Turtle primitives
-    static final class Turtle {
-        private Turtle() {}
-
-        static void turtlePrimitives(LambdaJ intp) {
-            final Primitive makeFrame = a -> {
-                varargsMinMax("make-frame", a, 1, 4);
-                final String title = requireString("make-frame", car(a));
-                final TurtleFrame ret = new TurtleFrame(title, requireNumberOrNull("make-frame", cadr(a)), requireNumberOrNull("make-frame", caddr(a)), requireNumberOrNull("make-frame", cadddr(a)));
-                intp.current_frame = ret;
-                return ret;
-            };
-            intp.extendTopenv("make-frame",    makeFrame);
-            intp.extendTopenv("open-frame",    (Primitive) a -> { varargs0_1("open-frame",     a); return intp.requireFrame("open-frame",    car(a)).open();    });
-            intp.extendTopenv("close-frame",   (Primitive) a -> { varargs0_1("close-frame",    a); return intp.requireFrame("close-frame",   car(a)).close();   });
-            intp.extendTopenv("reset-frame",   (Primitive) a -> { varargs0_1("reset-frame",    a); return intp.requireFrame("reset-frame",   car(a)).reset();   });
-            intp.extendTopenv("clear-frame",   (Primitive) a -> { varargs0_1("clear-frame",    a); return intp.requireFrame("clear-frame",   car(a)).clear();   });
-            intp.extendTopenv("repaint-frame", (Primitive) a -> { varargs0_1("repaint-frame",  a); return intp.requireFrame("repaint-frame", car(a)).repaint(); });
-            intp.extendTopenv("flush-frame",   (Primitive) a -> { varargs0_1("flush-frame",    a); return intp.requireFrame("flush-frame",   car(a)).flush();   });
-
-            // set new current frame, return previous frame
-            intp.extendTopenv("current-frame", (Primitive) a -> { varargs0_1("current-frame",  a); final Object prev = intp.current_frame; if (car(a) != null) intp.current_frame = intp.requireFrame("current-frame", car(a)); return prev; });
-
-            intp.extendTopenv("push-pos",      (Primitive) a -> { varargs0_1("push-pos",       a); return intp.requireFrame("push-pos",car(a)).pushPos(); });
-            intp.extendTopenv("pop-pos",       (Primitive) a -> { varargs0_1("pop-pos",        a); return intp.requireFrame("pop-pos", car(a)).popPos();  });
-
-            intp.extendTopenv("pen-up",        (Primitive) a -> { varargs0_1("pen-up",         a); return intp.requireFrame("pen-up",   car(a)).penUp();   });
-            intp.extendTopenv("pen-down",      (Primitive) a -> { varargs0_1("pen-down",       a); return intp.requireFrame("pen-down", car(a)).penDown(); });
-
-            intp.extendTopenv("color",         (Primitive) a -> { varargs1_2("color",          a); return intp.requireFrame("color",   cadr(a)).color  (toInt("color",   car(a))); });
-            intp.extendTopenv("bgcolor",       (Primitive) a -> { varargs1_2("bgcolor",        a); return intp.requireFrame("bgcolor", cadr(a)).bgColor(toInt("bgcolor", car(a))); });
-
-            intp.extendTopenv("text",          (Primitive) a -> { varargs1_2("text",           a); return intp.requireFrame("text",    cadr(a)).text   (car(a).toString()); });
-
-            intp.extendTopenv("right",         (Primitive) a -> { varargs1_2("right",          a); return intp.requireFrame("right",   cadr(a)).right  (toDouble("right",   car(a))); });
-            intp.extendTopenv("left",          (Primitive) a -> { varargs1_2("left",           a); return intp.requireFrame("left",    cadr(a)).left   (toDouble("left",    car(a))); });
-            intp.extendTopenv("forward",       (Primitive) a -> { varargs1_2("forward",        a); return intp.requireFrame("forward", cadr(a)).forward(toDouble("forward", car(a))); });
-
-            intp.extendTopenv("move-to",       (Primitive) a -> { varargsMinMax("move-to",     a, 2, 3); return intp.requireFrame("move-to",  caddr(a)).moveTo(toDouble("move-to",  car(a)), toDouble("move-to", cadr(a)));  });
-            intp.extendTopenv("line-to",       (Primitive) a -> { varargsMinMax("line-to",     a, 2, 3); return intp.requireFrame("line-to",  caddr(a)).lineTo(toDouble("line-to",  car(a)), toDouble("line-to", cadr(a)));  });
-            intp.extendTopenv("move-rel",      (Primitive) a -> { varargsMinMax("move-rel",    a, 2, 3); return intp.requireFrame("move-rel", caddr(a)).moveRel(toDouble("move-rel", car(a)), toDouble("move-rel", cadr(a))); });
-            intp.extendTopenv("line-rel",      (Primitive) a -> { varargsMinMax("line-rel",    a, 2, 3); return intp.requireFrame("line-rel", caddr(a)).lineRel(toDouble("line-rel", car(a)), toDouble("line-rel", cadr(a))); });
-
-            intp.extendTopenv("make-bitmap",   (Primitive) a -> { varargsMinMax("make-bitmap", a, 2, 3); return intp.requireFrame("make-bitmap",    caddr(a)).makeBitmap(toInt("make-bitmap",  car(a)), toInt("make-bitmap", cadr(a))); });
-            intp.extendTopenv("discard-bitmap",(Primitive) a -> { varargs0_1("discard-bitmap", a);       return intp.requireFrame("discard-bitmap", car(a)).discardBitmap(); });
-            intp.extendTopenv("set-pixel",     (Primitive) a -> { varargsMinMax("set-pixel",   a, 3, 4); return intp.requireFrame("set-pixel",      cadddr(a)).setRGB(toInt("set-pixel", car(a)), toInt("set-pixel", cadr(a)), toInt("set-pixel", caddr(a)));  });
-            intp.extendTopenv("rgb-to-pixel",  (Primitive) a -> { threeArgs("rgb-to-pixel",    a);
-                                                                  //noinspection RedundantCast
-                                                                  return (long)(int)(toInt("rgb-to-pixel", car(a)) << 16
-                                                                                     | toInt("rgb-to-pixel", cadr(a)) << 8
-                                                                                     | toInt("rgb-to-pixel", caddr(a))); });
-            intp.extendTopenv("hsb-to-pixel",  (Primitive) a -> { threeArgs("hsb-to-pixel",    a);
-                                                                  return (long)Color.HSBtoRGB(toFloat("hsb-to-pixel", car(a)),
-                                                                                              toFloat("hsb-to-pixel", cadr(a)),
-                                                                                              toFloat("hsb-to-pixel", caddr(a)));  });
-        }
-    }
-
-
     ConsCell values = NO_VALUES;
 
     Random getRandom() {
@@ -6177,10 +6168,6 @@ public class LambdaJ {
         if (have(Features.HAVE_T)) extendTopenv(sT, sT);
         if (have(Features.HAVE_NIL)) extendTopenv(sNil, null);
         if (have(Features.HAVE_VECTOR)) extendTopenv("array-dimension-limit", MAX_ARRAY_SIZE);
-
-        if (have(Features.HAVE_GUI)) {
-            Turtle.turtlePrimitives(this);
-        }
 
         if (have(Features.HAVE_APPLY)) {
             final LambdaJSymbol sApply = intern("apply");
