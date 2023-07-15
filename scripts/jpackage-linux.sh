@@ -25,7 +25,7 @@ export MODULES="--add-modules java.base,java.desktop,jdk.compiler,jdk.zipfs,jdk.
 # Java options that will be used at runtime
 export JOPTIONS="--java-options -Xmx1G --java-options -Xss2m --java-options -XX:+UseParallelGC"
 # enable class loading debugging for CDS testing
-#export JOPTIONS="$JOPTIONS --java-options -Xshare:on --java-options -Xlog:class+load"
+#export JOPTIONS="$JOPTIONS --java-options -Xshare:on --java-options -Xlog:class+load --java-options -Xlog:cds=debug::none --java-options -Xlog:cds+map=trace:file=target/cds.map:none:filesize=0"
 
 # end config
 
@@ -52,7 +52,7 @@ cp ../samples.mlib/mlib.lisp    target/jpackage-input/.
 
 
 # create a directory with jlinked JDK, Murmel files and launcher .exe, see https://docs.oracle.com/en/java/javase/17/docs/specs/man/jpackage.html
-export JLINK="--jlink-options --strip-native-commands --jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files --jlink-options --compress=2"
+export JLINK="--jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files --jlink-options --compress=2"
 jpackage $JLINK --type app-image -i target/jpackage-input -d $DESTDIR -n jmurmel --main-class io.github.jmurmel.LambdaJ --main-jar jmurmel.jar $MODULES $JOPTIONS
 
 cp ../LICENSE                $DESTDIR/jmurmel/.
@@ -70,6 +70,13 @@ export JAVACMD="java $MODULES"
 echo '(load "../samples.murmel/murmel-test")' | $JAVACMD -Xshare:off  -XX:DumpLoadedClassList=target/jmurmel.classlist -cp $DESTDIR/jmurmel/lib/app/jmurmel.jar io.github.jmurmel.LambdaJ
 
 # create classes.jsa from classlist
-$JAVACMD -Xshare:dump -XX:SharedClassListFile=target/jmurmel.classlist -XX:SharedArchiveFile=$DESTDIR/jmurmel/lib/runtime/lib/server/classes.jsa -cp $DESTDIR/jmurmel/lib/app/jmurmel.jar
+$DESTDIR/jmurmel/lib/runtime/bin/java -Xshare:dump -XX:SharedClassListFile=target/jmurmel.classlist -XX:SharedArchiveFile=$DESTDIR/jmurmel/lib/runtime/lib/server/classes.jsa -cp $DESTDIR/jmurmel/lib/app/jmurmel.jar
+
+# java, javac & friends are no longer needed
+rm -rf $DESTDIR/jmurmel/lib/runtime/bin/
+
+
+# see if it works
+$DESTDIR/jmurmel/bin/jmurmel --version
 
 exit 0

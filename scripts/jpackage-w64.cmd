@@ -27,7 +27,8 @@ set MODULES=--add-modules java.base,java.desktop,jdk.compiler,jdk.zipfs,jdk.jfr,
 REM Java options that will be used at runtime
 set JOPTIONS=--java-options -Xmx1G --java-options -Xss2m --java-options -XX:+UseParallelGC
 REM enable class loading debugging for CDS testing
-REM set JOPTIONS=%JOPTIONS% --java-options -Xshare:on --java-options -Xlog:class+load
+REM set JOPTIONS=%JOPTIONS% --java-options -Xshare:on --java-options -Xlog:class+load --java-options -Xlog:cds=debug::none --java-options -Xlog:cds+map=trace:file=cds.map:none:filesize=0
+REM set JOPTIONS=%JOPTIONS% --java-options -Xshare:on
 
 REM end config
 
@@ -42,7 +43,7 @@ copy ..\samples.mlib\mlib.lisp    target\jpackage-input\.
 
 
 REM create a directory with jlinked JDK, Murmel files and launcher .exe, see https://docs.oracle.com/en/java/javase/17/docs/specs/man/jpackage.html
-set JLINK=--jlink-options --strip-native-commands --jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files --jlink-options --compress=2
+set JLINK=--jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files --jlink-options --compress=2
 jpackage %JLINK% --type app-image -i target\jpackage-input -d %DESTDIR% -n jmurmel --main-class io.github.jmurmel.LambdaJ --main-jar jmurmel.jar --win-console %MODULES% %JOPTIONS%
 
 copy ..\LICENSE                %DESTDIR%\jmurmel\.
@@ -60,4 +61,11 @@ REM run jmurmel to create a classlist
 echo (load "../samples.murmel/murmel-test")| %JAVACMD% -Xshare:off  -XX:DumpLoadedClassList=target\jmurmel.classlist -cp %DESTDIR%\jmurmel\app\jmurmel.jar io.github.jmurmel.LambdaJ
 
 REM create classes.jsa from classlist
-%JAVACMD% -Xshare:dump -XX:SharedClassListFile=target\jmurmel.classlist -XX:SharedArchiveFile=%DESTDIR%\jmurmel\runtime\bin\server\classes.jsa -cp %DESTDIR%\jmurmel\app\jmurmel.jar
+%DESTDIR%\jmurmel\runtime\bin\java -Xshare:dump -XX:SharedClassListFile=target\jmurmel.classlist -XX:SharedArchiveFile=%DESTDIR%\jmurmel\runtime\bin\server\classes.jsa -cp %DESTDIR%\jmurmel\app\jmurmel.jar
+
+REM java, javac & friends are no longer needed
+for %%f in (java.exe javac.exe javaw.exe jfr.exe keytool.exe serialver.exe) do del %DESTDIR%\jmurmel\runtime\bin\%%f
+
+
+REM see if it works
+%DESTDIR%\jmurmel\jmurmel.exe --version
