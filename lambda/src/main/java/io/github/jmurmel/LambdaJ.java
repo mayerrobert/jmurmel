@@ -1134,12 +1134,12 @@ public class LambdaJ {
     /// ## Printer
 
     /** create an ObjectWriter that transforms \n to the platform default line separator */
-    public static ObjectWriter makeWriter(WriteConsumer out) {
+    public static ObjectWriter makeWriter(@NotNull WriteConsumer out) {
         return makeWriter(out, System.lineSeparator());
     }
 
     /** create an ObjectWriter that transforms \n to the given {@code lineSeparator} */
-    public static ObjectWriter makeWriter(WriteConsumer out, String lineSeparator) {
+    public static ObjectWriter makeWriter(@NotNull WriteConsumer out, String lineSeparator) {
         if ("\r\n".equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r\n"));
         if ("\r"  .equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r"));
 
@@ -1148,9 +1148,9 @@ public class LambdaJ {
 
     /** this class will write objects as S-expressions to the given {@link WriteConsumer} w/o any eol translation */
     private static class SExpressionWriter implements ObjectWriter {
-        private final WriteConsumer out;
+        private final @NotNull WriteConsumer out;
 
-        SExpressionWriter(WriteConsumer out) { this.out = out; }
+        SExpressionWriter(@NotNull WriteConsumer out) { assert out != null; this.out = out; }
 
         @Override public void printObj(Object o, boolean printEscape) { printSEx(out, o, printEscape); }
         @Override public void printEol() { out.print("\n"); }
@@ -2526,7 +2526,7 @@ public class LambdaJ {
 
     /** Build environment, setup Lisp reader and writer.
      *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
-    ObjectReader init(ReadSupplier in, WriteConsumer out) {
+    ObjectReader init(@NotNull ReadSupplier in, @NotNull WriteConsumer out) {
         final SExpressionReader parser = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in, null);
         final ObjectWriter outWriter = makeWriter(out);
         return init(parser, outWriter, null);
@@ -6351,20 +6351,20 @@ public class LambdaJ {
     public Object interpretExpressions(ObjectReader program, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(symtab);
         init(inReader, outWriter, customEnvironment);
+        final boolean traceStats = trace.ge(TraceLevel.TRC_STATS);
         final Object eof = "EOF";
         Object result = null;
         Object exp;
         while ((exp = program.readObj(true, eof)) != eof) {
-            final long tStart = System.nanoTime();
+            final long tStart = traceStats ? System.nanoTime() : 0;
             result = expandAndEval(exp, null);
-            traceStats(tStart);
+            if (traceStats) traceStats(tStart);
         }
         return result;
     }
 
     /** print and reset interpreter stats and wall time. preceeded and followed by a newline. */
     void traceStats(long startNanos) {
-        final long nanos = System.nanoTime() - startNanos;
         if (trace.ge(TraceLevel.TRC_STATS)) {
             tracer.println("");
             tracer.println("*** max Murmel evaluator recursion: " + maxEvalLevel + " ***");
@@ -6373,6 +6373,7 @@ public class LambdaJ {
             tracer.println("*** total ConsCells:                " + nCells + " ***");
             if (trace.ge(TraceLevel.TRC_ENVSTATS)) tracer.println("*** max env length:                 " + maxEnvLen + " ***");
 
+            final long nanos = System.nanoTime() - startNanos;
             final long millis = (long)(nanos * 0.000001D);
             final String ms = Long.toString(millis) + '.' + ((long) (nanos * 0.001D + 0.5D) - (long) (millis * 1000D));
             tracer.println("*** elapsed wall time:              " + ms + "ms ***");
@@ -8805,7 +8806,7 @@ public class LambdaJ {
     /// class MurmelJavaCompiler - compile Murmel to Java or to a in-memory Class-object and optionally to a .jar file
     ///
     public static class MurmelJavaCompiler {
-        private final @NotNull JavaCompilerHelper javaCompiler;
+        private final JavaCompilerHelper javaCompiler;
         final @NotNull LambdaJ intp;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
@@ -8813,7 +8814,7 @@ public class LambdaJ {
             intp.init(NULL_READCHARS, System.out::print);
             this.intp = intp;
 
-            this.javaCompiler = new JavaCompilerHelper(outPath);
+            this.javaCompiler = outPath == null ? null : new JavaCompilerHelper(outPath);
         }
 
         public SymbolTable getSymbolTable() { return intp.getSymbolTable(); }
@@ -10757,7 +10758,7 @@ final class JavaCompilerHelper {
     private static final Map<String, String> ENV = Collections.singletonMap("create", "true");
     private final @NotNull MurmelClassLoader murmelClassLoader;
 
-    JavaCompilerHelper(Path outPath) {
+    JavaCompilerHelper(@NotNull Path outPath) {
         murmelClassLoader = new MurmelClassLoader(outPath);
     }
 
@@ -10863,7 +10864,7 @@ final class JavaSourceFromString extends SimpleJavaFileObject {
 final class MurmelClassLoader extends ClassLoader {
     private final @NotNull Path outPath;
 
-    MurmelClassLoader(@NotNull Path outPath) { this.outPath = outPath; }
+    MurmelClassLoader(@NotNull Path outPath) { assert outPath != null; this.outPath = outPath; }
 
     @Override public Class<?> findClass(String name) throws ClassNotFoundException {
         try {
@@ -10954,6 +10955,7 @@ final class UnixToAnyEol implements LambdaJ.WriteConsumer {
     private final String eol;
 
     UnixToAnyEol(@NotNull LambdaJ.WriteConsumer wrapped, String eol) {
+        assert wrapped != null;
         this.wrapped = wrapped;
         this.eol = eol;
     }

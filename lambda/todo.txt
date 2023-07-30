@@ -1,3 +1,4 @@
+Checker framework abchecken/ einbauen: https://checkerframework.org/
 
 mlib splitten: CL-compat rausziehen
 
