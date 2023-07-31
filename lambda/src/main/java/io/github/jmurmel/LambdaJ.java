@@ -156,22 +156,22 @@ public class LambdaJ {
 
         @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { LambdaJ.printSEx(out, this, escapeAtoms); }
 
-        public static ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
+        public static @NotNull ConsCell cons(Object car, Object cdr) { return new ListConsCell(car, cdr); }
 
-        public ConsCell copy() { throw new UnsupportedOperationException("copy not supported on " + getClass().getSimpleName()); }
-        public Object shallowCopyCdr() { throw new UnsupportedOperationException("shallowCopyCdr not supported on " + getClass().getSimpleName()); }
+        public @NotNull ConsCell copy() { throw new UnsupportedOperationException("copy not supported on " + getClass().getSimpleName()); }
+        public @NotNull Object shallowCopyCdr() { throw new UnsupportedOperationException("shallowCopyCdr not supported on " + getClass().getSimpleName()); }
 
         public abstract Object car();
-        public ConsCell rplaca(Object car) { throw new UnsupportedOperationException("rplaca not supported on " + getClass().getSimpleName()); }
+        public @NotNull ConsCell rplaca(Object car) { throw new UnsupportedOperationException("rplaca not supported on " + getClass().getSimpleName()); }
 
         public abstract Object cdr();
-        public ConsCell rplacd(Object cdr) { throw new UnsupportedOperationException("rplacd not supported on " + getClass().getSimpleName()); }
+        public @NotNull ConsCell rplacd(Object cdr) { throw new UnsupportedOperationException("rplacd not supported on " + getClass().getSimpleName()); }
 
         public abstract Object elt(long idx);
         public abstract Object eltset(Object newVal, long idx);
 
         /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
-        String lineInfo() { return ""; }
+        @NotNull String lineInfo() { return ""; }
 
         @Override public abstract ConsIterator iterator();
 
@@ -590,13 +590,13 @@ public class LambdaJ {
         @Override public String toString() { return LambdaJ.printSEx(this, false).toString(); }
         @Override public ConsIterator iterator() { return new ListConsCellIterator(this); }
 
-        @Override public Object shallowCopyCdr() { if (consp(cdr)) cdr = ((ConsCell)cdr).copy(); return cdr; }
+        @Override public @NotNull Object shallowCopyCdr() { if (consp(cdr)) cdr = ((ConsCell)cdr).copy(); return cdr; }
 
         @Override public Object car() { return car; }
-        @Override public ConsCell rplaca(Object car) { this.car = car; return this; }
+        @Override public @NotNull ConsCell rplaca(Object car) { this.car = car; return this; }
 
         @Override public Object cdr() { return cdr; }
-        @Override public ConsCell rplacd(Object cdr) { this.cdr = cdr; return this; }
+        @Override public @NotNull ConsCell rplacd(Object cdr) { this.cdr = cdr; return this; }
 
         @Override public Object elt(long idx) {
             long _idx = 0;
@@ -640,7 +640,7 @@ public class LambdaJ {
         private static final long serialVersionUID = 1L;
         private ListConsCell(Object car, Object cdr) { super(car, cdr); }
 
-        @Override public ConsCell copy() { return cons(car(), cdr()); }
+        @Override public @NotNull ConsCell copy() { return cons(car(), cdr()); }
     }
 
     private static final class SExpConsCell extends AbstractConsCell {
@@ -649,7 +649,7 @@ public class LambdaJ {
         private final int startLineNo, startCharNo;
         private int lineNo, charNo;
 
-        @Override public SExpConsCell copy() { return new SExpConsCell(path, startLineNo, startCharNo, lineNo, charNo, car(), cdr()); }
+        @Override public @NotNull SExpConsCell copy() { return new SExpConsCell(path, startLineNo, startCharNo, lineNo, charNo, car(), cdr()); }
 
         private SExpConsCell(Path path, int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
             super(car, cdr);
@@ -658,7 +658,7 @@ public class LambdaJ {
 
         @Override void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
         @Override void adjustEnd(SExpConsCell cell) { this.lineNo = cell.lineNo; this.charNo = cell.charNo; }
-        @Override String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
+        @Override @NotNull String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
 
         Path path() { return path; }
     }
@@ -840,7 +840,7 @@ public class LambdaJ {
         }
 
         @Override public Object     car() { return arry[offset]; }
-        @Override public ConsCell rplaca(Object car) { arry[offset] = car; return this; }
+        @Override public @NotNull ConsCell rplaca(Object car) { arry[offset] = car; return this; }
 
         @Override public Object cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this); }
 
@@ -1134,12 +1134,12 @@ public class LambdaJ {
     /// ## Printer
 
     /** create an ObjectWriter that transforms \n to the platform default line separator */
-    public static ObjectWriter makeWriter(@NotNull WriteConsumer out) {
+    public static @NotNull ObjectWriter makeWriter(@NotNull WriteConsumer out) {
         return makeWriter(out, System.lineSeparator());
     }
 
     /** create an ObjectWriter that transforms \n to the given {@code lineSeparator} */
-    public static ObjectWriter makeWriter(@NotNull WriteConsumer out, String lineSeparator) {
+    public static @NotNull ObjectWriter makeWriter(@NotNull WriteConsumer out, String lineSeparator) {
         if ("\r\n".equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r\n"));
         if ("\r"  .equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r"));
 
@@ -6941,12 +6941,11 @@ public class LambdaJ {
         }
 
         private static void printClosureInfo(Closure closure) {
-            final ConsCell form = ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params(), closure.body));
             if (closure.body instanceof SExpConsCell) {
-                final String info = ((SExpConsCell)closure.body).lineInfo();
+                final String info = closure.body.lineInfo();
                 if (!info.isEmpty()) System.out.println(info);
             }
-            System.out.println(LambdaJ.printSEx(form));
+            System.out.println(LambdaJ.printSEx(ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params(), closure.body))));
         }
 
         private static void errorContinue(Exception e) {
