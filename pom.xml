@@ -42,7 +42,7 @@
         <testng.version>7.5.1</testng.version> <!-- 7.6.0+ needs Java 11 -->
         <slf4j-jdk14.version>2.0.7</slf4j-jdk14.version>
         <archunit.version>1.0.1</archunit.version>
-        <jmh.version>1.36</jmh.version>
+        <jmh.version>1.37</jmh.version>
         <jakarta.validation-api.version>3.0.2</jakarta.validation-api.version>
 
         <!-- maven plugins -->
