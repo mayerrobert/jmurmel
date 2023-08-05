@@ -301,9 +301,9 @@ public class LambdaJ {
     }
 
     public interface SymbolTable extends Iterable<LambdaJSymbol> {
-        LambdaJSymbol intern(@NotNull LambdaJSymbol symbol);
-        @Override Iterator<LambdaJSymbol> iterator();
-        default LambdaJSymbol intern(@NotNull String symbolName) { return intern(new LambdaJSymbol(symbolName)); }
+        @NotNull LambdaJSymbol intern(@NotNull LambdaJSymbol symbol);
+        @Override @NotNull Iterator<LambdaJSymbol> iterator();
+        default @NotNull LambdaJSymbol intern(@NotNull String symbolName) { return intern(new LambdaJSymbol(symbolName)); }
     }
 
     @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
@@ -490,7 +490,7 @@ public class LambdaJ {
 
         /** add an item at the end of the list */
         @SuppressWarnings("unchecked")
-        public T append(Object elem) {
+        public @NotNull T append(Object elem) {
             final ConsCell newCell = newCell(elem);
             if (first == null) {
                 last = first = newCell;
@@ -504,7 +504,7 @@ public class LambdaJ {
         }
 
         @SuppressWarnings("unchecked")
-        public T appendElements(Object... elems) {
+        public @NotNull T appendElements(Object... elems) {
             final int length = elems.length;
             for (int i = 0; i < length; i++) append(elems[i]);
             return (T)this;
@@ -514,7 +514,7 @@ public class LambdaJ {
          *  Once {@code #appendLast(Object)} has been invoked subsequent invocations
          *  of {@code #appendLast(Object)} and/ or {@link #append(Object)} will result in an error as dotted lists can't be appended to. */
         @SuppressWarnings("unchecked")
-        public T appendLast(Object lastElem) {
+        public @NotNull T appendLast(Object lastElem) {
             if (first == null) {
                 last = first = lastElem;
             }
@@ -529,26 +529,26 @@ public class LambdaJ {
         /** return the constructed list so far */
         public Object first() { return first; }
 
-        abstract ConsCell newCell(Object car);
+        abstract @NotNull ConsCell newCell(Object car);
     }
 
     /** Builder class for constructing lists, also used by compiled Murmel */
     public static final class ListBuilder extends AbstractListBuilder<ListBuilder> {
-        @Override ConsCell newCell(Object car) { return ConsCell.cons(car, null); }
+        @Override @NotNull ConsCell newCell(Object car) { return ConsCell.cons(car, null); }
     }
 
     private final class CountingListBuilder extends AbstractListBuilder<CountingListBuilder> {
-        @Override ConsCell newCell(Object car) { return LambdaJ.this.cons(car, null); }
+        @Override @NotNull ConsCell newCell(Object car) { return LambdaJ.this.cons(car, null); }
     }
 
     private abstract static class AbstractConsCell extends ConsCell {
         private static class ListConsCellIterator implements ConsIterator {
-            private final AbstractConsCell coll;
+            private final @NotNull AbstractConsCell coll;
             private ConsIterator delegate;
             private Object cursor;
             private boolean wasDotted;
 
-            private ListConsCellIterator(AbstractConsCell coll) { this.coll = coll; cursor = coll; }
+            private ListConsCellIterator(@NotNull AbstractConsCell coll) { this.coll = coll; cursor = coll; }
             @Override public boolean hasNext() {
                 if (delegate != null) return delegate.hasNext();
                 return cursor != null;
@@ -562,6 +562,7 @@ public class LambdaJ {
                     // a ListConsCell based list can contain an ArraySlice as the last cdr
                     // (i.e. a list starts as conses and is continued by an ArraySlice.
                     // An ArraySlice can not be continued by conses.
+                    cursor = null;
                     delegate = ((ArraySlice)_cursor).iterator();
                     return delegate.next();
                 }
@@ -587,8 +588,8 @@ public class LambdaJ {
         private Object car, cdr;
 
         private AbstractConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
-        @Override public String toString() { return LambdaJ.printSEx(this, false).toString(); }
-        @Override public ConsIterator iterator() { return new ListConsCellIterator(this); }
+        @Override public @NotNull String toString() { return LambdaJ.printSEx(this, false).toString(); }
+        @Override public @NotNull ConsIterator iterator() { return new ListConsCellIterator(this); }
 
         @Override public @NotNull Object shallowCopyCdr() { if (consp(cdr)) cdr = ((ConsCell)cdr).copy(); return cdr; }
 
@@ -673,7 +674,7 @@ public class LambdaJ {
         ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) { return intp.zip("function application", params, args, closure, true); }
         @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { out.print("#<interpreted closure>"); }
 
-        static Closure of(Object params, ConsCell body, ConsCell closure) {
+        static @NotNull Closure of(Object params, ConsCell body, ConsCell closure) {
             if (params == null) return new Closure0(body, closure);
             if (symbolp(params)) return new ClosureVararg(params, body, closure);
 
@@ -696,8 +697,7 @@ public class LambdaJ {
     private static final class Closure0 extends Closure {
         Closure0(ConsCell body, ConsCell closure) { super(null, body, closure); }
 
-        @Override
-        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
             if (args != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", args);
             return closure;
         }
@@ -709,8 +709,7 @@ public class LambdaJ {
 
         @Override Object params() { return ConsCell.cons(params, null); }
 
-        @Override
-        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
             if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", intp.cons(params, null));
             final Object cdrArgs = cdr(args);
             if (cdrArgs != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", cdrArgs);
@@ -726,8 +725,7 @@ public class LambdaJ {
             p1 = car(params); p2 = cadr(params);
         }
 
-        @Override
-        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
             if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
             final Object cdrArgs = cdr(args);
             if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: (%s)", "function application", p2);
@@ -745,8 +743,7 @@ public class LambdaJ {
             p1 = car(params); p2 = cadr(params); p3 = caddr(params);
         }
 
-        @Override
-        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
             if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
             final Object cdrArgs = cdr(args);
             if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cdr(params));
@@ -773,8 +770,7 @@ public class LambdaJ {
             p = car(params); more = cdr(params);
         }
 
-        @Override
-        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
             if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
             return intp.acons(more, cdr(args), intp.acons(p, car(args), closure));
         }
@@ -788,8 +784,7 @@ public class LambdaJ {
             p1 = car(params); p2 = cadr(params); more = cddr(params);
         }
 
-        @Override
-        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
+        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
             if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
             final Object cdrArgs = cdr(args);
             if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cdr(params));
@@ -805,11 +800,11 @@ public class LambdaJ {
 
     private static final class ArraySlice extends ConsCell {
         private static final class ArraySliceIterator implements ConsIterator {
-            private final @NotNull Object[] arry;
+            private final Object @NotNull [] arry;
             private final int len;
             private int cursor;
 
-            ArraySliceIterator(@NotNull Object[] arry, int offset) { this.arry = arry; this.len = arry.length; this.cursor = offset; }
+            ArraySliceIterator(Object @NotNull [] arry, int offset) { this.arry = arry; this.len = arry.length; this.cursor = offset; }
             @Override public boolean hasNext() { return cursor != -1; }
 
             @Override public Object next() {
@@ -824,22 +819,22 @@ public class LambdaJ {
 
         private static final long serialVersionUID = 1L;
 
-        private final @NotNull Object[] arry;
+        private final Object @NotNull [] arry;
         private final int offset;
 
-        /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
-        ArraySlice(@NotNull Object[] arry, int offset) {
+        /** {@link #arraySlice} should be preferred because it will return {@code null} instead of a "null" (empty) ArraySlice */
+        ArraySlice(Object @NotNull [] arry, int offset) {
             assert arry != null && offset < arry.length;
             this.arry = arry;  this.offset = offset;
         }
 
         /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
-        private ArraySlice(ArraySlice slice) {
+        private ArraySlice(@NotNull ArraySlice slice) {
             assert slice.arry != null && slice.offset < slice.arry.length;
             this.arry = slice.arry;  offset = slice.offset + 1;
         }
 
-        @Override public Object     car() { return arry[offset]; }
+        @Override public Object car() { return arry[offset]; }
         @Override public @NotNull ConsCell rplaca(Object car) { arry[offset] = car; return this; }
 
         @Override public Object cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this); }
@@ -862,10 +857,10 @@ public class LambdaJ {
 
         private int length() { return arry.length - offset; }
 
-        @Override public String toString() { return printSEx(true, false).toString(); }
-        @Override public ConsIterator iterator() { return new ArraySliceIterator(this.arry, this.offset); }
+        @Override public @NotNull String toString() { return printSEx(true, false).toString(); }
+        @Override public @NotNull ConsIterator iterator() { return new ArraySliceIterator(this.arry, this.offset); }
 
-        CharSequence printSEx(boolean headOfList, boolean escapeAtoms) {
+        @NotNull CharSequence printSEx(boolean headOfList, boolean escapeAtoms) {
             final Object[] arry = this.arry;
             final int alen = arry.length, offset = this.offset;
 
@@ -885,13 +880,13 @@ public class LambdaJ {
             return ret;
         }
 
-        Object[] listToArray() {
+        Object @NotNull [] listToArray() {
             if (offset == 0) return arry;
             if (offset >= arry.length) return EMPTY_ARRAY;
             return Arrays.copyOfRange(arry, offset, arry.length);
         }
 
-        boolean[] listToBooleanArray() {
+        boolean @NotNull [] listToBooleanArray() {
             if (offset >= arry.length) return new boolean[0];
             final int size = arry.length - offset;
             final boolean[] ret = new boolean[size];
@@ -1164,7 +1159,7 @@ public class LambdaJ {
     static class ListSymbolTable implements SymbolTable {
         private final Map<String,LambdaJSymbol> symbols = JavaUtil.newHashMap(WellknownSymbol.values().length + 10);
 
-        @Override public LambdaJSymbol intern(@NotNull LambdaJSymbol sym) {
+        @Override public @NotNull LambdaJSymbol intern(@NotNull LambdaJSymbol sym) {
             final String symNameLC = sym.name.toLowerCase();
             final LambdaJSymbol existing = symbols.get(symNameLC);
             if (existing != null) return existing;
@@ -1174,7 +1169,7 @@ public class LambdaJ {
             return sym;
         }
 
-        @Override public LambdaJSymbol intern(@NotNull String symName) {
+        @Override public @NotNull LambdaJSymbol intern(@NotNull String symName) {
             final String symNameLC = symName.toLowerCase();
             final LambdaJSymbol existing = symbols.get(symNameLC);
             if (existing != null) return existing;
@@ -1184,11 +1179,11 @@ public class LambdaJ {
             return ret;
         }
 
-        @Override public Iterator<LambdaJSymbol> iterator() { return symbols.values().iterator(); }
+        @Override public @NotNull Iterator<LambdaJSymbol> iterator() { return symbols.values().iterator(); }
     }
 
-    public static ObjectReader makeReader(@NotNull ReadSupplier in, @NotNull SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry, null); }
-    final SExpressionReader makeReader(@NotNull ReadSupplier in, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
+    public static @NotNull ObjectReader makeReader(@NotNull ReadSupplier in, @NotNull SymbolTable symtab, ConsCell featuresEnvEntry) { return new SExpressionReader(in, symtab, featuresEnvEntry, null); }
+    final @NotNull SExpressionReader makeReader(@NotNull ReadSupplier in, Path path) { return new SExpressionReader(in, symtab, featuresEnvEntry, path); }
 
     static boolean isDigit(int c) {
         return Character.isDigit(c);

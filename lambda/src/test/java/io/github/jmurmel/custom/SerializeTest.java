@@ -16,14 +16,14 @@ public class SerializeTest {
         private final HashMap<String, LambdaJ.LambdaJSymbol> symbols = new HashMap<>();
 
         @Override
-        public LambdaJ.LambdaJSymbol intern(@NotNull LambdaJ.LambdaJSymbol symbol) {
+        public @NotNull LambdaJ.LambdaJSymbol intern(@NotNull LambdaJ.LambdaJSymbol symbol) {
             final LambdaJ.LambdaJSymbol prev = symbols.putIfAbsent(symbol.toString(), symbol);
             if (prev != null) return prev;
             return symbol;
         }
 
         @Override
-        public Iterator<LambdaJ.LambdaJSymbol> iterator() {
+        public @NotNull Iterator<LambdaJ.LambdaJSymbol> iterator() {
             return symbols.values().iterator();
         }
     }
