@@ -2804,12 +2804,11 @@ public class LambdaJ {
                     if (doOpencode && symOperator.primitive()) {
                         return result = symOperator.wellknownSymbol.apply(this, evlis(ccArguments, env, stack, level, traceLvl));
                     }
-                    else {
-                        // respect evaluation order: the operator could be an undefined symbol, and we want that to fail before evaluation the arguments.
-                        // E.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
-                        func = evalSymbol(symOperator, env);
-                        argList = evlis(ccArguments, env, stack, level, traceLvl);
-                    }
+
+                    // respect evaluation order: the operator could be an undefined symbol, and we want that to fail before evaluation the arguments.
+                    // E.g. if "when" was not defined as a macro then "(when (< i 10) (loop (1+ i)))" should fail and not make an endless recursion.
+                    func = evalSymbol(symOperator, env);
+                    argList = evlis(ccArguments, env, stack, level, traceLvl);
 
                     funcall = true;
                     // fall through to "actually perform..."
@@ -3459,7 +3458,7 @@ public class LambdaJ {
     /** build an extended environment for a function invocation:<pre>
      *  loop over params and args
      *    construct a cons (param . arg)
-     *    stick above list in front of the environment
+     *    prepend the environment with above cons
      *  return extended environment</pre>
      *
      *  Similar to CL pairlis, but {@code #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
