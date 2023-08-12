@@ -9222,31 +9222,84 @@ public class LambdaJ {
         /// emitForms - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms. Each form but the last will be emitted as an assignment
          *  to the local variable "ignoredN" because some forms are emitted as ?: expressions which is not a valid statement by itself. */
-        private void emitForms(WrappingWriter ret, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel) {
+        private void emitForms(WrappingWriter sb, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel) {
             final Iterator<Object> it;
             if (forms == null || !(it = forms.iterator()).hasNext()) {
                 // e.g. the body of an empty lambda or function
-                ret.append("        return values = null;\n");
+                sb.append("        return values = null;\n");
                 return;
             }
 
-            boolean ign = false;
+            String retVal = null;
             while (it.hasNext()) {
                 final Object form = it.next();
-                ret.append("        values = null;\n");
-                if (consp(form)) { ret.append("        loc = \""); stringToJava(ret, ((ConsCell)form).lineInfo(), -1); stringToJava(ret, printSEx(form), 100); ret.append("\";\n        "); }
-                else ret.append("        ");
-                if (it.hasNext()) {
-                    if (!ign) {
-                        ret.append("Object ");
-                        ign = true;
-                    }
-                    ret.append("ignored").append(rsfx).append(" = ");
+
+                if (retVal == null) {
+                    retVal = "ret" + rsfx;
+                    sb.append("        Object ").append(retVal).append(" = null;\n");
                 }
-                else ret.append("return ");
-                emitForm(ret, form, env, topEnv, rsfx, !topLevel && !it.hasNext());
-                ret.append(";\n");
+                emitStmt(sb, form, env, topEnv, rsfx, retVal, topLevel, it.hasNext());
             }
+            sb.append("        return ").append(retVal).append(";\n");
+        }
+
+        private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retVal, boolean topLevel, boolean hasNext) {
+            if (hasNext) {
+                if (atom(form)) {
+                    return; // must be dead code
+                }
+            }
+
+            sb.append("        values = null;\n");
+            if (consp(form)) { sb.append("        loc = \""); stringToJava(sb, ((ConsCell)form).lineInfo(), -1); stringToJava(sb, printSEx(form), 100); sb.append("\";\n"); }
+
+            if (consp(form)) {
+                final ConsCell ccForm = (ConsCell)form;
+                final Object op = car(ccForm);      // first element of the of the form should be a symbol or a form that computes a symbol
+                assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
+                final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ forms
+
+                if (symbolp(op)) {
+                    final LambdaJSymbol symop = (LambdaJSymbol)op;
+                    switch (symop.wellknownSymbol) {
+
+                    /// * special forms:
+
+                    ///     - quote
+                    case sQuote: {
+                        if (hasNext) return;
+                        break;
+                    }
+
+                    case sIf: {
+                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
+                            // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
+                            final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
+                            emitStmt(sb, transformed, env, topEnv, rsfx, retVal, topLevel, hasNext);
+                            return;
+                        }
+
+                        sb.append("        if (");
+                        emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
+                        sb.append(") {\n");
+                        emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retVal, topLevel, hasNext);
+                        sb.append("        }\n");
+                        if (caddr(ccArguments) != null) {
+                            sb.append("        else {\n");
+                            emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retVal, topLevel, hasNext);
+                            sb.append("        }\n");
+                        }
+                        return;
+                    }
+
+                    default: break;
+                    }
+                }
+            }
+
+            sb.append("        ").append(retVal).append(" = ");
+            emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
+            sb.append(";\n");
         }
 
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
@@ -9266,9 +9319,9 @@ public class LambdaJ {
 
                 assert consp(form);
                 final ConsCell ccForm = (ConsCell)form;
-                final Object op = car(ccForm);      // first element of the of the form should be a symbol or an expression that computes a symbol
+                final Object op = car(ccForm);      // first element of the of the form should be a symbol or a form that computes a symbol
                 assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
-                final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ expressions
+                final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ forms
 
                 if (symbolp(op)) {
                     final LambdaJSymbol symop = (LambdaJSymbol)op;
@@ -10036,7 +10089,7 @@ public class LambdaJ {
                     if (form == eof) break;
 
                     if (pass1) topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, intp.expandForm(form));
-                    else emitForm(sb, form, _env, topEnv, rsfx, isLast);
+                    else emitForm(sb, form, _env, topEnv, rsfx, isLast); // todo should be emitStmt
                 }
                 return topEnv;
             } catch (IOException e) {

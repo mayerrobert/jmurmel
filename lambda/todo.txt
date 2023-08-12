@@ -1,3 +1,21 @@
+load als nicht-toplevel form kann compilerfehler geben:
+1.lisp: 1 2 3
+(if t (load "1.lisp"))
+->
+    // toplevel forms
+    protected Object runbody() throws Exception {
+        values = null;
+        loc = "line 2:1..2:16: (if t (load \"1\"))";
+        return (true
+        ? (1L2L3L)
+        : (Object)null);
+    }
+}
+
+
+Clojure laesst "function calls" von maps zu
+
+
 Checker framework abchecken/ einbauen: https://checkerframework.org/
 
 mlib splitten: CL-compat rausziehen
