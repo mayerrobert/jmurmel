@@ -1913,7 +1913,7 @@ public class LambdaJ {
 
         /*
          qq-expand and qq-expand-list are based on "Quasiquotation in Lisp (1999) by Alan Bawden"
-         https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.309.227
+         https://citeseerx.ist.psu.edu/viewdoc/summary?doi=10.1.1.309.227, https://3e8.org/pub/scheme/doc/Quasiquotation%20in%20Lisp%20(Bawden).pdf
 
         (defun qq-expand (x)
           (cond ((null x)
