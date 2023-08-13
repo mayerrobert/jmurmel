@@ -9106,7 +9106,7 @@ public class LambdaJ {
                     // toplevel progn will be replaced by the (macroexpanded) forms it contains
                     final ConsCell body = listOrMalformed("progn", cdr(ccForm));
                     for (Object prognForm : body) {
-                        globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm));
+                        globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm)); // todo warum muss ich nochmal macroexpanden?
                     }
                     return globalEnv;
                 }
@@ -9250,7 +9250,6 @@ public class LambdaJ {
                 }
             }
 
-            sb.append("        values = null;\n");
             if (consp(form)) { sb.append("        loc = \""); stringToJava(sb, ((ConsCell)form).lineInfo(), -1); stringToJava(sb, printSEx(form), 100); sb.append("\";\n"); }
 
             if (consp(form)) {
@@ -9279,6 +9278,7 @@ public class LambdaJ {
                             return;
                         }
 
+                        sb.append("        values = null;\n");
                         sb.append("        if (");
                         emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
                         sb.append(") {\n");
@@ -9292,11 +9292,21 @@ public class LambdaJ {
                         return;
                     }
 
+                    case sProgn: {
+                        ConsCell body = listOrMalformed("progn", cdr(ccForm));
+                        for (; cdr(body) != null; body = (ConsCell)cdr(body)) {
+                            emitStmt(sb, car(body), env, topEnv, rsfx, retVal, topLevel, true);
+                        }
+                        emitStmt(sb, car(body), env, topEnv, rsfx, retVal, topLevel, hasNext);
+                        return;
+                    }
+
                     default: break;
                     }
                 }
             }
 
+            sb.append("        values = null;\n");
             sb.append("        ").append(retVal).append(" = ");
             emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
             sb.append(";\n");
