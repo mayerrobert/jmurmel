@@ -9292,6 +9292,23 @@ public class LambdaJ {
                         return;
                     }
 
+                    case sSetQ: {
+                        sb.append("        values = null;\n");
+                        if (ccArguments == null) {
+                            if (!hasNext) sb.append("        ").append(retVal).append(" = ").append("null");
+                        }
+                        else {
+                            String javaName = null;
+                            for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
+                                sb.append("        ");
+                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx);
+                                sb.append(";\n");
+                            }
+                            if (!hasNext) sb.append("        ").append(retVal).append(" = ").append(javaName).append(";\n");
+                        }
+                        return;
+                    }
+
                     case sProgn: {
                         ConsCell body = listOrMalformed("progn", cdr(ccForm));
                         for (; cdr(body) != null; body = (ConsCell)cdr(body)) {
