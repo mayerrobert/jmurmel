@@ -9103,10 +9103,11 @@ public class LambdaJ {
                 }
 
                 case sProgn: {
-                    // toplevel progn will be replaced by the (macroexpanded) forms it contains
+                    // toplevel progn will be replaced by the (macroexpanded) forms it contains.
+                    // Macroexpand is needed in case the progn contained a load or require that contains defmacro forms, seel also LambdaJ#expandAndEval()
                     final ConsCell body = listOrMalformed("progn", cdr(ccForm));
                     for (Object prognForm : body) {
-                        globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm)); // todo warum muss ich nochmal macroexpanden?
+                        globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm));
                     }
                     return globalEnv;
                 }
@@ -9230,15 +9231,10 @@ public class LambdaJ {
                 return;
             }
 
-            String retVal = null;
+            final String retVal = "ret" + rsfx;
+            sb.append("        Object ").append(retVal).append(" = null;\n");
             while (it.hasNext()) {
-                final Object form = it.next();
-
-                if (retVal == null) {
-                    retVal = "ret" + rsfx;
-                    sb.append("        Object ").append(retVal).append(" = null;\n");
-                }
-                emitStmt(sb, form, env, topEnv, rsfx, retVal, topLevel, it.hasNext());
+                emitStmt(sb, it.next(), env, topEnv, rsfx, retVal, topLevel, it.hasNext());
             }
             sb.append("        return ").append(retVal).append(";\n");
         }
@@ -10116,7 +10112,8 @@ public class LambdaJ {
                     if (form == eof) break;
 
                     if (pass1) topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, intp.expandForm(form));
-                    else emitForm(sb, form, _env, topEnv, rsfx, isLast); // todo should be emitStmt
+                    else
+                        emitForm(sb, form, _env, topEnv, rsfx, isLast); // todo should be emitStmt
                 }
                 return topEnv;
             } catch (IOException e) {
