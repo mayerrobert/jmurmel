@@ -9540,10 +9540,8 @@ public class LambdaJ {
                     }
 
                     case sLoad: {
-                        varargs1("load", ccArguments);
-                        // todo aenderungen im environment gehen verschuett, d.h. define/defun funktioniert nur bei toplevel load, nicht hier
-                        loadFile("load", sb, car(ccArguments), env, topEnv, rsfx - 1, isLast, null, null);
-                        return;
+                        // pass1 has replaced all toplevel (load)s with the file contents
+                        throw errorNotImplemented("load as non-toplevel form is not implemented");
                     }
 
                     case sRequire: {
@@ -10099,7 +10097,7 @@ public class LambdaJ {
         }
 
         private ConsCell loadFile(String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, List<Object> bodyForms, StringBuilder globals) {
-            final boolean pass1 = !passTwo;
+            assert !passTwo;
             final LambdaJ intp = this.intp;
             final Path prev = intp.currentSource;
             final Path p = intp.findFile(func, argument);
@@ -10111,9 +10109,7 @@ public class LambdaJ {
                     final Object form = parser.readObj(true, eof);
                     if (form == eof) break;
 
-                    if (pass1) topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, intp.expandForm(form));
-                    else
-                        emitForm(sb, form, _env, topEnv, rsfx, isLast); // todo should be emitStmt
+                    topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, intp.expandForm(form));
                 }
                 return topEnv;
             } catch (IOException e) {
