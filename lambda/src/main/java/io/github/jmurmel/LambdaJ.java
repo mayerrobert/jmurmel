@@ -9246,13 +9246,13 @@ public class LambdaJ {
                 }
             }
 
-            if (consp(form)) { sb.append("        loc = \""); stringToJava(sb, ((ConsCell)form).lineInfo(), -1); stringToJava(sb, printSEx(form), 100); sb.append("\";\n"); }
-
             if (consp(form)) {
                 final ConsCell ccForm = (ConsCell)form;
                 final Object op = car(ccForm);      // first element of the of the form should be a symbol or a form that computes a symbol
                 assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
                 final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
+
+                sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
 
                 if (symbolp(op)) {
                     final LambdaJSymbol symop = (LambdaJSymbol)op;
