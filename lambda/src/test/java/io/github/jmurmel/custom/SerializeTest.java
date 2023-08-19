@@ -7,7 +7,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 
 import io.github.jmurmel.LambdaJ;
-import jakarta.validation.constraints.NotNull;
+import io.github.jmurmel.LambdaJ.NotNull;
 import org.junit.Test;
 
 public class SerializeTest {

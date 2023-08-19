@@ -5,15 +5,16 @@ For a copy, see https://opensource.org/licenses/MIT. */
 
 package io.github.jmurmel;
 
-import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Null;
+import io.github.jmurmel.LambdaJ.NotNull;
 
 import java.awt.*;
 import java.awt.event.*;
 import java.awt.geom.Line2D;
 import java.awt.image.BufferedImage;
 import java.io.*;
+import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
@@ -58,6 +59,9 @@ import javax.tools.SimpleJavaFileObject;
 
 import static io.github.jmurmel.LambdaJ.Chk.*;
 import static io.github.jmurmel.LambdaJ.Subr.*;
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.ElementType.TYPE_USE;
+import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 /// # JMurmel - Murmel interpreter/ compiler
 
@@ -720,7 +724,7 @@ public class LambdaJ {
     // two arguments
     private static final class Closure2 extends Closure {
         final Object p1, p2;
-        Closure2(ConsCell params, ConsCell body, ConsCell closure) { 
+        Closure2(ConsCell params, ConsCell body, ConsCell closure) {
             super(params, body, closure);
             p1 = car(params); p2 = cadr(params);
         }
@@ -2198,8 +2202,8 @@ public class LambdaJ {
         sAdjArrayp("adjustable-array-p", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(adjustableArrayP(car(args))); } },
 
         // conses and lists
-        sCar("car", Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return caar(args); } }, 
-        sCdr("cdr", Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return cdar(args); } }, 
+        sCar("car", Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return caar(args); } },
+        sCdr("cdr", Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return cdar(args); } },
         sCons("cons", Features.HAVE_CONS, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
         sRplaca("rplaca", Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplaca", car(args)).rplaca(cadr(args)); } },
         sRplacd("rplacd", Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
@@ -2350,8 +2354,8 @@ public class LambdaJ {
         sClearFrame("clear-frame", Features.HAVE_GUI, 0, 1)      { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("clear-frame",   car(a)).clear();   } },
         sRepaintFrame("repaint-frame", Features.HAVE_GUI, 0, 1)  { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("repaint-frame", car(a)).repaint(); } },
         sFlushFrame("flush-frame", Features.HAVE_GUI, 0, 1)      { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("flush-frame",   car(a)).flush();   } },
-                                                                 
-        // set new current frame, return previous frame          
+
+        // set new current frame, return previous frame
         sCurrentFrame("current-frame", Features.HAVE_GUI, 0, 1)  { @Override Object apply(LambdaJ intp, ConsCell a) { final Object prev = intp.current_frame; if (car(a) != null) intp.current_frame = intp.requireFrame("current-frame", car(a)); return prev; } },
 
         sPushPos("push-pos", Features.HAVE_GUI, 0, 1)            { @Override Object apply(LambdaJ intp, ConsCell a) { return intp.requireFrame("push-pos",car(a)).pushPos(); } },
@@ -2997,7 +3001,7 @@ public class LambdaJ {
                 expandForms("function application", ccForm);
                 return ccForm;
             }
-            
+
             if (!symbolp(op)) throw new UndefinedFunction("function application: not a primitive or lambda: %s", printSEx(op));
             final LambdaJSymbol symOp = (LambdaJSymbol)op;
 
@@ -4398,7 +4402,7 @@ public class LambdaJ {
             if (l >= minIncl && l <= maxIncl) return l;
             throw errorNotAnInteger(func, originalValue);
         }
-        
+
         @SuppressWarnings("SameParameterValue")
         static Random requireRandom(String func, Object r) {
             if (r instanceof Random) return (Random)r;
@@ -5036,7 +5040,7 @@ public class LambdaJ {
                 for (Object o: l) ret.add(o);
                 return ret;
             }
-            return listToArray(lst); 
+            return listToArray(lst);
         }
 
         static long svlength(Object maybeVector) {
@@ -7825,7 +7829,7 @@ public class LambdaJ {
         public final double   _mod     (Object... args) { twoArgs("mod",          args.length); return cl_mod(toDouble(args[0]), toDouble(args[1])); }
         public final double cl_mod(double lhs, double rhs) { values = null; return LambdaJ.Subr.cl_mod(lhs, rhs); }
         public final double   _rem     (Object... args) { twoArgs("rem",          args.length); values = null; return toDouble(args[0]) % toDouble(args[1]); }
-        
+
         public final Number _random(Object... args) {
             varargs1_2("random", args.length); values = null;
             final Object state;
@@ -8116,7 +8120,7 @@ public class LambdaJ {
             return ret.first();
         }
 
-        public final Map<Object,Object> hash(ConsCell args) { return LambdaJ.Subr.hash(symtab, args); } 
+        public final Map<Object,Object> hash(ConsCell args) { return LambdaJ.Subr.hash(symtab, args); }
 
         public static ConsCell arraySlice(Object[] o, int offset) { return LambdaJ.arraySlice(o, offset); }
         public static ConsCell arraySlice(Object[] o) { return arraySlice(o, 0); }
@@ -8936,7 +8940,7 @@ public class LambdaJ {
         {"adjustable-array-p", "adjustableArrayP"}, {"vector-add", "vectorAdd"},
         {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
         {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
-        {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"}, 
+        {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"},
         {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"}, {"random-state-p", "_randomstatep"}, {"make-random-state", "makeRandomState"},
         {"bit-vector-p", "bitvectorp"}, {"bv=", "bvEq"}, {"simple-bit-vector-p", "sbitvectorp"}, {"hash-table-p", "hashtablep"}, {"make-array", "makeArray"},
         {"hash", "_hash"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
@@ -8999,7 +9003,7 @@ public class LambdaJ {
             }
             ret.append("import java.util.function.Function;\n"
                        + "import java.util.function.Supplier;\n"
-                       + "import io.github.jmurmel.LambdaJ.*;\n\n" 
+                       + "import io.github.jmurmel.LambdaJ.*;\n\n"
                        + "@SuppressWarnings(\"unchecked\")\n"
                        + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
                        + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
@@ -9115,8 +9119,8 @@ public class LambdaJ {
                 case sLoad: {
                     final ConsCell ccArgs = listOrMalformed("load", cdr(ccForm));
                     oneArg("load", ccArgs);
-                    if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack 
-                    globalEnv = loadFile("load", ret, car(ccArgs), null, globalEnv, -1, false, bodyForms, globals);
+                    if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack
+                    globalEnv = loadFile("load", ret, car(ccArgs), globalEnv, bodyForms, globals);
                     return globalEnv;
                 }
 
@@ -9128,8 +9132,8 @@ public class LambdaJ {
                     if (!intp.modules.contains(modName)) {
                         Object modFilePath = cadr(ccArgs);
                         if (modFilePath == null) modFilePath = modName;
-                        if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack 
-                        globalEnv = loadFile("require", ret, modFilePath, null, globalEnv, -1, false, bodyForms, globals);
+                        if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack
+                        globalEnv = loadFile("require", ret, modFilePath, globalEnv, bodyForms, globals);
                         if (!intp.modules.contains(modName)) errorMalformedFmt("require", "require'd file '%s' does not provide '%s'", modFilePath, modName);
                     }
                     return globalEnv;
@@ -9181,7 +9185,7 @@ public class LambdaJ {
                       + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
                       + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                       + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
-                      + "        catch (Exception e) { rterror(e); }\n" 
+                      + "        catch (Exception e) { rterror(e); }\n"
                       + "        finally { values = null; }\n"
                       + "        return intern(\"").append(symbol).append("\");\n"
                       + "    }\n\n");
@@ -9783,7 +9787,7 @@ public class LambdaJ {
             notAPrimitive("setq", symbol, javaName);
             if (fastassq(symbol, env) == fastassq(symbol, topEnv)) {
                 if (javaName.endsWith(".get()")) {
-                    // either a userdefined global or a 
+                    // either a userdefined global or a
                     final String symName = javaName.substring(0, javaName.length()-6);
                     sb.append(symName).append(".set("); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
                 }
@@ -10096,7 +10100,7 @@ public class LambdaJ {
             return env;
         }
 
-        private ConsCell loadFile(String func, WrappingWriter sb, Object argument, ConsCell _env, ConsCell topEnv, int rsfx, boolean isLast, List<Object> bodyForms, StringBuilder globals) {
+        private ConsCell loadFile(String func, WrappingWriter sb, Object argument, ConsCell topEnv, List<Object> bodyForms, StringBuilder globals) {
             assert !passTwo;
             final LambdaJ intp = this.intp;
             final Path prev = intp.currentSource;
@@ -10112,7 +10116,8 @@ public class LambdaJ {
                     topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, intp.expandForm(form));
                 }
                 return topEnv;
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 throw wrap(new ReaderError("load: error reading file '%s': ", e.getMessage()));
             }
             finally {
@@ -10769,6 +10774,43 @@ public class LambdaJ {
             return ret;
         }
     }
+
+    // Null and NotNull are copied from jakarta.validation-api.jar (and somewhat stripped) in order to avoid this dependency so that "java LambdaJ.java" will work
+    @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
+    @Retention(SOURCE)
+    @Repeatable(NotNull.List.class)
+    @Documented
+    public @interface NotNull {
+
+        /**
+         * Defines several {@link NotNull} annotations on the same element.
+         */
+        @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
+        @Retention(SOURCE)
+        @Documented
+        @interface List {
+
+            NotNull[] value();
+        }
+    }
+
+    @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
+    @Retention(SOURCE)
+    @Repeatable(Null.List.class)
+    @Documented
+    public @interface Null {
+
+        /**
+         * Defines several {@link Null} annotations on the same element.
+         */
+        @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
+        @Retention(SOURCE)
+        @Documented
+        @interface List {
+
+            Null[] value();
+        }
+    }
 }
 
 
@@ -10788,7 +10830,7 @@ final class JavaUtil {
     }
 
     // Java 11 has CharSequence#compare
-    public static int compare(CharSequence cs1, CharSequence cs2) {
+    static int compare(CharSequence cs1, CharSequence cs2) {
         for (int i = 0, len = Math.min(cs1.length(), cs2.length()); i < len; i++) {
             final char a = cs1.charAt(i);
             final char b = cs2.charAt(i);
@@ -10797,7 +10839,7 @@ final class JavaUtil {
         return cs1.length() - cs2.length();
     }
 
-    public static int compare(CharSequence cs1, char[] cs2) {
+    static int compare(CharSequence cs1, char[] cs2) {
         for (int i = 0, len = Math.min(cs1.length(), cs2.length); i < len; i++) {
             final char a = cs1.charAt(i);
             final char b = cs2[i];
@@ -10806,7 +10848,7 @@ final class JavaUtil {
         return cs1.length() - cs2.length;
     }
 
-    public static int compare(char[] cs1, char[] cs2) {
+    static int compare(char[] cs1, char[] cs2) {
         for (int i = 0, len = Math.min(cs1.length, cs2.length); i < len; i++) {
             final char a = cs1[i];
             final char b = cs2[i];
@@ -11041,7 +11083,7 @@ final class UnixToAnyEol implements LambdaJ.WriteConsumer {
             else wrapped.print(String.valueOf(c));
         }
     }
-    
+
     private static boolean hasNewline(CharSequence s) {
         for (int i = 1; i < s.length(); i++) {
             if (s.charAt(i) == '\n') return true;

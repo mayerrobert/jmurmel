@@ -8,13 +8,12 @@ import java.io.Writer;
 import javax.script.*;
 
 import io.github.jmurmel.LambdaJ;
-import jakarta.validation.constraints.NotNull;
 
 /** JSR-223 wrapper for JMurmel */
 public class JMurmelScriptEngine extends AbstractScriptEngine implements ScriptEngine, Invocable {
 
     private final JMurmelScriptEngineFactory factory;
-    private final @NotNull LambdaJ murmel;
+    private final LambdaJ murmel;
 
     public JMurmelScriptEngine() {
         this(null);
