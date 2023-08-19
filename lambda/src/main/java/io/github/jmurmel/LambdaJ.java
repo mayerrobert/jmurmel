@@ -9252,7 +9252,7 @@ public class LambdaJ {
                 final ConsCell ccForm = (ConsCell)form;
                 final Object op = car(ccForm);      // first element of the of the form should be a symbol or a form that computes a symbol
                 assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
-                final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ forms
+                final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
 
                 if (symbolp(op)) {
                     final LambdaJSymbol symop = (LambdaJSymbol)op;
