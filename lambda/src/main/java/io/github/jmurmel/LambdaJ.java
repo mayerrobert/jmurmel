@@ -10125,12 +10125,13 @@ public class LambdaJ {
             }
         }
 
-        // todo throw error on circular list
-        private static boolean dottedList(Object l) {
+        private static boolean dottedList(Object _l) {
+            Object l = _l;
             for (;;) {
                 if (l == null) return false;
                 if (!consp(l)) return true;
                 l = cdr(l);
+                if (l == _l) throw new ProgramError("circular list detected");
             }
         }
 
