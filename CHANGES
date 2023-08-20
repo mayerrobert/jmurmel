@@ -5,6 +5,7 @@ Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
 
  * changed *command-line-argument-list* in compiled Murmel to a regular mutable list
  * changed load and require in comiled Murmel: must appear at toplevel
+ * changed car to accept all strings
 
  * fixed read-from-string: handle feature-expressions correctly, intern symbols correctly
  * fixed compiled random-state-p and make-random-state

@@ -3824,7 +3824,8 @@ public class LambdaJ {
     static Object   car(Object o)      { return o == null ? null
                                                           : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                           : o instanceof ConsCell ? ((ConsCell)o).car()
-                                                          : o instanceof String ? ((String)o).isEmpty() ? null : ((String)o).charAt(0) // todo und andere strings char[], StringBuilder?
+                                                          : o instanceof CharSequence ? ((CharSequence)o).length() == 0 ? null : ((CharSequence)o).charAt(0)
+                                                          : o instanceof char[] ? ((char[])o).length == 0 ? null : ((char[])o)[0]
                                                           : carCdrError("car", o); }
 
     static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
