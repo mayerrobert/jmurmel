@@ -14,7 +14,7 @@ import io.github.jmurmel.LambdaJ;
 /** JSR-223 wrapper for JMurmel */
 public class JMurmelScriptEngineFactory implements ScriptEngineFactory {
     private final List<String> extensions = Collections.unmodifiableList(Arrays.asList(".lisp", ".lsp"));
-    private final List<String> names      = Collections.unmodifiableList(Arrays.asList("JMurmel", "jmurmel"));
+    private final List<String> names      = Collections.unmodifiableList(Arrays.asList("JMurmel", "jmurmel", "Murmel", "murmel"));
     private final List<String> mimetypes  = Collections.unmodifiableList(Arrays.asList("application/x-lisp", "text/x-script.lisp"));
     private final Map<String, String> parameters;
 

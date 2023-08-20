@@ -742,7 +742,7 @@ pi ; ==> 3.141592653589793
 ; in case of an empty file.
 ;
 ; When compiling Murmel `load` is performed at
-; compile time.
+; compile time and must appear as a toplevel form.
 ;
 ; `filespec` is not eval'd and must be a string.
 ; Unless filespec ends with ".lisp" the file extension
@@ -769,7 +769,7 @@ pi ; ==> 3.141592653589793
 ; `module-name` to the set of already loaded modules.
 ;
 ; When compiling Murmel `require` is performed at
-; compile time.
+; compile time and must appear as a toplevel form.
 ;
 ; If `optional-file-path` is omitted or nil then
 ; `module-name` will be used as the file path.
