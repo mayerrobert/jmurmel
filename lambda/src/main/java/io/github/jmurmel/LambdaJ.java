@@ -9371,7 +9371,7 @@ public class LambdaJ {
                             emitForm(sb, transformed, env, topEnv, rsfx, isLast);
                             return;
                         }
-                        sb.append("(");
+                        sb.append('(');
                         emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
                         sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
                         if (caddr(ccArguments) != null) { sb.append(")\n        : ("); emitForm(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
@@ -9537,7 +9537,7 @@ public class LambdaJ {
                         if (cadr(ccArguments) != null) {
                             sb.append(", rt().new ValuesBuilder()\n        .add(");
                             emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, false);
-                            sb.append(")\n        .build(").append(length).append(',').append(String.valueOf(!varargs)).append(")");
+                            sb.append(")\n        .build(").append(length).append(',').append(String.valueOf(!varargs)).append(')');
                         }
                         else sb.append(", NOARGS");
                         sb.append(')');
@@ -9577,7 +9577,7 @@ public class LambdaJ {
                             final Object maybeMacroCall = car((ConsCell)cdar(ccArguments));
                             if (consp(maybeMacroCall)) { expandedForm = macroexpandImpl(intp, (ConsCell)maybeMacroCall); expanded = cadr(intp.values) == sT ? "rt()._t" : "null"; }
                             else { expandedForm = maybeMacroCall; expanded = "null"; }
-                            sb.append("rt()._values(");  emitQuotedForm(sb, expandedForm, true);  sb.append(", ").append(expanded).append(")");
+                            sb.append("rt()._values(");  emitQuotedForm(sb, expandedForm, true);  sb.append(", ").append(expanded).append(')');
                             return;
                         }
 
@@ -9680,7 +9680,7 @@ public class LambdaJ {
             if (condForm == null) {
                 sb.append("(Object)null");
             } else {
-                sb.append("(");
+                sb.append('(');
                 boolean first = true;
                 for (final Iterator<Object> iterator = condForm.iterator(); iterator.hasNext(); ) {
                     final Object clause = iterator.next();
@@ -9744,7 +9744,7 @@ public class LambdaJ {
             emitForm(sb, protectedForm, env, topEnv, rsfx, false);
             sb.append("; },\n        ");
             emitForm(sb, errorObj, env, topEnv, rsfx, false);
-            sb.append(")");
+            sb.append(')');
         }
 
         private void emitUnwindProtect(WrappingWriter sb, Object forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
@@ -10148,7 +10148,7 @@ public class LambdaJ {
                 final Object applyArg = cadr(args);
 
                 if (applyOp == null || applyOp == sNil) throw new UndefinedFunction("function application: not a primitive or lambda: nil");
-                if (applyOp == intp.intern("list")) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(")"); return true; }
+                if (applyOp == intp.intern("list")) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(')'); return true; }
 
                 if (applyOp != sApply) { // apply needs special treatment for TCO
                     for (String prim: primitives)          if (symbolEq(applyOp, prim))    { opencodeApplyHelper(sb, "_" + prim,  applyArg, env, topEnv, rsfx);  return true; }
@@ -10158,7 +10158,7 @@ public class LambdaJ {
                 sb.append(isLast ? "tailcall" : "funcall").append("((MurmelFunction)rt()::apply, ");
                 emitForm(sb, applyOp, env, topEnv, rsfx, false);  sb.append(", ");
                 emitForm(sb, applyArg, env, topEnv, rsfx, false);
-                sb.append(")");
+                sb.append(')');
                 return true;
             }
 
@@ -10172,13 +10172,13 @@ public class LambdaJ {
             if (prim == WellknownSymbol.sMod) {
                 sb.append("cl_mod(");
                 emitFormAsDouble(sb, "mod", car(args), env, topEnv, rsfx);  sb.append(", ");  emitFormAsDouble(sb, "mod", cadr(args), env, topEnv, rsfx);
-                sb.append(")");
+                sb.append(')');
                 return true;
             }
             if (prim == WellknownSymbol.sRem) {
-                sb.append("(");
+                sb.append('(');
                 emitFormAsDouble(sb, "rem", car(args), env, topEnv, rsfx);  sb.append(" % ");  emitFormAsDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
-                sb.append(")");
+                sb.append(')');
                 return true;
             }
 
@@ -10221,7 +10221,7 @@ public class LambdaJ {
                     else sb.append("\n        , ");
                     emitForm(sb, car(args), env, topEnv, rsfx, false);
                 }
-                sb.append(")");
+                sb.append(')');
                 return true;
             }
 
@@ -10237,7 +10237,7 @@ public class LambdaJ {
                     else sb.append("\n        , ");
                     emitForm(sb, car(args), env, topEnv, rsfx, false);
                 }
-                sb.append(")");
+                sb.append(')');
                 return true;
             }
 
@@ -10266,7 +10266,7 @@ public class LambdaJ {
         private void emitDivision(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, String murmel, String javaOp, boolean asLong) {
             checkNonNumber(murmel, car(args));
             if (asLong) sb.append("toFixnum(");
-            sb.append(javaOp).append("(");
+            sb.append(javaOp).append('(');
             if (cdr(args) == null) {
                 emitFormAsDouble(sb, murmel, car(args), env, topEnv, rsfx);
             }
@@ -10276,7 +10276,7 @@ public class LambdaJ {
                 sb.append(" / ");
                 emitFormAsDouble(sb, murmel, cadr(args), env, topEnv, rsfx);
             }
-            sb.append(")");
+            sb.append(')');
             if (asLong) sb.append(')');
         }
 
@@ -10318,7 +10318,7 @@ public class LambdaJ {
         /** emit a call to the primitive {@code func} without going through the trampoline,
          *  if {@code wrapper} is non-null then it will be applied to each function argument  */
         private void emitCallPrimitive(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append(func).append("(");
+            sb.append(func).append('(');
             if (args != null) {
                 emitForm(sb, car(args), env, topEnv, rsfx, false);
                 if (cdr(args) != null) for (Object arg: (ConsCell)cdr(args)) {
@@ -10333,9 +10333,9 @@ public class LambdaJ {
         /** if args has two arguments then emit a binary operator (double, double) -> boolean */
         private boolean emitBinOp(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (cdr(args) == null || cddr(args) != null) return false;
-            sb.append("(");
+            sb.append('(');
             emitFormAsDouble(sb, func, car(args), env, topEnv, rsfx);
-            sb.append(" ").append(func).append(" ");
+            sb.append(' ').append(func).append(' ');
             emitFormAsDouble(sb, func, cadr(args), env, topEnv, rsfx);
             sb.append(" ? _t : null)");
             return true;
@@ -10412,7 +10412,7 @@ public class LambdaJ {
                     }
                 }
 
-                sb.append("(");
+                sb.append('(');
                 boolean first = true;
                 if (ccArguments != null) {
                     int i = startArg;
@@ -10443,7 +10443,7 @@ public class LambdaJ {
                     else sb.append("((").append(strClazz).append(')').append("args[0]").append(").").append(strMethod);
                 }
 
-                sb.append("(");
+                sb.append('(');
                 if (params != null) {
                     boolean first = true;
                     if (m.isVarArgs()) {
@@ -10458,7 +10458,7 @@ public class LambdaJ {
                         // handle last parameter which is vararg: pass an array of the appropriate type with the remaining args
                         final Object[] desc = JFFI.classByName.get(paramTypeNames.get(params.length-1));
                         final int varargPos = params.length + startArg - 1;
-                        final String conv = "(java.util.function.UnaryOperator<Object>)(MurmelJavaProgram::" + desc[1] + ")";
+                        final String conv = "(java.util.function.UnaryOperator<Object>)(MurmelJavaProgram::" + desc[1] + ')';
                         sb.append("\n        , toVarargs(args, ").append(String.valueOf(varargPos))
                           .append(", ").append(conv)
                           .append(", new ").append(((Class<?>)desc[0]).getComponentType().getCanonicalName()).append("[args.length - ").append(String.valueOf(varargPos)).append("])");
@@ -10581,7 +10581,7 @@ public class LambdaJ {
                     // fast path for dotted pairs and 1 element lists
                     qsb.append("_cons("); emitQuotedForm(qsb, car(form), false);
                     qsb.append(", ");     emitQuotedForm(qsb, cdr(form), false);
-                    qsb.append(")");
+                    qsb.append(')');
                 }
                 else if (atom(cddr(form))) {
                     // fast path for 2 element lists or dotted 3 element lists
@@ -10900,7 +10900,7 @@ final class JavaCompilerHelper {
             }
             copyFolder(murmelClassLoader.getOutPath(), zipfs.getPath("/"));
         }
-        cleanup();
+        finally { cleanup();} 
 
         return program;
     }
