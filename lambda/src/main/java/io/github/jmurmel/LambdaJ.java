@@ -9316,25 +9316,31 @@ public class LambdaJ {
                         return;
                     }
 
+                    case sLetStar:
                     case sLet: {
                         final Object bindings = cadr(ccForm);
                         if (bindings instanceof LambdaJSymbol) break;
                         rsfx++;
                         final ConsCell ccBindings = requireList("let", bindings);
                         final ConsCell ccBody = requireList("let", cddr(ccForm));
-                        ConsCell extEnv = env;
+                        ConsCell extEnv = env, letStarEnv = env;
                         sb.append("        {\n");
                         final String vName = "v" + rsfx;
                         final int nVars = listLength(ccBindings);
                         sb.append("        final Object[] ").append(vName).append(" = new Object[").append(nVars).append("];\n");
                         int localCtr = 0;
+                        final ArrayList<Object> varNames = new ArrayList<>(nVars);
                         for (Object binding: ccBindings) {
                             final ConsCell ccBinding = (ConsCell)binding;
                             final Object sym = car(ccBinding);
                             final String name = vName + '[' + localCtr++ + ']';
-                            extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv); // todo duplikate checken, fuer let* nur zuweisen
+                            if (!varNames.contains(sym)) {
+                                varNames.add(sym);
+                                extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
+                            }
                             sb.append("        ").append(javasym(sym, extEnv)).append(" = ");
-                            emitForm(sb, cadr(ccBinding), env, topEnv, rsfx, false); // todo umbauen in emitstmt mit geeignetem retval?
+                            emitForm(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, false); // todo umbauen in emitstmt mit geeignetem retval?
+                            letStarEnv = extEnv;
                             sb.append(";\n");
                         }
                         emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retVal, topLevel, hasNext);
