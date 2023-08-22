@@ -3966,7 +3966,7 @@ public class LambdaJ {
         return c.toString();
     }
 
-    /** return {@code a} cast to a list, error if {@code a} is not a list or is nil. */
+    /** return {@code a} cast to a list, error if {@code a} is not a list (nil is acceptable) */
     static ConsCell requireList(String func, Object a) {
         if (a == null) return null;
         if (!consp(a)) errorNotAList(func, a);
@@ -8850,7 +8850,7 @@ public class LambdaJ {
          *  symbols that are reserved words throw an error. */
         private static ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
             final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(func, symbol);
-            return extenvIntern(sym, mangle(symbol.toString(), sfx), prev);
+            return extenvIntern(sym, mangle(sym.toString(), sfx), prev);
         }
 
         /** extend environment w/o reserved word check */
@@ -9311,11 +9311,34 @@ public class LambdaJ {
                     }
 
                     case sProgn: {
-                        ConsCell body = listOrMalformed("progn", cdr(ccForm));
-                        for (; cdr(body) != null; body = (ConsCell)cdr(body)) {
-                            emitStmt(sb, car(body), env, topEnv, rsfx, retVal, topLevel, true);
+                        final ConsCell ccBody = listOrMalformed("progn", cdr(ccForm));
+                        emitStmts(sb, ccBody, env, topEnv, rsfx, retVal, topLevel, hasNext);
+                        return;
+                    }
+
+                    case sLet: {
+                        final Object bindings = cadr(ccForm);
+                        if (bindings instanceof LambdaJSymbol) break;
+                        rsfx++;
+                        final ConsCell ccBindings = requireList("let", bindings);
+                        final ConsCell ccBody = requireList("let", cddr(ccForm));
+                        ConsCell extEnv = env;
+                        sb.append("        {\n");
+                        final String vName = "v" + rsfx;
+                        final int nVars = listLength(ccBindings);
+                        sb.append("        final Object[] ").append(vName).append(" = new Object[").append(nVars).append("];\n");
+                        int localCtr = 0;
+                        for (Object binding: ccBindings) {
+                            final ConsCell ccBinding = (ConsCell)binding;
+                            final Object sym = car(ccBinding);
+                            final String name = vName + '[' + localCtr++ + ']';
+                            extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv); // todo duplikate checken, fuer let* nur zuweisen
+                            sb.append("        ").append(javasym(sym, extEnv)).append(" = ");
+                            emitForm(sb, cadr(ccBinding), env, topEnv, rsfx, false); // todo umbauen in emitstmt mit geeignetem retval?
+                            sb.append(";\n");
                         }
-                        emitStmt(sb, car(body), env, topEnv, rsfx, retVal, topLevel, hasNext);
+                        emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retVal, topLevel, hasNext);
+                        sb.append("        }\n");
                         return;
                     }
 
@@ -9328,6 +9351,13 @@ public class LambdaJ {
             sb.append("        ").append(retVal).append(" = ");
             emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
             sb.append(";\n");
+        }
+
+        private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retVal, boolean topLevel, boolean hasNext) {
+            for (; cdr(ccBody) != null; ccBody = (ConsCell)cdr(ccBody)) {
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retVal, topLevel, true);
+            }
+            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retVal, topLevel, hasNext);
         }
 
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
