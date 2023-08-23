@@ -3111,12 +3111,15 @@ public class LambdaJ {
             case sLet:
             case sLetStar:
             case sLetrec:
+                final Object tagOrBindings = car(ccArgs);
+                if (tagOrBindings == null) return expandForm(cons(sProgn, cdr(ccArgs)));
+
                 final String sfName = symOp.toString();
                 final boolean letDynamic, namedLet;
                 final Object tag;
                 final ConsCell bindingsAndBody;
-                if (car(ccArgs) != null && symbolp(car(ccArgs))) {
-                    tag = car(ccArgs);
+                if (symbolp(tagOrBindings)) {
+                    tag = tagOrBindings;
                     if (tag == sDynamic) {
                         letDynamic = true;
                         namedLet = false;

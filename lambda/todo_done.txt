@@ -2521,3 +2521,6 @@ $ jrunscript -cp jmurmel.jar -l jmurmel -f ../../samples.murmel/fizzbuzz.lisp
 Fizz, 43, 44, Fizz Buzz, 46, 47, Fizz, 49, Buzz, Fizz, 52, 53, Fizz, Buzz, 56, Fizz, 58, 59, Fizz Buzz,
 61, 62, Fizz, 64, Buzz, Fizz, 67, 68, Fizz, Buzz, 71, Fizz, 73, 74, Fizz Buzz, 76, 77, Fizz, 79, Buzz,
 Fizz, 82, 83, Fizz, Buzz, 86, Fizz, 88, 89, Fizz Buzz, 91, 92, Fizz, 94, Buzz, Fizz, 97, 98, Fizz, Buzz
+
+
+(let nil ...) und (let* nil ...) koennten/ sollten in progn verwandelt werden

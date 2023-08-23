@@ -1,4 +1,3 @@
-(let nil ...) und (let* nil ...) koennten/ sollten in progn verwandelt werden
 
 labels forms wo mehr als ein name ein gensym ist gibt wsl. javacompilerfehler
 

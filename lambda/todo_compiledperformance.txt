@@ -25,6 +25,12 @@ https://github.com/jvm-profiling-tools/async-profiler
 
 
 
+Murmel->C:
+gcc hat lokale funktionen, fast wie lambda, siehe easy-islisp https://github.com/sasagawa888/eisl/issues/288
+clang hat blocks, fast wie gcc's lokale funktionen, siehe https://web.archive.org/web/20191230180849/http://thirdcog.eu/pwcblocks/
+
+
+
 Ideen:
 ======
 MurmelFunctionCall in funcall 1x instanzieren und als parameter uebergeben
