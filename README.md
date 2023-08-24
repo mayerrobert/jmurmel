@@ -20,7 +20,10 @@ Compilation is done as Murmel to Java source
 which is then compiled to .class files using the JDK compiler.
 JMurmel as well as compiled Murmel programs should run on all platforms supported by Java8+.
 
-JMurmel features a REPL with a trace facility (trace and untrace function calls),
+**Key features**
+
+JMurmel features an interpreter and a compiler,
+a REPL with a trace facility (trace and untrace function calls),
 tail call optimization,
 lexical environments,
 a macro facility,
