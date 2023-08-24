@@ -9322,31 +9322,32 @@ public class LambdaJ {
                     case sLetStar:
                     case sLet: {
                         final Object bindings = cadr(ccForm);
+                        assert bindings != null : "empty let should have been replaced in expandForm";
                         if (bindings instanceof LambdaJSymbol) break;
                         rsfx++;
                         final ConsCell ccBindings = requireList("let", bindings);
                         final ConsCell ccBody = requireList("let", cddr(ccForm));
                         ConsCell extEnv = env;
+
                         sb.append("        {\n");
-                        if (ccBindings != null) {
-                            ConsCell letStarEnv = env;
-                            final String vName = "v" + rsfx;
-                            final int nVars = listLength(ccBindings);
-                            sb.append("        final Object[] ").append(vName).append(" = new Object[").append(nVars).append("];\n");
-                            int localCtr = 0;
-                            final ArrayList<Object> varNames = new ArrayList<>(nVars);
-                            for (Object binding : ccBindings) {
-                                final ConsCell ccBinding = (ConsCell)binding;
-                                final Object sym = car(ccBinding);
-                                if (!varNames.contains(sym)) {
-                                    varNames.add(sym);
-                                    final String name = vName + '[' + localCtr++ + ']';
-                                    extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
-                                }
-                                emitStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, javasym(sym, extEnv), true, false);
-                                letStarEnv = extEnv;
+                        ConsCell letStarEnv = env;
+                        final String vName = "v" + rsfx;
+                        final int nVars = listLength(ccBindings);
+                        sb.append("        final Object[] ").append(vName).append(" = new Object[").append(nVars).append("];\n");
+                        int localCtr = 0;
+                        final ArrayList<Object> varNames = new ArrayList<>(nVars);
+                        for (Object binding : ccBindings) {
+                            final ConsCell ccBinding = (ConsCell)binding;
+                            final Object sym = car(ccBinding);
+                            if (!varNames.contains(sym)) {
+                                varNames.add(sym);
+                                final String name = vName + '[' + localCtr++ + ']';
+                                extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
                             }
+                            emitStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, javasym(sym, extEnv), true, false);
+                            letStarEnv = extEnv;
                         }
+
                         emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retVal, topLevel, hasNext);
                         sb.append("        }\n");
                         return;
