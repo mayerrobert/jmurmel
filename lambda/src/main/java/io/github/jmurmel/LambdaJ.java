@@ -3379,6 +3379,7 @@ public class LambdaJ {
         final ArrayList<Object> seen = new ArrayList<>(); // hopefully Hotspot will stackallocate this
 
         final ConsCell ccBindings = (ConsCell)car(bindingsAndBodyForms);
+        assert namedLet || ccBindings != null : "let w/o bindings should have been replaced in expandForm";
 
         final ListConsCell params = new ListConsCell(null, null);
         ConsCell extenv = env;
@@ -9296,6 +9297,25 @@ public class LambdaJ {
                         return;
                     }
 
+                    case sCond:
+                        boolean first = true;
+                        for (final Iterator<Object> iterator = ccArguments.iterator(); iterator.hasNext(); ) {
+                            final Object clause = iterator.next();
+                            sb.append("        ");
+                            if (first) first = false;
+                            else sb.append("else ");
+                            final Object condExpr = car(clause), condForms = cdr(clause);
+                            if (condExpr == sT) {
+                                sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retVal, topLevel, hasNext);  sb.append("        }\n");
+                                if (iterator.hasNext()) System.err.println(ccForm.lineInfo() + "forms following default 't' form will be ignored");
+                                return;
+                            } else {
+                                sb.append("if (");  emitTruthiness(sb, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
+                                emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retVal, topLevel, hasNext);  sb.append("        }\n");
+                            }
+                        }
+                        return;
+
                     case sSetQ: {
                         sb.append("        values = null;\n");
                         if (ccArguments == null) {
@@ -9322,8 +9342,8 @@ public class LambdaJ {
                     case sLetStar:
                     case sLet: {
                         final Object bindings = cadr(ccForm);
-                        assert bindings != null : "empty let should have been replaced in expandForm";
                         if (bindings instanceof LambdaJSymbol) break;
+                        assert bindings != null : "let w/o bindings should have been replaced in expandForm";
                         rsfx++;
                         final ConsCell ccBindings = requireList("let", bindings);
                         final ConsCell ccBody = requireList("let", cddr(ccForm));
@@ -9893,6 +9913,7 @@ public class LambdaJ {
             if (named) { loopLabel = car(args); args = (ConsCell)cdr(args); }
             else       { loopLabel = null; }
             bindings = car(args);  body = cdr(args);
+            assert named || bindings != null : "let w/o bindings should have been replaced in expandForm";
             if (bindings == null && body == null) { sb.append("(Object)null"); return; }
 
             sb.append(isLast ? "tailcall(" : "funcall(");
