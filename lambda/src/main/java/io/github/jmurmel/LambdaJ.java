@@ -310,7 +310,15 @@ public class LambdaJ {
         default @NotNull LambdaJSymbol intern(@NotNull String symbolName) { return intern(new LambdaJSymbol(symbolName)); }
     }
 
-    @FunctionalInterface public interface ReadSupplier { int read() throws IOException; }
+    @FunctionalInterface public interface ReadSupplier {
+        int read() throws IOException;
+
+        static ReadSupplier of(Path p) throws IOException {
+            final String s = JavaUtil.readString(p);
+            final int[] pos = {0};
+            return () -> pos[0] == s.length() ? EOF : s.charAt(pos[0]++);
+        }
+    }
     @FunctionalInterface public interface WriteConsumer { void print(CharSequence s); }
     @FunctionalInterface public interface TraceConsumer { void println(CharSequence msg); }
 
@@ -3612,17 +3620,16 @@ public class LambdaJ {
         final Path prev = currentSource;
         final Path p = findFile(func, argument);
         currentSource = p;
-        try (Reader r = Files.newBufferedReader(p)) {
-            final SExpressionReader parser = makeReader(r::read, p);
+        try {
+            final SExpressionReader parser = makeReader(ReadSupplier.of(p), p);
             final Object eof = "EOF";
             Object result = null;
             for (;;) {
                 final Object form = parser.readObj(true, eof);
-                if (form == eof) break;
+                if (form == eof) return result;
 
                 result = expandAndEval(form, null);
             }
-            return result;
         }
         catch (ReaderError re) {
             throw wrap(re);
@@ -5530,17 +5537,13 @@ public class LambdaJ {
         static Object readTextfile(ConsCell args) {
             final String fileName = requireString("read-textfile", car(args));
             args = (ConsCell)cdr(args);
-            try (BufferedReader reader
-                 = args == null
-                   ? Files.newBufferedReader(Paths.get(fileName))
-                   : Files.newBufferedReader(Paths.get(fileName), Charset.forName(requireString("read-textfile", car(args))))){
-                final StringBuilder ret = new StringBuilder();
-                for (;;) {
-                    final String line = reader.readLine();
-                    if (line == null)
-                        break;
-                    ret.append(line).append('\n');
-                }
+            try {
+                final Path p = Paths.get(fileName);
+                CharSequence s = args == null ? JavaUtil.readString(p) : JavaUtil.readString(p, Charset.forName(requireString("read-textfile", car(args))));
+                s = EolUtil.anyToUnixEol(s);
+                final StringBuilder ret = s instanceof StringBuilder ? (StringBuilder)s : new StringBuilder(s);
+                final int length = ret.length();
+                if (length == 0 || ret.charAt(length-1) != '\n') ret.append('\n');
                 return ret;
             }
             catch (Exception e) {
@@ -10920,6 +10923,16 @@ final class JavaUtil {
         }
         return cs1.length - cs2.length;
     }
+
+    static String readString(Path p) throws IOException {
+        // Java11+ has Files.readString() which does one less copying than this
+        return new String(Files.readAllBytes(p));
+    }
+
+    static String readString(Path p, Charset cs) throws IOException {
+        // Java11+ has Files.readString() which does one less copying than this
+        return new String(Files.readAllBytes(p), cs);
+    }
 }
 
 
@@ -11075,7 +11088,7 @@ final class EolUtil {
      *     found in the string, this will simply return the input value.
      *
      * @param inputValue input value that may or may not contain new lines
-     * @return the input value that has new lines normalized
+     * @return the input value or a new StringBuilder that has new lines normalized
      */
     static CharSequence anyToUnixEol(CharSequence inputValue){
         if (inputValue == null) return null;
