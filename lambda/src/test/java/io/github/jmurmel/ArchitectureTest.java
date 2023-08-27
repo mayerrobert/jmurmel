@@ -51,6 +51,7 @@ public class ArchitectureTest {
         checkLeaf("EolUtil");
         //checkLeaf("JavaCompilerHelper"); // uses JavaSourceFromString, MurmelClassLoader
         checkLeaf("JavaSourceFromString");
+        checkLeaf("JavaUtil");
         // LambdaJ uses various
         checkLeaf("MurmelClassLoader");
         checkLeaf("TurtleFrame");
