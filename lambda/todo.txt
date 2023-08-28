@@ -1,7 +1,5 @@
 im compiler ist die if-optimierung sinnlos, weil das macht nur == statt !=
 
-; comment schlucken sollte ggf. von getchar nach readchar wandern
-
 compilerprimitives enthalten value=null, codegenerator spuckt auch values=null aus
 -> kamma eines der beiden wegmachen?
 
