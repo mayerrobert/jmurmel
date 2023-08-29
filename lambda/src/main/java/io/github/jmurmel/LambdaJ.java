@@ -1578,7 +1578,6 @@ public class LambdaJ {
         private final Object sNot, sAnd, sOr;
 
         private boolean featurep(Object form) {
-            if (form == null) return false; // #+nil todo was is wenn jemand nil nach *features* pusht?
             if (symbolp(form)) return some(x -> x == form, requireList("*features*", cdr(featuresEnvEntry)));
             else if (consp(form)) {
                 final ConsCell ccForm = (ConsCell)form;
