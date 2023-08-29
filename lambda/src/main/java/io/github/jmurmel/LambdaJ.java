@@ -1395,7 +1395,7 @@ public class LambdaJ {
             } catch (IOException e) { }
         }*/
 
-        private int prev = EOF;
+        private int prev;
         private int readchar() throws IOException {
             final int c = in.read();
             //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
@@ -1577,32 +1577,32 @@ public class LambdaJ {
 
         private final Object sNot, sAnd, sOr;
 
-        private boolean featurep(Object next) {
-            if (next == null) return false; // #+nil
-            if (symbolp(next)) return some(x -> x == next, cdr(featuresEnvEntry));
-            else if (consp(next)) {
-                if (car(next) == sAnd) return every(this::featurep, cdr(next));
-                if (car(next) == sOr) return some(this::featurep, cdr(next));
-                if (car(next) == sNot) {
-                    if (cdr(next) == null) throw new SimpleError("feature expression not: not enough subexpressions, got %s", printSEx(next));
-                    if (cddr(next) != null) throw new SimpleError("feature expression not: too many subexpressions, got %s", printSEx(next));
-                    return !featurep(cadr(next));
+        private boolean featurep(Object form) {
+            if (form == null) return false; // #+nil todo was is wenn jemand nil nach *features* pusht?
+            if (symbolp(form)) return some(x -> x == form, requireList("*features*", cdr(featuresEnvEntry)));
+            else if (consp(form)) {
+                final ConsCell ccForm = (ConsCell)form;
+                final Object op = car(ccForm);  final ConsCell args = requireList("feature expression", cdr(ccForm));
+                if (op == sAnd) return every(args);
+                if (op == sOr) return some(this::featurep, args);
+                if (op == sNot) {
+                    if (args == null) throw new SimpleError("feature expression not: not enough subexpressions, got %s", printSEx(form));
+                    if (cdr(args) != null) throw new SimpleError("feature expression not: too many subexpressions, got %s", printSEx(form));
+                    return !featurep(car(args));
                 }
             }
-            throw new SimpleError("unsupported feature expressions, got %s", printSEx(next));
+            throw new SimpleError("unsupported feature expressions, got %s", printSEx(form));
         }
 
-        private static boolean every(Function<Object, Boolean> pred, Object maybeList) {
-            if (maybeList == null) return true;
-            if (!consp(maybeList)) return pred.apply(maybeList);
-            for (Object o: (ConsCell)maybeList) { if (!pred.apply(o)) return false; }
+        private boolean every(ConsCell lst) {
+            if (lst == null) return true;
+            for (Object o: lst) { if (!featurep(o)) return false; } // todo iterator laesst improper list zu
             return true;
         }
 
-        private static boolean some(Function<Object, Boolean> pred, Object maybeList) {
-            if (maybeList == null) return false;
-            if (!consp(maybeList)) return pred.apply(maybeList);
-            for (Object o: (ConsCell)maybeList) { if (pred.apply(o)) return true; }
+        private static boolean some(Function<Object, Boolean> pred, ConsCell lst) {
+            if (lst == null) return false;
+            for (Object o: lst) { if (pred.apply(o)) return true; } // todo iterator laesst improper list zu
             return false;
         }
 
