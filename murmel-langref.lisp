@@ -1254,6 +1254,8 @@ pi ; ==> 3.141592653589793
 ; If a non-empty file ends with a line without a lineend character sequence
 ; then one will be supplied. `result-string` will either be empty
 ; or end with `#\Newline`.
+;
+; `charset` defaults to UTF-8.
 
 
 ; = (write-textfile-lines filenamestr string-sequence  [appendp [charset]]) -> nil
@@ -1264,6 +1266,8 @@ pi ; ==> 3.141592653589793
 ; of `string-sequence` to the file `filenamestr`.
 ; Each element (line) will be terminated with the OS-default line-end character(-sequence).
 ; (Note: with the JVM this can be set using -Dline.separator.)
+;
+; `charset` defaults to UTF-8.
 
 
 ; = (write-textfile filenamestr string  [appendp [charset]]) -> nil

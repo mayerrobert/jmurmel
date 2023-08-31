@@ -4308,10 +4308,10 @@ public class LambdaJ {
         if (_a != null) errorArgCount(func, 3, 3, 4, a);
     }
 
-    /** varargs, 0 or 1 arg */
+    /* varargs, 0 or 1 arg * /
     static void varargs0_1(String func, ConsCell a) {
         if (cdr(a) != null) errorArgCount(func, 0, 1, listLength(a), a);
-    }
+    }*/
 
     /** varargs, at least one arg */
     static void varargs1(String func, ConsCell a) {
@@ -5521,10 +5521,10 @@ public class LambdaJ {
         /** (read-textfile-lines filenamestr [charset]) -> result-string-vector */
         static Object readTextfileLines(ConsCell args) {
             final String fileName = requireString("read-textfile-lines", car(args));
+            args = requireList("read-textfile-lines", cdr(args));
             try {
-                final List<String> ret;
-                if (cdr(args) == null) ret = Files.readAllLines(Paths.get(fileName));
-                else ret = Files.readAllLines(Paths.get(fileName), Charset.forName(requireString("read-textfile-lines", cadr(args))));
+                final Charset cs = args == null ? StandardCharsets.UTF_8 : Charset.forName(requireString("read-textfile-lines", car(args)));
+                final List<String> ret = Files.readAllLines(Paths.get(fileName), cs);
                 return ret.toArray();
             }
             catch (Exception e) {
@@ -5535,11 +5535,11 @@ public class LambdaJ {
         /** (read-textfile filenamestr [charset]) -> result-string */
         static Object readTextfile(ConsCell args) {
             final String fileName = requireString("read-textfile", car(args));
-            args = (ConsCell)cdr(args);
+            args = requireList("read-textfile", cdr(args));
             try {
                 final Path p = Paths.get(fileName);
-                CharSequence s = args == null ? JavaUtil.readString(p) : JavaUtil.readString(p, Charset.forName(requireString("read-textfile", car(args))));
-                s = EolUtil.anyToUnixEol(s);
+                final Charset cs = args == null ? StandardCharsets.UTF_8 : Charset.forName(requireString("read-textfile", car(args)));
+                final CharSequence s = EolUtil.anyToUnixEol(JavaUtil.readString(p, cs));
                 final StringBuilder ret = s instanceof StringBuilder ? (StringBuilder)s : new StringBuilder(s);
                 final int length = ret.length();
                 if (length == 0 || ret.charAt(length-1) != '\n') ret.append('\n');
@@ -5571,11 +5571,7 @@ public class LambdaJ {
             if (svectorp(seq)) it = Arrays.asList((Object[])seq).iterator();
             else if (seq instanceof Iterable) it = ((Iterable<Object>)seq).iterator(); // covers ConCell and adjustable array which are ArrayLists
             else throw errorArgTypeError("sequence of strings", "write-textfile-lines", seq);
-            final Path p = Paths.get(fileName);
-            try (Writer w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
-                                                    appendp
-                                                    ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
-                                                    : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
+            try (Writer w = bufferedWriter(fileName, appendp, cs)) {
                 final String eol = System.lineSeparator();
                 while (it.hasNext()) {
                     final String line = requireString("write-textfile-lines", it.next());
@@ -5602,11 +5598,7 @@ public class LambdaJ {
                 args = (ConsCell)cdr(args);
                 if (args != null) cs = requireString("write-textfile", car(args));
             }
-            final Path p = Paths.get(fileName);
-            try (BufferedWriter w = Files.newBufferedWriter(p, cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
-                                                            appendp
-                                                            ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
-                                                            : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE})) {
+            try (BufferedWriter w = bufferedWriter(fileName, appendp, cs)) {
                 final String eol = System.lineSeparator();
                 if ("\n".equals(eol))
                     w.append(charSeq);
@@ -5618,6 +5610,13 @@ public class LambdaJ {
                 return null;
             }
             catch (Exception e) { throw wrap(e); }
+        }
+
+        private static BufferedWriter bufferedWriter(String fileName, boolean appendp, String cs) throws IOException {
+            return Files.newBufferedWriter(Paths.get(fileName), cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
+                                           appendp
+                                           ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
+                                           : new OpenOption[]{StandardOpenOption.TRUNCATE_EXISTING, StandardOpenOption.CREATE});
         }
 
         static Object writeToString(Object arg, boolean printEscape) {
@@ -10923,10 +10922,11 @@ final class JavaUtil {
         return cs1.length - cs2.length;
     }
 
+    /* don't use APIs with default charset
     static String readString(Path p) throws IOException {
         // Java11+ has Files.readString() which does one less copying than this
         return new String(Files.readAllBytes(p));
-    }
+    }*/
 
     static String readString(Path p, Charset cs) throws IOException {
         // Java11+ has Files.readString() which does one less copying than this
