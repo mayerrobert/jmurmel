@@ -6472,9 +6472,7 @@ public class LambdaJ {
                                 if ("--".equals(fileName)) continue;
                                 if (verbose) System.out.println("interpreting " + fileName + "...");
                                 final Path p = Paths.get(fileName);
-                                try (Reader r = Files.newBufferedReader(p)) {
-                                    result = interpretStream(interpreter, r::read, p, printResult, history);
-                                }
+                                result = interpretStream(interpreter, ReadSupplier.of(p), p, printResult, history);
                             }
                             if (finalResult && !printResult && result != null) {
                                 System.out.println();
