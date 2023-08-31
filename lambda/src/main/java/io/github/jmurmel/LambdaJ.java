@@ -314,7 +314,7 @@ public class LambdaJ {
         int read() throws IOException;
 
         static ReadSupplier of(Path p) throws IOException {
-            final String s = JavaUtil.readString(p);
+            final String s = JavaUtil.readString(p, StandardCharsets.UTF_8);
             final int[] pos = {0};
             return () -> pos[0] == s.length() ? EOF : s.charAt(pos[0]++);
         }

@@ -1,11 +1,15 @@
-im compiler ist die if-optimierung sinnlos, weil das macht nur == statt !=
-
-compilerprimitives enthalten value=null, codegenerator spuckt auch values=null aus
--> kamma eines der beiden wegmachen?
-
 statt Files.newBufferedReader kann meist ReadSupplier.of(Path) verwendet werden
 
 labels forms wo mehr als ein name ein gensym ist gibt wsl. javacompilerfehler
+
+sample mit teapot?
+https://www.reddit.com/r/ProgrammingLanguages/comments/1612opy/i_revamped_my_tree_walking_interpreter_into_a/
+
+im compiler ist die if-optimierung sinnlos, weil das macht nur == statt !=
+-> oder doch lassen weils notnot wegkuerzt? notnot koennte auch in emitTruthiness weggekuerzt werden? 
+
+compilerprimitives enthalten value=null, codegenerator spuckt auch values=null aus
+-> kamma eines der beiden wegmachen?
 
 Clojure laesst "function calls" von maps zu
 
