@@ -354,25 +354,24 @@ public class LambdaJ {
             printSEx(sb::append, alternate); // todo Writeable#printSEx() koennte maxwidth unterstuetzen statt erst erzeugen und dann abschneiden, wuerde auch list cycles erledigen
 
             // apply precision
-            if (precision != -1 && sb.length() >= precision) {
+            if (precision != -1 && sb.length() > precision) {
                 sb.setLength(precision - 3); sb.append("...");
             }
 
             // apply width and justification
             final int len = sb.length();
-            if (len >= width) { formatter.format(sb.toString()); return; }
+            if (len >= width) { formatter.format("%s", sb); return; }
 
             final boolean leftJustified = (flags & FormattableFlags.LEFT_JUSTIFY) == FormattableFlags.LEFT_JUSTIFY;
             if (leftJustified) {
                 for (int i = len; i < width; i++) sb.append(' ');
-                formatter.format(sb.toString()); // todo Formatter#format erwartet/ parst einen Formatstring, umstellen auf formatter.out().append()?
             }
             else {
                 final StringBuilder blanks = new StringBuilder(width);
                 for (int i = len; i < width; i++) blanks.append(' ');
-                blanks.append(sb);
                 formatter.format(blanks.toString());
             }
+            formatter.format("%s", sb);
         }
     }
 
