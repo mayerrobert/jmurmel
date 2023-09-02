@@ -310,14 +310,18 @@ public class LambdaJ {
         default @NotNull LambdaJSymbol intern(@NotNull String symbolName) { return intern(new LambdaJSymbol(symbolName)); }
     }
 
+    private static class StringReadSupplier implements ReadSupplier {
+        private final String s;
+        private final int length;
+        private int pos;
+
+        private StringReadSupplier(String s) { this.s = s;  length = s.length(); }
+        @Override public int read() { return pos >= length ? EOF : s.charAt(pos++); }
+    }
+
     @FunctionalInterface public interface ReadSupplier {
         int read() throws IOException;
-
-        static ReadSupplier of(Path p) throws IOException {
-            final String s = JavaUtil.readString(p, StandardCharsets.UTF_8);
-            final int[] pos = {0};
-            return () -> pos[0] == s.length() ? EOF : s.charAt(pos[0]++);
-        }
+        static ReadSupplier of(Path p) throws IOException { return new StringReadSupplier(JavaUtil.readString(p, StandardCharsets.UTF_8)); }
     }
     @FunctionalInterface public interface WriteConsumer { void print(CharSequence s); }
     @FunctionalInterface public interface TraceConsumer { void println(CharSequence msg); }
@@ -361,12 +365,13 @@ public class LambdaJ {
             final boolean leftJustified = (flags & FormattableFlags.LEFT_JUSTIFY) == FormattableFlags.LEFT_JUSTIFY;
             if (leftJustified) {
                 for (int i = len; i < width; i++) sb.append(' ');
-                formatter.format(sb.toString());
+                formatter.format(sb.toString()); // todo Formatter#format erwartet/ parst einen Formatstring, umstellen auf formatter.out().append()?
             }
             else {
-                final StringBuilder blanks = new StringBuilder(width - len);
+                final StringBuilder blanks = new StringBuilder(width);
                 for (int i = len; i < width; i++) blanks.append(' ');
-                formatter.format(blanks.toString() + sb);
+                blanks.append(sb);
+                formatter.format(blanks.toString());
             }
         }
     }
