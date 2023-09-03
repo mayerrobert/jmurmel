@@ -19,6 +19,7 @@ public class FormattableTest {
     @Test
     public void testSimple() {
         test("%s");
+        test("%S");
     }
 
     @Test
@@ -32,13 +33,17 @@ public class FormattableTest {
 
     @Test
     public void testWidthRight() {
+        test("%6s");
         test("%7s");
+        test("%8s");
         test("%10s");
     }
 
     @Test
     public void testWidthLeft() {
+        test("%-6s");
         test("%-7s");
+        test("%-8s");
         test("%-10s");
     }
 

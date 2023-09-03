@@ -350,17 +350,20 @@ public class LambdaJ {
         default void formatTo(Formatter formatter, int flags, int width, int precision) {
             final boolean alternate = (flags & FormattableFlags.ALTERNATE) == FormattableFlags.ALTERNATE;
 
-            final StringBuilder sb = new StringBuilder();
+            StringBuilder sb = new StringBuilder();
             printSEx(sb::append, alternate); // todo Writeable#printSEx() koennte maxwidth unterstuetzen statt erst erzeugen und dann abschneiden, wuerde auch list cycles erledigen
+            sb = EolUtil.anyToJavaEol(sb);
 
             // apply precision
             if (precision != -1 && sb.length() > precision) {
                 sb.setLength(precision - 3); sb.append("...");
             }
 
+            final String fmt = (flags & FormattableFlags.UPPERCASE) == FormattableFlags.UPPERCASE ? "%S" : "%s";
+
             // apply width and justification
             final int len = sb.length();
-            if (len >= width) { formatter.format("%s", sb); return; }
+            if (len >= width) { formatter.format(fmt, sb); return; }
 
             final boolean leftJustified = (flags & FormattableFlags.LEFT_JUSTIFY) == FormattableFlags.LEFT_JUSTIFY;
             if (leftJustified) {
@@ -371,7 +374,7 @@ public class LambdaJ {
                 for (int i = len; i < width; i++) blanks.append(' ');
                 formatter.format(blanks.toString());
             }
-            formatter.format("%s", sb);
+            formatter.format(fmt, sb);
         }
     }
 
@@ -11093,7 +11096,7 @@ final class EolUtil {
      */
     static CharSequence anyToUnixEol(CharSequence inputValue){
         if (inputValue == null) return null;
-        if (inputValue.length() == 0) return "";
+        if (inputValue.length() == 0) return inputValue;
 
         int index = -1;
         for (int i = 0; i < inputValue.length(); i++) {
@@ -11125,6 +11128,52 @@ final class EolUtil {
                     index++;
                 }
                 stringBuilder.append('\n');
+            } else {
+                stringBuilder.append(c);
+            }
+            index++;
+        }
+
+        return stringBuilder;
+    }
+
+    static StringBuilder anyToJavaEol(StringBuilder inputValue){
+        if (inputValue == null) return null;
+        if (inputValue.length() == 0) return inputValue;
+
+        int index = -1;
+        for (int i = 0; i < inputValue.length(); i++) {
+            final char c = inputValue.charAt(i);
+            if (c == '\r' || c == '\n') {
+                index = i;
+                break;
+            }
+        }
+        if (index == -1) return inputValue;
+
+        final int len = inputValue.length();
+
+        final StringBuilder stringBuilder = new StringBuilder(len);
+
+        // we get here if we just read a '\r' or '\n'
+        // build up the string builder so it contains all the prior characters
+        stringBuilder.append(inputValue, 0, index);
+        if (index + 1 < len && inputValue.charAt(index + 1) == '\n') {
+            // this means we encountered a \r\n  ... move index forward one more character
+            index++;
+        }
+        stringBuilder.append('%').append('n');
+        index++;
+        while (index < len) {
+            final char c = inputValue.charAt(index);
+            if (c == '\r') {
+                if (index + 1 < len && inputValue.charAt(index + 1) == '\n') {
+                    // this means we encountered a \r\n  ... move index forward one more character
+                    index++;
+                }
+                stringBuilder.append('%').append('n');
+            } else if (c == '\n') {
+                stringBuilder.append('%').append('n');
             } else {
                 stringBuilder.append(c);
             }
