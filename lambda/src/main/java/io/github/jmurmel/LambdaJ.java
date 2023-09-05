@@ -352,7 +352,7 @@ public class LambdaJ {
 
             StringBuilder sb = new StringBuilder();
             printSEx(sb::append, alternate); // todo Writeable#printSEx() koennte maxwidth unterstuetzen statt erst erzeugen und dann abschneiden, wuerde auch list cycles erledigen
-            sb = EolUtil.anyToJavaEol(sb);
+            sb = EolUtil.unixToJavaEol(sb);
 
             // apply precision
             if (precision != -1 && sb.length() > precision) {
@@ -11137,14 +11137,17 @@ final class EolUtil {
         return stringBuilder;
     }
 
-    static StringBuilder anyToJavaEol(StringBuilder inputValue){
+    static StringBuilder unixToJavaEol(StringBuilder inputValue){
         if (inputValue == null) return null;
         if (inputValue.length() == 0) return inputValue;
+
+        final String platformEol = System.lineSeparator();
+        if ("\n".equals(platformEol)) return inputValue;
 
         int index = -1;
         for (int i = 0; i < inputValue.length(); i++) {
             final char c = inputValue.charAt(i);
-            if (c == '\r' || c == '\n') {
+            if (c == '\n') {
                 index = i;
                 break;
             }
@@ -11155,25 +11158,16 @@ final class EolUtil {
 
         final StringBuilder stringBuilder = new StringBuilder(len);
 
-        // we get here if we just read a '\r' or '\n'
+        // we get here if we just read a '\n'
         // build up the string builder so it contains all the prior characters
         stringBuilder.append(inputValue, 0, index);
-        if (index + 1 < len && inputValue.charAt(index + 1) == '\n') {
-            // this means we encountered a \r\n  ... move index forward one more character
-            index++;
-        }
-        stringBuilder.append('%').append('n');
+
+        stringBuilder.append(platformEol);
         index++;
         while (index < len) {
             final char c = inputValue.charAt(index);
-            if (c == '\r') {
-                if (index + 1 < len && inputValue.charAt(index + 1) == '\n') {
-                    // this means we encountered a \r\n  ... move index forward one more character
-                    index++;
-                }
-                stringBuilder.append('%').append('n');
-            } else if (c == '\n') {
-                stringBuilder.append('%').append('n');
+            if (c == '\n') {
+                stringBuilder.append(platformEol);
             } else {
                 stringBuilder.append(c);
             }

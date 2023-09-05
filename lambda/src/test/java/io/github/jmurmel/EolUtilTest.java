@@ -40,32 +40,34 @@ public class EolUtilTest {
 
     @DataProvider(name = "test2")
     public Object[][] createdata2() {
+        final String eol = System.lineSeparator();
+
         return new Object[][] {
         { null, "null" },
         { "", "" },
         { "bla", "bla" },
 
-        { "\r",   "%n" },
-        { "\n",   "%n" },
-        { "\r\n", "%n" },
+        { "\r",   "\r" },
+        { "\n",   eol },
+        { "\r\n", "\r" + eol },
 
-        { "hello\rworld",   "hello%nworld" },
-        { "hello\r\rworld", "hello%n%nworld" },
-        { "hello\nworld",   "hello%nworld" },
-        { "hello\r\nworld", "hello%nworld" },
+        { "hello\rworld",   "hello\rworld" },
+        { "hello\r\rworld", "hello\r\rworld" },
+        { "hello\nworld",   "hello" + eol + "world" },
+        { "hello\r\nworld", "hello\r" + eol + "world" },
 
-        { "hello world\r",   "hello world%n" },
-        { "hello world\n",   "hello world%n" },
-        { "hello world\r\n", "hello world%n" },
+        { "hello world\r",   "hello world\r" },
+        { "hello world\n",   "hello world" + eol },
+        { "hello world\r\n", "hello world\r" + eol },
 
-        { "\rhello world\r",     "%nhello world%n" },
-        { "\nhello world\n",     "%nhello world%n" },
-        { "\r\nhello world\r\n", "%nhello world%n" },
+        { "\rhello world\r",     "\rhello world\r" },
+        { "\nhello world\n",     eol + "hello world" + eol },
+        { "\r\nhello world\r\n", "\r" + eol + "hello world\r" + eol },
         };
     }
 
     @Test(dataProvider = "test2")
     public void testEolUtil2(String arg, String expected) {
-        assertEquals(String.valueOf(EolUtil.anyToJavaEol(arg == null ? null : new StringBuilder(arg))), expected);
+        assertEquals(String.valueOf(EolUtil.unixToJavaEol(arg == null ? null : new StringBuilder(arg))), expected);
     }
 }
