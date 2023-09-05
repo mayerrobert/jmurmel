@@ -33,7 +33,7 @@ jobs:
     name: Java ${{ matrix.Java }} CI
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v4
 
     - name: Set up JDK ${{ matrix.Java }}
       uses: actions/setup-java@v3
