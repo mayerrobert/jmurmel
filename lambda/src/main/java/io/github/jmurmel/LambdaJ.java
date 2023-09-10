@@ -9246,28 +9246,36 @@ public class LambdaJ {
                 return;
             }
 
-            final String retVal = "ret" + rsfx;
-            sb.append("        Object ").append(retVal).append(" = null;\n");
+            final String retVar = "ret" + rsfx;
+            final String retLhs = "        " + retVar + " = ";
+            sb.append("        Object ").append(retVar).append(" = null;\n");
             while (it.hasNext()) {
-                emitStmt(sb, it.next(), env, topEnv, rsfx, retVal, topLevel, it.hasNext());
+                emitStmt(sb, it.next(), env, topEnv, rsfx, retLhs, topLevel, it.hasNext(), true);
             }
-            sb.append("        return ").append(retVal).append(";\n");
+            sb.append("        return ").append(retVar).append(";\n");
         }
 
-        private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retVal, boolean topLevel, boolean hasNext) {
+        private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
             if (hasNext) {
                 if (atom(form)) {
                     return; // must be dead code
                 }
             }
 
-            if (consp(form)) {
+            if (atom(form)) {
+                if (clearValues) sb.append("        values = null;\n");
+            }
+            else {
                 final ConsCell ccForm = (ConsCell)form;
                 final Object op = car(ccForm);      // first element of the of the form should be a symbol or a form that computes a symbol
                 assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
                 final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
 
-                sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
+                if (clearValues && !(symbolp(op) && ((LambdaJSymbol)op).primitive())) sb.append("        values = null;\n");
+
+                if (clearValues && op != intern("defun") && op != intern("defmacro")) {
+                    sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
+                }
 
                 if (symbolp(op)) {
                     final LambdaJSymbol symop = (LambdaJSymbol)op;
@@ -9285,19 +9293,18 @@ public class LambdaJ {
                         if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
                             final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
-                            emitStmt(sb, transformed, env, topEnv, rsfx, retVal, topLevel, hasNext);
+                            emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
                             return;
                         }
 
-                        sb.append("        values = null;\n");
                         sb.append("        if (");
                         emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
                         sb.append(") {\n");
-                        emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retVal, topLevel, hasNext);
+                        emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
                         sb.append("        }\n");
                         if (caddr(ccArguments) != null) {
                             sb.append("        else {\n");
-                            emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retVal, topLevel, hasNext);
+                            emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
                             sb.append("        }\n");
                         }
                         return;
@@ -9312,36 +9319,46 @@ public class LambdaJ {
                             else sb.append("else ");
                             final Object condExpr = car(clause), condForms = cdr(clause);
                             if (condExpr == sT) {
-                                sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retVal, topLevel, hasNext);  sb.append("        }\n");
+                                sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
                                 if (iterator.hasNext()) System.err.println(ccForm.lineInfo() + "forms following default 't' form will be ignored");
                                 return;
                             } else {
                                 sb.append("if (");  emitTruthiness(sb, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
-                                emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retVal, topLevel, hasNext);  sb.append("        }\n");
+                                emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
                             }
                         }
                         return;
 
+                    /*case sCatch:
+                        sb.append("        try {\n");
+                        emitStmts(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext || !topLevel);
+                        sb.append("        }\n"
+                                + "        catch (ReturnException re) {\n"
+                                + "            if ((Object)"); emitForm(sb, car(ccArguments), env, topEnv, rsfx, false); sb.append(" == re.tag) { values = re.values; return re.result; }\n"
+                                + "            throw re;\n"
+                                + "        }\n"
+                                + "        catch (LambdaJError le) { throw le; }\n"
+                                + "        catch (Exception e) { return rterror(e); }\n");
+                        return;*/
+
                     case sSetQ: {
-                        sb.append("        values = null;\n");
                         if (ccArguments == null) {
-                            if (!hasNext) sb.append("        ").append(retVal).append(" = ").append("null");
+                            if (!hasNext) sb.append(retLhs).append("null");
                         }
                         else {
-                            String javaName = null;
                             for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
-                                sb.append("        ");
-                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx);
+                                if (hasNext || cddr(pairs) != null) sb.append("        ");
+                                else sb.append(retLhs);
+                                emitSetq(sb, pairs, env, topEnv, rsfx);
                                 sb.append(";\n");
                             }
-                            if (!hasNext) sb.append("        ").append(retVal).append(" = ").append(javaName).append(";\n");
                         }
                         return;
                     }
 
                     case sProgn: {
                         final ConsCell ccBody = listOrMalformed("progn", cdr(ccForm));
-                        emitStmts(sb, ccBody, env, topEnv, rsfx, retVal, topLevel, hasNext);
+                        emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, topLevel, hasNext);
                         return;
                     }
 
@@ -9370,11 +9387,11 @@ public class LambdaJ {
                                 final String name = vName + '[' + localCtr++ + ']';
                                 extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
                             }
-                            emitStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, javasym(sym, extEnv), true, false);
+                            emitStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, "        " + javasym(sym, extEnv) + " = ", true, false, true);
                             letStarEnv = extEnv;
                         }
 
-                        emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retVal, topLevel, hasNext);
+                        emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, topLevel, hasNext);
                         sb.append("        }\n");
                         return;
                     }
@@ -9384,17 +9401,16 @@ public class LambdaJ {
                 }
             }
 
-            sb.append("        values = null;\n");
-            sb.append("        ").append(retVal).append(" = ");
+            sb.append(retLhs);
             emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
             sb.append(";\n");
         }
 
-        private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retVal, boolean topLevel, boolean hasNext) {
+        private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext) {
             for (; cdr(ccBody) != null; ccBody = (ConsCell)cdr(ccBody)) {
-                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retVal, topLevel, true);
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, true, true);
             }
-            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retVal, topLevel, hasNext);
+            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
         }
 
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
