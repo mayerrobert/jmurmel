@@ -487,7 +487,7 @@ public class LambdaJ {
         final Object[] values;
 
         ReturnException(Object tag, Object result, Object[] values) {
-            super("#<returnexception tag=" + tag + ", result=" + result + '>');
+            super((String)null);
             this.tag = tag;
             this.result = result;
             this.values = values;
@@ -496,6 +496,9 @@ public class LambdaJ {
         ReturnException(Object tag, Object result, ConsCell values) {
             this(tag, result, values == NO_VALUES ? null : listToArray(values));
         }
+
+        // this should only ever be used in case of an internal error in LambdaJ
+        @Override public String getMessage() { return "#<returnexception tag=" + tag + ", result=" + result + '>'; }
 
         ConsCell valuesAsList() {
             if (values == null) return NO_VALUES;
