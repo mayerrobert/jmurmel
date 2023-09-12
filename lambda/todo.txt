@@ -1,3 +1,9 @@
+emitStmt() "optimiert" einiges an dead code weg
+-> note/ warnung ausgeben
+
+probleme mit "runbody(): code too large"
+-> ggf. sollte toplevelformtojava toplevel let/let*/progn in Murmel funktionen (oder Java methoden?) rausziehen
+
 statt Files.newBufferedReader kann meist ReadSupplier.of(Path) verwendet werden
 
 labels forms wo mehr als ein name ein gensym ist gibt wsl. javacompilerfehler

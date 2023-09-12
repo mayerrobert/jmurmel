@@ -8123,7 +8123,7 @@ public class LambdaJ {
 
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
-        public final LambdaJSymbol intern(String symName) { return symtab.intern(symName); }
+        public final LambdaJSymbol intern(String symName) { values = null; return symtab.intern(symName); }
 
         public final Object arrayToList(Object[] args, int start) {
             values = null;
@@ -9195,6 +9195,7 @@ public class LambdaJ {
                       + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    public Object define_").append(javasym).append("() {\n"
+                      + "        values = null;\n"
                       + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                       + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
                       + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
@@ -9221,6 +9222,7 @@ public class LambdaJ {
                       + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
+                      + "        values = null;\n"
                       + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                       + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate defun\"));\n"
                       + "        final MurmelFunction func = new MurmelFunction() {\n"
@@ -9249,13 +9251,18 @@ public class LambdaJ {
                 return;
             }
 
-            final String retVar = "ret" + rsfx;
-            final String retLhs = "        " + retVar + " = ";
-            sb.append("        Object ").append(retVar).append(" = null;\n");
-            while (it.hasNext()) {
-                emitStmt(sb, it.next(), env, topEnv, rsfx, retLhs, topLevel, it.hasNext(), true);
+            Object next = it.next();
+            if (it.hasNext()) {
+                final String retVar = "ignored" + rsfx;
+                final String retLhs = "        " + retVar + " = ";
+                sb.append("        Object ").append(retVar).append(";\n");
+                do {
+                    assert it.hasNext();
+                    emitStmt(sb, next, env, topEnv, rsfx, retLhs, topLevel, true, true);
+                    next = it.next();
+                } while (it.hasNext()); 
             }
-            sb.append("        return ").append(retVar).append(";\n");
+            emitStmt(sb, next, env, topEnv, rsfx, "        return ", topLevel, false, true);
         }
 
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
@@ -9274,10 +9281,18 @@ public class LambdaJ {
                 assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
                 final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
 
-                if (clearValues && !(symbolp(op) && ((LambdaJSymbol)op).primitive())) sb.append("        values = null;\n");
+                if (clearValues) {
+                    if (intp.speed == 0 && symbolp(op) && ((LambdaJSymbol)op).primitive()
+                        || op == intern("define") || op == intern("defun") || op == intern("defmacro")) {
+                        // omit setting values to null
+                    }
+                    else {
+                        sb.append("        values = null;\n");
+                    }
 
-                if (clearValues && op != intern("defun") && op != intern("defmacro")) {
-                    sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
+                    if (op != intern("define") && op != intern("defun") && op != intern("defmacro")) {
+                        sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
+                    }
                 }
 
                 if (symbolp(op)) {
@@ -9296,7 +9311,7 @@ public class LambdaJ {
                         if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
                             final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
-                            emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
+                            emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
                             return;
                         }
 
@@ -9310,10 +9325,13 @@ public class LambdaJ {
                             emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
                             sb.append("        }\n");
                         }
+                        else {
+                            sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
+                        }
                         return;
                     }
 
-                    case sCond:
+                    case sCond: {
                         boolean first = true;
                         for (final Iterator<Object> iterator = ccArguments.iterator(); iterator.hasNext(); ) {
                             final Object clause = iterator.next();
@@ -9330,8 +9348,11 @@ public class LambdaJ {
                                 emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
                             }
                         }
+                        sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
                         return;
+                    }
 
+                        // todo ggf. alle 3 catch clauses in eine rt funktion verpacken statt immer alle 3 rausgenerieren?
                     /*case sCatch:
                         sb.append("        try {\n");
                         emitStmts(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext || !topLevel);
@@ -9346,7 +9367,7 @@ public class LambdaJ {
 
                     case sSetQ: {
                         if (ccArguments == null) {
-                            if (!hasNext) sb.append(retLhs).append("null");
+                            if (!hasNext) sb.append(retLhs).append("null;\n");
                         }
                         else {
                             for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
@@ -9367,6 +9388,7 @@ public class LambdaJ {
 
                     case sLetStar:
                     case sLet: {
+                        if (intp.speed == 0) break; // todo only needed because without this compiling "speed0.lisp murmel-test.lisp" would fail to compile with "code too large"
                         final Object bindings = cadr(ccForm);
                         if (bindings instanceof LambdaJSymbol) break;
                         assert bindings != null : "let w/o bindings should have been replaced in expandForm";
@@ -9399,6 +9421,17 @@ public class LambdaJ {
                         return;
                     }
 
+                    case sDefine:
+                    case sDefun:
+                    case sDefmacro: {
+                        if (hasNext) {
+                            sb.append("        ");
+                            emitForm(sb, form, env, topEnv, rsfx, false);
+                            sb.append(";\n");
+                            return;
+                        }
+                    }
+
                     default: break;
                     }
                 }
@@ -9410,10 +9443,21 @@ public class LambdaJ {
         }
 
         private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext) {
-            for (; cdr(ccBody) != null; ccBody = (ConsCell)cdr(ccBody)) {
-                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, true, true);
+            if (cdr(ccBody) == null) {
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
             }
-            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
+            else {
+                rsfx++;
+                final String ignoredVar = "ignored" + rsfx;
+                final String lhs = "        " + ignoredVar + " = ";
+                sb.append("        {\n        Object ").append(ignoredVar).append(";\n");
+                do {
+                    emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, topLevel, true, true);
+                    ccBody = (ConsCell)cdr(ccBody);
+                } while (cdr(ccBody) != null);
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
+                sb.append("        }\n");
+            }
         }
 
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
