@@ -8888,7 +8888,7 @@ public class LambdaJ {
             final ConsCell symentry = fastassq(form, env);
             if (symentry == null) {
                 if (passTwo) errorMalformedFmt("compilation unit", "undefined symbol %s", form);
-                System.err.println("implicit declaration of " + form); // todo lineinfo of containing form
+                note(null, "implicit declaration of " + form); // todo lineinfo of containing form
                 implicitDecl.add(form);
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
             }
@@ -9268,6 +9268,7 @@ public class LambdaJ {
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
             if (hasNext) {
                 if (atom(form)) {
+                    noteDead(null, form);
                     return; // must be dead code
                 }
             }
@@ -9303,7 +9304,7 @@ public class LambdaJ {
 
                     ///     - quote
                     case sQuote: {
-                        if (hasNext) return;
+                        if (hasNext) { noteDead(ccForm, null); return; }
                         break;
                     }
 
@@ -9341,7 +9342,10 @@ public class LambdaJ {
                             final Object condExpr = car(clause), condForms = cdr(clause);
                             if (condExpr == sT) {
                                 sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
-                                if (iterator.hasNext()) System.err.println(ccForm.lineInfo() + "forms following default 't' form will be ignored");
+                                if (iterator.hasNext()) {
+                                    final String msg = "forms following default 't' form will be ignored";
+                                    note(ccForm, msg);
+                                }
                                 return;
                             } else {
                                 sb.append("if (");  emitTruthiness(sb, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
@@ -9441,6 +9445,9 @@ public class LambdaJ {
             emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
             sb.append(";\n");
         }
+
+        private static void noteDead(ConsCell ccForm, Object form) { note(ccForm, "removing dead code " + (form == null ? "" : form)); }
+        private static void note(ConsCell ccForm, String msg) { System.err.println("; Note - " + (ccForm == null ? "?: " : ccForm.lineInfo()) + msg); }
 
         private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext) {
             if (cdr(ccBody) == null) {
@@ -9819,7 +9826,7 @@ public class LambdaJ {
                     final Object condExpr = car(clause), condForms = cdr(clause);
                     if (condExpr == sT) {
                         emitProgn(sb, condForms, env, topEnv, rsfx, isLast);  sb.append(')');
-                        if (iterator.hasNext()) System.err.println(condForm.lineInfo() + "forms following default 't' form will be ignored");
+                        if (iterator.hasNext()) note(condForm, "forms following default 't' form will be ignored");
                         return;
                     } else {
                         emitTruthiness(sb, condExpr, env, topEnv, rsfx);
