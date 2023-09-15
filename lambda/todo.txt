@@ -1,5 +1,12 @@
-emitStmt() "optimiert" einiges an dead code weg
--> note/ warnung ausgeben
+load liest files als UTF-8
+-> alte jm versionen mit verschiedenen java versionen checken, ggf. in changes dokumentieren
+
+
+parsing day01.lisp...
+; Note - day01.lisp:7:13..7:31: using reflection at runtime
+; Note - day01.lisp:7:13..7:31: using reflection at runtime
+-> sollte eig nicht sein ?!
+
 
 probleme mit "runbody(): code too large"
 -> ggf. sollte toplevelformtojava toplevel let/let*/progn in Murmel funktionen (oder Java methoden?) rausziehen

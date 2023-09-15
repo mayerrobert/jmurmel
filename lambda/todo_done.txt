@@ -2524,3 +2524,6 @@ Fizz, 82, 83, Fizz, Buzz, 86, Fizz, 88, 89, Fizz Buzz, 91, 92, Fizz, 94, Buzz, F
 
 
 (let nil ...) und (let* nil ...) koennten/ sollten in progn verwandelt werden
+
+emitStmt() "optimiert" einiges an dead code weg
+-> note/ warnung ausgeben

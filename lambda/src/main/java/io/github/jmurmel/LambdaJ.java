@@ -8883,12 +8883,12 @@ public class LambdaJ {
         private Set<LambdaJSymbol> globalDecl;
 
         /** return {@code form} as a Java expression */
-        private String javasym(Object form, ConsCell env) {
+        private String javasym(Object form, ConsCell env, ConsCell containingForm) {
             if (form == null || form == sNil) return "(Object)null";
             final ConsCell symentry = fastassq(form, env);
             if (symentry == null) {
                 if (passTwo) errorMalformedFmt("compilation unit", "undefined symbol %s", form);
-                note(null, "implicit declaration of " + form); // todo lineinfo of containing form
+                note(containingForm, "implicit declaration of " + form); // todo lineinfo of containing form
                 implicitDecl.add(form);
                 return mangle(form.toString(), 0) + ".get()"; // on pass 1 assume that undeclared variables are forward references to globals
             }
@@ -9101,7 +9101,7 @@ public class LambdaJ {
                     globalEnv = defineToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
                     bodyForms.add(ccForm);
-                    globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv)).append(";\n");
+                    globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv, ccForm)).append(";\n");
                     return globalEnv;
                 }
 
@@ -9109,7 +9109,7 @@ public class LambdaJ {
                     globalEnv = defunToJava(ret, ccForm, globalEnv);
                     intp.eval(ccForm, null);
                     bodyForms.add(ccForm);
-                    globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv)).append(";\n");
+                    globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv, ccForm)).append(";\n");
                     return globalEnv;
                 }
 
@@ -9268,7 +9268,7 @@ public class LambdaJ {
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
             if (hasNext) {
                 if (atom(form)) {
-                    noteDead(null, form);
+                    if (form != null) noteDead(null, form); // don't note nil as that would generate a lot of notes for e.g. "(if a nil (dosomething))"
                     return; // must be dead code
                 }
             }
@@ -9416,7 +9416,7 @@ public class LambdaJ {
                                 final String name = vName + '[' + localCtr++ + ']';
                                 extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
                             }
-                            emitStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, "        " + javasym(sym, extEnv) + " = ", true, false, true);
+                            emitStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, "        " + javasym(sym, extEnv, ccBinding) + " = ", true, false, true);
                             letStarEnv = extEnv;
                         }
 
@@ -9447,7 +9447,7 @@ public class LambdaJ {
         }
 
         private static void noteDead(ConsCell ccForm, Object form) { note(ccForm, "removing dead code " + (form == null ? "" : form)); }
-        private static void note(ConsCell ccForm, String msg) { System.err.println("; Note - " + (ccForm == null ? "?: " : ccForm.lineInfo()) + msg); }
+        private static void note(ConsCell ccForm, String msg) { System.err.println("; Note - " + (ccForm == null ? "" : ccForm.lineInfo()) + msg); }
 
         private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext) {
             if (cdr(ccBody) == null) {
@@ -9475,7 +9475,7 @@ public class LambdaJ {
 
                 /// * symbols
                 if (symbolp(form)) {
-                    sb.append(javasym(form, env));  return;
+                    sb.append(javasym(form, env, null));  return;
                 }
                 /// * atoms that are not symbols
                 if (atom(form)) {
@@ -9917,7 +9917,7 @@ public class LambdaJ {
 
         private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed("setq", car(pairs));
-            final String javaName = javasym(symbol, env);
+            final String javaName = javasym(symbol, env, (ConsCell)pairs);
 
             if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
             final Object valueForm = cadr(pairs);
@@ -9940,12 +9940,12 @@ public class LambdaJ {
         }
 
         /** args = (formsym (sym...) form...) */
-        private void emitLabel(String func, WrappingWriter sb, final Object symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitLabel(String func, WrappingWriter sb, ConsCell symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(func, car(symbolParamsAndForms));
             env = extenv(func, symbol, rsfx, env);
 
             sb.append("new MurmelFunction() {\n"
-                    + "        private final MurmelFunction ").append(javasym(symbol, env)).append(" = this;\n" // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"
+                    + "        private final MurmelFunction ").append(javasym(symbol, env, symbolParamsAndForms)).append(" = this;\n" // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"
                     + "        public Object apply(Object... args").append(rsfx).append(") {\n");
             env = params(func, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
             emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false);
@@ -9972,8 +9972,9 @@ public class LambdaJ {
             }
 
             for (Object symbolParamsAndBody: (ConsCell) localFuncs) {
-                sb.append("        private final MurmelFunction ").append(javasym(car(symbolParamsAndBody), env)).append(" = ");
-                emitLabel("labels", sb, symbolParamsAndBody, env, topEnv, rsfx+1);
+                final ConsCell ccSymbolParamsAndBody = (ConsCell)symbolParamsAndBody;
+                sb.append("        private final MurmelFunction ").append(javasym(car(ccSymbolParamsAndBody), env, ccSymbolParamsAndBody)).append(" = ");
+                emitLabel("labels", sb, ccSymbolParamsAndBody, env, topEnv, rsfx+1);
                 sb.append(";\n");
             }
 
@@ -10038,7 +10039,7 @@ public class LambdaJ {
 
             if (loopLabel != null) {
                 env = extenv(op, loopLabel, rsfx, env);
-                sb.append("        private final Object ").append(javasym(loopLabel, env)).append(" = this;\n");
+                sb.append("        private final Object ").append(javasym(loopLabel, env, null)).append(" = this;\n");
             }
             sb.append("        @Override public Object apply(Object... args").append(rsfx).append(") {\n");
             if (!listp(bindings)) errorMalformed(op, "a list of bindings", bindings);
@@ -10109,7 +10110,7 @@ public class LambdaJ {
                         }
                         else { // letXX dynamic can bind both global as well as new local variables
                             final String javaName;
-                            if (seen) javaName = javasym(sym, _env);
+                            if (seen) javaName = javasym(sym, _env, null);
                             else javaName = "args" + rsfx + "[" + n + "]";
                             sb.append("        ").append(javaName).append(" = ");
                             emitForm(sb, cadr(bi.next()), _env, topEnv, rsfx, false);
@@ -10130,7 +10131,7 @@ public class LambdaJ {
                             if (!javaName.endsWith(".get()")) errorMalformed("let* dynamic", "cannot modify constant " + cdr(maybeGlobal));
                             final String globalName = javaName.substring(0, javaName.length()-6);
                             globals.add(globalName);
-                            sb.append("        ").append(globalName).append(".push(").append(javasym(sym, __env)).append(");\n");
+                            sb.append("        ").append(globalName).append(".push(").append(javasym(sym, __env, null)).append(");\n");
                         }
                         else {
                             _env = extenvIntern((LambdaJSymbol)sym, "args" + rsfx + "[" + n + "]", _env);
@@ -10501,7 +10502,7 @@ public class LambdaJ {
             if (!(strClazz instanceof String) || !(strMethod instanceof String)) return false;
 
             final Object[] clazzDesc = JFFI.classByName.get(strClazz);
-            if (clazzDesc == null) return false; // todo warn re: performance
+            if (clazzDesc == null) { note(args, "using reflection at runtime"); return false; }
             final Class<?> clazz = (Class<?>)clazzDesc[0];
 
             // all parameter classes (if any) must be one of the classes that we know how to do Murmel->Java conversion else "return false"
@@ -10512,7 +10513,7 @@ public class LambdaJ {
                 paramTypeNames.add(paramType);
 
                 final Object[] typeDesc = JFFI.classByName.get(paramType);
-                if (typeDesc == null) return false; // todo warn re: performance
+                if (typeDesc == null) { note(args, "using reflection at runtime"); return false; }
                 final Class<?> paramClass = (Class<?>) typeDesc[0];
                 paramTypes.add(paramClass);
             }
