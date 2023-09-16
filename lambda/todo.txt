@@ -2,11 +2,6 @@ load liest files als UTF-8
 -> alte jm versionen mit verschiedenen java versionen checken, ggf. in changes dokumentieren
 
 
-jm samples.mlib\aoc20222\day01.lisp
--> gibt korrekt file not found
--> mit --run gibts rt error
-
-
 probleme mit "runbody(): code too large"
 -> ggf. sollte toplevelformtojava toplevel let/let*/progn in Murmel funktionen (oder Java methoden?) rausziehen
 

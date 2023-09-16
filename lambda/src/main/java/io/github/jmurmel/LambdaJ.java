@@ -6668,10 +6668,11 @@ public class LambdaJ {
                 return result;
             }
             catch (LambdaJError e) {
-                final String msg = (prg != null ? "runtime error" : "error") + location(prg) + ": " + e.getMessage();
                 if (repl) {
+                    final String msg = (prg != null ? "runtime error" : "error") + location(prg) + ": " + e.getMessage();
                     System.out.println("history NOT run as Java - " + msg);
-                } else System.err.println(msg);
+                }
+                else errorExit(e);
             }
             catch (Throwable t) {
                 final String loc = location(prg);
