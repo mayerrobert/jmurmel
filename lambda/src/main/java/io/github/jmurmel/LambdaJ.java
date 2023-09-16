@@ -6007,9 +6007,12 @@ public class LambdaJ {
             putWithAlias("CharSequence...", new Object[] { CharSequence[].class, "requireCharSequence", (UnaryOperator<Object>)(MurmelJavaProgram::requireCharSequence) });
             putWithAlias("String...",       new Object[] { String[].class,       "requireString",       (UnaryOperator<Object>)(MurmelJavaProgram::requireString) });
             putWithAlias("String?...",      new Object[] { String[].class,       "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) });
+
+            putWithUtilAlias("Comparator",  new Object[] { Comparator.class,     "java.util.Comparator.class.cast", (UnaryOperator<Object>)(Comparator.class::cast) });
         }
 
         private static void putWithAlias(String clsName, Object[] entry) { classByName.put(clsName, entry); classByName.put("java.lang." + clsName, entry); }
+        private static void putWithUtilAlias(String clsName, Object[] entry) { classByName.put(clsName, entry); classByName.put("java.util." + clsName, entry); }
 
         /** find and load the class given by the (possibly abbreviated) name {@code clsName} */
         private static Class<?> findClass(String clsName) throws ClassNotFoundException {
@@ -10501,9 +10504,23 @@ public class LambdaJ {
             // else jmethod() will check the runtime type at runtime
             if (!(strClazz instanceof String) || !(strMethod instanceof String)) return false;
 
+            final Class<?> clazz;
+            final String convReceiver;
             final Object[] clazzDesc = JFFI.classByName.get(strClazz);
-            if (clazzDesc == null) { note(args, "using reflection at runtime"); return false; }
-            final Class<?> clazz = (Class<?>)clazzDesc[0];
+            if (clazzDesc == null) {
+                try {
+                    clazz = Class.forName((String)strClazz);
+                    convReceiver = clazz.getCanonicalName() + ".class.cast";
+                }
+                catch (ClassNotFoundException e) {
+                    note(args, "using reflection at runtime");
+                    return false;
+                }
+            }
+            else {
+                clazz = (Class<?>)clazzDesc[0];
+                convReceiver = (String)clazzDesc[1];
+            }
 
             // all parameter classes (if any) must be one of the classes that we know how to do Murmel->Java conversion else "return false"
             final ArrayList<Class<?>> paramTypes = new ArrayList<>();
@@ -10542,7 +10559,6 @@ public class LambdaJ {
                     if (Modifier.isStatic(m.getModifiers())) sb.append(strClazz).append('.').append(strMethod);
                     else {
                         // instance method, first arg is the object
-                        final String convReceiver = (String)clazzDesc[1];
                         if (convReceiver == null) sb.append("(Object)((").append(strClazz).append(')');
                         else                      sb.append("(Object)").append(convReceiver).append('(');
                         emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);

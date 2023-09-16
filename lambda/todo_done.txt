@@ -2527,3 +2527,8 @@ Fizz, 82, 83, Fizz, Buzz, 86, Fizz, 88, 89, Fizz Buzz, 91, 92, Fizz, 94, Buzz, F
 
 emitStmt() "optimiert" einiges an dead code weg
 -> note/ warnung ausgeben
+
+parsing day01.lisp...
+; Note - day01.lisp:7:13..7:31: using reflection at runtime
+; Note - day01.lisp:7:13..7:31: using reflection at runtime
+-> sollte eig nicht sein ?!

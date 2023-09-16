@@ -2,10 +2,9 @@ load liest files als UTF-8
 -> alte jm versionen mit verschiedenen java versionen checken, ggf. in changes dokumentieren
 
 
-parsing day01.lisp...
-; Note - day01.lisp:7:13..7:31: using reflection at runtime
-; Note - day01.lisp:7:13..7:31: using reflection at runtime
--> sollte eig nicht sein ?!
+jm samples.mlib\aoc20222\day01.lisp
+-> gibt korrekt file not found
+-> mit --run gibts rt error
 
 
 probleme mit "runbody(): code too large"
