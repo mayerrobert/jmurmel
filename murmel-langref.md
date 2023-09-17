@@ -1185,7 +1185,7 @@ but
     C:\> echo (read 'xyxxy)| java -jar lambda\target\jmurmel.jar
     ==> xyxxy
 
-Note that in an EOF occurs while reading an S-expression an error
+Note that if an EOF occurs while reading an S-expression an error
 will be thrown even when `eof-obj` was used. 
 
 `write` accepts an optional boolean argument `print-escape-p`.
