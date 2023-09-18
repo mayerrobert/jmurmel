@@ -5550,10 +5550,7 @@ public class LambdaJ {
                 final Path p = Paths.get(fileName);
                 final Charset cs = args == null ? StandardCharsets.UTF_8 : Charset.forName(requireString("read-textfile", car(args)));
                 final CharSequence s = EolUtil.anyToUnixEol(JavaUtil.readString(p, cs));
-                final StringBuilder ret = s instanceof StringBuilder ? (StringBuilder)s : new StringBuilder(s);
-                final int length = ret.length();
-                if (length == 0 || ret.charAt(length-1) != '\n') ret.append('\n');
-                return ret;
+                return s instanceof StringBuilder ? (StringBuilder)s : new StringBuilder(s);
             }
             catch (Exception e) {
                 throw wrap(e);

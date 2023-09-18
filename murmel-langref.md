@@ -1248,9 +1248,6 @@ Since: 1.4
 
 Read the file with the given filename and return it's contents
 as a `string`. Lineend character sequences will be normalized to `#\Newline`.
-If a non-empty file ends with a line without a lineend character sequence
-then one will be supplied. `result-string` will either be empty
-or end with `#\Newline`.
 
 `charset` defaults to UTF-8.
 
