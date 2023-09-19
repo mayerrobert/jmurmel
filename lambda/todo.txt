@@ -34,6 +34,8 @@ einfacher:
 https://github.com/dnaeon/cl-jwk/blob/master/.github/workflows/docker-image.yaml
 https://github.com/marketplace/actions/build-and-push-docker-images
 
+distroless Java docker images: https://github.com/GoogleContainerTools/distroless/blob/main/examples/java/Dockerfile
+
 
 
 GraalVM + Swing geht anscheinend doch, zumindest auf linux: https://www.praj.in/posts/2021/compiling-swing-apps-ahead-of-time/
