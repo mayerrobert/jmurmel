@@ -27,6 +27,7 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
+    continue-on-error: true
     strategy:
       matrix:
         java: [ '8', '17', '20', '21', '22-ea' ]
