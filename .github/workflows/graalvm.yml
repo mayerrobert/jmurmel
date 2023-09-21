@@ -38,13 +38,21 @@ jobs:
           path: ~/.m2/repository
           key: ${{ runner.os }}-graalvm-maven-${{ hashFiles('**/pom.xml') }}
 
-      - name: Build and run JMurmel graalvm
+      - name: Build JMurmel
         run: |
           mvn -V -B clean package -pl lambda "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
           mvn -V -B clean package -f graalvm/pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
-          echo runner.os: x"${{ runner.os }}"x
-          echo matrix.os: x"${{ matrix.os }}"x
-          native-image `[ "${{ matrix.os }}" = "ubuntu-20.04" ] && echo -n "--gc=G1"` --no-fallback --initialize-at-build-time=io.github.jmurmel -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./graalvm/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./graalvm/src/main/graalvm/proxyconfig -cp ./graalvm/target/unsupported.jar -jar ./lambda/target/jmurmel.jar
+
+      - name: Run native image Windows
+        if: "${{ runner.os }}" = "Windows"
+        run: |
+          native-image --no-fallback --initialize-at-build-time=io.github.jmurmel -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./graalvm/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./graalvm/src/main/graalvm/proxyconfig -cp ./graalvm/target/unsupported.jar -jar ./lambda/target/jmurmel.jar
+          ./jmurmel --version
+
+      - name: Run native image Linux
+        if: "${{ runner.os }}" = "Linux"
+        run: |
+          native-image --gc=G1 --no-fallback --initialize-at-build-time=io.github.jmurmel -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./graalvm/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./graalvm/src/main/graalvm/proxyconfig -cp ./graalvm/target/unsupported.jar -jar ./lambda/target/jmurmel.jar
           ./jmurmel --version
 
       - name: Save Maven repo
