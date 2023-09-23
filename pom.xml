@@ -74,7 +74,7 @@
         <launch4j-maven-plugin.version>2.4.1</launch4j-maven-plugin.version>
         <launch4j.skip>true</launch4j.skip>
 
-        <modernizer-maven-plugin.version>2.6.0</modernizer-maven-plugin.version>
+        <modernizer-maven-plugin.version>2.7.0</modernizer-maven-plugin.version>
 
         <!-- report maven plugins -->
         <maven-site-plugin.version>3.12.1</maven-site-plugin.version>
