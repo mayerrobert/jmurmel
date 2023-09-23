@@ -9549,6 +9549,7 @@ public class LambdaJ {
 
                     case sLambdaDynamic: {
                         errorNotImplemented("lambda dynamic is not supported in compiled Murmel");
+                        //NOTREACHED
                     }
 
                     ///     - setq
@@ -10991,16 +10992,17 @@ final class JavaUtil {
             final char b = cs2.charAt(i);
             if (a != b) { return a - b; }
         }
-        return cs1.length() - cs2.length();
+        return Integer.compare(cs1.length(), cs2.length());
     }
 
+    /** return value is 16bits at most so -compare() is safe */
     static int compare(CharSequence cs1, char[] cs2) {
         for (int i = 0, len = Math.min(cs1.length(), cs2.length); i < len; i++) {
             final char a = cs1.charAt(i);
             final char b = cs2[i];
             if (a != b) { return a - b; }
         }
-        return cs1.length() - cs2.length;
+        return Integer.compare(cs1.length(), cs2.length);
     }
 
     static int compare(char[] cs1, char[] cs2) {
@@ -11009,7 +11011,7 @@ final class JavaUtil {
             final char b = cs2[i];
             if (a != b) { return a - b; }
         }
-        return cs1.length - cs2.length;
+        return Integer.compare(cs1.length, cs2.length);
     }
 
     /* don't use APIs with default charset
