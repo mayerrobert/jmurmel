@@ -9190,12 +9190,11 @@ public class LambdaJ {
             globalDecl.add(symbol);
 
             final String javasym = mangle(symbol.toString(), 0);
-            env = extenvIntern(symbol, javasym + ".get()", env); // ggf. die methode define_javasym OHNE javasym im environment generieren, d.h. extenvIntern erst am ende dieser methode
+            env = extenvIntern(symbol, javasym + ".get()", env);
 
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
-                      + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
-
-            sb.append("    public Object define_").append(javasym).append("() {\n"
+                      + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
+                      + "    public Object define_").append(javasym).append("() {\n"
                       + "        values = null;\n"
                       + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                       + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
