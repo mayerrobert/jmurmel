@@ -9184,7 +9184,7 @@ public class LambdaJ {
         /** Emit a member for {@code symbol} and a function that assigns {@code form} to {@code symbol}.
          *  @param form a list (define symbol form) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            varargs1_2("toplevel define", listOrMalformed("toplevel define", cdr(form)));
+            varargs1_2("define", listOrMalformed("define", cdr(form)));
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed("define", cadr(form));
             notDefined("define", symbol, env);
             globalDecl.add(symbol);
@@ -9568,7 +9568,7 @@ public class LambdaJ {
                     }
 
                     case sDefine: {
-                        if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not yet implemented");
+                        if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not implemented");
                         defined("define", car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
                         sb.append("define_").append(javasym).append("()");
@@ -9576,7 +9576,7 @@ public class LambdaJ {
                     }
 
                     case sDefun: {
-                        if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not yet implemented");
+                        if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not implemented");
                         defined("defun", car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
                         sb.append("defun_").append(javasym).append("()");
@@ -9584,7 +9584,7 @@ public class LambdaJ {
                     }
 
                     case sDefmacro: {
-                        if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not yet implemented");
+                        if (rsfx != 1) errorNotImplemented("defmacro as non-toplevel form is not implemented");
                         intp.expandForm(form); // this will process the macro definition as a side effect in case macroexpand-1 was used
                         sb.append("intern(\"").append(car(ccArguments)).append("\")");
                         return;
