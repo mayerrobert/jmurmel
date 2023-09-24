@@ -9197,7 +9197,6 @@ public class LambdaJ {
                       + "    public Object define_").append(javasym).append("() {\n"
                       + "        values = null;\n"
                       + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                      + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate define\"));\n"
                       + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                       + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
                       + "        catch (Exception e) { rterror(e); }\n"
@@ -9224,7 +9223,6 @@ public class LambdaJ {
             sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
                       + "        values = null;\n"
                       + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                      + "        if (").append(javasym).append(" != UNASSIGNED_GLOBAL) rterror(new LambdaJError(\"duplicate defun\"));\n"
                       + "        final MurmelFunction func = new MurmelFunction() {\n"
                       + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
                       + "        public Object apply(Object... args0) {\n");
