@@ -2076,8 +2076,8 @@ public class LambdaJ {
             if (rhs == null) return (ConsCell)lhs;
             if (consp(lhs)) {
                 if (car(lhs) == sQuote) {
-                    assert cddr(lhs) == null : "expected a single argument quote call, got: " + lhs;
-                    assert cdr(cadr(lhs)) == null : "expected a quoted single element list, got: " + lhs;
+                    assert cddr(lhs) == null : "expected a single argument quote call but got " + lhs;
+                    assert cdr(cadr(lhs)) == null : "expected a quoted single element list but got " + lhs;
 
                     Object x = car(cadr(lhs));
                     if (!(x == sT || x == sNil || (atom(x) && !symbolp(x))))
@@ -2095,7 +2095,7 @@ public class LambdaJ {
                 }
 
                 if (car(lhs) == sList) {
-                    assert cddr(lhs) == null : "expected a single argument list call, got: " + lhs;
+                    assert cddr(lhs) == null : "expected a single argument list call but got " + lhs;
 
                     if (consp(rhs)) {
                         final Object carRhs = car(rhs);
@@ -3148,7 +3148,7 @@ public class LambdaJ {
                         letDynamic = false;
                         namedLet = true;
                     }
-                    if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, "dynamic is not allowed with letrec");
+                    if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, "dynamic is only allowed with let and let*");
                     bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
                 }
                 else {
@@ -4824,7 +4824,7 @@ public class LambdaJ {
                 } while (temp.subtract(randomNumber).add(nm1).bitLength() >= nlen + 100);
                 return randomNumber;
             }
-            throw errorInternal("cannot happen");
+            throw errorInternal("can't happen");
         }
 
         static Random makeRandomState(Random currentState, Object state) {
@@ -5888,7 +5888,7 @@ public class LambdaJ {
                     default: invoke = mh::invokeWithArguments; // that's slow
                     }
                 }
-                catch (IllegalAccessException iae) { throw new LambdaJError(iae, false, "can not access " + method.getDeclaringClass().getSimpleName(), method.getName()); }
+                catch (IllegalAccessException iae) { throw new LambdaJError(iae, false, "cannot access " + method.getDeclaringClass().getSimpleName(), method.getName()); }
             }
 
             @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
@@ -9930,7 +9930,7 @@ public class LambdaJ {
                 }
                 else {
                     // immutable runtime globals such as pi are implemented as regular Java class members (and not as objects of class CompilerGlobal)
-                    errorMalformed("setq", "cannot modify constant " + symbol);
+                    errorMalformed("setq", "can't modify constant " + symbol);
                 }
             } else {
                 sb.append(javaName).append(" = ");  emitForm(sb, valueForm, env, topEnv, rsfx, false);
@@ -10029,7 +10029,6 @@ public class LambdaJ {
             final String op;
             if (named) {
                 // named letrec: (letrec sym ((sym form)...) forms...) -> Object
-                if (loopLabel == intp.sDynamic) errorMalformed("letrec", "dynamic is only allowed with let and let*");
                 op = letrec ? "named letrec" : "named let*";
             }
             else {
