@@ -9193,8 +9193,8 @@ public class LambdaJ {
             env = extenvIntern(symbol, javasym + ".get()", env);
 
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
-                      + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
-                      + "    public Object define_").append(javasym).append("() {\n"
+                      + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
+                      + "    private Object define_").append(javasym).append("() {\n"
                       + "        values = null;\n"
                       + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                       + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
@@ -9220,7 +9220,7 @@ public class LambdaJ {
             sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
                       + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
-            sb.append("    public LambdaJSymbol defun_").append(javasym).append("() {\n"
+            sb.append("    private LambdaJSymbol defun_").append(javasym).append("() {\n"
                       + "        values = null;\n"
                       + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
                       + "        final MurmelFunction func = new MurmelFunction() {\n"

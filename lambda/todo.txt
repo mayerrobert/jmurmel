@@ -1,9 +1,10 @@
+Zum aufrufen von murmel aus java: eine funktion (oder einen Builder?), die bekommt ein MurmelProgram + ein interface,
+liefert einen proxy der die interface methoden am MurmelProgram delegiert
+-> sollte der compiler optional eine klasse ausspucken, die ein gegebenes interface implementiert?
+
 load liest files als UTF-8
 -> alte jm versionen mit verschiedenen java versionen checken, ggf. in changes dokumentieren
 
-
-probleme mit "runbody(): code too large"
--> ggf. sollte toplevelformtojava toplevel let/let*/progn in Murmel funktionen (oder Java methoden?) rausziehen
 
 statt Files.newBufferedReader kann meist ReadSupplier.of(Path) verwendet werden
 
@@ -66,6 +67,14 @@ Mittelbar damit zusammenhängend:
 Das globale environment könnte statt aus einer Map aus Object[] (oder ArrayList?) mit Werten und einer Map Symbol->Offset bestehen
 -> der compiler könnte zur compilezeit bekannte offsets hardcodieren, der interpreter könnte die offsets zur macroexpansiontime auflösen
 -> vielleicht getrennte globale environments compiler vs. interpreter zusammenführen?
+
+probleme mit "runbody(): code too large"
+-> ggf. sollte toplevelformtojava toplevel let/let*/progn in Murmel funktionen (oder Java methoden?) rausziehen
+-> oder überhaupt:
+   jede funktion und jedes toplevel letXX wird in eine toplevel klasse rausgezogen
+   "defpackage" könnte eine klasse ausspucken die hat nur ein (static?) array und ggf. eine Map symbol->offset (oder symbol->CompilerGlobal),
+     und ggf eine symboltable (oder brauchts die symboltable zur laufzeit gar nicht mehr?)
+
 
 
 Murmel format    -> Murmel jformat ... nimmt Java format string
