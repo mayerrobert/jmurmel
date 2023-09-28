@@ -332,7 +332,7 @@ public class ScannerTest {
     public void testListDotListShort2() {
         LambdaJTest.runErrorTest("dotted list short", "'(a b . c d)", "illegal end of dotted list: (c d)\nerror occurred in line 1:2..1:12");
     }
-    
+
     @Test
     public void testIsDouble2() {
         Assert.assertTrue(LambdaJ.isDouble("+.0"));

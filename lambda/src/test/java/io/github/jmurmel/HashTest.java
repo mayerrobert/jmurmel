@@ -74,7 +74,7 @@ public class HashTest {
 
         Assert.assertEquals(sxhash(new BigInteger("-97")), byteHash);
     }
-    
+
     @Test
     public void testBitvector() {
         final boolean[] bv = new boolean[] { false, true, true, false };

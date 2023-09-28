@@ -469,7 +469,7 @@ public class MurmelJavaCompilerTest {
     public void testLetStarDynamic() throws Exception {
         final MurmelProgram program = compile("(define a 1) (define b 2) (defun f () (write a) (write b)) (let* dynamic ((a 33) (b a)) (f)) (f)");
         assertNotNull("failed to compile let* dynamic to class", program);
-        
+
         final StringBuilder out = new StringBuilder();
         program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
         program.body();
@@ -544,8 +544,8 @@ public class MurmelJavaCompilerTest {
         assertEquals("labelsmutual produced wrong result", 5L, program.body());
     }
 
-    
-    
+
+
     @Test
     public void testJavaStatic() throws Exception {
         final MurmelProgram program = compile("((jmethod \"java.lang.System\" \"currentTimeMillis\"))");

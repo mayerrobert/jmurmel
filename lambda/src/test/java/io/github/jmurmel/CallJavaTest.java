@@ -107,7 +107,7 @@ public class CallJavaTest {
                 + "(write ((jmethod \"java.util.HashMap\" \"get\" \"java.lang.Object\") my-hash \"key\"))"
                 + "(hash-tostring my-hash)", "\"{key=value}\"", "\"value\"");
     }
-    
+
     private static void runTest(String source, String expectedResult) throws Exception {
         LambdaJTest.runTest("calljavatest.lisp", source, expectedResult, null);
         MurmelJavaCompilerTest.compileAndRun(source, expectedResult);

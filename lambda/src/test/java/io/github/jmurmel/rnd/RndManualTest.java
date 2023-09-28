@@ -11,7 +11,7 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
 public class RndManualTest {
-    
+
     @Test
     public void readWriteRnd() throws Exception {
         final Random rnd = new Random();
@@ -27,7 +27,7 @@ public class RndManualTest {
         final Object rnd2 = ois.readObject();
         assertNotNull(rnd2);
     }
-    
+
     @Test
     public void copySecureRandom() throws Exception {
         final Random rnd = new SecureRandom();

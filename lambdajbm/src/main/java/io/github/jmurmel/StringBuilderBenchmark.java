@@ -12,12 +12,12 @@ import java.util.concurrent.TimeUnit;
 @State(value = Scope.Thread)
 public class StringBuilderBenchmark {
     private StringBuilder sb;
-    
+
     @Setup(Level.Invocation)
     public void setup() {
         sb = new StringBuilder();
     }
-    
+
     @Benchmark
     public StringBuilder appendString() {
         return sb.append("12");
