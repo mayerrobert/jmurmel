@@ -7,7 +7,7 @@ Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
  * changed load and require in comiled Murmel: must appear at toplevel
  * changed car to accept all strings
  * changed read-textfile and read-textfile-lines to use UTF-8 as the default charset
-   (unless given as an argument)
+   (unless the charset was given as an argument)
  * changed read-textfile to no longer append a #\Newline at the end
 
  * fixed read-from-string: handle feature-expressions correctly, intern symbols correctly
