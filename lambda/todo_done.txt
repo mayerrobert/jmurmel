@@ -2537,3 +2537,7 @@ parsing day01.lisp...
 jm samples.mlib\aoc2022\day01.lisp
 -> gibt korrekt file not found
 -> mit --run gibts rt error
+
+
+wenn commandline options 2x gegeben werden, sagt die fehlermeldung "unknown..."
+-> "unknown or duplicate" ?

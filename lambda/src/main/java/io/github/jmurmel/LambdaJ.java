@@ -7149,7 +7149,7 @@ public class LambdaJ {
             for (String arg: args) {
                 if ("--".equals(arg)) return err;
                 if (arg != null && arg.startsWith("-")) {
-                    System.err.println("LambdaJ: unknown commandline argument " + arg + " or missing value");
+                    System.err.println("LambdaJ: unknown or duplicate commandline argument " + arg + " or missing value");
                     System.err.println("use '--help' to show available commandline arguments");
                     err = true;
                 }

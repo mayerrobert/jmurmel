@@ -51,11 +51,11 @@ public class CmdlineTest {
             { "nulltest --tty", new String[] { "--tty" },  "",   0, STDOUT_WELCOME_OUTPUT_BYE, ""},
             { "error --tty", new String[] { "--tty" }, "errorform\n:q", 0, STDOUT_WELCOME_OUTPUT_ERROR_BYE, "" },
 
-            { "invalid cmdline arg", new String[] { "--bla" }, null, 128, "", re("LambdaJ: unknown commandline argument", "LambdaJ: exiting because of previous errors.\n") },
+            { "invalid cmdline arg", new String[] { "--bla" }, null, 128, "", re("LambdaJ: unknown or duplicate commandline argument", "LambdaJ: exiting because of previous errors.\n") },
             { "--version", new String[] { "--version" }, null, 0, re("Version", "Built from ", "Built by", "\n"), "" },
             { "--help", new String[] { "--help" }, null, 0, re("Version", "Built from ", "Built by", "Usage:\n\n", "\n"), "" },
             { "--help-features", new String[] { "--help-features" }, null, 0, re("Version", "Built from ", "Built by", "Feature flags:\n\n", "\n"), "" },
-            
+
             { "cmdline args", new String[] {          "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> \"arg1\"\n", "" },
             { "cmdline args", new String[] { "--run", "--", "arg1" }, "(write (car *command-line-argument-list*) nil)", 0, "arg1\n==> \"arg1\"\n", "" },
 
@@ -68,7 +68,7 @@ public class CmdlineTest {
     public void testMain(String name, String[] args, String stdIn, int expectRc, String expectStdout, String expectStderr) {
         final InputStream oldStdin = System.in;
         if (stdIn != null) System.setIn(new ByteArrayInputStream(stdIn.getBytes(StandardCharsets.UTF_8)));
-        
+
         final PrintStream oldStdout = System.out;
         final ByteArrayOutputStream captureStdout = new ByteArrayOutputStream();
         System.setOut(new PrintStream(captureStdout));
@@ -93,7 +93,7 @@ public class CmdlineTest {
         System.setOut(oldStdout);
         System.setErr(oldStderr);
     }
-    
+
 
 
     private static String failMsg(String chan, String expect, String actual) {
