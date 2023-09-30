@@ -10244,16 +10244,14 @@ public class LambdaJ {
             final Path prev = intp.currentSource;
             final Path p = intp.findFile(func, argument);
             intp.currentSource = p;
-            final Object eof = "EOF";
-            try (Reader r = Files.newBufferedReader(p)) {
-                final SExpressionReader parser = intp.makeReader(r::read, p);
+            try {
+                final SExpressionReader parser = intp.makeReader(ReadSupplier.of(p), p);
+                final Object eof = "EOF";
                 for (;;) {
                     final Object form = parser.readObj(true, eof);
-                    if (form == eof) break;
-
+                    if (form == eof) return topEnv;
                     topEnv = toplevelFormToJava(sb, bodyForms, globals, topEnv, intp.expandForm(form));
                 }
-                return topEnv;
             }
             catch (IOException e) {
                 throw wrap(new ReaderError("load: error reading file '%s': ", e.getMessage()));
@@ -10267,7 +10265,7 @@ public class LambdaJ {
             Object l = _l;
             for (;;) {
                 if (l == null) return false;
-                if (!consp(l)) return true;
+                if (atom(l)) return true;
                 l = cdr(l);
                 if (l == _l) throw new ProgramError("circular list detected");
             }
