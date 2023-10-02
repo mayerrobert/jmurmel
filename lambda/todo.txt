@@ -1,11 +1,4 @@
 
-GraalVM scheint murmeldir anders aufzulösen:
-Error: reader-error - require: error reading file 'mlib': /home/runner/work/jmurmel/jmurmel/lambda/target/mlib.lisp
-error occurred in 00_tak_apo.lisp:4:10..4:24: (require "mlib")
--> wenn mlib.lisp als resource mitverpackt würde und load auch ressourcen findet, wär das wuascht
-
-
-
 Zum aufrufen von murmel aus java: eine funktion (oder einen Builder?), die bekommt ein MurmelProgram + ein interface,
 liefert einen proxy der die interface methoden am MurmelProgram delegiert
 -> sollte der compiler optional eine klasse ausspucken, die ein gegebenes interface implementiert?

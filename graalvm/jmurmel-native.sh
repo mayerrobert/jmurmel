@@ -34,12 +34,14 @@ export PATH=$GRAAL_HOME/bin:$PATH
 test -d target || mkdir target
 
 native-image \
+  --gc=G1
   -H:IncludeResources="META-INF/.*" \
   -H:ReflectionConfigurationFiles=./src/main/graalvm/reflectconfig \
   -H:DynamicProxyConfigurationFiles=./src/main/graalvm/proxyconfig \
   --no-fallback \
   --initialize-at-build-time=io.github.jmurmel \
-  -cp ./target/unsupported.jar \
+  --initialize-at-run-time=io.github.jmurmel.MurmelDir \
+   -cp ./target/unsupported.jar \
   -jar ../lambda/target/jmurmel.jar \
   -o target/jmurmel
 

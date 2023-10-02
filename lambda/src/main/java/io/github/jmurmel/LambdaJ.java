@@ -951,33 +951,7 @@ public class LambdaJ {
     "Us"
     };
 
-    /** installation directory */
-    static final Path murmelDir;
-    static {
-        Path path;
-        try {
-            final Path p = Paths.get(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().toURI());
-            if (Files.isDirectory(p)) {
-                path = p;
-            }
-            else {
-                path = p.getParent();
-                if (path == null) {
-                    System.out.println("cannot get Murmel dir: " + p + " is not a directory but does not have a parent to use");
-                }
-                else if (!Files.isDirectory(path)) {
-                    System.out.println("cannot get Murmel dir: neither " + p + " nor " + path + " are directories");
-                }
-            }
-        }
-        catch (URISyntaxException e) {
-            System.out.println("cannot get Murmel dir: " + e.getMessage());
-            path = Paths.get(".");
-        }
-        murmelDir = path;
-    }
-
-    /** additional directory for load and require, default is installation directory, see {@link #murmelDir} */
+    /** additional directory for load and require, default is installation directory, see {@link MurmelDir#murmelDir} */
     final Path libDir;
 
     Path currentSource;
@@ -1076,7 +1050,7 @@ public class LambdaJ {
         if (symtab == null) symtab = new ListSymbolTable();
         this.symtab = symtab;
         if (libDir != null) this.libDir = libDir;
-        else this.libDir = murmelDir;
+        else this.libDir = MurmelDir.murmelDir;
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
 
         this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : cons(intern("*features*"), makeFeatureList(symtab));
@@ -10972,7 +10946,7 @@ final class JavaUtil {
 
     // from Java 20 HashMap#calculateHashMapCapacity()
     static int hashMapCapacity(int numMappings) {
-        return (int) Math.ceil(numMappings / (double)DEFAULT_LOAD_FACTOR);
+        return (int)Math.ceil(numMappings / (double)DEFAULT_LOAD_FACTOR);
     }
 
     static <K, V> HashMap<K, V> newHashMap(int numMappings) {
@@ -10989,7 +10963,9 @@ final class JavaUtil {
         return Integer.compare(cs1.length(), cs2.length());
     }
 
-    /** return value is 16bits at most so -compare() is safe */
+    /**
+     * return value is 16bits at most so -compare() is safe
+     */
     static int compare(CharSequence cs1, char[] cs2) {
         for (int i = 0, len = Math.min(cs1.length(), cs2.length); i < len; i++) {
             final char a = cs1.charAt(i);
@@ -11017,6 +10993,34 @@ final class JavaUtil {
     static String readString(Path p, Charset cs) throws IOException {
         // Java11+ has Files.readString() which does one less copying than this
         return new String(Files.readAllBytes(p), cs);
+    }
+}
+
+final class MurmelDir {
+    /** installation directory */
+    static final Path murmelDir;
+    static {
+        Path path;
+        try {
+            final Path p = Paths.get(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            if (Files.isDirectory(p)) {
+                path = p;
+            }
+            else {
+                path = p.getParent();
+                if (path == null) {
+                    System.out.println("cannot get Murmel dir: " + p + " is not a directory but does not have a parent to use");
+                }
+                else if (!Files.isDirectory(path)) {
+                    System.out.println("cannot get Murmel dir: neither " + p + " nor " + path + " are directories");
+                }
+            }
+        }
+        catch (URISyntaxException e) {
+            System.out.println("cannot get Murmel dir: " + e.getMessage());
+            path = Paths.get(".");
+        }
+        murmelDir = path;
     }
 }
 

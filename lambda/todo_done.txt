@@ -2541,3 +2541,10 @@ jm samples.mlib\aoc2022\day01.lisp
 
 wenn commandline options 2x gegeben werden, sagt die fehlermeldung "unknown..."
 -> "unknown or duplicate" ?
+
+
+GraalVM scheint murmeldir anders aufzulösen:
+Error: reader-error - require: error reading file 'mlib': /home/runner/work/jmurmel/jmurmel/lambda/target/mlib.lisp
+error occurred in 00_tak_apo.lisp:4:10..4:24: (require "mlib")
+-> wenn mlib.lisp als resource mitverpackt würde und load auch ressourcen findet, wär das wuascht
+-> wsl. wg. "--initialize-at-build-time=io.github.jmurmel"
