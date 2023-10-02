@@ -34,7 +34,6 @@ export PATH=$GRAAL_HOME/bin:$PATH
 test -d target || mkdir target
 
 native-image \
-  --gc=G1
   -H:IncludeResources="META-INF/.*" \
   -H:ReflectionConfigurationFiles=./src/main/graalvm/reflectconfig \
   -H:DynamicProxyConfigurationFiles=./src/main/graalvm/proxyconfig \
