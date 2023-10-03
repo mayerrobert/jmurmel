@@ -951,7 +951,7 @@ public class LambdaJ {
     "Us"
     };
 
-    /** additional directory for load and require, default is installation directory, see {@link MurmelDir#murmelDir} */
+    /** additional directory for load and require, default is installation directory, see {@link InstallDir#installDir} */
     final Path libDir;
 
     Path currentSource;
@@ -1050,7 +1050,7 @@ public class LambdaJ {
         if (symtab == null) symtab = new ListSymbolTable();
         this.symtab = symtab;
         if (libDir != null) this.libDir = libDir;
-        else this.libDir = MurmelDir.murmelDir;
+        else this.libDir = InstallDir.installDir;
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
 
         this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : cons(intern("*features*"), makeFeatureList(symtab));
@@ -2487,30 +2487,30 @@ public class LambdaJ {
 
 
 
-    /// ### Global environment - define'd symbols go into this list
+    /// ### Global environment - define'd symbols go into this map
 
-    final Map<Object, ConsCell> gcache = new IdentityHashMap<>(200);
+    final Map<Object, ConsCell> globals = new IdentityHashMap<>(200);
 
     private ConsCell lookupEnvEntry(@NotNull Object symbol, ConsCell lexenv) {
         final ConsCell lexEntry = fastassq(symbol, lexenv);
         if (lexEntry != null) return lexEntry;
-        return lookupTopenvEntry(symbol);
+        return lookupGlobalEntry(symbol);
     }
 
-    private ConsCell lookupTopenvEntry(@NotNull Object symbol) {
-        return gcache.get(symbol);
+    private ConsCell lookupGlobalEntry(@NotNull Object symbol) {
+        return globals.get(symbol);
     }
 
-    final void extendTopenv(@NotNull Object sym, Object value) {
-        gcache.put(sym, cons(sym, value));
+    final void extendGlobal(@NotNull Object sym, Object value) {
+        globals.put(sym, cons(sym, value));
     }
 
-    private void extendTopenv(@NotNull ConsCell envEntry) {
-        gcache.put(car(envEntry), envEntry);
+    private void extendGlobal(@NotNull ConsCell envEntry) {
+        globals.put(car(envEntry), envEntry);
     }
 
-    void extendTopenv(@NotNull String sym, Object value) {
-        extendTopenv(intern(sym), value);
+    void extendGlobal(@NotNull String sym, Object value) {
+        extendGlobal(intern(sym), value);
     }
 
 
@@ -2529,9 +2529,9 @@ public class LambdaJ {
         modules.clear();
         handlers = null;
         setReaderPrinter(inReader, outWriter);
-        gcache.clear();
+        globals.clear();
         if (customEnv != null) for (Object o: customEnv) {
-            gcache.put(car(o), (ConsCell)o);
+            globals.put(car(o), (ConsCell)o);
         }
         featuresEnvEntry.rplacd(makeFeatureList(symtab));
         conditionHandlerEnvEntry.rplacd(null);
@@ -2633,7 +2633,7 @@ public class LambdaJ {
                 /// eval - (define symbol exp) -> symbol with a side of global environment extension
                 case sDefine: {
                     final Object symbol = car(ccArguments);
-                    extendTopenv(symbol, eval(cadr(ccArguments), env, stack, level, traceLvl));
+                    extendGlobal(symbol, eval(cadr(ccArguments), env, stack, level, traceLvl));
                     values = NO_VALUES;
                     return result = symbol;
                 }
@@ -2645,7 +2645,7 @@ public class LambdaJ {
                     final AbstractConsCell selfEnvEntry = new ListConsCell(symbol, null);
                     final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
                     selfEnvEntry.cdr = closure;
-                    extendTopenv(symbol, closure);
+                    extendGlobal(symbol, closure);
                     return result = symbol;
                 }
 
@@ -3282,7 +3282,7 @@ public class LambdaJ {
 
             pairs = (ConsCell) cdr(pairs);
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
-            if (envEntry == null) extendTopenv(symbol, value);
+            if (envEntry == null) extendGlobal(symbol, value);
             else envEntry.rplacd(value);
             res = value;
             pairs = (ConsCell) cdr(pairs);
@@ -3386,7 +3386,7 @@ public class LambdaJ {
                 final Object bindingForm = cadr((ConsCell)binding);
 
                 final ConsCell newBinding;
-                if (letDynamic) newBinding = lookupTopenvEntry(sym); // hier wird nur im global env gesucht. wenns gleichnamige globale UND lexical variablen gibt, bleibt die lexical unveraendert
+                if (letDynamic) newBinding = lookupGlobalEntry(sym); // hier wird nur im global env gesucht. wenns gleichnamige globale UND lexical variablen gibt, bleibt die lexical unveraendert
                 else if (letStar) newBinding = fastassq(sym, extenv);
                 else if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
                 else newBinding = null;
@@ -3654,7 +3654,7 @@ public class LambdaJ {
             if (((LambdaJSymbol)sym).specialForm()) {
                 throw new ProgramError("trace: can't trace %s: it is a special form", printSEx(sym));
             }
-            final ConsCell envEntry = lookupTopenvEntry(sym);
+            final ConsCell envEntry = lookupGlobalEntry(sym);
             if (envEntry == null) throw new UndefinedFunction("trace: can't trace %s: not bound", printSEx(sym));
             traced.put(cdr(envEntry), (LambdaJSymbol) sym);
         }
@@ -3667,7 +3667,7 @@ public class LambdaJ {
         if (traced != null) {
             for (Object sym: symbols) {
                 if (symbolp(sym)) {
-                    final ConsCell envEntry = lookupTopenvEntry(sym);
+                    final ConsCell envEntry = lookupGlobalEntry(sym);
                     if (envEntry != null) {
                         final boolean wasTraced = traced.remove(cdr(envEntry)) != null;
                         if (wasTraced) ret = cons(sym, ret);
@@ -3684,7 +3684,7 @@ public class LambdaJ {
         assert traced != null;
         if (op instanceof LambdaJSymbol) {
             if (((LambdaJSymbol)op).specialForm()) return traceStack;
-            final ConsCell entry = lookupTopenvEntry(op);
+            final ConsCell entry = lookupGlobalEntry(op);
             if (entry == null) return traceStack;
             op = cdr(entry);
         }
@@ -6151,37 +6151,37 @@ public class LambdaJ {
     /** build an environment by prepending the previous environment {@code env} with the primitive functions,
      *  generating symbols in the {@link SymbolTable} {@link #symtab} on the fly */
     private void environment() {
-        WellknownSymbol.forAllPrimitives(features, w -> extendTopenv(internWellknown(w.sym), (Primitive)a -> w.applyPrimitive(this, a)));
+        WellknownSymbol.forAllPrimitives(features, w -> extendGlobal(internWellknown(w.sym), (Primitive)a -> w.applyPrimitive(this, a)));
 
-        if (have(Features.HAVE_T)) extendTopenv(sT, sT);
-        if (have(Features.HAVE_NIL)) extendTopenv(sNil, null);
-        if (have(Features.HAVE_VECTOR)) extendTopenv("array-dimension-limit", MAX_ARRAY_SIZE);
+        if (have(Features.HAVE_T)) extendGlobal(sT, sT);
+        if (have(Features.HAVE_NIL)) extendGlobal(sNil, null);
+        if (have(Features.HAVE_VECTOR)) extendGlobal("array-dimension-limit", MAX_ARRAY_SIZE);
 
         if (have(Features.HAVE_APPLY)) {
             final LambdaJSymbol sApply = intern("apply");
             ocApply = new OpenCodedPrimitive(sApply);
-            extendTopenv(sApply, ocApply);
+            extendGlobal(sApply, ocApply);
         }
 
         if (have(Features.HAVE_XTRA)) {
-            extendTopenv(sDynamic, sDynamic);
+            extendGlobal(sDynamic, sDynamic);
 
             final LambdaJSymbol sEval = intern("eval");
             ocEval = new OpenCodedPrimitive(sEval);
-            extendTopenv(sEval, ocEval);
+            extendGlobal(sEval, ocEval);
         }
 
         if (have(Features.HAVE_UTIL)) {
-            extendTopenv(featuresEnvEntry);
-            extendTopenv(conditionHandlerEnvEntry);
-            extendTopenv("internal-time-units-per-second", (long)1e9);
+            extendGlobal(featuresEnvEntry);
+            extendGlobal(conditionHandlerEnvEntry);
+            extendGlobal("internal-time-units-per-second", (long)1e9);
         }
 
         if (have(Features.HAVE_NUMBERS)) {
-            extendTopenv("pi", Math.PI);
-            extendTopenv("most-positive-fixnum", MOST_POSITIVE_FIXNUM);
-            extendTopenv("most-negative-fixnum", MOST_NEGATIVE_FIXNUM);
-            extendTopenv(randomStateEnvEntry);
+            extendGlobal("pi", Math.PI);
+            extendGlobal("most-positive-fixnum", MOST_POSITIVE_FIXNUM);
+            extendGlobal("most-negative-fixnum", MOST_NEGATIVE_FIXNUM);
+            extendGlobal(randomStateEnvEntry);
         }
     }
 
@@ -6197,7 +6197,7 @@ public class LambdaJ {
 
     /** embed API: Return the value of {@code globalSymbol} in the interpreter's current global environment */
     public Object getValue(String globalSymbol) {
-        final ConsCell envEntry = lookupTopenvEntry(intern(globalSymbol));
+        final ConsCell envEntry = lookupGlobalEntry(intern(globalSymbol));
         if (envEntry != null) return cdr(envEntry);
         throw errorUnbound("getValue", globalSymbol);
     }
@@ -6265,7 +6265,7 @@ public class LambdaJ {
         @Override public MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
 
         @Override public void setCommandlineArgumentList(ConsCell args) {
-            extendTopenv(intern("*command-line-argument-list*"), args);
+            extendGlobal(intern("*command-line-argument-list*"), args);
         }
         @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
         @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
@@ -6287,7 +6287,7 @@ public class LambdaJ {
         if (speed == -1) init(lispStdin, lispStdout, null);
         else setReaderPrinter(lispStdin, lispStdout);
         if (engineBindings != null) for (Map.Entry<String, Object> entry: engineBindings.entrySet()) {
-            extendTopenv(entry.getKey(), entry.getValue()); // create new or replace existing binding
+            extendGlobal(entry.getKey(), entry.getValue()); // create new or replace existing binding
         }
 
         final ObjectReader scriptParser = makeReader(program::read, null);
@@ -6827,7 +6827,7 @@ public class LambdaJ {
                         if (exp == cmdDesc)   { final Object name = parser.readObj(eof);  if (name == eof) continue;
                                                 if (!symbolp(name)) { System.out.println(name + " is not a symbol"); continue; }
                                                 final LambdaJSymbol symbol = (LambdaJSymbol)name;
-                                                final ConsCell envEntry = interpreter.gcache.get(name);
+                                                final ConsCell envEntry = interpreter.globals.get(name);
                                                 if (envEntry == null && symbol.macro == null) {
                                                     System.out.println(name + " is not bound"); continue;
                                                 }
@@ -6851,9 +6851,9 @@ public class LambdaJ {
                         if (exp == cmdJar)    { compileToJar(interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
                         //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); continue; }
                         if (exp == cmdEnv)    {
-                            interpreter.gcache.entrySet().stream().sorted(Comparator.comparing(entry -> entry.getKey().toString()))
-                                              .forEach(e -> System.out.println(e.getValue()));
-                            System.out.println("env length: " + interpreter.gcache.size());  System.out.println();
+                            interpreter.globals.entrySet().stream().sorted(Comparator.comparing(entry -> entry.getKey().toString()))
+                                               .forEach(e -> System.out.println(e.getValue()));
+                            System.out.println("env length: " + interpreter.globals.size());  System.out.println();
                             continue;
                         }
                         if (exp == cmdMacros) {
@@ -7149,7 +7149,7 @@ public class LambdaJ {
                 if ("--".equals(arg)) break;
             }
 
-            intp.extendTopenv(intp.intern("*command-line-argument-list*"), arraySlice(args, n));
+            intp.extendGlobal(intp.intern("*command-line-argument-list*"), arraySlice(args, n));
         }
 
         private static void injectCommandlineArgs(MurmelProgram prg, String[] args) {
@@ -7522,7 +7522,7 @@ public class LambdaJ {
                 this.intp = intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, randomStateEnvEntry, null);
                 intp.compiledProgram = this;
                 intp.init(lispReader, lispPrinter, null);
-                intp.extendTopenv(commandlineArgumentListEnvEntry);
+                intp.extendGlobal(commandlineArgumentListEnvEntry);
             }
             else {
                 intp.conditionHandlerEnvEntry.rplacd(conditionHandler.get());
@@ -10996,13 +10996,13 @@ final class JavaUtil {
     }
 }
 
-final class MurmelDir {
+final class InstallDir {
     /** installation directory */
-    static final Path murmelDir;
+    static final Path installDir;
     static {
         Path path;
         try {
-            final Path p = Paths.get(LambdaJ.class.getProtectionDomain().getCodeSource().getLocation().toURI());
+            final Path p = Paths.get(InstallDir.class.getProtectionDomain().getCodeSource().getLocation().toURI());
             if (Files.isDirectory(p)) {
                 path = p;
             }
@@ -11020,8 +11020,10 @@ final class MurmelDir {
             System.out.println("cannot get Murmel dir: " + e.getMessage());
             path = Paths.get(".");
         }
-        murmelDir = path;
+        installDir = path;
     }
+
+    private InstallDir() {}
 }
 
 
