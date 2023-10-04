@@ -76,6 +76,7 @@ Feature flags:
                  catch, throw, unwind-protect, try
                  no primitive functions eval, rplaca, rplacd, trace, untrace,
                  values, macroexpand-1
+                 no symbol *condition-handler*
 --no-number ...  no number support
 --no-string ...  no string support
 --no-vector ...  no vector support
@@ -84,7 +85,7 @@ Feature flags:
 --no-util .....  no primitive functions consp, symbolp, listp, null, error,
                  append, assoc, assq, list, list*, format, format-locale,
                  no time related primitives or symbols
-                 no symbols *features*, *condition-handler*
+                 no symbol *features*
 
 --min+ ........  turn off all above features, leaving a Lisp
                  with 11 special forms and primitives:

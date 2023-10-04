@@ -942,7 +942,8 @@ public class LambdaJ {
     static final Object[] EMPTY_ARRAY = new Object[0];
     static final boolean[] EMPTY_BITVECTOR = new boolean[0];
 
-    final @NotNull ConsCell featuresEnvEntry, conditionHandlerEnvEntry, randomStateEnvEntry;
+    final @NotNull ConsCell featuresEnvEntry;
+    final @Null ConsCell conditionHandlerEnvEntry, randomStateEnvEntry;
 
     static final String[] CTRL = {
     "Nul", "Soh", "Stx", "Etx", "Eot", "Enq", "Ack", "Bel", "Backspace", "Tab", "Newline",
@@ -961,8 +962,8 @@ public class LambdaJ {
         public boolean ge(TraceLevel l) { return ordinal() >= l.ordinal(); }
     }
     final @NotNull TraceLevel trace;
-    private final boolean traceOn;
-    private final boolean traceFunc;
+    private final boolean traceOn;      // false if trace == TRC_NONE 
+    private final boolean traceFunc;    // false if trace < TRC_FUNC
 
     final @NotNull TraceConsumer tracer;
 
@@ -1055,12 +1056,6 @@ public class LambdaJ {
 
         this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : cons(intern("*features*"), makeFeatureList(symtab));
 
-        sConditionHandler = intern("*condition-handler*");
-        this.conditionHandlerEnvEntry = conditionHandlerEnvEntry != null ? conditionHandlerEnvEntry : cons(sConditionHandler, null);
-
-        sRandomState = intern("*random-state*");
-        this.randomStateEnvEntry = randomStateEnvEntry != null ? randomStateEnvEntry : cons(sRandomState, null);
-
         if (have(Features.HAVE_T)) symtab.intern(sT);
         if (have(Features.HAVE_NIL)) symtab.intern(sNil);
         symtab.intern(sLambda);
@@ -1088,6 +1083,8 @@ public class LambdaJ {
             internWellknown("catch");
             internWellknown("throw");
             internWellknown("try");
+            sConditionHandler = intern("*condition-handler*");
+            this.conditionHandlerEnvEntry = conditionHandlerEnvEntry != null ? conditionHandlerEnvEntry : cons(sConditionHandler, null);
 
             internWellknown("setq");
 
@@ -1099,13 +1096,26 @@ public class LambdaJ {
 
             internWellknown("declaim");
         }
-        else sDynamic = null;
+        else {
+            sDynamic = null;
+            sConditionHandler = null;
+            this.conditionHandlerEnvEntry = null;
+        }
 
         if (have(Features.HAVE_VECTOR)) {
             sBit = intern("bit");
             sCharacter = intern("character");
         }
         else sBit = sCharacter = null;
+
+        if (have(Features.HAVE_NUMBERS)) {
+            sRandomState = intern("*random-state*");
+            this.randomStateEnvEntry = randomStateEnvEntry != null ? randomStateEnvEntry : cons(sRandomState, null);
+        }
+        else {
+            sRandomState = null;
+            this.randomStateEnvEntry = null;
+        }
 
         WellknownSymbol.forAllPrimitives(features, w -> internWellknown(w.sym));
 
@@ -2534,8 +2544,14 @@ public class LambdaJ {
             globals.put(car(o), (ConsCell)o);
         }
         featuresEnvEntry.rplacd(makeFeatureList(symtab));
-        conditionHandlerEnvEntry.rplacd(null);
-        randomStateEnvEntry.rplacd(null);
+        if (have(Features.HAVE_XTRA)) {
+            assert conditionHandlerEnvEntry != null : "when feature XTRA is enabled conditionHandlerEnvEntry should be != null";
+            conditionHandlerEnvEntry.rplacd(null);
+        }
+        if (have(Features.HAVE_NUMBERS)) {
+            assert randomStateEnvEntry != null : "when feature NUMBERs is enabled randomStateEnvEntry should be != null";
+            randomStateEnvEntry.rplacd(null);
+        }
         environment();
         return inReader;
     }
@@ -6104,6 +6120,8 @@ public class LambdaJ {
     ConsCell values = NO_VALUES;
 
     Random getRandom() {
+        assert have(Features.HAVE_NUMBERS) : "getRandom() should only be called when feature NUMBERs is enabled";
+        assert randomStateEnvEntry != null;
         if (cdr(randomStateEnvEntry) == null)
             randomStateEnvEntry.rplacd(new Random());
         return (Random)cdr(randomStateEnvEntry);
@@ -6169,11 +6187,13 @@ public class LambdaJ {
             final LambdaJSymbol sEval = intern("eval");
             ocEval = new OpenCodedPrimitive(sEval);
             extendGlobal(sEval, ocEval);
+
+            assert conditionHandlerEnvEntry != null : "when feature XTRA is enabled conditionHandlerEnvEntry should be != null";
+            extendGlobal(conditionHandlerEnvEntry);
         }
 
         if (have(Features.HAVE_UTIL)) {
             extendGlobal(featuresEnvEntry);
-            extendGlobal(conditionHandlerEnvEntry);
             extendGlobal("internal-time-units-per-second", (long)1e9);
         }
 
@@ -6181,6 +6201,7 @@ public class LambdaJ {
             extendGlobal("pi", Math.PI);
             extendGlobal("most-positive-fixnum", MOST_POSITIVE_FIXNUM);
             extendGlobal("most-negative-fixnum", MOST_NEGATIVE_FIXNUM);
+            assert randomStateEnvEntry != null : "when feature NUMBERs is enabled randomStateEnvEntry should be != null";
             extendGlobal(randomStateEnvEntry);
         }
     }
@@ -7286,6 +7307,7 @@ public class LambdaJ {
                                + "                 catch, throw, unwind-protect, try\n"
                                + "                 no primitive functions eval, rplaca, rplacd, trace, untrace,\n"
                                + "                 values, macroexpand-1\n"
+                               + "                 no symbol *condition-handler*\n"
                                + "--no-number ...  no number support\n"
                                + "--no-string ...  no string support\n"
                                + "--no-vector ...  no vector support\n"
@@ -7294,7 +7316,7 @@ public class LambdaJ {
                                + "--no-util .....  no primitive functions consp, symbolp, listp, null, error,\n"
                                + "                 append, assoc, assq, list, list*, format, format-locale,\n"
                                + "                 no time related primitives or symbols\n"
-                               + "                 no symbols *features*, *condition-handler*\n"
+                               + "                 no symbol *features*\n"
                                + "\n"
                                + "--min+ ........  turn off all above features, leaving a Lisp\n"
                                + "                 with 11 special forms and primitives:\n"
@@ -7525,7 +7547,9 @@ public class LambdaJ {
                 intp.extendGlobal(commandlineArgumentListEnvEntry);
             }
             else {
+                assert intp.conditionHandlerEnvEntry != null : "MurmelJavaProgram has an interpreter with feature XTRA enabled and conditionHandlerEnvEntry should be != null";
                 intp.conditionHandlerEnvEntry.rplacd(conditionHandler.get());
+                assert intp.randomStateEnvEntry != null : "MurmelJavaProgram has an interpreter with feature NUMBERs enabled and randomStateEnvEntry should be != null";
                 intp.randomStateEnvEntry.rplacd(randomState.get());
                 intp.setReaderPrinter(lispReader, lispPrinter);
             }
