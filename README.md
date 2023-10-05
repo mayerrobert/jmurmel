@@ -6,7 +6,7 @@
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
 interpreter/ compiler written in Java8 that can be used standalone as well as embedded.**
 
-Currently weighing in at ~400kB (size of the compiled jmurmel.jar file
+Currently weighing in at ~430kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
 or one single Java source file, compatible with Java 8 through Java 22-ea.
 
@@ -82,7 +82,7 @@ The resulting jar will end up in `lambda\target\jmurmel.jar`
 
 **Quickstart using a precompiled version**
 
-Make sure you have Java 8+ installed (Java 8 is minimum, Java 20 is preferred).
+Make sure you have Java 8+ installed (Java 8 is minimum, Java 21 is preferred).
 
 `java -version` will tell (GNU/linux or Unix or Mac users please adjust as appropriate):
 
@@ -360,10 +360,11 @@ A [Quine](http://rosettacode.org/wiki/Quine#Lisp)
 
 write, format
 
-    JMurmel> (write (format nil "%s, World!%n" "Hello"))
-    "Hello, World!
+    JMurmel> (write (format nil "%s, World!%n" "Hello") nil)
+    Hello, World!
+    
+    ==> "Hello, World!
     "
-    ==> t
 
 Tail recursion, locale dependent number formatting
 
@@ -374,6 +375,12 @@ Tail recursion, locale dependent number formatting
      (write (format-locale nil "en-US" "Factorial of 50 is %g" (factTR 50 1))))
     "Factorial of 50 is 3.04141e+64"
     ==> t
+
+Graphical "Hello, World!" with Java FFI
+
+    JMurmel> ((jmethod "javax.swing.JOptionPane" "showMessageDialog" "java.awt.Component" "Object") nil "Hello, World!")
+    
+    ==> nil
 
 See [samples.murmel/](samples.murmel) and [samples.mlib/](samples.mlib)
 for more Murmel example code
