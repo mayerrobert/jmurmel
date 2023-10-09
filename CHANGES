@@ -12,6 +12,7 @@ Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
 
  * fixed read-from-string: handle feature-expressions correctly, intern symbols correctly
  * fixed compiled random-state-p and make-random-state
+ * fixed passing *command-line-argument-list between interpreter <=> compiled Murmel
 
 
 Changes in JMurmel-1.4.3 relative to JMurmel-1.4.2

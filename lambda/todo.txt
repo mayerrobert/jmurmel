@@ -1,7 +1,41 @@
+feature/ featureflag ob environment() aufgerufen werden soll
+-> wenns abgedreht ist brauchts "(defun car (x) (car x))" usw.
+-> compiler müsste ggf. auch angepasst werden
+
+paar funktionen die nehmen Predicate, Function, BiFunction usw. und verpacken/ liefern ein Murmel Primitive/ CompilerPrimitive
+-> ggf. kann man das in WellknownSymbol verwenden dass nicht jede primitive eigene argchecks hat
+   -> oder zumindest nicht jede einzelne primitive args auspacken muss
+-> boolResult() gibts schon, ist aber nicht dasselbe
+
+
+argcount check kamma zur expand/compile zeit machen weil die lambdalist steckt ja beim entsprechenden eintrag im environment
+-> wsl. vor allem für den compiler interessant für benutzerdefinierte funktionen
+-> ausser bei apply
+
+wie/ wo kamma Class.cast(), isInstance(), isAssignableFrom() einsetzen?
+
+alternativ/ zusätzlich zu ArraySlice wär ein DottedArraySlice denkbar
+
+cadr & co vielleicht nach ConsCell schieben, für SExpConsCell und ArraySlice geeignet implementieren
+
+array mit globals statt map: wenn ein Symbol in einem package ge-interned wird, bekommt das symbol einen zähler (der pro package hochgezählt wird)
+-> damit findet man den arrayindex wenn man das symbol hat
+-> darf man ein symbol in zwei oder mehreren packages internen?
+   -> man kann ein symbol überhaupt nicht internen, nur einen string und man bekommt ein symbol
+      -> es gibt aber "home package", und man kann ein symbol in ein package importieren, und shadowing import gibts auch
+-> kompiliertes "intern" wär möglich, makunbound auch (cdr des environmenteintrags nullen, platz im array nullen)
+   -> was macht unintern alles?
+
+benutzt der reader rplacd?
+-> ggf. könnte der reader gleich ArraySlice liefern, bissl weniger speicherverbrauch, interpreter wär ggf. schneller (wenn konsequent iterator statt for..cdr verwendet wird)
+
 
 Zum aufrufen von murmel aus java: eine funktion (oder einen Builder?), die bekommt ein MurmelProgram + ein interface,
 liefert einen proxy der die interface methoden am MurmelProgram delegiert
 -> sollte der compiler optional eine klasse ausspucken, die ein gegebenes interface implementiert?
+
+JMurmel (eher: MurmelJavaCompiler) in einen annotation processor verpacken? javax.annotation.processing.Filer, javax.annotation.Generated
+
 
 load liest files als UTF-8
 -> alte jm versionen mit verschiedenen java versionen checken, ggf. in changes dokumentieren

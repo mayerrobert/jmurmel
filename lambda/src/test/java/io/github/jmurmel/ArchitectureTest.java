@@ -39,6 +39,11 @@ public class ArchitectureTest {
                    LambdaJ.MurmelJavaProgram.class,
                    LambdaJ.MurmelJavaCompiler.class);
 
+        checkUsers(LambdaJ.MurmelJavaProgram.class,
+                   LambdaJ.class,
+                   LambdaJ.Cli.class,
+                   LambdaJ.JFFI.class);
+
         checkUsers(JavaCompilerHelper.class, LambdaJ.MurmelJavaCompiler.class);
         checkUsers(JavaSourceFromString.class, JavaCompilerHelper.class);
         checkUsers(MurmelClassLoader.class, JavaCompilerHelper.class);
@@ -49,6 +54,7 @@ public class ArchitectureTest {
     public void checkLeafClasses() {
         // toplevel classes
         checkLeaf("EolUtil");
+        checkLeaf("InstallDir");
         //checkLeaf("JavaCompilerHelper"); // uses JavaSourceFromString, MurmelClassLoader
         checkLeaf("JavaSourceFromString");
         checkLeaf("JavaUtil");

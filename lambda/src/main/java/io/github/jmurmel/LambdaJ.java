@@ -59,6 +59,7 @@ import javax.tools.SimpleJavaFileObject;
 
 import static io.github.jmurmel.LambdaJ.Chk.*;
 import static io.github.jmurmel.LambdaJ.Subr.*;
+
 import static java.lang.annotation.ElementType.*;
 import static java.lang.annotation.ElementType.TYPE_USE;
 import static java.lang.annotation.RetentionPolicy.SOURCE;
@@ -4595,6 +4596,10 @@ public class LambdaJ {
             if (typespec == st.intern("error")) return o instanceof Exception;
             if (typespec == st.intern("condition")) return o instanceof Throwable;
 
+
+            // todo Class.forName().isAssignableFrom() probieren falls JFFI aufgedreht ist
+
+
             throw new SimpleError("typep: unknown type specifier %s", printSEx(typespec));
         }
 
@@ -7566,7 +7571,7 @@ public class LambdaJ {
             features.set(cdr(featuresEnvEntry));
             conditionHandler.set(cdr(intp.conditionHandlerEnvEntry));
             randomState.set(cdr(intp.randomStateEnvEntry));
-            commandlineArgumentList.set(commandlineArgumentListEnvEntry);
+            commandlineArgumentList.set(cdr(commandlineArgumentListEnvEntry));
             randomState.set(cdr(intp.randomStateEnvEntry));
             current_frame = intp.current_frame;
         }
