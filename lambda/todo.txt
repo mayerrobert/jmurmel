@@ -1,3 +1,6 @@
+CDS: -Xlog:cds+map=trace:file=target/cds.map:none:filesize=0 & Co sollte nicht an jpackage sondern an java übergeben werden
+     ausprobieren (Java 19+): java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=my-archive.jsa
+
 feature/ featureflag ob environment() aufgerufen werden soll
 -> wenns abgedreht ist brauchts "(defun car (x) (car x))" usw.
 -> compiler müsste ggf. auch angepasst werden
