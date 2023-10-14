@@ -57,6 +57,7 @@ import javax.tools.StandardJavaFileManager;
 import javax.tools.StandardLocation;
 import javax.tools.SimpleJavaFileObject;
 
+import static io.github.jmurmel.LambdaJ.Names.*;
 import static io.github.jmurmel.LambdaJ.Chk.*;
 import static io.github.jmurmel.LambdaJ.Subr.*;
 
@@ -132,10 +133,10 @@ public class LambdaJ {
     }
 
     /** largest positive long that can be represented as a double w/o any loss */
-    public static final long MOST_POSITIVE_FIXNUM = (1L << 53) - 1;
+    public static final long MOST_POSITIVE_FIXNUM_VAL = (1L << 53) - 1;
 
     /** largest negative long that can be represented as a double w/o any loss */
-    public static final long MOST_NEGATIVE_FIXNUM = -(1L << 53);
+    public static final long MOST_NEGATIVE_FIXNUM_VAL = -(1L << 53);
 
     /** Copied from java.util.ArrayList which says:
      * The maximum size of array to allocate.
@@ -143,7 +144,7 @@ public class LambdaJ {
      * Attempts to allocate larger arrays may result in
      * OutOfMemoryError: Requested array size exceeds VM limit
      */
-    public static final int MAX_ARRAY_SIZE = Integer.MAX_VALUE - 8;
+    public static final int ARRAY_DIMENSION_LIMIT_VAL = Integer.MAX_VALUE - 8;
 
     /** Max length of symbols*/
     public static final int SYMBOL_MAX = 30;
@@ -167,10 +168,10 @@ public class LambdaJ {
         public @NotNull Object shallowCopyCdr() { throw new UnsupportedOperationException("shallowCopyCdr not supported on " + getClass().getSimpleName()); }
 
         public abstract Object car();
-        public @NotNull ConsCell rplaca(Object car) { throw new UnsupportedOperationException("rplaca not supported on " + getClass().getSimpleName()); }
+        public @NotNull ConsCell rplaca(Object car) { throw new UnsupportedOperationException(RPLACA + " not supported on " + getClass().getSimpleName()); }
 
         public abstract Object cdr();
-        public @NotNull ConsCell rplacd(Object cdr) { throw new UnsupportedOperationException("rplacd not supported on " + getClass().getSimpleName()); }
+        public @NotNull ConsCell rplacd(Object cdr) { throw new UnsupportedOperationException(RPLACD + " not supported on " + getClass().getSimpleName()); }
 
         public abstract Object elt(long idx);
         public abstract Object eltset(Object newVal, long idx);
@@ -1055,47 +1056,47 @@ public class LambdaJ {
         else this.libDir = InstallDir.installDir;
         if (features != Features.HAVE_ALL_LEXC.bits()) speed = 0;
 
-        this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : cons(intern("*features*"), makeFeatureList(symtab));
+        this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : cons(intern(FEATURES), makeFeatureList(symtab));
 
         if (have(Features.HAVE_T)) symtab.intern(sT);
         if (have(Features.HAVE_NIL)) symtab.intern(sNil);
         symtab.intern(sLambda);
 
-        if (have(Features.HAVE_QUOTE))  { internWellknown("quote"); }
-        if (have(Features.HAVE_COND))   { internWellknown("cond"); }
-        if (have(Features.HAVE_LABELS)) { internWellknown("labels"); }
+        if (have(Features.HAVE_QUOTE))  { internWellknown(QUOTE); }
+        if (have(Features.HAVE_COND))   { internWellknown(COND); }
+        if (have(Features.HAVE_LABELS)) { internWellknown(LABELS); }
 
-        if (have(Features.HAVE_DEFINE)) internWellknown("define");
+        if (have(Features.HAVE_DEFINE)) internWellknown(DEFINE);
 
         if (have(Features.HAVE_XTRA))   {
-            sDynamic = intern("dynamic");
+            sDynamic = intern(DYNAMIC);
 
-            internWellknown("defun");
-            internWellknown("defmacro");
-            internWellknown("if");
-            internWellknown("let");
-            internWellknown("let*");
-            internWellknown("letrec");
+            internWellknown(DEFUN);
+            internWellknown(DEFMACRO);
+            internWellknown(IF);
+            internWellknown(LET);
+            internWellknown(LETSTAR);
+            internWellknown(LETREC);
 
-            internWellknown("multiple-value-bind");
-            internWellknown("multiple-value-call");
+            internWellknown(MULTIPLE_VALUE_BIND);
+            internWellknown(MULTIPLE_VALUE_CALL);
 
-            internWellknown("unwind-protect");
-            internWellknown("catch");
-            internWellknown("throw");
-            internWellknown("try");
-            sConditionHandler = intern("*condition-handler*");
+            internWellknown(UNWIND_PROTECT);
+            internWellknown(CATCH);
+            internWellknown(THROW);
+            internWellknown(TRY);
+            sConditionHandler = intern(CONDITION_HANDLER);
             this.conditionHandlerEnvEntry = conditionHandlerEnvEntry != null ? conditionHandlerEnvEntry : cons(sConditionHandler, null);
 
-            internWellknown("setq");
+            internWellknown(SETQ);
 
             symtab.intern(sProgn);
 
-            internWellknown("load");
-            internWellknown("require");
-            internWellknown("provide");
+            internWellknown(LOAD);
+            internWellknown(REQUIRE);
+            internWellknown(PROVIDE);
 
-            internWellknown("declaim");
+            internWellknown(DECLAIM);
         }
         else {
             sDynamic = null;
@@ -1110,7 +1111,7 @@ public class LambdaJ {
         else sBit = sCharacter = null;
 
         if (have(Features.HAVE_NUMBERS)) {
-            sRandomState = intern("*random-state*");
+            sRandomState = intern(RANDOM_STATE);
             this.randomStateEnvEntry = randomStateEnvEntry != null ? randomStateEnvEntry : cons(sRandomState, null);
         }
         else {
@@ -1125,10 +1126,10 @@ public class LambdaJ {
         expTrue = () -> { final Object s = makeExpTrue(); expTrue = () -> s; return s; };
     }
 
-    private static final String[] FEATURES = { "murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point" };
+    private static final String[] DEFAULT_FEATURES = {"murmel", "murmel-" + LANGUAGE_VERSION, "jvm", "ieee-floating-point" };
     static ConsCell makeFeatureList(SymbolTable s) {
         ConsCell l = null;
-        for (String feat: FEATURES) l = new ListConsCell(s.intern(feat), l);
+        for (String feat: DEFAULT_FEATURES) l = new ListConsCell(s.intern(feat), l);
         return l;
     }
 
@@ -1354,16 +1355,16 @@ public class LambdaJ {
             sAnd      = st.intern("and");
             sOr       = st.intern("or");
 
-            sQuote    = st.intern("quote");
-            sAppend   = st.intern("append");
-            sList     = st.intern("list");
-            sListStar = st.intern("list*");
-            sCons     = st.intern("cons");
-            sNil      = st.intern("nil");
+            sQuote    = st.intern(QUOTE);
+            sAppend   = st.intern(APPEND);
+            sList     = st.intern(LIST);
+            sListStar = st.intern(LISTSTAR);
+            sCons     = st.intern(CONS);
+            sNil      = st.intern(NIL);
 
-            sVect     = st.intern("vect");
-            sHash     = st.intern("hash");
-            sApply    = st.intern("apply");
+            sVect     = st.intern(VECT);
+            sHash     = st.intern(HASH);
+            sApply    = st.intern(APPLY);
 
             this.featuresEnvEntry = featuresEnvEntry != null ? featuresEnvEntry : ConsCell.cons(null, null);
         }
@@ -1573,7 +1574,7 @@ public class LambdaJ {
         private final Object sNot, sAnd, sOr;
 
         private boolean featurep(Object form) {
-            if (symbolp(form)) return some(x -> x == form, requireList("*features*", cdr(featuresEnvEntry)));
+            if (symbolp(form)) return some(x -> x == form, requireList(FEATURES, cdr(featuresEnvEntry)));
             else if (consp(form)) {
                 final ConsCell ccForm = (ConsCell)form;
                 final Object op = car(ccForm);  final ConsCell args = requireList("feature expression", cdr(ccForm));
@@ -1779,7 +1780,7 @@ public class LambdaJ {
                 return eof;
             }
             if (tok == sNil) {
-                if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol nil");
+                if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + NIL);
                 if (have(Features.HAVE_NIL)) return null;
                 else return tok;
             }
@@ -2143,10 +2144,72 @@ public class LambdaJ {
     static final ConsCell NO_VALUES = new ListConsCell("no multiple values", null);
     private static final Object PSEUDO_SYMBOL = "non existant pseudo symbol"; // to avoid matches on pseudo env entries
 
+    /** print names of some wellknown symbols */
+    public static final class Names {
+        // basic special forms
+        public static final String QUOTE = "quote", LAMBDA = "lambda", LAMBDA_DYNAMIC = "lambda dynamic";
+
+        // additional special forms
+        public static final String COND = "cond", LABELS = "labels", IF = "if";
+        public static final String LET = "let", LETSTAR = "let*", LETREC = "letrec";
+        public static final String SETQ = "setq", PROGN = "progn";
+        public static final String DEFINE = "define", DEFUN = "defun", DEFMACRO = "defmacro";
+        public static final String MULTIPLE_VALUE_BIND = "multiple-value-bind", MULTIPLE_VALUE_CALL = "multiple-value-call";
+        public static final String UNWIND_PROTECT = "unwind-protect", CATCH = "catch", THROW = "throw", TRY = "try";
+
+        // special forms for system construction
+        public static final String LOAD = "load", REQUIRE = "require", PROVIDE = "provide";
+
+        public static final String DECLAIM = "declaim";
+        // parameters to declaim
+        public static final String OPTIMIZE = "optimize", SPEED = "speed";
+
+        // predefined global variables
+        public static final String T = "t", NIL = "nil";
+        public static final String PI = "pi", DYNAMIC = "dynamic";
+        public static final String FEATURES = "*features*", CONDITION_HANDLER = "*condition-handler*", RANDOM_STATE = "*random-state*";
+        public static final String MOST_POSITIVE_FIXNUM = "most-positive-fixnum", MOST_NEGATIVE_FIXNUM = "most-negative-fixnum", ARRAY_DIMENSION_LIMIT = "array-dimension-limit";
+        public static final String INTERNAL_TIME_UNITS_PER_SECOND = "internal-time-units-per-second";
+        public static final String COMMAND_LINE_ARGUMENT_LIST = "*command-line-argument-list*";
+
+        // basic primitives
+        public static final String APPLY = "apply";
+        public static final String EVAL = "eval";
+
+        // logic, predicates
+        public static final String EQ = "eq", EQL = "eql", EQUAL = "equal";
+        public static final String CONSP = "consp", ATOM = "atom", NULL = "null" /* null as a function and type */, SYMBOLP = "symbolp";
+        public static final String NUMBERP = "numberp", FLOATP = "floatp", INTEGERP = "integerp";
+        public static final String CHARACTERP = "characterp";
+        public static final String RANDOM_STATE_P = "random-state-p";
+        public static final String VECTORP = "vectorp", SIMPLE_VECTOR_P = "simple-vector-p";
+        public static final String STRINGP = "stringp", SIMPLE_STRING_P = "simple-string-p";
+        public static final String BIT_VECTOR_P = "bit-vector-p", SIMPLE_BIT_VECTOR_P = "simple-bit-vector-p";
+        public static final String HASH_TABLE_P = "hash-table-p", FUNCTIONP = "functionp", LISTP = "listp";
+        public static final String TYPEP = "typep";
+        public static final String ADJUSTABLE_ARRAY_P = "adjustable-array-p";
+
+        // conses and lists
+        public static final String CAR = "car", CDR = "cdr", CONS = "cons";
+        public static final String RPLACA = "rplaca", RPLACD = "rplacd";
+        public static final String LIST = "list" /* list as a function NOT type */, LISTSTAR = "list*", APPEND = "append", ASSQ = "assq", ASSOC = "assoc";
+
+        // vectors, sequences
+        public static final String VECTOR = "vector" /* vector as a function and type */, VECT = "vect";
+
+        // Hash tables
+        public static final String HASH = "hash";
+
+        // misc
+        public static final String VALUES = "values";
+
+        private Names() {}
+    }
+
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
      *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
-    static final LambdaJSymbol sT = new LambdaJSymbol("t", true), sNil = new LambdaJSymbol("nil", true),
-                               sLambda = new LambdaJSymbol("lambda", true), sLambdaDynamic = new LambdaJSymbol("lambda-dynamic", true), sProgn = new LambdaJSymbol("progn", true);
+    static final LambdaJSymbol sT = new LambdaJSymbol(T, true), sNil = new LambdaJSymbol(NIL, true),
+                               sLambda = new LambdaJSymbol(LAMBDA, true), sLambdaDynamic = new LambdaJSymbol(LAMBDA_DYNAMIC, true), sProgn = new LambdaJSymbol(PROGN, true);
 
     /** some more well known symbols. These symbols are not reserved, the LambdaJSymbol objects could be used to store a macro closure, so the symbols must be instance members of LambdaJ. */
     final LambdaJSymbol sDynamic, sBit, sCharacter, sConditionHandler, sRandomState;
@@ -2156,65 +2219,65 @@ public class LambdaJ {
         notInterned("", null), interned("", null),
 
         // basic special forms
-        sQuote("quote", WellknownSymbolKind.SF), sLambda("lambda", WellknownSymbolKind.SF), sLambdaDynamic("lambda-dynamic", WellknownSymbolKind.SF),
+        sQuote(QUOTE, WellknownSymbolKind.SF), sLambda(LAMBDA, WellknownSymbolKind.SF), sLambdaDynamic(LAMBDA_DYNAMIC, WellknownSymbolKind.SF),
 
         // additional special forms
-        sCond("cond", WellknownSymbolKind.SF), sLabels("labels", WellknownSymbolKind.SF), sIf("if", WellknownSymbolKind.SF),
-        sLet("let", WellknownSymbolKind.SF), sLetStar("let*", WellknownSymbolKind.SF), sLetrec("letrec", WellknownSymbolKind.SF),
-        sSetQ("setq", WellknownSymbolKind.SF), sProgn("progn", WellknownSymbolKind.SF),
-        sDefine("define", WellknownSymbolKind.SF), sDefun("defun", WellknownSymbolKind.SF), sDefmacro("defmacro", WellknownSymbolKind.SF),
-        sMultipleValueBind("multiple-value-bind", WellknownSymbolKind.SF), sMultipleValueCall("multiple-value-call", WellknownSymbolKind.SF),
-        sUnwindProtect("unwind-protect", WellknownSymbolKind.SF), sCatch("catch", WellknownSymbolKind.SF), sThrow("throw", WellknownSymbolKind.SF), sTry("try", WellknownSymbolKind.SF),
-        sLoad("load", WellknownSymbolKind.SF), sRequire("require", WellknownSymbolKind.SF), sProvide("provide", WellknownSymbolKind.SF),
-        sDeclaim("declaim", WellknownSymbolKind.SF),
+        sCond(COND, WellknownSymbolKind.SF), sLabels(LABELS, WellknownSymbolKind.SF), sIf(IF, WellknownSymbolKind.SF),
+        sLet(LET, WellknownSymbolKind.SF), sLetStar(LETSTAR, WellknownSymbolKind.SF), sLetrec(LETREC, WellknownSymbolKind.SF),
+        sSetQ(SETQ, WellknownSymbolKind.SF), sProgn(PROGN, WellknownSymbolKind.SF),
+        sDefine(DEFINE, WellknownSymbolKind.SF), sDefun(DEFUN, WellknownSymbolKind.SF), sDefmacro(DEFMACRO, WellknownSymbolKind.SF),
+        sMultipleValueBind(MULTIPLE_VALUE_BIND, WellknownSymbolKind.SF), sMultipleValueCall(MULTIPLE_VALUE_CALL, WellknownSymbolKind.SF),
+        sUnwindProtect(UNWIND_PROTECT, WellknownSymbolKind.SF), sCatch(CATCH, WellknownSymbolKind.SF), sThrow(THROW, WellknownSymbolKind.SF), sTry(TRY, WellknownSymbolKind.SF),
+        sLoad(LOAD, WellknownSymbolKind.SF), sRequire(REQUIRE, WellknownSymbolKind.SF), sProvide(PROVIDE, WellknownSymbolKind.SF),
+        sDeclaim(DECLAIM, WellknownSymbolKind.SF),
 
         // predefined global variables
-        sNil("nil", WellknownSymbolKind.SYMBOL), sT("t", WellknownSymbolKind.SYMBOL),
+        sNil(NIL, WellknownSymbolKind.SYMBOL), sT(T, WellknownSymbolKind.SYMBOL),
 
         // logic, predicates
-        sEq("eq", Features.HAVE_EQ, 2)                                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
-        sEql("eql", Features.HAVE_UTIL, 2)                                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(eql(car(args), cadr(args))); } },
-        sEqual("equal", Features.HAVE_UTIL, 2)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(equal(car(args), cadr(args))); } },
+        sEq(EQ, Features.HAVE_EQ, 2)                                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
+        sEql(EQL, Features.HAVE_UTIL, 2)                                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(eql(car(args), cadr(args))); } },
+        sEqual(EQUAL, Features.HAVE_UTIL, 2)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(equal(car(args), cadr(args))); } },
 
-        sConsp("consp", Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(consp(car(args))); } },
-        sAtom("atom", Features.HAVE_ATOM, 1)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(atom(car(args))); } },
-        sSymbolp("symbolp", Features.HAVE_UTIL, 1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(symbolp(car(args))); } },
-        sNull("null", Features.HAVE_UTIL, 1)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == null); } },
-        sNumberp("numberp", Features.HAVE_NUMBERS, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(numberp(car(args))); } },
-        sFloatp("floatp", Features.HAVE_NUMBERS, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
-        sIntegerp("integerp", Features.HAVE_NUMBERS, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
-        sCharacterp("characterp", Features.HAVE_STRING, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(characterp(car(args))); } },
-        sRandomstatep("random-state-p", Features.HAVE_NUMBERS, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(randomstatep(car(args))); } },
+        sConsp(CONSP, Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(consp(car(args))); } },
+        sAtom(ATOM, Features.HAVE_ATOM, 1)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(atom(car(args))); } },
+        sSymbolp(SYMBOLP, Features.HAVE_UTIL, 1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(symbolp(car(args))); } },
+        sNull(NULL, Features.HAVE_UTIL, 1)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == null); } },
+        sNumberp(NUMBERP, Features.HAVE_NUMBERS, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(numberp(car(args))); } },
+        sFloatp(FLOATP, Features.HAVE_NUMBERS, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
+        sIntegerp(INTEGERP, Features.HAVE_NUMBERS, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
+        sCharacterp(CHARACTERP, Features.HAVE_STRING, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(characterp(car(args))); } },
+        sRandomstatep(RANDOM_STATE_P, Features.HAVE_NUMBERS, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(randomstatep(car(args))); } },
 
-        sVectorp("vectorp", Features.HAVE_VECTOR, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(vectorp(car(args))); } },
-        sSimpleVectorP("simple-vector-p", Features.HAVE_VECTOR, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(svectorp(car(args))); } },
+        sVectorp(VECTORP, Features.HAVE_VECTOR, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(vectorp(car(args))); } },
+        sSimpleVectorP(SIMPLE_VECTOR_P, Features.HAVE_VECTOR, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(svectorp(car(args))); } },
 
-        sStringp("stringp", Features.HAVE_STRING, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringp(car(args))); } },
-        sSimpleStringP("simple-string-p", Features.HAVE_STRING, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sstringp(car(args))); } },
+        sStringp(STRINGP, Features.HAVE_STRING, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(stringp(car(args))); } },
+        sSimpleStringP(SIMPLE_STRING_P, Features.HAVE_STRING, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sstringp(car(args))); } },
 
-        sBitVectorP("bit-vector-p", Features.HAVE_VECTOR, 1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bitvectorp(car(args))); } },
-        sSimpleBitVectorP("simple-bit-vector-p", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbitvectorp(car(args))); } },
+        sBitVectorP(BIT_VECTOR_P, Features.HAVE_VECTOR, 1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(bitvectorp(car(args))); } },
+        sSimpleBitVectorP(SIMPLE_BIT_VECTOR_P, Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(sbitvectorp(car(args))); } },
 
-        sHashtableP("hash-table-p", Features.HAVE_HASH, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashtablep(car(args))); } },
-        sFunctionp("functionp", Features.HAVE_UTIL, 1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
-        sListp("listp", Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
+        sHashtableP(HASH_TABLE_P, Features.HAVE_HASH, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(hashtablep(car(args))); } },
+        sFunctionp(FUNCTIONP, Features.HAVE_UTIL, 1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
+        sListp(LISTP, Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
 
-        sTypep("typep", Features.HAVE_UTIL, 2)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(typep(intp.getSymbolTable(), intp, car(args), cadr(args))); } },
+        sTypep(TYPEP, Features.HAVE_UTIL, 2)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(typep(intp.getSymbolTable(), intp, car(args), cadr(args))); } },
 
-        sAdjArrayp("adjustable-array-p", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(adjustableArrayP(car(args))); } },
+        sAdjArrayp(ADJUSTABLE_ARRAY_P, Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(adjustableArrayP(car(args))); } },
 
         // conses and lists
-        sCar("car", Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return caar(args); } },
-        sCdr("cdr", Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return cdar(args); } },
-        sCons("cons", Features.HAVE_CONS, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
-        sRplaca("rplaca", Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplaca", car(args)).rplaca(cadr(args)); } },
-        sRplacd("rplacd", Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons("rplacd", car(args)).rplacd(cadr(args)); } },
+        sCar(CAR, Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return caar(args); } },
+        sCdr(CDR, Features.HAVE_CONS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return cdar(args); } },
+        sCons(CONS, Features.HAVE_CONS, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.cons(car(args), cadr(args)); } },
+        sRplaca(RPLACA, Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons(RPLACA, car(args)).rplaca(cadr(args)); } },
+        sRplacd(RPLACD, Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons(RPLACD, car(args)).rplacd(cadr(args)); } },
 
-        sList("list", Features.HAVE_UTIL, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return args; } },
-        sListStar("list*", Features.HAVE_UTIL, 1, -1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listStar(intp, args); } },
-        sAppend("append", Features.HAVE_UTIL, -1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return append(intp, args); } },
-        sAssq("assq", Features.HAVE_UTIL, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
-        sAssoc("assoc", Features.HAVE_UTIL, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
+        sList(LIST, Features.HAVE_UTIL, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return args; } },
+        sListStar(LISTSTAR, Features.HAVE_UTIL, 1, -1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listStar(intp, args); } },
+        sAppend(APPEND, Features.HAVE_UTIL, -1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return append(intp, args); } },
+        sAssq(ASSQ, Features.HAVE_UTIL, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
+        sAssoc(ASSOC, Features.HAVE_UTIL, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
 
         // numbers, characters
         sAdd("+", Features.HAVE_NUMBERS, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return addOp(args, "+", 0.0, Double::sum); } },
@@ -2277,8 +2340,8 @@ public class LambdaJ {
         sSvSet("svset", Features.HAVE_VECTOR, 3)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return svset(car(args), toNonnegInt("svset", cadr(args)), caddr(args)); } },
         sSVectorToList("simple-vector->list", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return simpleVectorToList(intp, car(args)); } },
         sListToSVector("list->simple-vector", Features.HAVE_VECTOR, 1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(car(args)); } },
-        sVector("vector", Features.HAVE_VECTOR, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
-        sVect("vect", Features.HAVE_VECTOR, 1, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(requireList("vect", cdr(args)), toInt("vect", car(args))); } },
+        sVector(VECTOR, Features.HAVE_VECTOR, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(args); } },
+        sVect(VECT, Features.HAVE_VECTOR, 1, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return listToArray(requireList(VECT, cdr(args)), toInt(VECT, car(args))); } },
 
         sString("string", Features.HAVE_STRING, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return stringDesignatorToString(car(args)); } },
         sSLength("slength", Features.HAVE_STRING, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return slength(car(args)); } },
@@ -2302,7 +2365,7 @@ public class LambdaJ {
         sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // Hash tables
-        sHash("hash", Features.HAVE_HASH, -1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.getSymbolTable(), args); } },
+        sHash(HASH, Features.HAVE_HASH, -1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.getSymbolTable(), args); } },
         sMakeHash("make-hash-table", Features.HAVE_HASH, 0, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return makeHashTable(intp.getSymbolTable(), car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); } },
         sHashRef("hashref", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = hashref(car(args), cadr(args), cddr(args) == null ? NO_DEFAULT_VALUE : caddr(args)); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sHashSet("hashset", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { return hashset(args); } },
@@ -2327,7 +2390,7 @@ public class LambdaJ {
         sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(car(args), null), intp.have(Features.HAVE_IO), args); } },
 
         // misc
-        sValues("values", Features.HAVE_XTRA, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
+        sValues(VALUES, Features.HAVE_XTRA, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
         sGensym("gensym", Features.HAVE_XTRA, 0, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
         sTrace("trace", Features.HAVE_XTRA, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
@@ -2471,8 +2534,8 @@ public class LambdaJ {
 
     private Object makeExpTrue() {
         if (have(Features.HAVE_T)) return sT; // should look up the symbol t in the env and use it's value (which by convention is t so it works either way)
-        else if (have(Features.HAVE_QUOTE)) return cons(intern("quote"), cons(sT, null));
-        else throw new UnboundVariable("truthiness needs support for 't' or 'quote'");
+        else if (have(Features.HAVE_QUOTE)) return cons(intern(QUOTE), cons(sT, null));
+        else throw new UnboundVariable("truthiness needs support for '" + T + "' or '" + QUOTE + "'");
     }
 
     final @NotNull LambdaJSymbol intern(@NotNull String sym) {
@@ -2592,7 +2655,7 @@ public class LambdaJ {
                 if (Thread.interrupted()) throw new InterruptedException("got interrupted");
 
                 level++;
-                if (traceOn) dbgEvalStart(isTc ? "eval TC" : "eval", form, env, stack, level);
+                if (traceOn) dbgEvalStart(isTc ? "eval TC" : EVAL, form, env, stack, level);
 
                 /// eval - form is not an atom - must be a cons (nonempty list) containing either a special form or a function application
                 final ConsCell ccForm = (ConsCell)form;
@@ -2623,14 +2686,14 @@ public class LambdaJ {
                 case sLambda: {
                     final ConsCell ccParamsAndForms = (ConsCell)cdr(ccForm);
                     nCells++;
-                    result = "#<lambda>";
+                    result = "#<" + LAMBDA + ">";
                     return Closure.of(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), env);
                 }
 
                 case sLambdaDynamic: {
                     final ConsCell ccParamsAndForms = (ConsCell)cdr(ccForm);
                     nCells++;
-                    result = "#<lambda dynamic>";
+                    result = "#<" + LAMBDA_DYNAMIC + ">";
                     return new DynamicLambda(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms));
                 }
 
@@ -2671,8 +2734,8 @@ public class LambdaJ {
 
                 /// eval - (load filespec) -> object
                 case sLoad: {
-                    oneArg("load", ccArguments);
-                    return result = loadFile("load", car(ccArguments));
+                    oneArg(LOAD, ccArguments);
+                    return result = loadFile(LOAD, car(ccArguments));
                 }
 
                 /// eval - (require modulename optfilespec) -> object
@@ -2811,7 +2874,7 @@ public class LambdaJ {
 
                     // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
                     // macros can be unexpanded if the macro was defined after the defun
-                    if (symOperator.macro != null) throw new UndefinedFunction("function application: not a primitive or lambda: %s is a macro not a function", symOperator, form);
+                    if (symOperator.macro != null) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symOperator, form);
 
                     if (doOpencode && symOperator.primitive()) {
                         return result = symOperator.wellknownSymbol.apply(this, evlis(ccArguments, env, stack, level, traceLvl));
@@ -2830,10 +2893,10 @@ public class LambdaJ {
                     /// eval - apply a function to an argument list
                     /// eval - (apply form argform) -> object
                     if (operator == ocApply) {
-                        twoArgs("apply", ccArguments);
+                        twoArgs(APPLY, ccArguments);
                         final Object funcOrSymbol = car(ccArguments);
                         func = symbolp(funcOrSymbol) ? evalSymbol(funcOrSymbol, env) : funcOrSymbol; // could add the same performance cheat as in function call above
-                        argList = listOrMalformed("apply", cadr(ccArguments));
+                        argList = listOrMalformed(APPLY, cadr(ccArguments));
                         if (doOpencode && funcOrSymbol instanceof LambdaJSymbol && ((LambdaJSymbol)funcOrSymbol).primitive()) {
                             return result = ((LambdaJSymbol)funcOrSymbol).wellknownSymbol.apply(this, argList);
                         }
@@ -2842,12 +2905,12 @@ public class LambdaJ {
 
                     /// eval - (eval form) -> object
                     else if (operator == ocEval) {
-                        varargs1_2("eval", ccArguments);
+                        varargs1_2(EVAL, ccArguments);
                         form = expandForm(car(ccArguments));
                         if (cdr(ccArguments) == null) env = null;
                         else {
                             final Object additionalEnv = cadr(ccArguments);
-                            if (!listp(additionalEnv)) errorMalformed("eval", "'env' to be a list", additionalEnv);
+                            if (!listp(additionalEnv)) errorMalformed(EVAL, "'env' to be a list", additionalEnv);
                             env = (ConsCell)additionalEnv;
                         }
                         isTc = true; continue tailcall;
@@ -2884,7 +2947,7 @@ public class LambdaJ {
                         final Closure ccFunc = (Closure)func;
                         env = ccFunc.zip(this, argList, env);
 
-                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<lambda " + ccFunc.params() + "> " + printSEx(argList));
+                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<" + LAMBDA + " " + ccFunc.params() + "> " + printSEx(argList));
                         ccForms = ccFunc.body;
                         // fall through to "eval a list of forms"
                     }
@@ -2907,21 +2970,21 @@ public class LambdaJ {
                      */
                     else if (have(Features.HAVE_OLDLAMBDA) && consp(func) && car(func) == sLambda) {
                         final Object paramsAndBody = cdr(func);
-                        env = zip("old lambda application", car(paramsAndBody), argList, env, true);
+                        env = zip("old " + LAMBDA + " application", car(paramsAndBody), argList, env, true);
 
-                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<list lambda " + paramsAndBody + "> " + printSEx(argList));
+                        if (traceFunc)  tracer.println(pfx(stack, level) + " #<list " + LAMBDA + " " + paramsAndBody + "> " + printSEx(argList));
                         ccForms = (ConsCell) cdr(paramsAndBody);
                         // fall through to "eval a list of forms"
                     }
 
                     else {
-                        throw new UndefinedFunction("function application: not a primitive or lambda: %s", printSEx(func));
+                        throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s", printSEx(func));
                     }
                 }
 
                 /// eval - eval a list of forms
                 if (ccForms != null) {
-                    for (; cdr(ccForms) != null; ccForms = listOrMalformed("lambda application", cdr(ccForms))) { // must use listOrMalformed() to avoid CCE on e.g. (apply f '(1 . 2))
+                    for (; cdr(ccForms) != null; ccForms = listOrMalformed(LAMBDA + " application", cdr(ccForms))) { // must use listOrMalformed() to avoid CCE on e.g. (apply f '(1 . 2))
                         eval(car(ccForms), env, stack, level, traceLvl);
                     }
                     if (traced != null) traceStack = push(operator, traceStack);
@@ -2947,7 +3010,7 @@ public class LambdaJ {
             throw new LambdaJError(e, false, e.getMessage(), form);
         }
         finally {
-            if (traceOn) dbgEvalDone(isTc ? "eval TC" : "eval", form, env, stack, level);
+            if (traceOn) dbgEvalDone(isTc ? "eval TC" : EVAL, form, env, stack, level);
             if (func != null && traced != null) traceLvl = traceExit(func, result, traceLvl);
             if (traceStack != null) {
                 Object s;
@@ -3003,7 +3066,7 @@ public class LambdaJ {
             if (atom(form)) return form;
             final ConsCell ccForm = ((ConsCell)form).copy();
             final Object op = car(ccForm);
-            if (op == null) throw new UndefinedFunction("function application: not a primitive or lambda: nil");
+            if (op == null) throw new UndefinedFunction("function application: not a primitive or lambda: " + NIL);
 
             if (consp(op)) {
                 expandForms("function application", ccForm);
@@ -3017,7 +3080,7 @@ public class LambdaJ {
                 // not a special form, must be a function or macro application
                 if (symOp.macro != null) {
                     final Object expansion = macroexpandImpl(this, ccForm);
-                    assert cadr(values) != null : ccForm.lineInfo() + "macro " + symOp + " was not expanded - secondary value is nil, form was " + form;
+                    assert cadr(values) != null : ccForm.lineInfo() + "macro " + symOp + " was not expanded - secondary value is " + NIL + ", form was " + form;
                     assert expansion != ccForm : ccForm.lineInfo() + "macro " + symOp + " was not expanded - expansion == ccForm, form was " + form;
                     values = NO_VALUES;
                     return expandForm(expansion);
@@ -3027,91 +3090,91 @@ public class LambdaJ {
                 return ccForm;
             }
 
-            final ConsCell ccArgs = cdrShallowCopyList("eval", ccForm);
+            final ConsCell ccArgs = cdrShallowCopyList(EVAL, ccForm);
             switch (symOp.wellknownSymbol) {
             case sQuote:
-                oneArg("quote", ccArgs);
+                oneArg(QUOTE, ccArgs);
                 return form;
 
             case sLambda:
                 if (car(ccArgs) == sDynamic) {
-                    varargsMin("lambda dynamic", ccArgs, 2);
-                    checkLambdaList("lambda dynamic", cadr(ccArgs));
-                    expandForms("lambda dynamic", cddrShallowCopyList("lambda dynamic", ccArgs));
+                    varargsMin(LAMBDA_DYNAMIC, ccArgs, 2);
+                    checkLambdaList(LAMBDA_DYNAMIC, cadr(ccArgs));
+                    expandForms(LAMBDA_DYNAMIC, cddrShallowCopyList(LAMBDA_DYNAMIC, ccArgs));
                     return cons(sLambdaDynamic, cdr(ccArgs));
                 }
                 else if (!have(Features.HAVE_LEXC)) {
-                    varargsMin("lambda dynamic", ccArgs, 1);
-                    checkLambdaList("lambda dynamic", car(ccArgs));
-                    expandForms("lambda dynamic", cdrShallowCopyList("lambda dynamic", ccArgs));
+                    varargsMin(LAMBDA_DYNAMIC, ccArgs, 1);
+                    checkLambdaList(LAMBDA_DYNAMIC, car(ccArgs));
+                    expandForms(LAMBDA_DYNAMIC, cdrShallowCopyList(LAMBDA_DYNAMIC, ccArgs));
                     return cons(sLambdaDynamic, ccArgs);
                 }
                 else {
-                    varargsMin("lambda", ccArgs, 1);
-                    checkLambdaList("lambda", car(ccArgs));
-                    expandForms("lambda", cdrShallowCopyList("lambda", ccArgs));
+                    varargsMin(LAMBDA, ccArgs, 1);
+                    checkLambdaList(LAMBDA, car(ccArgs));
+                    expandForms(LAMBDA, cdrShallowCopyList(LAMBDA, ccArgs));
                     return ccForm;
                 }
 
             case sIf:
-                varargsMinMax("if", ccArgs, 2, 3);
-                expandForms("if", ccArgs);
+                varargsMinMax(IF, ccArgs, 2, 3);
+                expandForms(IF, ccArgs);
                 return ccForm;
 
             case sCond:
                 if (ccArgs == null) return null;
-                for (ConsCell i = ccArgs; i != null; i = cdrShallowCopyList("cond", i)) {
-                    if (!consp(car(i))) errorMalformed("cond", "a list (condexpr forms...)", car(i));
-                    expandForms("cond", carShallowCopyList("cond", i));
+                for (ConsCell i = ccArgs; i != null; i = cdrShallowCopyList(COND, i)) {
+                    if (!consp(car(i))) errorMalformed(COND, "a list (condexpr forms...)", car(i));
+                    expandForms(COND, carShallowCopyList(COND, i));
                 }
                 return ccForm;
 
             case sProgn:
                 if (ccArgs == null) return null;
                 if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
-                expandForms("progn", ccArgs);
+                expandForms(PROGN, ccArgs);
                 return ccForm;
 
             case sLabels:
-                varargs1("labels", ccArgs);
+                varargs1(LABELS, ccArgs);
                 if (car(ccArgs) == null) return expandForm(cons(sProgn, cdr(ccArgs)));
-                for (ConsCell i = carShallowCopyList("labels", ccArgs); i != null; i = cdrShallowCopyList("labels", i)) {
-                    if (!consp(car(i))) errorMalformed("labels", "a list (symbol (params...) forms...)", i);
-                    final ConsCell localFunc = carShallowCopyList("labels", i);
-                    varargsMin("labels", localFunc, 2);
-                    final LambdaJSymbol funcSymbol = symbolOrMalformed("labels", car(localFunc));
+                for (ConsCell i = carShallowCopyList(LABELS, ccArgs); i != null; i = cdrShallowCopyList(LABELS, i)) {
+                    if (!consp(car(i))) errorMalformed(LABELS, "a list (symbol (params...) forms...)", i);
+                    final ConsCell localFunc = carShallowCopyList(LABELS, i);
+                    varargsMin(LABELS, localFunc, 2);
+                    final LambdaJSymbol funcSymbol = symbolOrMalformed(LABELS, car(localFunc));
                     if (funcSymbol.macro != null) throw new ProgramError("local function %s is also a macro which would shadow the local function", funcSymbol, localFunc);
                     checkLambdaList(funcSymbol.toString(), cadr(localFunc));
-                    if (cddr(localFunc) != null) expandForms("labels", cddrShallowCopyList("labels", localFunc));
+                    if (cddr(localFunc) != null) expandForms(LABELS, cddrShallowCopyList(LABELS, localFunc));
                 }
-                if (cdr(ccArgs) != null) expandForms("labels", cdrShallowCopyList("labels", ccArgs));
+                if (cdr(ccArgs) != null) expandForms(LABELS, cdrShallowCopyList(LABELS, ccArgs));
                 return ccForm;
 
             case sDefine:
-                varargs1_2("define", ccArgs);
-                symbolOrMalformed("define", car(ccArgs));
+                varargs1_2(DEFINE, ccArgs);
+                symbolOrMalformed(DEFINE, car(ccArgs));
                 if (cdr(ccArgs) != null) {
-                    final ConsCell valueForm = cdrShallowCopyList("define", ccArgs);
+                    final ConsCell valueForm = cdrShallowCopyList(DEFINE, ccArgs);
                     valueForm.rplaca(expandForm(car(valueForm)));
                 }
                 return ccForm;
 
             case sDefun:
-                varargsMin("defun", ccArgs, 2);
-                checkLambdaList("defun", cadr(ccArgs));
-                if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList("defun", ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
-                if (cddr(ccArgs) != null) expandForms("defun", cddrShallowCopyList("defun", ccArgs));
+                varargsMin(DEFUN, ccArgs, 2);
+                checkLambdaList(DEFUN, cadr(ccArgs));
+                if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList(DEFUN, ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
+                if (cddr(ccArgs) != null) expandForms(DEFUN, cddrShallowCopyList(DEFUN, ccArgs));
                 return ccForm;
 
             case sDefmacro:
-                varargs1("defmacro", ccArgs);
-                final LambdaJSymbol sym1 = symbolOrMalformed("defmacro", car(ccArgs));
+                varargs1(DEFMACRO, ccArgs);
+                final LambdaJSymbol sym1 = symbolOrMalformed(DEFMACRO, car(ccArgs));
                 if (cdr(ccArgs) == null) sym1.macro = null;
                 else {
-                    if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList("defmacro", ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
-                    if (cddr(ccArgs) != null) expandForms("defmacro", cddrShallowCopyList("defmacro", ccArgs));
+                    if (cdddr(ccArgs) != null && stringp(caddr(ccArgs))) cdrShallowCopyList(DEFMACRO, ccArgs).rplacd(cdddr(ccArgs)); // remove (ignore) docstring
+                    if (cddr(ccArgs) != null) expandForms(DEFMACRO, cddrShallowCopyList(DEFMACRO, ccArgs));
                     final Object params = cadr(ccArgs);
-                    checkLambdaList("defmacro", params);
+                    checkLambdaList(DEFMACRO, params);
                     sym1.macro = makeClosure(params, (ConsCell)cddr(ccArgs), null);
                 }
                 return ccForm;
@@ -3139,7 +3202,7 @@ public class LambdaJ {
                         letDynamic = false;
                         namedLet = true;
                     }
-                    if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, "dynamic is only allowed with let and let*");
+                    if (letDynamic && symOp.wellknownSymbol == WellknownSymbol.sLetrec) throw errorMalformed(sfName, DYNAMIC + " is only allowed with let and let*");
                     bindingsAndBody = cdrShallowCopyList(sfName, ccArgs);
                 }
                 else {
@@ -3188,38 +3251,38 @@ public class LambdaJ {
                 return ccForm;
 
             case sMultipleValueBind:
-                varargsMin("multiple-value-bind", ccArgs, 2);
-                expandForms("multiple-value-bind", cdrShallowCopyList("multiple-value-bind", ccArgs));
-                checkLambdaList("multiple-value-bind", car(ccArgs));
+                varargsMin(MULTIPLE_VALUE_BIND, ccArgs, 2);
+                expandForms(MULTIPLE_VALUE_BIND, cdrShallowCopyList(MULTIPLE_VALUE_BIND, ccArgs));
+                checkLambdaList(MULTIPLE_VALUE_BIND, car(ccArgs));
                 return ccForm;
 
             case sCatch:
-                varargs1("catch", ccArgs);
+                varargs1(CATCH, ccArgs);
                 if (cdr(ccArgs) == null) return null;
-                expandForms("catch", cdrShallowCopyList("catch", ccArgs));
+                expandForms(CATCH, cdrShallowCopyList(CATCH, ccArgs));
                 return ccForm;
 
             case sThrow:
-                twoArgs("throw", ccArgs);
-                expandForms("throw", ccArgs);
+                twoArgs(THROW, ccArgs);
+                expandForms(THROW, ccArgs);
                 return ccForm;
 
             case sUnwindProtect:
-                varargs1("unwind-protect", ccArgs);
+                varargs1(UNWIND_PROTECT, ccArgs);
                 if (cdr(ccArgs) == null) return expandForm(car(ccArgs));
-                expandForms("unwind-protect", ccArgs);
+                expandForms(UNWIND_PROTECT, ccArgs);
                 return ccForm;
 
             case sTry:
-                varargs1_2("try", ccArgs);
-                expandForms("throw", ccArgs);
+                varargs1_2(TRY, ccArgs);
+                expandForms(THROW, ccArgs);
                 return ccForm;
 
             case sSetQ:
-                for (ConsCell pairs = ccArgs; pairs != null; pairs = cdrShallowCopyList("setq", pairs)) {
-                    symbolOrMalformed("setq", car(pairs));
-                    if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
-                    pairs = cdrShallowCopyList("setq", pairs);
+                for (ConsCell pairs = ccArgs; pairs != null; pairs = cdrShallowCopyList(SETQ, pairs)) {
+                    symbolOrMalformed(SETQ, car(pairs));
+                    if (cdr(pairs) == null) errorMalformed(SETQ, "odd number of arguments");
+                    pairs = cdrShallowCopyList(SETQ, pairs);
                     pairs.rplaca(expandForm(car(pairs)));
                 }
                 return ccForm;
@@ -3231,8 +3294,8 @@ public class LambdaJ {
                 return form; // no macroexpansion in declaim, load, require, provide forms
 
             case sMultipleValueCall:
-                varargs1("multiple-value-call", ccArgs);
-                expandForms("multiple-value-call", ccArgs);
+                varargs1(MULTIPLE_VALUE_CALL, ccArgs);
+                expandForms(MULTIPLE_VALUE_CALL, ccArgs);
                 return ccForm;
 
             default:
@@ -3285,10 +3348,10 @@ public class LambdaJ {
         final ConsCell envEntry = lookupEnvEntry(form, env);
         if (envEntry != null) {
             final Object value = cdr(envEntry);
-            if (value == UNASSIGNED) errorUnassigned("eval", form);
+            if (value == UNASSIGNED) errorUnassigned(EVAL, form);
             return value;
         }
-        throw errorUnbound("eval", form);
+        throw errorUnbound(EVAL, form);
     }
 
     private Object evalSetq(ConsCell pairs, ConsCell env, int stack, int level, int traceLvl) {
@@ -3308,13 +3371,13 @@ public class LambdaJ {
     }
 
     private Object evalRequire(ConsCell arguments) {
-        varargs1_2("require", arguments);
-        if (!stringp(car(arguments))) errorMalformed("require", "a string argument", arguments);
+        varargs1_2(REQUIRE, arguments);
+        if (!stringp(car(arguments))) errorMalformed(REQUIRE, "a string argument", arguments);
         final Object modName = car(arguments);
         if (!modules.contains(modName)) {
             Object modFilePath = cadr(arguments);
             if (modFilePath == null) modFilePath = modName;
-            final Object ret = loadFile("require", modFilePath);
+            final Object ret = loadFile(REQUIRE, modFilePath);
             if (!modules.contains(modName)) throw new ProgramError("require'd file '%s' does not provide '%s'", modFilePath, modName);
             return ret;
         }
@@ -3322,21 +3385,21 @@ public class LambdaJ {
     }
 
     private Object evalProvide(ConsCell arguments) {
-        oneArg("provide", arguments);
-        if (!stringp(car(arguments))) errorMalformed("provide", "a string argument", arguments);
+        oneArg(PROVIDE, arguments);
+        if (!stringp(car(arguments))) errorMalformed(PROVIDE, "a string argument", arguments);
         final Object modName = car(arguments);
         modules.add(modName);
         return null;
     }
 
     Object evalDeclaim(int level, ConsCell arguments) {
-        if (level != 1) errorMalformed("declaim", "must be a toplevel form");
-        if (caar(arguments) == intern("optimize")) {
+        if (level != 1) errorMalformed(DECLAIM, "must be a toplevel form");
+        if (caar(arguments) == intern(OPTIMIZE)) {
             final Object rest = cdar(arguments);
-            final Object speedCons = assq(intern("speed"), rest);
+            final Object speedCons = assq(intern(SPEED), rest);
             if (speedCons != null) {
                 final Object speed = cadr(speedCons);
-                if (!numberp(speed)) throw new ProgramError("declaim: argument to optimize must be a number, found %s", speed);
+                if (!numberp(speed)) throw new ProgramError(DECLAIM + ": argument to " + SPEED + " must be a number, found %s", speed);
                 this.speed = ((Number)speed).shortValue();
             }
         }
@@ -3436,8 +3499,8 @@ public class LambdaJ {
         return new LetRetVal(bodyForms, extenv, restore);
     }
 
-    private static String getOp(Object operator, boolean letDynamic, boolean namedLet) {
-        return letDynamic ? operator + " dynamic" : (namedLet ? "named " : "") + operator;
+    private static String getOp(String operator, boolean letDynamic, boolean namedLet) {
+        return letDynamic ? (operator + ' ' + DYNAMIC) : (namedLet ? "named " : "") + operator;
     }
 
     private static class RestoreDynamic {
@@ -3522,7 +3585,7 @@ public class LambdaJ {
     /** eval a list of forms and return a list that is all individual values appended */
     private ConsCell evalMultipleValuesArgs(Object valueForms, ConsCell env, int stack, int level, int traceLvl) {
         ConsCell allArgs = null, appendPos = null;
-        if (valueForms != null) for (Object valueForm : listOrMalformed("multiple-value-call", valueForms)) {
+        if (valueForms != null) for (Object valueForm : listOrMalformed(MULTIPLE_VALUE_CALL, valueForms)) {
             final Object prim = eval(valueForm, env, stack, level, traceLvl);
             final ConsCell newValues;
             if (values == NO_VALUES) newValues = cons(prim, null);
@@ -3542,7 +3605,7 @@ public class LambdaJ {
         final ConsCell newValues;
         if (values == NO_VALUES) newValues = cons(prim, null);
         else { newValues = values; values = NO_VALUES; }
-        env = zip("multiple-value-bind", car(varsAndValuesForm), newValues, env, false);
+        env = zip(MULTIPLE_VALUE_BIND, car(varsAndValuesForm), newValues, env, false);
         return env;
     }
 
@@ -3837,7 +3900,7 @@ public class LambdaJ {
                                                           : o instanceof ConsCell ? ((ConsCell)o).car()
                                                           : o instanceof CharSequence ? ((CharSequence)o).length() == 0 ? null : ((CharSequence)o).charAt(0)
                                                           : o instanceof char[] ? ((char[])o).length == 0 ? null : ((char[])o)[0]
-                                                          : carCdrError("car", o); }
+                                                          : carCdrError(CAR, o); }
 
     static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
 
@@ -3855,7 +3918,7 @@ public class LambdaJ {
                                                           : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
                                                           : o instanceof ConsCell ? ((ConsCell)o).cdr()
                                                           : o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
-                                                          : carCdrError("cdr", o); }
+                                                          : carCdrError(CDR, o); }
 
     static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
 
@@ -3946,7 +4009,7 @@ public class LambdaJ {
     static ConsCell assq(Object atom, Object lst) {
         if (lst == null) return null;
 
-        for (Object entry: requireList("assq", lst)) {
+        for (Object entry: requireList(ASSQ, lst)) {
             if (entry != null && atom == car(entry)) {
                 return (ConsCell)entry; // cast can't fail if car() succeeded
             }
@@ -3998,14 +4061,14 @@ public class LambdaJ {
     static Object[] listToArray(ConsCell lst, int len) {
         if (lst == null) {
             if (len == 0) return EMPTY_ARRAY;
-            errorReaderError("vector of length %d cannot be initialized from ()", len);
+            errorReaderError(VECTOR + " of length %d cannot be initialized from ()", len);
             assert false; //notreached
         }
         if (len < 0) len = listLength(lst);
         final Object[] ret = new Object[len];
         int i = 0;
         for (Object o: lst) {
-            if (i == len) errorReaderError("vector is longer than the specified length: #%d%s", len, printSEx(lst));
+            if (i == len) errorReaderError(VECTOR + " is longer than the specified length: #%d%s", len, printSEx(lst));
             ret[i++] = o;
         }
         final Object last = ret[i-1];
@@ -4098,7 +4161,7 @@ public class LambdaJ {
     }
 
     static CharSequence printSEx(Object obj, boolean printEscape) {
-        if (obj == null) return "nil";
+        if (obj == null) return NIL;
         final StringBuilder sb = new StringBuilder();
         _printSEx(sb::append, obj, obj, printEscape);
         return sb;
@@ -4141,7 +4204,7 @@ public class LambdaJ {
         else if (escapeAtoms && characterp(atom)) { sb.print(printChar((int)(Character)atom)); }
         else if (vectorp(atom))                   { printVector(sb, atom, escapeAtoms); }
         else if (hashtablep(atom))                { printHash(sb, (Map<?, ?>)atom, escapeAtoms); }
-        else if (atom == null)                    { sb.print("nil"); }
+        else if (atom == null)                    { sb.print(NIL); }
         else if (atom instanceof CharSequence)    { sb.print((CharSequence)atom); }
         else if (randomstatep((atom)))            { sb.print("#<random-state>"); }
         else                                      { sb.print(atom.toString()); }
@@ -4214,6 +4277,7 @@ public class LambdaJ {
     }
 
     static void printHash(WriteConsumer out, Map<?,?> map, boolean escapeAtoms) {
+        assert !(map instanceof EqlMap) && !(map instanceof EqualMap) : "should be printed using Writable.printSEx()";
         if (map instanceof EqlTreeMap) out.print("#H(compare-eql");
         else if (map instanceof EqualTreeMap) out.print("#H(compare-equal");
         else if (map instanceof IdentityHashMap) out.print("#H(eq");
@@ -4237,7 +4301,7 @@ public class LambdaJ {
     static RuntimeException errorMalformed       (String func, String msg)                      { throw new ProgramError("%s: malformed %s: %s", func, func, msg); }
     static RuntimeException errorMalformedFmt    (String func, String msg, Object... params)    { return errorMalformed(func, String.format(msg, params)); }
     static RuntimeException errorMalformed       (String func, String expected, Object actual)  { throw new ProgramError("%s: malformed %s: expected %s but got %s", func, func, expected, printSEx(actual)); }
-    static void             errorReserved        (String op, Object sym)                        { errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym == null ? "nil" : sym); }
+    static void             errorReserved        (String op, Object sym)                        { errorMalformedFmt(op, "can't use reserved word %s as a symbol", sym == null ? NIL : sym); }
     static RuntimeException errorUnbound         (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is not bound", func, printSEx(form)); }
     @SuppressWarnings("SameParameterValue")
     static void             errorUnassigned      (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is bound but has no assigned value", func, printSEx(form)); }
@@ -4247,14 +4311,14 @@ public class LambdaJ {
     static RuntimeException errorNotANumber      (String func, Object actual)                   { throw errorArgTypeError("number", func, actual); }
     static RuntimeException errorNotAnInteger    (String func, Object actual)                   { throw errorArgTypeError("integral number", func, actual); }
     static RuntimeException errorNotABit         (String func, Object actual)                   { throw errorArgTypeError("bit", func, actual); }
-    static RuntimeException errorNotAVector      (String func, Object actual)                   { throw errorArgTypeError("vector", func, actual); }
-    static RuntimeException errorNotASimpleVector(String func, Object actual)                   { throw errorArgTypeError("simple vector", func, actual); }
+    static RuntimeException errorNotAVector      (String func, Object actual)                   { throw errorArgTypeError(VECTOR, func, actual); }
+    static RuntimeException errorNotASimpleVector(String func, Object actual)                   { throw errorArgTypeError("simple " + VECTOR, func, actual); }
     static RuntimeException errorNotAString      (String func, Object actual)                   { throw errorArgTypeError("string", func, actual); }
     static RuntimeException errorNotABitVector   (String func, Object actual)                   { throw errorArgTypeError("bitvector", func, actual); }
-    static void             errorNotACons        (String func, Object actual)                   { throw errorArgTypeError("cons", func, actual); }
-    static void             errorNotAList        (String func, Object actual)                   { throw errorArgTypeError("list", func, actual); }
+    static void             errorNotACons        (String func, Object actual)                   { throw errorArgTypeError(CONS, func, actual); }
+    static void             errorNotAList        (String func, Object actual)                   { throw errorArgTypeError(LIST, func, actual); }
     @SuppressWarnings("SameParameterValue")
-    static void             errorNotASequence    (String func, Object actual)                   { throw errorArgTypeError("list or vector", func, actual); }
+    static void             errorNotASequence    (String func, Object actual)                   { throw errorArgTypeError("list or " + VECTOR, func, actual); }
 
     static RuntimeException errorOverflow        (String func, String targetType, Object n)     { throw new ArithmeticException(String.format("%s: value cannot be represented as a %s: %s", func, targetType, n)); }
     static RuntimeException errorIndexTooLarge   (long idx, long actualLength)                  { throw new InvalidIndexError("index %d is too large for a sequence of length %d", idx, actualLength); }
@@ -4441,7 +4505,7 @@ public class LambdaJ {
         /** return {@code c} as a String, error if {@code c} is not a string, character or symbol */
         @SuppressWarnings("SameParameterValue")
         static String requireStringDesignator(String func, Object c) {
-            if (c == null) return "nil";
+            if (c == null) return NIL;
             if (c instanceof Character || c instanceof LambdaJSymbol) return c.toString();
             return requireString(func, c);
         }
@@ -4472,8 +4536,8 @@ public class LambdaJ {
         static long toFixnum(double d) {
             if (Double.isInfinite(d)) throw new ArithmeticException("value is Infinite");
             if (Double.isNaN(d)) throw new ArithmeticException("value is NaN");
-            if (d < MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("underflow");
-            if (d > MOST_POSITIVE_FIXNUM) throw new ArithmeticException("overflow");
+            if (d < MOST_NEGATIVE_FIXNUM_VAL) throw new ArithmeticException("underflow");
+            if (d > MOST_POSITIVE_FIXNUM_VAL) throw new ArithmeticException("overflow");
             return (long)d;
         }
 
@@ -4524,10 +4588,10 @@ public class LambdaJ {
 
         static boolean typep(SymbolTable st, LambdaJ intp, Object o, Object typespec) {
             if (typespec == LambdaJ.sT) return true;
-            if (typespec == st.intern("null")) return null == o;
+            if (typespec == st.intern(NULL)) return null == o;
 
-            if (typespec == st.intern("cons")) return consp(o);
-            if (typespec == st.intern("atom")) return atom(o);
+            if (typespec == st.intern(CONS)) return consp(o);
+            if (typespec == st.intern(ATOM)) return atom(o);
             if (typespec == st.intern("symbol")) return symbolp(o);
 
             if (typespec == st.intern("number")) return numberp(o);
@@ -4544,7 +4608,7 @@ public class LambdaJ {
 
             if (typespec == st.intern("random-state")) return randomstatep(o);
 
-            if (typespec == st.intern("vector")) return vectorp(o);
+            if (typespec == st.intern(VECTOR)) return vectorp(o);
             if (typespec == st.intern("simple-vector")) return svectorp(o);
             if (typespec == st.intern("string")) return stringp(o);
             if (typespec == st.intern("simple-string")) return sstringp(o);
@@ -4555,7 +4619,7 @@ public class LambdaJ {
 
             if (typespec == st.intern("function")) return intp == null ? functionp0(o) : intp.functionp(o);
 
-            if (typespec == st.intern("list")) return listp(o);
+            if (typespec == st.intern(LIST)) return listp(o);
             if (typespec == st.intern("sequence")) return listp(o) || vectorp(o);
 
             if (o == null) return false; // the object nil aka () is of type null or list or sequence or t which we have already checked
@@ -4600,7 +4664,7 @@ public class LambdaJ {
             // todo Class.forName().isAssignableFrom() probieren falls JFFI aufgedreht ist
 
 
-            throw new SimpleError("typep: unknown type specifier %s", printSEx(typespec));
+            throw new SimpleError(TYPEP + ": unknown type specifier %s", printSEx(typespec));
         }
 
 
@@ -4636,7 +4700,7 @@ public class LambdaJ {
         static Object append(LambdaJ intp, ConsCell args) {
             if (args == null) return null;
             if (cdr(args) == null) return car(args);
-            if (!listp(car(args))) throw new SimpleTypeError("append: first argument %s is not a list", printSEx(car(args)));
+            if (!listp(car(args))) throw new SimpleTypeError(APPEND + ": first argument %s is not a list", printSEx(car(args)));
 
             while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
 
@@ -4645,7 +4709,7 @@ public class LambdaJ {
             for (; cdr(current) != null; current = (ConsCell)cdr(current)) {
                 final Object o = car(current);
                 if (o == null) continue;
-                if (!consp(o)) throw new SimpleTypeError("append: argument is not a list: %s", printSEx(o));
+                if (!consp(o)) throw new SimpleTypeError(APPEND + ": argument is not a list: %s", printSEx(o));
                 if (lb == null) lb = intp.new CountingListBuilder();
                 for (Object obj: (ConsCell)o) lb.append(obj);
             }
@@ -4659,7 +4723,7 @@ public class LambdaJ {
          */
         static ConsCell assoc(Object atom, Object maybeList) {
             if (maybeList == null) return null;
-            final ConsCell ccList = requireList("assoc", maybeList);
+            final ConsCell ccList = requireList(ASSOC, maybeList);
             for (Object entry: ccList) {
                 if (entry != null) { // ignore null items
                     if (eql(atom, car(entry))) return (ConsCell)entry;
@@ -4754,7 +4818,7 @@ public class LambdaJ {
             if (n instanceof Double) return ((Double)n) + 1;
             if (n instanceof Long) {
                 final long l;
-                if ((l = (Long) n) == MOST_POSITIVE_FIXNUM) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
+                if ((l = (Long) n) == MOST_POSITIVE_FIXNUM_VAL) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
                 return l + 1;
             }
             if (n instanceof Byte) return ((Byte)n).intValue() + 1;
@@ -4768,7 +4832,7 @@ public class LambdaJ {
                 catch (ArithmeticException e) {
                     throw new ArithmeticException("1+: overflow, BigInteger argument does not fit in a fixnum");
                 }
-                if (l == MOST_POSITIVE_FIXNUM) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
+                if (l == MOST_POSITIVE_FIXNUM_VAL) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
                 return l + 1;
             }
             return toDouble("1+", n) + 1;
@@ -4778,7 +4842,7 @@ public class LambdaJ {
             if (n instanceof Double) return ((Double)n) - 1;
             if (n instanceof Long) {
                 final long l;
-                if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
+                if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM_VAL) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
                 return l - 1;
             }
             if (n instanceof Byte) return ((Byte)n).intValue() - 1;
@@ -4792,7 +4856,7 @@ public class LambdaJ {
                 catch (ArithmeticException e) {
                     throw new ArithmeticException("1-: underflow, BigInteger argument does not fit in a fixnum");
                 }
-                if (l == MOST_NEGATIVE_FIXNUM) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
+                if (l == MOST_NEGATIVE_FIXNUM_VAL) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
                 return l - 1;
             }
             return toDouble("1-", n) - 1;
@@ -4827,7 +4891,7 @@ public class LambdaJ {
             if (state == null) return copy(currentState);
             if (state instanceof Random) return copy((Random)state);
             if (state instanceof Number) return new Random(((Number)state).longValue());
-            throw errorArgTypeError("random or t or nil or number", "make-random-state", state);
+            throw errorArgTypeError("random or " + T + " or " + NIL + " or number", "make-random-state", state);
         }
 
         private static final class BOS extends ByteArrayOutputStream {
@@ -4932,7 +4996,7 @@ public class LambdaJ {
             final Object cap = caddr(a);
             final boolean adjustable = cap != null;
             final int capacity;
-            if (adjustable && cap != sT) capacity = requireIntegralNumber("make-array", cap, size, MAX_ARRAY_SIZE).intValue();
+            if (adjustable && cap != sT) capacity = requireIntegralNumber("make-array", cap, size, ARRAY_DIMENSION_LIMIT_VAL).intValue();
             else capacity = size;
 
             if (cdr(a) == null || type == sT) {
@@ -5023,7 +5087,7 @@ public class LambdaJ {
 
         @SuppressWarnings("unchecked")
         static long vectorAdd(Object maybeVector, Object newValue) {
-            if (!adjustableArrayP(maybeVector)) throw new InvalidIndexError("vector-add: not an adjustable vector: %s", printSEx(maybeVector));
+            if (!adjustableArrayP(maybeVector)) throw new InvalidIndexError("vector-add: not an adjustable " + VECTOR + ": %s", printSEx(maybeVector));
             if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
             if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.append(requireChar("vector-add", newValue)); return sb.length() - 1; }
             if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-add", newValue)); }
@@ -5369,12 +5433,12 @@ public class LambdaJ {
         static Map<Object,Object> hash(SymbolTable symtab, ConsCell testAndPairs) {
             if (testAndPairs == null) return new EqlMap(DEFAULT_HASH_SIZE);
             final Map<Object,Object> ret = makeHashTable(symtab, car(testAndPairs), DEFAULT_HASH_SIZE);
-            final ConsCell pairs = requireList("hash", testAndPairs.cdr());
+            final ConsCell pairs = requireList(HASH, testAndPairs.cdr());
             if (pairs == null) return ret;
             final Iterator<?> i = pairs.iterator();
             while (i.hasNext()) {
                 final Object key = i.next();
-                if (!i.hasNext()) errorMalformedFmt("hash", "last key/value pair is missing 'value'");
+                if (!i.hasNext()) errorMalformedFmt(HASH, "last key/value pair is missing 'value'");
                 ret.put(key, i.next());
             }
             return ret;
@@ -5382,12 +5446,12 @@ public class LambdaJ {
 
         static Map<Object,Object> makeHashTable(SymbolTable st, Object test, int size) {
             if (test == sT) return JavaUtil.newHashMap(size);
-            if (test == null || test == st.intern("eql")) return new EqlMap(size);
+            if (test == null || test == st.intern(EQL)) return new EqlMap(size);
             if (test == st.intern("compare-eql")) return new EqlTreeMap();
-            if (test == st.intern("equal")) return new EqualMap(size);
+            if (test == st.intern(EQUAL)) return new EqualMap(size);
             if (test == st.intern("compare-equal")) return new EqualTreeMap();
-            if (test == st.intern("eq")) return new IdentityHashMap<>(size);
-            throw new SimpleTypeError("only nil, eq, eql, compare-eql, equal, compare-eql and t are implemented as 'test', got " + printSEx(test));
+            if (test == st.intern(EQ)) return new IdentityHashMap<>(size);
+            throw new SimpleTypeError("only " + NIL + ", " + EQ + ", " + EQL + ", compare-eql, " + EQUAL + ", compare-eql and " + T + " are implemented as 'test', got %s", printSEx(test));
         }
 
         static Object[] hashref(Object hash, Object key, Object def) {
@@ -5469,7 +5533,7 @@ public class LambdaJ {
 
         /** (read eof-obj?) -> result */
         static Object read(ObjectReader lispReader, ConsCell a) {
-            if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is nil", "read");
+            if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is " + NIL, "read");
             if (a == null) {
                 final Object eof = new Object();
                 final Object ret = lispReader.readObj(eof);
@@ -5495,13 +5559,13 @@ public class LambdaJ {
                 a = (ConsCell)cdr(a);
 
                 if (a != null) {
-                    final long start = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+                    final long start = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM_VAL).longValue();
                     if (start > str.length()) throw new InvalidIndexError("start must be <= string length");
                     try { count[0] = strReader.skip(start); } catch (IOException e) { wrap(e); }
                     a = (ConsCell)cdr(a);
 
                     if (a != null) {
-                        end = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM).longValue();
+                        end = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM_VAL).longValue();
                         if (end < start) throw new InvalidIndexError("end must be >= start");
                         if (end > str.length()) throw new InvalidIndexError("end must be <= string length");
                     }
@@ -5626,13 +5690,13 @@ public class LambdaJ {
         }
 
         static Object write(ObjectWriter lispPrinter, Object arg, boolean printEscape) {
-            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "write");
+            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, "write");
             lispPrinter.printObj(arg, printEscape);
             return arg;
         }
 
         static Object writeln(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
-            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "writeln");
+            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, "writeln");
             if (arg != null) {
                 lispPrinter.printObj(car(arg), printEscape);
             }
@@ -5641,7 +5705,7 @@ public class LambdaJ {
         }
 
         static Object lnwrite(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
-            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", "lnwrite");
+            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, "lnwrite");
             lispPrinter.printEol();
             if (arg == null) return null;
             final Object o;
@@ -5681,13 +5745,13 @@ public class LambdaJ {
                 if (locString == null) {
                     if (toString) return EolUtil.anyToUnixEol(String.format(s, args)).toString();
                     if (!haveIO) throw new LambdaJError(true, "%s: I/O is disabled", func);
-                    if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
+                    if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, func);
                     lispPrinter.printString(EolUtil.anyToUnixEol(String.format(s, args)));
                     return null;
                 }
                 final Locale loc = Locale.forLanguageTag(locString);
                 if (toString) return EolUtil.anyToUnixEol(String.format(loc, s, args)).toString();
-                if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is nil", func);
+                if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, func);
                 lispPrinter.printString(EolUtil.anyToUnixEol(String.format(loc, s, args)));
                 return null;
             } catch (IllegalFormatException e) {
@@ -6074,7 +6138,7 @@ public class LambdaJ {
                     if (cdr(lst) == null) throw new ProgramError("jproxy: odd number of method/functions");
 
                     final Object form = cadr(lst);
-                    if (form == null) throw new UndefinedFunction("jproxy: not a function: nil");
+                    if (form == null) throw new UndefinedFunction("jproxy: not a function: " + NIL);
 
                     final String name = requireString("jproxy", car(lst));
                     final Method method = nameToMethod.get(name);
@@ -6178,10 +6242,10 @@ public class LambdaJ {
 
         if (have(Features.HAVE_T)) extendGlobal(sT, sT);
         if (have(Features.HAVE_NIL)) extendGlobal(sNil, null);
-        if (have(Features.HAVE_VECTOR)) extendGlobal("array-dimension-limit", MAX_ARRAY_SIZE);
+        if (have(Features.HAVE_VECTOR)) extendGlobal(ARRAY_DIMENSION_LIMIT, ARRAY_DIMENSION_LIMIT_VAL);
 
         if (have(Features.HAVE_APPLY)) {
-            final LambdaJSymbol sApply = intern("apply");
+            final LambdaJSymbol sApply = intern(APPLY);
             ocApply = new OpenCodedPrimitive(sApply);
             extendGlobal(sApply, ocApply);
         }
@@ -6189,7 +6253,7 @@ public class LambdaJ {
         if (have(Features.HAVE_XTRA)) {
             extendGlobal(sDynamic, sDynamic);
 
-            final LambdaJSymbol sEval = intern("eval");
+            final LambdaJSymbol sEval = intern(EVAL);
             ocEval = new OpenCodedPrimitive(sEval);
             extendGlobal(sEval, ocEval);
 
@@ -6199,13 +6263,13 @@ public class LambdaJ {
 
         if (have(Features.HAVE_UTIL)) {
             extendGlobal(featuresEnvEntry);
-            extendGlobal("internal-time-units-per-second", (long)1e9);
+            extendGlobal(INTERNAL_TIME_UNITS_PER_SECOND, (long)1e9);
         }
 
         if (have(Features.HAVE_NUMBERS)) {
-            extendGlobal("pi", Math.PI);
-            extendGlobal("most-positive-fixnum", MOST_POSITIVE_FIXNUM);
-            extendGlobal("most-negative-fixnum", MOST_NEGATIVE_FIXNUM);
+            extendGlobal(PI, Math.PI);
+            extendGlobal(MOST_POSITIVE_FIXNUM, MOST_POSITIVE_FIXNUM_VAL);
+            extendGlobal(MOST_NEGATIVE_FIXNUM, MOST_NEGATIVE_FIXNUM_VAL);
             assert randomStateEnvEntry != null : "when feature NUMBERs is enabled randomStateEnvEntry should be != null";
             extendGlobal(randomStateEnvEntry);
         }
@@ -6291,7 +6355,7 @@ public class LambdaJ {
         @Override public MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
 
         @Override public void setCommandlineArgumentList(ConsCell args) {
-            extendGlobal(intern("*command-line-argument-list*"), args);
+            extendGlobal(intern(COMMAND_LINE_ARGUMENT_LIST), args);
         }
         @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
         @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
@@ -6784,7 +6848,7 @@ public class LambdaJ {
             final LambdaJSymbol cmdRun    = interpreter.intern(":r");
             final LambdaJSymbol cmdJar    = interpreter.intern(":jar");
 
-            final LambdaJSymbol define = interpreter.intern("define"), setq = interpreter.intern("setq"), quote = interpreter.intern("quote");
+            final LambdaJSymbol define = interpreter.intern(DEFINE), setq = interpreter.intern(SETQ), quote = interpreter.intern(QUOTE);
             final LambdaJSymbol form0 = interpreter.intern("@-");
             final LambdaJSymbol form1 = interpreter.intern("@+"), form2 = interpreter.intern("@++"), form3 = interpreter.intern("@+++");
             final LambdaJSymbol result1 = interpreter.intern("@*"), result2 = interpreter.intern("@**"), result3 = interpreter.intern("@***");
@@ -7175,7 +7239,7 @@ public class LambdaJ {
                 if ("--".equals(arg)) break;
             }
 
-            intp.extendGlobal(intp.intern("*command-line-argument-list*"), arraySlice(args, n));
+            intp.extendGlobal(intp.intern(COMMAND_LINE_ARGUMENT_LIST), arraySlice(args, n));
         }
 
         private static void injectCommandlineArgs(MurmelProgram prg, String[] args) {
@@ -7534,8 +7598,8 @@ public class LambdaJ {
             symtab.intern(sCharacter);
 
             features.set(makeFeatureList(symtab));
-            featuresEnvEntry = ConsCell.cons(intern("*features*"), features.get());
-            commandlineArgumentListEnvEntry = ConsCell.cons(intern("*command-line-argument-list*"), null);
+            featuresEnvEntry = ConsCell.cons(intern(FEATURES), features.get());
+            commandlineArgumentListEnvEntry = ConsCell.cons(intern(COMMAND_LINE_ARGUMENT_LIST), null);
 
             lispReader = LambdaJ.makeReader(System.in::read, symtab, featuresEnvEntry);
             lispPrinter = LambdaJ.makeWriter(System.out::print);
@@ -7544,8 +7608,8 @@ public class LambdaJ {
         private LambdaJ intpForEval() {
             LambdaJ intp = this.intp;
             if (intp == null) {
-                final ConsCell conditionHandlerEnvEntry = ConsCell.cons(intern("*condition-handler*"), conditionHandler.get());
-                final ConsCell randomStateEnvEntry = ConsCell.cons(intern("*random-state*"), randomState.get());
+                final ConsCell conditionHandlerEnvEntry = ConsCell.cons(intern(CONDITION_HANDLER), conditionHandler.get());
+                final ConsCell randomStateEnvEntry = ConsCell.cons(intern(RANDOM_STATE), randomState.get());
                 this.intp = intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, conditionHandlerEnvEntry, randomStateEnvEntry, null);
                 intp.compiledProgram = this;
                 intp.init(lispReader, lispPrinter, null);
@@ -7627,14 +7691,14 @@ public class LambdaJ {
 
         /// predefined global variables
         public static final LambdaJSymbol _t = LambdaJ.sT;
-        public static final LambdaJSymbol _dynamic = new LambdaJSymbol(true, "dynamic");
+        public static final LambdaJSymbol _dynamic = new LambdaJSymbol(true, DYNAMIC);
 
         public static final double _pi = Math.PI;
 
         /// predefined aliased global variables
-        public static final int arrayDimensionLimit = MAX_ARRAY_SIZE;
-        public static final long mostPositiveFixnum = MOST_POSITIVE_FIXNUM;
-        public static final long mostNegativeFixnum = MOST_NEGATIVE_FIXNUM;
+        public static final int arrayDimensionLimit = ARRAY_DIMENSION_LIMIT_VAL;
+        public static final long mostPositiveFixnum = MOST_POSITIVE_FIXNUM_VAL;
+        public static final long mostNegativeFixnum = MOST_NEGATIVE_FIXNUM_VAL;
 
         public static final long itups = (long)1e9;
 
@@ -7664,7 +7728,7 @@ public class LambdaJ {
 
         // basic primitives
         public final Object _apply (Object... args) {
-            twoArgs("apply", args.length);
+            twoArgs(APPLY, args.length);
             Object fn = args[0];
             if (fn == null) errorNotAFunction(sNil);
             if (symbolp(fn)) fn = getValue(fn.toString());
@@ -7677,9 +7741,9 @@ public class LambdaJ {
             return tailcall(fn, listToArray(args[1]));
         }
         public final Object _eval(Object... args) {
-            varargs1_2("eval",     args.length);
+            varargs1_2(EVAL, args.length);
             final LambdaJ intp = intpForEval();
-            final Object ret = intp.expandAndEval(args[0], args.length == 2 ? LambdaJ.requireList("eval", args[1]) : null);
+            final Object ret = intp.expandAndEval(args[0], args.length == 2 ? LambdaJ.requireList(EVAL, args[1]) : null);
             afterEval();
             return ret;
         }
@@ -7688,83 +7752,83 @@ public class LambdaJ {
         // logic, predicates
         private Object bool(boolean result) { values = null; return result ? _t : null; }
 
-        public final Object _eq        (Object... args) { twoArgs("eq",          args.length);        return bool(args[0] == args[1]); }
+        public final Object _eq        (Object... args) { twoArgs(EQ, args.length);        return bool(args[0] == args[1]); }
 
-        public final Object _eql       (Object... args) { twoArgs("eql",         args.length);        return bool(LambdaJ.Subr.eql(args[0], args[1])); }
+        public final Object _eql       (Object... args) { twoArgs(EQL, args.length);        return bool(LambdaJ.Subr.eql(args[0], args[1])); }
         public final Object _eql(Object o1, Object o2)  { return bool(LambdaJ.Subr.eql(o1, o2)); }
 
-        public final Object _equal     (Object... args) { twoArgs("equal",       args.length);        return bool(LambdaJ.Subr.equal(args[0], args[1])); }
+        public final Object _equal     (Object... args) { twoArgs(EQUAL,         args.length);        return bool(LambdaJ.Subr.equal(args[0], args[1])); }
         public final Object _equal(Object o1, Object o2) { return bool(LambdaJ.Subr.equal(o1, o2)); }
 
-        public final Object _consp     (Object... args) { oneArg("consp",        args.length);        return bool(consp(args[0])); }
+        public final Object _consp     (Object... args) { oneArg(CONSP,          args.length);        return bool(consp(args[0])); }
         public final Object _consp     (Object    arg)  {                                             return bool(consp(arg)); }
-        public final Object _atom      (Object... args) { oneArg("atom",         args.length);        return bool(atom(args[0])); }
+        public final Object _atom      (Object... args) { oneArg(ATOM,           args.length);        return bool(atom(args[0])); }
         public final Object _atom      (Object    arg)  {                                             return bool(atom(arg)); }
-        public final Object _symbolp   (Object... args) { oneArg("symbolp",      args.length);        return bool(symbolp(args[0])); }
+        public final Object _symbolp   (Object... args) { oneArg(SYMBOLP,        args.length);        return bool(symbolp(args[0])); }
         public final Object _symbolp   (Object    arg)  {                                             return bool(symbolp(arg)); }
-        public final Object _null      (Object... args) { oneArg("null",         args.length);        return bool(args[0] == null); }
-        public final Object _numberp   (Object... args) { oneArg("numberp",      args.length);        return bool(numberp(args[0])); }
+        public final Object _null      (Object... args) { oneArg(NULL,           args.length);        return bool(args[0] == null); }
+        public final Object _numberp   (Object... args) { oneArg(NUMBERP, args.length);        return bool(numberp(args[0])); }
         public final Object _numberp   (Object    arg)  {                                             return bool(numberp(arg)); }
-        public final Object _floatp    (Object... args) { oneArg("floatp",       args.length);        return bool(floatp(args[0])); }
+        public final Object _floatp    (Object... args) { oneArg(FLOATP, args.length);        return bool(floatp(args[0])); }
         public final Object _floatp    (Object    arg)  {                                             return bool(floatp(arg)); }
-        public final Object _integerp  (Object... args) { oneArg("integerp",     args.length);        return bool(integerp(args[0])); }
+        public final Object _integerp  (Object... args) { oneArg(INTEGERP, args.length);        return bool(integerp(args[0])); }
         public final Object _integerp  (Object    arg)  {                                             return bool(integerp(arg)); }
-        public final Object _characterp(Object... args) { oneArg("characterp",   args.length);        return bool(characterp(args[0])); }
-        public final Object _randomstatep(Object... args){oneArg("random-state-p", args.length);      return bool(randomstatep(args[0])); }
+        public final Object _characterp(Object... args) { oneArg(CHARACTERP, args.length);        return bool(characterp(args[0])); }
+        public final Object _randomstatep(Object... args){oneArg(RANDOM_STATE_P, args.length);      return bool(randomstatep(args[0])); }
 
-        public final Object _vectorp   (Object... args) { oneArg("vectorp",      args.length);        return bool(vectorp(args[0])); }
+        public final Object _vectorp   (Object... args) { oneArg(VECTORP, args.length);        return bool(vectorp(args[0])); }
         public final Object _vectorp   (Object    arg)  {                                             return bool(vectorp(arg)); }
-        public final Object svectorp   (Object... args) { oneArg("simple-vector-p", args.length);     return bool(LambdaJ.svectorp(args[0])); }
+        public final Object svectorp   (Object... args) { oneArg(SIMPLE_VECTOR_P, args.length);     return bool(LambdaJ.svectorp(args[0])); }
         public final Object svectorp   (Object    arg)  {                                             return bool(LambdaJ.svectorp(arg)); }
-        public final Object _stringp   (Object... args) { oneArg("stringp",      args.length);        return bool(stringp(args[0])); }
+        public final Object _stringp   (Object... args) { oneArg(STRINGP, args.length);        return bool(stringp(args[0])); }
         public final Object _stringp   (Object    arg)  {                                             return bool(stringp(arg)); }
-        public final Object sstringp   (Object... args) { oneArg("simple-string-p", args.length);     return bool(LambdaJ.sstringp(args[0])); }
+        public final Object sstringp   (Object... args) { oneArg(SIMPLE_STRING_P, args.length);     return bool(LambdaJ.sstringp(args[0])); }
         public final Object sstringp   (Object    arg)  {                                             return bool(LambdaJ.sstringp(arg)); }
-        public final Object bitvectorp (Object... args) { oneArg("bit-vector-p", args.length);        return bool(LambdaJ.bitvectorp(args[0])); }
+        public final Object bitvectorp (Object... args) { oneArg(BIT_VECTOR_P, args.length);        return bool(LambdaJ.bitvectorp(args[0])); }
         public final Object bitvectorp (Object    arg)  {                                             return bool(LambdaJ.bitvectorp(arg)); }
-        public final Object sbitvectorp(Object... args) { oneArg("simple-bit-vector-p", args.length); return bool(LambdaJ.sbitvectorp(args[0])); }
+        public final Object sbitvectorp(Object... args) { oneArg(SIMPLE_BIT_VECTOR_P, args.length); return bool(LambdaJ.sbitvectorp(args[0])); }
         public final Object sbitvectorp(Object    arg)  {                                             return bool(LambdaJ.sbitvectorp(arg)); }
-        public final Object hashtablep (Object... args) { oneArg("hash-table-p", args.length);        return bool(LambdaJ.hashtablep(args[0])); }
+        public final Object hashtablep (Object... args) { oneArg(HASH_TABLE_P, args.length);        return bool(LambdaJ.hashtablep(args[0])); }
         public final Object hashtablep (Object    arg)  {                                             return bool(LambdaJ.hashtablep(arg)); }
 
-        public final Object _functionp (Object... args) { oneArg("functionp",    args.length);        return bool(LambdaJ.functionp0(args[0])); }
+        public final Object _functionp (Object... args) { oneArg(FUNCTIONP, args.length);        return bool(LambdaJ.functionp0(args[0])); }
 
-        public final Object _listp     (Object... args) { oneArg("listp",        args.length);        return bool(listp(args[0])); }
+        public final Object _listp     (Object... args) { oneArg(LISTP, args.length);        return bool(listp(args[0])); }
         public final Object _listp     (Object    arg)  {                                             return bool(listp(arg)); }
-        public final Object _typep     (Object... args) { twoArgs("typep",       args.length);        return bool(typep(symtab, null, args[0], args[1])); }
+        public final Object _typep     (Object... args) { twoArgs(TYPEP, args.length);        return bool(typep(symtab, null, args[0], args[1])); }
         public final Object _typep     (Object o, Object t) {                                         return bool(typep(symtab, null, o, t)); }
 
-        public final Object adjustableArrayP(Object... args) { oneArg("adjustable-array-p", args.length); return bool(LambdaJ.Subr.adjustableArrayP(args[0])); }
+        public final Object adjustableArrayP(Object... args) { oneArg(ADJUSTABLE_ARRAY_P, args.length); return bool(LambdaJ.Subr.adjustableArrayP(args[0])); }
 
 
         // conses and lists
-        public final Object _car       (Object... args) { oneArg("car",     args.length); return _car(args[0]); }
+        public final Object _car       (Object... args) { oneArg(CAR,       args.length); return _car(args[0]); }
         public final Object  _car      (Object l)       { values = null; return LambdaJ.car(l); } // also used by generated code
         public final Object  _car      (ConsCell l)     { values = null; return LambdaJ.car(l); }
 
-        public final Object _cdr       (Object... args) { oneArg("cdr",     args.length); return _cdr(args[0]); }
+        public final Object _cdr       (Object... args) { oneArg(CDR,       args.length); return _cdr(args[0]); }
         public final Object  _cdr      (Object l)       { values = null; return LambdaJ.cdr(l); } // also used by generated code
         public final Object  _cdr      (ConsCell l)     { values = null; return LambdaJ.cdr(l); }
 
-        public final ConsCell _cons   (Object... args)      { twoArgs("cons",   args.length); return _cons(args[0], args[1]); }
+        public final ConsCell _cons   (Object... args)      { twoArgs(CONS,     args.length); return _cons(args[0], args[1]); }
         public final ConsCell _cons(Object car, Object cdr) { values = null; return ConsCell.cons(car, cdr); } // also used by generated code
 
-        public final ConsCell _rplaca (Object... args)           { twoArgs("rplaca", args.length);  return _rplaca(args[0], args[1]); }
-        public final ConsCell _rplaca(Object l, Object newCar)   { values = null; return LambdaJ.requireList("rplaca", l).rplaca(newCar); }
+        public final ConsCell _rplaca (Object... args)           { twoArgs(RPLACA, args.length);  return _rplaca(args[0], args[1]); }
+        public final ConsCell _rplaca(Object l, Object newCar)   { values = null; return LambdaJ.requireList(RPLACA, l).rplaca(newCar); }
         public final ConsCell _rplaca(ConsCell l, Object newCar) { values = null; return l.rplaca(newCar); }
 
-        public final ConsCell _rplacd (Object... args)           { twoArgs("rplacd", args.length);  return _rplacd(args[0], args[1]); }
-        public final ConsCell _rplacd(Object l, Object newCdr)   { values = null; return LambdaJ.requireList("rplacd", l).rplacd(newCdr); }
+        public final ConsCell _rplacd (Object... args)           { twoArgs(RPLACD, args.length);  return _rplacd(args[0], args[1]); }
+        public final ConsCell _rplacd(Object l, Object newCdr)   { values = null; return LambdaJ.requireList(RPLACD, l).rplacd(newCdr); }
         public final ConsCell _rplacd(ConsCell l, Object newCdr) { values = null; return l.rplacd(newCdr); }
 
         public final ConsCell _list    (Object... args) { values = null; return ConsCell.list(args); }
-        public final Object   listStar (Object... args) { values = null; varargs1("list*", args.length); return ConsCell.listStar(args); }
+        public final Object   listStar (Object... args) { values = null; varargs1(LISTSTAR, args.length); return ConsCell.listStar(args); }
         public final Object   _append  (Object... args) {
             values = null;
             int nArgs;
             if (args == null || (nArgs = args.length) == 0) return null;
             if (nArgs == 1) return args[0];
-            if (!listp(args[0])) throw new SimpleTypeError("append: first argument %s is not a list", printSEx(args[0]));
+            if (!listp(args[0])) throw new SimpleTypeError(APPEND + ": first argument %s is not a list", printSEx(args[0]));
 
             nArgs--;
             int first = 0;
@@ -7774,7 +7838,7 @@ public class LambdaJ {
             for (int i = first; i < nArgs; i++) {
                 final Object o = args[i];
                 if (o == null) continue;
-                if (!consp(o)) throw new SimpleTypeError("append: argument %d is not a list: %s", i+1, printSEx(o));
+                if (!consp(o)) throw new SimpleTypeError(APPEND + ": argument %d is not a list: %s", i+1, printSEx(o));
                 if (lb == null) lb = new ListBuilder();
                 for (Object obj: (ConsCell)o) lb.append(obj);
             }
@@ -7782,8 +7846,8 @@ public class LambdaJ {
             lb.appendLast(args[nArgs]);
             return lb.first();
         }
-        public final ConsCell _assq    (Object... args) { values = null; twoArgs("assq",        args.length); return assq(args[0], args[1]); }
-        public final ConsCell _assoc   (Object... args) { values = null; twoArgs("assoc",       args.length); return assoc(args[0], args[1]); }
+        public final ConsCell _assq    (Object... args) { values = null; twoArgs(ASSQ, args.length); return assq(args[0], args[1]); }
+        public final ConsCell _assoc   (Object... args) { values = null; twoArgs(ASSOC, args.length); return assoc(args[0], args[1]); }
 
 
         // numbers, characters
@@ -7912,7 +7976,7 @@ public class LambdaJ {
         }
         public final Object listToSimpleVector(Object... args) { values = null; oneArg("list->simple-vector", args.length); return LambdaJ.listToArray(args[0]); }
         public final Object _vector  (Object... args) { values = null; return args; }
-        public final Object _vect    (Object... args) { values = null; varargs1("vect", args.length); return LambdaJ.listToArray(arraySlice(args, 1), toInt(args[0])); }
+        public final Object _vect    (Object... args) { values = null; varargs1(VECT, args.length); return LambdaJ.listToArray(arraySlice(args, 1), toInt(args[0])); }
 
         public final Object    _string (Object... args) { values = null; oneArg("string", args.length); return stringDesignatorToString(args[0]); }
         public final long      _slength(Object... args) { values = null; oneArg("slength", args.length); return slength(args[0]); }
@@ -8214,12 +8278,12 @@ public class LambdaJ {
 
         /** used by generated Java code */
         public static Object requireNotNull(Object obj) {
-            if (obj == null) { throw new SimpleTypeError("object is nil"); }
+            if (obj == null) { throw new SimpleTypeError("object is " + NIL); }
             return obj;
         }
 
         public static Object[] requireArray(Object obj) {
-            if (obj == null) { throw new SimpleTypeError("object is nil"); }
+            if (obj == null) { throw new SimpleTypeError("object is " + NIL); }
             if (obj instanceof Object[]) return (Object[])obj;
             if (obj instanceof List) return ((List<?>)obj).toArray(new Object[0]);
             throw new SimpleTypeError("not an array: %s", printSEx(obj));
@@ -8406,9 +8470,9 @@ public class LambdaJ {
 
         private Object interpret(Object fn, Object[] args) {
             final LambdaJ intp = intpForEval();
-            final Object ret = intp.eval(ConsCell.cons(intern("apply"),
+            final Object ret = intp.eval(ConsCell.cons(intern(APPLY),
                                                        ConsCell.cons(fn,
-                                                                     ConsCell.cons(ConsCell.cons(intern("quote"),
+                                                                     ConsCell.cons(ConsCell.cons(intern(QUOTE),
                                                                                                  ConsCell.cons(arraySlice(args),
                                                                                                                null)),
                                                                                    null))),
@@ -8594,65 +8658,65 @@ public class LambdaJ {
             switch (symbol) {
 
             // predefined global variables
-            case "nil": return null;
-            case "t": return _t;
-            case "pi": return _pi;
+            case NIL: return null;
+            case T: return _t;
+            case PI: return _pi;
 
-            case "array-dimension-limit": return arrayDimensionLimit;
-            case "most-positive-fixnum": return mostPositiveFixnum;
-            case "most-negative-fixnum": return mostNegativeFixnum;
-            case "internal-time-units-per-second": return itups;
+            case ARRAY_DIMENSION_LIMIT: return arrayDimensionLimit;
+            case MOST_POSITIVE_FIXNUM: return mostPositiveFixnum;
+            case MOST_NEGATIVE_FIXNUM: return mostNegativeFixnum;
+            case INTERNAL_TIME_UNITS_PER_SECOND: return itups;
 
-            case "*command-line-argument-list*": return commandlineArgumentList.get(); // this will be assigned by genereted code at runtime
-            case "*features*": return features.get();
-            case "*condition-handler*": return conditionHandler.get();
-            case "*random-state*": return randomState.get();
+            case COMMAND_LINE_ARGUMENT_LIST: return commandlineArgumentList.get(); // this will be assigned by genereted code at runtime
+            case FEATURES: return features.get();
+            case CONDITION_HANDLER: return conditionHandler.get();
+            case RANDOM_STATE: return randomState.get();
 
             // basic primitives
-            case "apply": return (CompilerPrimitive)this::_apply;
-            case "eval": return (CompilerPrimitive)this::_eval;
+            case APPLY: return (CompilerPrimitive)this::_apply;
+            case EVAL: return (CompilerPrimitive)this::_eval;
 
             // logic, predicates
-            case "eq": return (CompilerPrimitive)this::_eq;
-            case "eql": return (CompilerPrimitive)this::_eql;
-            case "equal": return (CompilerPrimitive)this::_equal;
+            case EQ: return (CompilerPrimitive)this::_eq;
+            case EQL: return (CompilerPrimitive)this::_eql;
+            case EQUAL: return (CompilerPrimitive)this::_equal;
 
-            case "consp": return (CompilerPrimitive)this::_consp;
-            case "atom": return (CompilerPrimitive)this::_atom;
-            case "symbolp": return (CompilerPrimitive)this::_symbolp;
-            case "null": return (CompilerPrimitive)this::_null;
-            case "numberp": return (CompilerPrimitive)this::_numberp;
-            case "floatp": return (CompilerPrimitive)this::_floatp;
-            case "integerp": return (CompilerPrimitive)this::_integerp;
-            case "characterp": return (CompilerPrimitive)this::_characterp;
-            case "random-state-p": return (CompilerPrimitive)this::_randomstatep;
+            case CONSP: return (CompilerPrimitive)this::_consp;
+            case ATOM: return (CompilerPrimitive)this::_atom;
+            case SYMBOLP: return (CompilerPrimitive)this::_symbolp;
+            case NULL: return (CompilerPrimitive)this::_null;
+            case NUMBERP: return (CompilerPrimitive)this::_numberp;
+            case FLOATP: return (CompilerPrimitive)this::_floatp;
+            case INTEGERP: return (CompilerPrimitive)this::_integerp;
+            case CHARACTERP: return (CompilerPrimitive)this::_characterp;
+            case RANDOM_STATE_P: return (CompilerPrimitive)this::_randomstatep;
 
-            case "vectorp": return (CompilerPrimitive)this::_vectorp;
-            case "simple-vector-p": return (CompilerPrimitive)this::svectorp;
-            case "stringp": return (CompilerPrimitive)this::_stringp;
-            case "simple-string-p": return (CompilerPrimitive)this::sstringp;
-            case "bit-vector-p": return (CompilerPrimitive)this::bitvectorp;
-            case "simple-bit-vector-p": return (CompilerPrimitive)this::sbitvectorp;
-            case "hash-table-p": return (CompilerPrimitive)this::hashtablep;
+            case VECTORP: return (CompilerPrimitive)this::_vectorp;
+            case SIMPLE_VECTOR_P: return (CompilerPrimitive)this::svectorp;
+            case STRINGP: return (CompilerPrimitive)this::_stringp;
+            case SIMPLE_STRING_P: return (CompilerPrimitive)this::sstringp;
+            case BIT_VECTOR_P: return (CompilerPrimitive)this::bitvectorp;
+            case SIMPLE_BIT_VECTOR_P: return (CompilerPrimitive)this::sbitvectorp;
+            case HASH_TABLE_P: return (CompilerPrimitive)this::hashtablep;
 
-            case "functionp": return (CompilerPrimitive)this::_functionp;
+            case FUNCTIONP: return (CompilerPrimitive)this::_functionp;
 
-            case "listp": return (CompilerPrimitive)this::_listp;
-            case "typep": return (CompilerPrimitive)this::_typep;
-            case "adjustable-array-p": return (CompilerPrimitive)this::adjustableArrayP;
+            case LISTP: return (CompilerPrimitive)this::_listp;
+            case TYPEP: return (CompilerPrimitive)this::_typep;
+            case ADJUSTABLE_ARRAY_P: return (CompilerPrimitive)this::adjustableArrayP;
 
             // conses and lists
-            case "car": return (CompilerPrimitive)this::_car;
-            case "cdr": return (CompilerPrimitive)this::_cdr;
-            case "cons": return (CompilerPrimitive)this::_cons;
-            case "rplaca": return (CompilerPrimitive)this::_rplaca;
-            case "rplacd": return (CompilerPrimitive)this::_rplacd;
+            case CAR: return (CompilerPrimitive)this::_car;
+            case CDR: return (CompilerPrimitive)this::_cdr;
+            case CONS: return (CompilerPrimitive)this::_cons;
+            case RPLACA: return (CompilerPrimitive)this::_rplaca;
+            case RPLACD: return (CompilerPrimitive)this::_rplacd;
 
-            case "list": return (CompilerPrimitive)this::_list;
-            case "list*": return (CompilerPrimitive)this::listStar;
-            case "append": return (CompilerPrimitive)this::_append;
-            case "assq": return (CompilerPrimitive)this::_assq;
-            case "assoc": return (CompilerPrimitive)this::_assoc;
+            case LIST: return (CompilerPrimitive)this::_list;
+            case LISTSTAR: return (CompilerPrimitive)this::listStar;
+            case APPEND: return (CompilerPrimitive)this::_append;
+            case ASSQ: return (CompilerPrimitive)this::_assq;
+            case ASSOC: return (CompilerPrimitive)this::_assoc;
 
             // numbers, characters
             case "+": return (CompilerPrimitive)this::add;
@@ -8707,8 +8771,8 @@ public class LambdaJ {
             case "svset": return (CompilerPrimitive)this::_svset;
             case "simple-vector->list": return (CompilerPrimitive)this::simpleVectorToList;
             case "list->simple-vector": return (CompilerPrimitive)this::listToSimpleVector;
-            case "vector": return (CompilerPrimitive)this::_vector;
-            case "vect": return (CompilerPrimitive)this::_vect;
+            case VECTOR: return (CompilerPrimitive)this::_vector;
+            case VECT: return (CompilerPrimitive)this::_vect;
 
             case "string": return (CompilerPrimitive)this::_string;
             case "slength": return (CompilerPrimitive)this::_slength;
@@ -8732,7 +8796,7 @@ public class LambdaJ {
             case "seqset": return (CompilerPrimitive)this::_seqset;
 
             // Hash tables
-            case "hash": return (CompilerPrimitive)this::_hash;
+            case HASH: return (CompilerPrimitive)this::_hash;
             case "make-hash-table": return (CompilerPrimitive)this::makeHash;
             case "hashref": return (CompilerPrimitive)this::_hashref;
             case "hashset": return (CompilerPrimitive)this::_hashset;
@@ -8758,7 +8822,7 @@ public class LambdaJ {
             case "format-locale": return (CompilerPrimitive)this::formatLocale;
 
             // misc
-            case "values": return (CompilerPrimitive)this::_values;
+            case VALUES: return (CompilerPrimitive)this::_values;
             case "gensym": return (CompilerPrimitive)this::_gensym;
             case "trace": return (CompilerPrimitive)this::_trace;
             case "untrace": return (CompilerPrimitive)this::_untrace;
@@ -8928,20 +8992,19 @@ public class LambdaJ {
 
 
         /// Environment for compiled Murmel
-        private static final String[] globalvars = { "nil", "t", "pi", "dynamic" };
+        private static final String[] globalvars = {NIL, T, PI, DYNAMIC};
         private static final String[][] aliasedGlobals = {
-        { "array-dimension-limit", "arrayDimensionLimit" },
-        { "most-positive-fixnum", "mostPositiveFixnum"}, { "most-negative-fixnum", "mostNegativeFixnum"},
-        { "internal-time-units-per-second", "itups" },
-        { "*command-line-argument-list*", "commandlineArgumentList.get()" },
-        { "*features*", "features.get()" }, { "*condition-handler*", "conditionHandler.get()" }, { "*random-state*", "randomState.get()" },
+        { MOST_POSITIVE_FIXNUM, "mostPositiveFixnum" }, { MOST_NEGATIVE_FIXNUM, "mostNegativeFixnum" }, { ARRAY_DIMENSION_LIMIT, "arrayDimensionLimit" },
+        { INTERNAL_TIME_UNITS_PER_SECOND, "itups" },
+        { COMMAND_LINE_ARGUMENT_LIST, "commandlineArgumentList.get()" },
+        { FEATURES, "features.get()" }, { CONDITION_HANDLER, "conditionHandler.get()" }, { RANDOM_STATE, "randomState.get()" },
         };
         private static final String[] primitives = {
-        "car", "cdr", "cons", "rplaca", "rplacd",
-        /*"apply",*/ "eval", "eq", "eql", "equal", "null", "read", "write", "writeln", "lnwrite",
-        "atom", "consp", "functionp", "listp", "symbolp", "numberp", "stringp", "characterp", "integerp", "floatp", "vectorp", "typep",
-        "assoc", "assq", "list", "vect", "vector", "seqref", "seqset", "svref", "svset", "svlength", "string", "slength", "sref", "sset", "bvref", "bvset", "bvlength",
-        "append", "values",
+        CAR, CDR, CONS, RPLACA, RPLACD,
+        /*"apply",*/ EVAL, EQ, EQL, EQUAL, NULL, "read", "write", "writeln", "lnwrite",
+        ATOM, CONSP, FUNCTIONP, LISTP, SYMBOLP, NUMBERP, STRINGP, CHARACTERP, INTEGERP, FLOATP, VECTORP, TYPEP,
+        ASSOC, ASSQ, LIST, VECT, VECTOR, "seqref", "seqset", "svref", "svset", "svlength", "string", "slength", "sref", "sset", "bvref", "bvset", "bvlength",
+        APPEND, VALUES,
         "round", "floor", "ceiling", "truncate",
         "fround", "ffloor", "fceiling", "ftruncate",
         "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum", "random",
@@ -8955,16 +9018,16 @@ public class LambdaJ {
         {"read-from-string", "readFromStr"}, {"read-textfile-lines", "readTextfileLines"}, {"read-textfile", "readTextfile"},
         {"write-textfile-lines", "writeTextfileLines"}, {"write-textfile", "writeTextfile"}, {"write-to-string", "writeToString"}, {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
         {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
-        {"adjustable-array-p", "adjustableArrayP"}, {"vector-add", "vectorAdd"},
+        {ADJUSTABLE_ARRAY_P, "adjustableArrayP"}, {"vector-add", "vectorAdd"},
         {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
         {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
         {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"},
-        {"simple-vector-p", "svectorp"}, {"simple-string-p", "sstringp"}, {"random-state-p", "_randomstatep"}, {"make-random-state", "makeRandomState"},
-        {"bit-vector-p", "bitvectorp"}, {"bv=", "bvEq"}, {"simple-bit-vector-p", "sbitvectorp"}, {"hash-table-p", "hashtablep"}, {"make-array", "makeArray"},
-        {"hash", "_hash"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
+        {SIMPLE_VECTOR_P, "svectorp"}, {SIMPLE_STRING_P, "sstringp"}, {RANDOM_STATE_P, "_randomstatep"}, {"make-random-state", "makeRandomState"},
+        {BIT_VECTOR_P, "bitvectorp"}, {"bv=", "bvEq"}, {SIMPLE_BIT_VECTOR_P, "sbitvectorp"}, {HASH_TABLE_P, "hashtablep"}, {"make-array", "makeArray"},
+        {HASH, "_hash"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
         {"hash-table-count", "hashTableCount"}, {"clrhash", "_clrhash"}, {"hash-table-remove", "hashRemove"}, {"sxhash", "_sxhash"}, {"scan-hash-table", "scanHash"},
 
-        {"list*", "listStar"},
+        {LISTSTAR, "listStar"},
         //{ "macroexpand-1", "macroexpand1" },
         {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" },
         {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
@@ -9007,7 +9070,7 @@ public class LambdaJ {
             for (String[] alias:  aliasedPrimitives) predefinedEnv = extenvprim(alias[0], alias[1], predefinedEnv);
 
             // _apply needs to be of type MurmelFunction so that it will be processed by the TCO trampoline
-            predefinedEnv = extenvIntern(intp.intern("apply"), "((MurmelFunction)rt()::_apply)", predefinedEnv);
+            predefinedEnv = extenvIntern(intp.intern(APPLY), "((MurmelFunction)rt()::_apply)", predefinedEnv);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
@@ -9118,7 +9181,7 @@ public class LambdaJ {
                 }
 
                 case sDefmacro: {
-                    LambdaJ.symbolOrMalformed("defmacro", cadr(ccForm));
+                    LambdaJ.symbolOrMalformed(DEFMACRO, cadr(ccForm));
                     intp.eval(ccForm, null);
                     bodyForms.add(ccForm); // needed if compiled code calls macroexpand-1
                     return globalEnv;
@@ -9127,7 +9190,7 @@ public class LambdaJ {
                 case sProgn: {
                     // toplevel progn will be replaced by the (macroexpanded) forms it contains.
                     // Macroexpand is needed in case the progn contained a load or require that contains defmacro forms, seel also LambdaJ#expandAndEval()
-                    final ConsCell body = listOrMalformed("progn", cdr(ccForm));
+                    final ConsCell body = listOrMalformed(PROGN, cdr(ccForm));
                     for (Object prognForm : body) {
                         globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm));
                     }
@@ -9135,32 +9198,32 @@ public class LambdaJ {
                 }
 
                 case sLoad: {
-                    final ConsCell ccArgs = listOrMalformed("load", cdr(ccForm));
-                    oneArg("load", ccArgs);
+                    final ConsCell ccArgs = listOrMalformed(LOAD, cdr(ccForm));
+                    oneArg(LOAD, ccArgs);
                     if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack
-                    globalEnv = loadFile("load", ret, car(ccArgs), globalEnv, bodyForms, globals);
+                    globalEnv = loadFile(LOAD, ret, car(ccArgs), globalEnv, bodyForms, globals);
                     return globalEnv;
                 }
 
                 case sRequire: {
-                    final ConsCell ccArgs = listOrMalformed("require", cdr(ccForm));
-                    varargs1_2("require", ccArgs);
-                    if (!stringp(car(ccArgs))) errorMalformed("require", "a string argument", ccArgs);
+                    final ConsCell ccArgs = listOrMalformed(REQUIRE, cdr(ccForm));
+                    varargs1_2(REQUIRE, ccArgs);
+                    if (!stringp(car(ccArgs))) errorMalformed(REQUIRE, "a string argument", ccArgs);
                     final Object modName = car(ccArgs);
                     if (!intp.modules.contains(modName)) {
                         Object modFilePath = cadr(ccArgs);
                         if (modFilePath == null) modFilePath = modName;
                         if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack
-                        globalEnv = loadFile("require", ret, modFilePath, globalEnv, bodyForms, globals);
-                        if (!intp.modules.contains(modName)) errorMalformedFmt("require", "require'd file '%s' does not provide '%s'", modFilePath, modName);
+                        globalEnv = loadFile(REQUIRE, ret, modFilePath, globalEnv, bodyForms, globals);
+                        if (!intp.modules.contains(modName)) errorMalformedFmt(REQUIRE, "require'd file '%s' does not provide '%s'", modFilePath, modName);
                     }
                     return globalEnv;
                 }
 
                 case sProvide: {
-                    final ConsCell ccArgs = listOrMalformed("provide", cdr(ccForm));
-                    oneArg("provide", ccArgs);
-                    if (!stringp(car(ccArgs))) errorMalformed("provide", "a string argument", ccArgs);
+                    final ConsCell ccArgs = listOrMalformed(PROVIDE, cdr(ccForm));
+                    oneArg(PROVIDE, ccArgs);
+                    if (!stringp(car(ccArgs))) errorMalformed(PROVIDE, "a string argument", ccArgs);
                     final Object modName = car(ccArgs);
                     intp.modules.add(modName);
                     return globalEnv;
@@ -9187,9 +9250,9 @@ public class LambdaJ {
         /** Emit a member for {@code symbol} and a function that assigns {@code form} to {@code symbol}.
          *  @param form a list (define symbol form) */
         private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            varargs1_2("define", listOrMalformed("define", cdr(form)));
-            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed("define", cadr(form));
-            notDefined("define", symbol, env);
+            varargs1_2(DEFINE, listOrMalformed(DEFINE, cdr(form)));
+            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(DEFINE, cadr(form));
+            notDefined(DEFINE, symbol, env);
             globalDecl.add(symbol);
 
             final String javasym = mangle(symbol.toString(), 0);
@@ -9211,10 +9274,10 @@ public class LambdaJ {
 
         /** @param form a list (defun symbol ((symbol...) forms...)) */
         private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed("defun", cadr(form));
+            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(DEFUN, cadr(form));
             final Object params = caddr(form);
             final Object body = cdddr(form);
-            notDefined("defun", symbol, env);
+            notDefined(DEFUN, symbol, env);
             globalDecl.add(symbol);
 
             final String javasym = mangle(symbol.toString(), 0);
@@ -9229,7 +9292,7 @@ public class LambdaJ {
                       + "        final MurmelFunction func = new MurmelFunction() {\n"
                       + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
                       + "        public Object apply(Object... args0) {\n");
-            final ConsCell extenv = params("defun", sb, params, localEnv, 0, symbol.toString(), true);
+            final ConsCell extenv = params(DEFUN, sb, params, localEnv, 0, symbol.toString(), true);
             emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false);
             sb.append("        }};\n"
                       + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
@@ -9285,14 +9348,14 @@ public class LambdaJ {
 
                 if (clearValues) {
                     if (intp.speed == 0 && symbolp(op) && ((LambdaJSymbol)op).primitive()
-                        || op == intern("define") || op == intern("defun") || op == intern("defmacro")) {
+                        || op == intern(DEFINE) || op == intern(DEFUN) || op == intern(DEFMACRO)) {
                         // omit setting values to null
                     }
                     else {
                         sb.append("        values = null;\n");
                     }
 
-                    if (op != intern("define") && op != intern("defun") && op != intern("defmacro")) {
+                    if (op != intern(DEFINE) && op != intern(DEFUN) && op != intern(DEFMACRO)) {
                         sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
                     }
                 }
@@ -9310,7 +9373,7 @@ public class LambdaJ {
                     }
 
                     case sIf: {
-                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
+                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
                             final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
                             emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
@@ -9386,7 +9449,7 @@ public class LambdaJ {
                     }
 
                     case sProgn: {
-                        final ConsCell ccBody = listOrMalformed("progn", cdr(ccForm));
+                        final ConsCell ccBody = listOrMalformed(PROGN, cdr(ccForm));
                         emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, topLevel, hasNext);
                         return;
                     }
@@ -9398,8 +9461,8 @@ public class LambdaJ {
                         if (bindings instanceof LambdaJSymbol) break;
                         assert bindings != null : "let w/o bindings should have been replaced in expandForm";
                         rsfx++;
-                        final ConsCell ccBindings = requireList("let", bindings);
-                        final ConsCell ccBody = requireList("let", cddr(ccForm));
+                        final ConsCell ccBindings = requireList(LET, bindings);
+                        final ConsCell ccBody = requireList(LET, cddr(ccForm));
                         ConsCell extEnv = env;
 
                         sb.append("        {\n");
@@ -9503,7 +9566,7 @@ public class LambdaJ {
 
                     ///     - if
                     case sIf: {
-                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern("null")) {
+                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
                             final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
                             emitForm(sb, transformed, env, topEnv, rsfx, isLast);
@@ -9548,7 +9611,7 @@ public class LambdaJ {
                     }
 
                     case sLambdaDynamic: {
-                        errorNotImplemented("lambda dynamic is not supported in compiled Murmel");
+                        errorNotImplemented(LAMBDA_DYNAMIC + " is not supported in compiled Murmel");
                         //NOTREACHED
                     }
 
@@ -9572,7 +9635,7 @@ public class LambdaJ {
 
                     case sDefine: {
                         if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not implemented");
-                        defined("define", car(ccArguments), env);
+                        defined(DEFINE, car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
                         sb.append("define_").append(javasym).append("()");
                         return;
@@ -9580,7 +9643,7 @@ public class LambdaJ {
 
                     case sDefun: {
                         if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not implemented");
-                        defined("defun", car(ccArguments), env);
+                        defined(DEFUN, car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
                         sb.append("defun_").append(javasym).append("()");
                         return;
@@ -9644,7 +9707,7 @@ public class LambdaJ {
                         emitForm(sb, car(ccArguments), env, topEnv, rsfx, false);
                         if (cdr(ccArguments) != null) {
                             sb.append(", rt().new ValuesBuilder()");
-                            for (Object arg : listOrMalformed("multiple-value-call", cdr(ccArguments))) {
+                            for (Object arg : listOrMalformed(MULTIPLE_VALUE_CALL, cdr(ccArguments))) {
                                 sb.append("\n        .add(");
                                 emitForm(sb, arg, env, topEnv, rsfx, false);
                                 sb.append(')');
@@ -9670,7 +9733,7 @@ public class LambdaJ {
                             varargs = true;
                             length = 0;
                         }
-                        else throw errorMalformedFmt("multiple-value-bind", "expected a list or a symbol but got %s", printSEx(vars));
+                        else throw errorMalformedFmt(MULTIPLE_VALUE_BIND, "expected a list or a symbol but got %s", printSEx(vars));
                         sb.append(isLast ? "tailcall(" : "funcall(");
                         emitLambda(sb, cons(vars, cddr(ccArguments)), env, topEnv, rsfx, false);
                         if (cadr(ccArguments) != null) {
@@ -9685,17 +9748,17 @@ public class LambdaJ {
 
                     case sLoad: {
                         // pass1 has replaced all toplevel (load)s with the file contents
-                        throw errorNotImplemented("load as non-toplevel form is not implemented");
+                        throw errorNotImplemented(LOAD + " as non-toplevel form is not implemented");
                     }
 
                     case sRequire: {
                         // pass1 has replaced all toplevel (require)s with the file contents
-                        throw errorNotImplemented("require as non-toplevel form is not implemented");
+                        throw errorNotImplemented(REQUIRE + " as non-toplevel form is not implemented");
                     }
 
                     case sProvide: {
                         // pass 2 shouldn't see this
-                        throw errorNotImplemented("provide as non-toplevel form is not implemented");
+                        throw errorNotImplemented(PROVIDE + " as non-toplevel form is not implemented");
                     }
 
                     case sDeclaim: {
@@ -9706,12 +9769,12 @@ public class LambdaJ {
 
                     default:
                         /// * macro expansion - all macros were already expanded
-                        if (null != symop.macro) throw new UndefinedFunction("function application: not a primitive or lambda: %s is a macro not a function", symop, form);
+                        if (null != symop.macro) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symop, form);
 
                         /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                         if (symbolEq(symop, "macroexpand-1")) {
                             oneArg("macroexpand-1", ccArguments);
-                            if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), "quote")) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
+                            if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), QUOTE)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
                             final Object expandedForm, expanded;
                             final Object maybeMacroCall = car((ConsCell)cdar(ccArguments));
                             if (consp(maybeMacroCall)) { expandedForm = macroexpandImpl(intp, (ConsCell)maybeMacroCall); expanded = cadr(intp.values) == sT ? "rt()._t" : "null"; }
@@ -9754,7 +9817,7 @@ public class LambdaJ {
         private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             if (form == null || form == sNil) sb.append("false");
             else if (form == sT) sb.append("true");
-            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("null")) {
+            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(NULL)) {
                 // optimize "(null ..."
                 final Object arg = cadr(form);
                 if (arg == null || arg == sNil) sb.append("true");
@@ -9846,7 +9909,7 @@ public class LambdaJ {
             sb.append("(MurmelFunction)(args").append(rsfx).append(" -> {\n");
             final Object params = car(paramsAndForms);
             final String expr = "(lambda " + printSEx(params) + " ...)";
-            env = params("lambda", sb, params, env, rsfx, expr, argCheck);
+            env = params(LAMBDA, sb, params, env, rsfx, expr, argCheck);
             emitForms(sb, (ConsCell)cdr(paramsAndForms), env, topEnv, rsfx, false);
             sb.append("        })");
         }
@@ -9855,7 +9918,7 @@ public class LambdaJ {
 
         /** emit a list of forms as a single Java expression */
         private void emitProgn(WrappingWriter sb, Object forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            if (!listp(forms)) errorMalformed("progn", "a list of forms", forms);
+            if (!listp(forms)) errorMalformed(PROGN, "a list of forms", forms);
             final ConsCell ccForms = (ConsCell)forms;
             if (cdr(ccForms) == null) emitForm(sb, car(ccForms), env, topEnv, rsfx, isLast);
             else {
@@ -9866,7 +9929,7 @@ public class LambdaJ {
         }
 
         private void emitCatch(WrappingWriter sb, ConsCell tagAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
-            final ConsCell body = cons(intern("lambda"), cons(null, cdr(tagAndForms)));
+            final ConsCell body = cons(intern(LAMBDA), cons(null, cdr(tagAndForms)));
             final ConsCell args = cons(car(tagAndForms), cons(body, null));
             emitCallPrimitive(sb, "doCatch", args, env, topEnv, rsfx);
         }
@@ -9887,10 +9950,10 @@ public class LambdaJ {
         }
 
         private void emitUnwindProtect(WrappingWriter sb, Object forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            if (!listp(forms)) errorMalformed("unwind-protect", "a list of forms", forms);
+            if (!listp(forms)) errorMalformed(UNWIND_PROTECT, "a list of forms", forms);
             final ConsCell ccForms = (ConsCell)forms;
             final Object protectedForm = car(ccForms);
-            final ConsCell cleanupForms = listOrMalformed("unwind-protect", cdr(ccForms));
+            final ConsCell cleanupForms = listOrMalformed(UNWIND_PROTECT, cdr(ccForms));
             if (isLast) {
                 sb.append("tailcallWithCleanup(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
                 emitForm(sb, protectedForm, env, topEnv, rsfx, false);
@@ -9918,13 +9981,13 @@ public class LambdaJ {
         }
 
         private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx) {
-            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed("setq", car(pairs));
+            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(SETQ, car(pairs));
             final String javaName = javasym(symbol, env, (ConsCell)pairs);
 
-            if (cdr(pairs) == null) errorMalformed("setq", "odd number of arguments");
+            if (cdr(pairs) == null) errorMalformed(SETQ, "odd number of arguments");
             final Object valueForm = cadr(pairs);
 
-            notAPrimitive("setq", symbol, javaName);
+            notAPrimitive(SETQ, symbol, javaName);
             if (fastassq(symbol, env) == fastassq(symbol, topEnv)) {
                 if (javaName.endsWith(".get()")) {
                     // either a userdefined global or a
@@ -9933,7 +9996,7 @@ public class LambdaJ {
                 }
                 else {
                     // immutable runtime globals such as pi are implemented as regular Java class members (and not as objects of class CompilerGlobal)
-                    errorMalformed("setq", "can't modify constant " + symbol);
+                    errorMalformed(SETQ, "can't modify constant " + symbol);
                 }
             } else {
                 sb.append(javaName).append(" = ");  emitForm(sb, valueForm, env, topEnv, rsfx, false);
@@ -9956,7 +10019,7 @@ public class LambdaJ {
 
         /** args = (((symbol (sym...) form...)...) form...) */
         private void emitLabels(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            if (args == null) errorMalformed("labels", "expected at least one argument");
+            if (args == null) errorMalformed(LABELS, "expected at least one argument");
 
             final Object localFuncs = car(args);
             if (localFuncs == null || cddr(args) == null && atom(cadr(args))) {
@@ -9968,15 +10031,15 @@ public class LambdaJ {
             sb.append(isLast ? "tailcall(" : "funcall(");
             sb.append("new MurmelFunction() {\n");
 
-            final ConsCell params = paramList("labels", localFuncs, true);
+            final ConsCell params = paramList(LABELS, localFuncs, true);
             for (Object localFunc: params) {
-                env = extenv("labels", localFunc, rsfx, env);
+                env = extenv(LABELS, localFunc, rsfx, env);
             }
 
             for (Object symbolParamsAndBody: (ConsCell) localFuncs) {
                 final ConsCell ccSymbolParamsAndBody = (ConsCell)symbolParamsAndBody;
                 sb.append("        private final MurmelFunction ").append(javasym(car(ccSymbolParamsAndBody), env, ccSymbolParamsAndBody)).append(" = ");
-                emitLabel("labels", sb, ccSymbolParamsAndBody, env, topEnv, rsfx+1);
+                emitLabel(LABELS, sb, ccSymbolParamsAndBody, env, topEnv, rsfx+1);
                 sb.append(";\n");
             }
 
@@ -9997,7 +10060,7 @@ public class LambdaJ {
 
             sb.append(isLast ? "tailcall(" : "funcall(");
 
-            final String op = named ? "named let" : "let";
+            final String op = named ? "named let" : LET;
             final ConsCell ccBindings = (ConsCell)bindings;
             final ConsCell params = paramList(op, ccBindings, false);
             if (named) {
@@ -10029,14 +10092,7 @@ public class LambdaJ {
             sb.append(isLast ? "tailcall(" : "funcall(");
             sb.append("new MurmelFunction() {\n");
 
-            final String op;
-            if (named) {
-                // named letrec: (letrec sym ((sym form)...) forms...) -> Object
-                op = letrec ? "named letrec" : "named let*";
-            }
-            else {
-                op = letrec ? "letrec" : "let*";
-            }
+            final String op = (named ? "named " : "") + (letrec ? LETREC : LETSTAR);
 
             if (loopLabel != null) {
                 env = extenv(op, loopLabel, rsfx, env);
@@ -10088,7 +10144,7 @@ public class LambdaJ {
             final Object bindings = car(bindingsAndForms);
             ConsCell _env = env;
             if (bindings != null) {
-                final ConsCell params = paramList(letStar ? "let* dynamic" : "let dynamic", bindings, false);
+                final ConsCell params = paramList(letStar ? ("let* " + DYNAMIC) : ("let " + DYNAMIC), bindings, false);
                 if (letStar) {
                     int n = 0;
                     final HashSet<Object> seenSymbols = new HashSet<>();
@@ -10098,8 +10154,8 @@ public class LambdaJ {
                         final ConsCell maybeGlobal = fastassq(sym, topEnv);
                         if (maybeGlobal != null) {
                             final String javaName = cdr(maybeGlobal).toString();
-                            notAPrimitive("let* dynamic", sym, javaName);
-                            if (!javaName.endsWith(".get()")) errorMalformed("let* dynamic", "cannot modify constant " + cdr(maybeGlobal));
+                            notAPrimitive("let* " + DYNAMIC, sym, javaName);
+                            if (!javaName.endsWith(".get()")) errorMalformed("let* " + DYNAMIC, "cannot modify constant " + car(maybeGlobal));
                             final String globalName = javaName.substring(0, javaName.length()-6);
                             if (!seen) {
                                 globals.add(globalName);
@@ -10122,14 +10178,14 @@ public class LambdaJ {
                     }
                 }
                 else {
-                    final ConsCell __env = params("let dynamic", sb, params, _env, rsfx, null, false);
+                    final ConsCell __env = params("let " + DYNAMIC, sb, params, _env, rsfx, null, false);
                     int n = 0;
                     for (final Object sym: params) {
                         final ConsCell maybeGlobal = fastassq(sym, topEnv);
                         if (maybeGlobal != null) {
                             final String javaName = cdr(maybeGlobal).toString();
-                            notAPrimitive("let dynamic", sym, javaName);
-                            if (!javaName.endsWith(".get()")) errorMalformed("let* dynamic", "cannot modify constant " + cdr(maybeGlobal));
+                            notAPrimitive("let " + DYNAMIC, sym, javaName);
+                            if (!javaName.endsWith(".get()")) errorMalformed("let " + DYNAMIC, "cannot modify constant " + car(maybeGlobal));
                             final String globalName = javaName.substring(0, javaName.length()-6);
                             globals.add(globalName);
                             sb.append("        ").append(globalName).append(".push(").append(javasym(sym, __env, null)).append(");\n");
@@ -10257,7 +10313,7 @@ public class LambdaJ {
                 }
             }
             catch (IOException e) {
-                throw wrap(new ReaderError("load: error reading file '%s': ", e.getMessage()));
+                throw wrap(new ReaderError(LOAD + ": error reading file '%s': ", e.getMessage()));
             }
             finally {
                 intp.currentSource = prev;
@@ -10279,14 +10335,14 @@ public class LambdaJ {
             if (op == null) return false;
 
             final LambdaJ intp = this.intp;
-            final LambdaJSymbol sApply = intp.intern("apply");
+            final LambdaJSymbol sApply = intp.intern(APPLY);
 
             if (op == sApply) {
                 final Object applyOp = car(args);
                 final Object applyArg = cadr(args);
 
-                if (applyOp == null || applyOp == sNil) throw new UndefinedFunction("function application: not a primitive or lambda: nil");
-                if (applyOp == intp.intern("list")) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(')'); return true; }
+                if (applyOp == null || applyOp == sNil) throw new UndefinedFunction("function application: not a primitive or lambda: " + NIL);
+                if (applyOp == intp.intern(LIST)) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(')'); return true; }
 
                 if (applyOp != sApply) { // apply needs special treatment for TCO
                     for (String prim: primitives)          if (symbolEq(applyOp, prim))    { opencodeApplyHelper(sb, "_" + prim,  applyArg, env, topEnv, rsfx);  return true; }
@@ -10423,7 +10479,7 @@ public class LambdaJ {
             sb.append("(((Object)(");
             emitForm(sb, lhs, env, topEnv, rsfx, false);
             sb.append(") == (Object)(");
-            if (rhs == null) sb.append("null"); else emitForm(sb, rhs, env, topEnv, rsfx, false);
+            if (rhs == null) sb.append(NULL); else emitForm(sb, rhs, env, topEnv, rsfx, false);
             sb.append(")) ? _t : null)");
         }
 
@@ -10489,7 +10545,7 @@ public class LambdaJ {
 
         /** barf if form cannot eval to a number */
         private void checkNonNumber(String func, Object form) {
-            if (form == null || form instanceof Character || vectorp(form) || consp(form) && symbolEq(car(form), "quote")) errorNotANumber(func, form);
+            if (form == null || form instanceof Character || vectorp(form) || consp(form) && symbolEq(car(form), QUOTE)) errorNotANumber(func, form);
         }
 
         /** argCount is number of arguments at compiletime if known or -1 for check at runtime */
@@ -10636,7 +10692,7 @@ public class LambdaJ {
             if (form instanceof String) { emitStringLiteral(sb, (String)form); }
             else if (form instanceof Object[]) { emitSimpleVectorLiteral(sb, (Object[])form); }
             else if (form instanceof boolean[]) { emitSimpleBitVectorLiteral(sb, (boolean[])form); }
-            else errorInternal("emitVectorLiteral: vector type %s is not implemented", form.toString());
+            else errorInternal("emitVectorLiteral: " + VECTOR + " type %s is not implemented", form.toString());
         }
 
         private static void emitStringLiteral(WrappingWriter sb, String form) { sb.append('"'); stringToJava(sb, form, -1); sb.append('"'); }
@@ -10764,7 +10820,7 @@ public class LambdaJ {
                 else sb.append(init);
             }
 
-            else throw errorInternal("quote: unexpected form", form);
+            else throw errorInternal(QUOTE + ": unexpected form", form);
         }
 
         private final Map<LambdaJSymbol, String> gensyms = new IdentityHashMap<>();
