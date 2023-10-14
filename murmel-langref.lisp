@@ -306,10 +306,10 @@ pi ; ==> 3.141592653589793
 ;;; Murmel supports symbols and cons cells (and lists built from cons cells)
 ;;; as well as other atoms that are not symbols.
 ;;; These other atoms are double precision floating point numbers,
-;;; integer numbers, vectors, strings, characters and bits. Custom primitives
-;;; may support additional atoms.
+;;; integer numbers, vectors, strings, characters, bits and more.
+;;; Custom primitives may support additional atoms.
 ;
-; Murmel's type system (and the corresponding host types) look like so:
+; Murmel's type system (and JMurmel's corresponding host types) look like so:
 ;
 ;     ;; Murmel type                ; description or "Murmel form -> Java class used in JMurmel"
 ;
