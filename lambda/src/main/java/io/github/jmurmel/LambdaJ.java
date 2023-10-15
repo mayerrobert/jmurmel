@@ -2179,8 +2179,7 @@ public class LambdaJ {
         // logic, predicates
         public static final String EQ = "eq", EQL = "eql", EQUAL = "equal";
         public static final String CONSP = "consp", ATOM = "atom", NULL = "null" /* null as a function and type */, SYMBOLP = "symbolp";
-        public static final String NUMBERP = "numberp", FLOATP = "floatp", INTEGERP = "integerp";
-        public static final String CHARACTERP = "characterp";
+        public static final String NUMBERP = "numberp", FLOATP = "floatp", INTEGERP = "integerp", CHARACTERP = "characterp";
         public static final String RANDOM_STATE_P = "random-state-p";
         public static final String VECTORP = "vectorp", SIMPLE_VECTOR_P = "simple-vector-p";
         public static final String STRINGP = "stringp", SIMPLE_STRING_P = "simple-string-p";
@@ -2190,15 +2189,15 @@ public class LambdaJ {
         public static final String ADJUSTABLE_ARRAY_P = "adjustable-array-p";
 
         // conses and lists
-        public static final String CAR = "car", CDR = "cdr", CONS = "cons";
-        public static final String RPLACA = "rplaca", RPLACD = "rplacd";
+        public static final String CAR = "car", CDR = "cdr", CONS = "cons", RPLACA = "rplaca", RPLACD = "rplacd";
         public static final String LIST = "list" /* list as a function NOT type */, LISTSTAR = "list*", APPEND = "append", ASSQ = "assq", ASSOC = "assoc";
 
         // vectors, sequences
         public static final String VECTOR = "vector" /* vector as a function and type */, VECT = "vect";
+        public static final String MAKE_ARRAY = "make-array";
 
         // Hash tables
-        public static final String HASH = "hash";
+        public static final String HASH = "hash", MAKE_HASH_TABLE = "make-hash-table";
 
         // misc
         public static final String VALUES = "values";
@@ -2326,7 +2325,7 @@ public class LambdaJ {
         } },
 
         // vectors, sequences
-        sMakeArray("make-array", Features.HAVE_VECTOR, 1, 3)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeArray(intp.sBit, intp.sCharacter, args); } },
+        sMakeArray(MAKE_ARRAY, Features.HAVE_VECTOR, 1, 3)           { @Override Object apply(LambdaJ intp, ConsCell args) { return makeArray(intp.sBit, intp.sCharacter, args); } },
         sVectorAdd("vector-add", Features.HAVE_VECTOR, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorAdd(car(args), cadr(args)); } },
         sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args), cadr(args) != null); } },
         sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
@@ -2366,7 +2365,7 @@ public class LambdaJ {
 
         // Hash tables
         sHash(HASH, Features.HAVE_HASH, -1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.getSymbolTable(), args); } },
-        sMakeHash("make-hash-table", Features.HAVE_HASH, 0, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return makeHashTable(intp.getSymbolTable(), car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt("make-hash-table", cadr(args))); } },
+        sMakeHash(MAKE_HASH_TABLE, Features.HAVE_HASH, 0, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return makeHashTable(intp.getSymbolTable(), car(args), cadr(args) == null ? DEFAULT_HASH_SIZE : toNonnegInt(MAKE_HASH_TABLE, cadr(args))); } },
         sHashRef("hashref", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = hashref(car(args), cadr(args), cddr(args) == null ? NO_DEFAULT_VALUE : caddr(args)); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sHashSet("hashset", Features.HAVE_HASH, 2, 3)                  { @Override Object apply(LambdaJ intp, ConsCell args) { return hashset(args); } },
         sHashTableCount("hash-table-count", Features.HAVE_HASH, 1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return hashTableCount(car(args)); } },
@@ -4991,12 +4990,12 @@ public class LambdaJ {
         }
 
         static Object makeArray(LambdaJSymbol sBit, LambdaJSymbol sCharacter, ConsCell a) {
-            final int size = toNonnegInt("make-array", car(a));
+            final int size = toNonnegInt(MAKE_ARRAY, car(a));
             final Object type = cadr(a);
             final Object cap = caddr(a);
             final boolean adjustable = cap != null;
             final int capacity;
-            if (adjustable && cap != sT) capacity = requireIntegralNumber("make-array", cap, size, ARRAY_DIMENSION_LIMIT_VAL).intValue();
+            if (adjustable && cap != sT) capacity = requireIntegralNumber(MAKE_ARRAY, cap, size, ARRAY_DIMENSION_LIMIT_VAL).intValue();
             else capacity = size;
 
             if (cdr(a) == null || type == sT) {
@@ -5014,7 +5013,7 @@ public class LambdaJ {
                 return new char[size];
             }
 
-            throw new SimpleTypeError("make-array: unsupported or invalid type specification %s", printSEx(type)); // todo sbcl akzeptiert alles als :element-type
+            throw new SimpleTypeError(MAKE_ARRAY + ": unsupported or invalid type specification %s", printSEx(type)); // todo sbcl akzeptiert alles als :element-type
         }
 
 
@@ -7931,7 +7930,7 @@ public class LambdaJ {
 
         // vectors, sequences
 
-        public final Object   makeArray(Object... args) { values = null; varargsMinMax("make-array", args.length, 1, 3);
+        public final Object   makeArray(Object... args) { values = null; varargsMinMax(MAKE_ARRAY, args.length, 1, 3);
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
                                                           return LambdaJ.Subr.makeArray(sBit, sCharacter, arraySlice(args)); }
         public final long     vectorLength(Object... args) { values = null; oneArg("vector-length", args.length); return LambdaJ.Subr.vectorLength(args[0]); }
@@ -8044,9 +8043,9 @@ public class LambdaJ {
 
         // Hashtables
         public final Object _hash         (Object... args)      { values = null;                                               return LambdaJ.Subr.hash(symtab, arraySlice(args)); }
-        public final Object makeHash      (Object... args)      { values = null; varargs0_2("make-hash-table", args.length);   return makeHashTable(symtab,
+        public final Object makeHash      (Object... args)      { values = null; varargs0_2  (MAKE_HASH_TABLE, args.length);   return makeHashTable(symtab,
                                                                                                                                                     args.length >= 1 ? args[0] : null,
-                                                                                                                                                    args.length >= 2 ? toNonnegInt("make-hash-table", cadr(args)) : DEFAULT_HASH_SIZE); }
+                                                                                                                                                    args.length >= 2 ? toNonnegInt(MAKE_HASH_TABLE, cadr(args)) : DEFAULT_HASH_SIZE); }
         public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args.length, 2, 3);  values = hashref(args[0], args[1], args.length == 2 ? NO_DEFAULT_VALUE : args[2]); return values[0]; }
         public final Object _hashset      (Object... args)      { values = null; varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
         public final Object hashTableCount(Object... args)      { values = null; oneArg("hash-table-count", args.length);      return LambdaJ.Subr.hashTableCount(args[0]); }
@@ -8757,7 +8756,7 @@ public class LambdaJ {
             case "make-random-state": return (CompilerPrimitive)this::makeRandomState;
 
             // vectors, sequences
-            case "make-array": return (CompilerPrimitive)this::makeArray;
+            case MAKE_ARRAY: return (CompilerPrimitive)this::makeArray;
 
             case "vector-length": return (CompilerPrimitive)this::vectorLength;
             case "vector-copy": return (CompilerPrimitive)this::vectorCopy;
@@ -8797,7 +8796,7 @@ public class LambdaJ {
 
             // Hash tables
             case HASH: return (CompilerPrimitive)this::_hash;
-            case "make-hash-table": return (CompilerPrimitive)this::makeHash;
+            case MAKE_HASH_TABLE: return (CompilerPrimitive)this::makeHash;
             case "hashref": return (CompilerPrimitive)this::_hashref;
             case "hashset": return (CompilerPrimitive)this::_hashset;
             case "hash-table-count": return (CompilerPrimitive)this::hashTableCount;
@@ -9023,8 +9022,8 @@ public class LambdaJ {
         {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
         {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"},
         {SIMPLE_VECTOR_P, "svectorp"}, {SIMPLE_STRING_P, "sstringp"}, {RANDOM_STATE_P, "_randomstatep"}, {"make-random-state", "makeRandomState"},
-        {BIT_VECTOR_P, "bitvectorp"}, {"bv=", "bvEq"}, {SIMPLE_BIT_VECTOR_P, "sbitvectorp"}, {HASH_TABLE_P, "hashtablep"}, {"make-array", "makeArray"},
-        {HASH, "_hash"}, {"make-hash-table", "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
+        {BIT_VECTOR_P, "bitvectorp"}, {"bv=", "bvEq"}, {SIMPLE_BIT_VECTOR_P, "sbitvectorp"}, {HASH_TABLE_P, "hashtablep"}, {MAKE_ARRAY, "makeArray"},
+        {HASH, "_hash"}, {MAKE_HASH_TABLE, "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
         {"hash-table-count", "hashTableCount"}, {"clrhash", "_clrhash"}, {"hash-table-remove", "hashRemove"}, {"sxhash", "_sxhash"}, {"scan-hash-table", "scanHash"},
 
         {LISTSTAR, "listStar"},
