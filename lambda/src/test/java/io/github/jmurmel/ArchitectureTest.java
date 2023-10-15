@@ -52,6 +52,11 @@ public class ArchitectureTest {
     /** Utility classes whose methods are leafs in the call hierarchy, i.e. don't use any other Murmel classes (other than *Error) */
     @Test
     public void checkLeafClasses() {
+        checkLeaf("Names");
+        checkLeaf("StringReadSupplier"); // uses LambdaJ.EOF but EOF is inlined by javac
+        checkLeaf("NotNull");
+        checkLeaf("Null");
+
         // toplevel classes
         checkLeaf("EolUtil");
         checkLeaf("InstallDir");
