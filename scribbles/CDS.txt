@@ -1,0 +1,49 @@
+
+Java 18+ supports "-XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=..." to make creating "Class Data Sharing" files easier (one-step):
+
+
+# remove any pre-existing archive
+$ rm -f jmurmel.jsa
+
+# the first runn will create the CDS archive.
+# Run murmel-test.lisp both compiled as well as interpreted so that everything ends up in the archive:
+$ time echo "(load \"samples.mlib/mlib-test\") (eval '(load \"samples.mlib/mlib-test\"))" \
+        | /usr/local/jdk-19.0.1/bin/java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=jmurmel.jsa -jar lambda/target/jmurmel.jar --run
+
+# do the same again. The second run will use the now existing CDS archive and should be faster:
+$ time echo "(load \"samples.mlib/mlib-test\") (eval '(load \"samples.mlib/mlib-test\"))" \
+        | /usr/local/jdk-19.0.1/bin/java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=jmurmel.jsa -jar lambda/target/jmurmel.jar --run
+
+# do the same a third time with classloading debug info enabled.
+$ time echo "(load \"samples.mlib/mlib-test\") (eval '(load \"samples.mlib/mlib-test\"))" \
+        | /usr/local/jdk-19.0.1/bin/java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=jmurmel.jsa -Xlog:class+load -jar lambda/target/jmurmel.jar --run | grep -v "shared objects file"
+
+
+
+The above steps will create a ~15MB .jsa file that contains most JMurmel and Java Runtime classes needed to interpret and compile Murmel code.
+JMurmel invocations that use most of the .jsa file will be faster, JMurmel invocations that only use few classes may be slower compared to not using the large .jsa file:
+
+$ time echo 1 | /usr/local/jdk-19.0.1/bin/java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=jmurmel.jsa -jar lambda/target/jmurmel.jar
+
+$ time echo 1 | /usr/local/jdk-19.0.1/bin/java -jar lambda/target/jmurmel.jar
+
+Removing jmurmel.jsa and re-running the above steps will re-create a much smaller CDS file which will give a speedup.
+
+
+It seems like the best compromise for CDS is: make sure the classes that are always used during startup end up in the JSA file.
+Do that by making sure that the first invocation (that will create the .jsa file) does initialization and not much else.
+
+
+Use an existing .jsa file, don't recreate on demand, fail if it doesn't exist and/ or is incompatible with the the current JVM or GC-settings:
+
+$ time echo 1 | /usr/local/jdk-19.0.1/bin/java -XX:SharedArchiveFile=jmurmel.jsa -Xshare:on -jar lambda/target/jmurmel.jar
+# -> works
+
+$ time echo 1 | /usr/local/jdk-19.0.1/bin/java -XX:SharedArchiveFile=jmurmel.jsa -Xshare:on -XX:+UseG1GC -jar lambda/target/jmurmel.jar
+# -> works
+
+$ time echo 1 | /usr/local/jdk-19.0.1/bin/java -XX:SharedArchiveFile=jmurmel.jsa -Xshare:on -XX:+UseZGC -jar lambda/target/jmurmel.jar
+# -> will fail with
+An error has occurred while processing the shared archive file.
+Unable to use shared archive.
+The saved state of UseCompressedOops and UseCompressedClassPointers is different from runtime, CDS will be disabled.
