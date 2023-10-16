@@ -7,13 +7,13 @@ e.g. jdk8u322-b06 from https://adoptium.net does, as do other builds.
 (jdk.jfr.* is only needed to build, running an already built jmurmel.jar doesn't
 require these).
 
-JMurmel builds and runs with Java8 through 19.
+JMurmel builds and runs with Java8 through 22-ea at the time of this writing.
 Regardless of the Java version used to build,
 by default jmurmel.jar will be built to be Java8 compatible.
 
 Users of Java versions higher than 8 (e.g. 18) will probably do something like
 
-    mvn install -Djavac.target=18
+    mvn clean install -Djavac.target=18
 
 
 
@@ -25,18 +25,22 @@ The source file for JMurmel is lambda/src/main/java/io/github/jmurmel/LambdaJ.ja
 (and the Java files in lambda/src/main/java/io/github/jmurmel/jsr223 for JSR 223 support).
 Yes, JMurmel is (more or less) one single source file :-)
 
-Hacking JMurmel means changing the file LambdaJ.java and rebuilding.
+Hacking JMurmel means changing the file LambdaJ.java and rebuilding (i.e. 'mvn clean install').
 
 There are regular Java JUnit tests in lambda\src\test\java\io\github\jmurmel,
 and LambdaJTest#runllFiles() will run all the Lisp files in lambda\src\test\lisp,
 checking their result, output or error messages if any.
 
 Also there is the file samples.murmel/murmel-test.lisp which contains tests for the core Murmel language.
+After adding Murmel tests one should re-run the Murmel tests with something like
+    java -ea -jar lambda/target/jmurmel.jar samples.murmel/murmel-test.lisp
 
 
 Mlib:
 Murmel's default library "Mlib" (written in Murmel) is in the file samples.mlib/mlib.lisp.
 Tests for "Mlib" (written in Murmel) are in samples.mlib/mlib-test.lisp.
+After changing mlib.lisp and/ or adding Mlib tests one should re-run the Mlib tests with something like
+    java -ea -jar lambda/target/jmurmel.jar samples.mlib/mlib-test.lisp
 
 
 
@@ -99,6 +103,7 @@ export JMURMEL=.../jmurmel
 alias jm="rlwrap -C jm -i -q'\"' -b '\(\)' -f $JMURMEL/murmel.completions java -ea -jar $JMURMEL/lambda/target/jmurmel.jar --libdir $JMURMEL/samples.mlib"
     Unix/Bash style alias that launches JMurmel with rlwrap and a TAB-completion file for Murmel.
     (Ruthlessly stolen from https://github.com/elahtrebor/RLWRAP-SBCL-LISP-COMPLETIONS)
+
 
 jm samples.murmel/murmel-test.lisp
     interpret the tests in murmel-test.lisp
