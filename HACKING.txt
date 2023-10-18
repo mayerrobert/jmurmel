@@ -142,3 +142,12 @@ sed -nf doc/mlib-to-md.sed samples.mlib/mlib.lisp > mlib.md
 
 java -Xms1G -Xmx2G -XX:+PrintFlagsFinal -version | grep -e "Use.*GC " -e "Active" -e "[lnx]HeapSize"
     display some memory and GC related settings of the currently used JVM
+
+
+java -cp jitwatch-ui-1.4.7-shaded-win.jar org.adoptopenjdk.jitwatch.jarscan.JarScan --mode=maxMethodSize --limit=512 jmurmel\lambda\target\jmurmel.jar
+    lists methods > 512 bytecodes
+    see https://github.com/AdoptOpenJDK/jitwatch and https://github.com/AdoptOpenJDK/jitwatch/wiki/Instructions
+
+jmurmel\samples.mlib\benchmark>java -XX:+UnlockDiagnosticVMOptions -XX:+TraceClassLoading -XX:+LogCompilation -XX:LogFile=mylogfile.log -XX:+DebugNonSafepoints \
+        -jar ..\..\lambda\target\jmurmel.jar  --libdir .. 00_tak_apo.lisp
+    run the benchmark 00_tak_apo in interpreter mode and create a logfile with JIT infos for analysis with jitwatch (see https://github.com/AdoptOpenJDK/jitwatch)
