@@ -3,7 +3,7 @@
 ;;;; Modified from https://benchmarksgame-team.pages.debian.net/benchmarksgame/program/fannkuchredux-sbcl-2.html
 ;;;; which is licensed under the "3-Clause BSD License" https://benchmarksgame-team.pages.debian.net/benchmarksgame/license.html
 
-#+murmel (load "mlib")
+#+murmel (require "mlib")
 
 (defun fannkuch (n)
   (let ((csum 0)

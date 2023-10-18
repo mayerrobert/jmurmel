@@ -129,6 +129,81 @@
                     </execution>
 
                     <execution>
+                        <id>run-mlib-samples</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-ea</argument>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--libdir</argument>
+                                <argument>.</argument>
+                                <argument>arms.lisp</argument>
+                                <!--takes > 1 minute <argument>fannkuch.lisp</argument>-->
+                                <argument>gc-latency-experiment.lisp</argument>
+                                <argument>PrimeSieve.lisp</argument>
+                                <argument>PrimeSieveBitVector.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>run-compiled-mlib-samples</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-ea</argument>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--libdir</argument>
+                                <argument>.</argument>
+                                <argument>--run</argument>
+                                <argument>arms.lisp</argument>
+                                <argument>fannkuch.lisp</argument>
+                                <argument>gc-latency-experiment.lisp</argument>
+                                <argument>PrimeSieve.lisp</argument>
+                                <!-- needs a seperate run because it uses the same symbol names as PrimeSieve.lisp
+                                <argument>PrimeSieveBitVector.lisp</argument>
+                                -->
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
+                        <id>run-compiled-mlib-samples-PrimeSieveBitvector</id>
+                        <phase>test</phase>
+                        <goals>
+                            <goal>exec</goal>
+                        </goals>
+                        <configuration>
+                            <executable>java</executable>
+                            <arguments>
+                                <argument>-ea</argument>
+                                <argument>-classpath</argument>
+                                <classpath />
+                                <argument>io.github.jmurmel.LambdaJ</argument>
+                                <argument>--verbose</argument>
+                                <argument>--libdir</argument>
+                                <argument>.</argument>
+                                <argument>--run</argument>
+                                <argument>PrimeSieveBitVector.lisp</argument>
+                            </arguments>
+                        </configuration>
+                    </execution>
+
+                    <execution>
                         <id>run-lisperati</id>
                         <phase>test</phase>
                         <goals>
