@@ -1207,14 +1207,14 @@ public class LambdaJ {
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
     /** is {@code s} an optional sign followed by one or more digits? */
-    static boolean isLong(String s) {
+    static boolean isLong(@NotNull String s) {
         assert s != null : "tokens should not be null";
         assert !s.isEmpty() : "tokens should not be the empty string";
 
         return isLong(s, s.length());
     }
 
-    private static boolean isLong(String s, int len) {
+    private static boolean isLong(@NotNull String s, int len) {
         final char first = s.charAt(0);
         if (first == '+' || first == '-') {
             if (len == 1) return false;
@@ -1225,7 +1225,7 @@ public class LambdaJ {
     }
 
     /** is {@code s} an optional sign followed by one or more digits followed by a '.'? */
-    static boolean isCLDecimalLong(String s) {
+    static boolean isCLDecimalLong(@NotNull String s) {
         assert s != null : "tokens should not be null";
         assert !s.isEmpty() : "tokens should not be the empty string";
 
@@ -1235,7 +1235,7 @@ public class LambdaJ {
         return isLong(s, lenMinus1);
     }
 
-    static boolean isDouble(String s) {
+    static boolean isDouble(@NotNull String s) {
         assert s != null : "tokens should not be null";
         assert !s.isEmpty() : "tokens should not be the empty string";
 
@@ -2578,7 +2578,7 @@ public class LambdaJ {
         globals.put(sym, cons(sym, value));
     }
 
-    private void extendGlobal(@NotNull ConsCell envEntry) {
+    final void extendGlobal(@NotNull ConsCell envEntry) {
         globals.put(car(envEntry), envEntry);
     }
 
@@ -2718,13 +2718,13 @@ public class LambdaJ {
                 }
 
                 /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
-                // shortcut for (define symbol (lambda (params...) forms...))
+                // shortcut for (define symbol (lambda (params...) forms...)) with one difference: defun will early bind recursive invocations
                 case sDefun: {
                     final Object symbol = car(ccArguments);
                     final AbstractConsCell selfEnvEntry = new ListConsCell(symbol, null);
                     final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
-                    selfEnvEntry.cdr = closure;
-                    extendGlobal(symbol, closure);
+                    selfEnvEntry.rplacd(closure);
+                    extendGlobal(symbol, closure); // this will create a new env entry in the global environment, changing the global value won't change early bound recursive invocations
                     return result = symbol;
                 }
 
@@ -3541,7 +3541,7 @@ public class LambdaJ {
      *
      *  Similar to CL pairlis, but {@code #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
      *  e.g. (zip '(a b . c) '(1 2 3 4 5)) -> ((a . 1) (b . 2) (c 3 4 5)) */
-    private ConsCell zip(String func, Object params, ConsCell args, ConsCell env, boolean match) {
+    final ConsCell zip(String func, Object params, ConsCell args, ConsCell env, boolean match) {
         if (params == null && args == null) return env; // shortcut for no params/ no args
 
         while (consp(params)) {
@@ -3557,7 +3557,7 @@ public class LambdaJ {
         return env;
     }
 
-    private static void errorApplicationArgCount(String msg, String func, Object params) {
+    static void errorApplicationArgCount(String msg, String func, Object params) {
         throw new ProgramError(msg, func, printSEx(params));
     }
 
@@ -3889,9 +3889,9 @@ public class LambdaJ {
     /// ###  (Mostly) Lisp-like functions used by interpreter program, a subset is used by interpreted programs as well
     final   ListConsCell cons(Object car, Object cdr)                    { nCells++; return new ListConsCell(car, cdr); }
 
-    private ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
+    final   ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
-    private static Object carCdrError(String func, Object o) { throw errorArgTypeError("list or string", func, o); }
+    private static Object carCdrError(@NotNull String func, @NotNull Object o) { throw errorArgTypeError("list or string", func, o); }
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     static Object   car(Object o)      { return o == null ? null
