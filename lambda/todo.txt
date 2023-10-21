@@ -1,6 +1,3 @@
-commandline parameter --eval
--> --eval ist der letzte parameter, alles danach wird als Murmel abgearbeitet
-
 CDS: -Xlog:cds+map=trace:file=target/cds.map:none:filesize=0 & Co sollte nicht an jpackage sondern an java übergeben werden
      ausprobieren (Java 19+): java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=my-archive.jsa
 

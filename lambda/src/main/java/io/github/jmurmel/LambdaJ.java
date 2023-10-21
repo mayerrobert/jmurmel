@@ -6558,15 +6558,15 @@ public class LambdaJ {
                             if (script) exit(result);
                             break;
                         case TO_JAVA:
-                            final boolean javaSuccess = compileFiles(files, false, clsName, libPath, outDir);
+                            final boolean javaSuccess = compileFiles(files, immediateForms, false, clsName, libPath, outDir);
                             if (!istty && !javaSuccess) throw EXIT_RUNTIME_ERROR;
                             break;
                         case TO_JAR:
-                            final boolean jarSuccess = compileFiles(files, true, clsName, libPath, outDir);
+                            final boolean jarSuccess = compileFiles(files, immediateForms, true, clsName, libPath, outDir);
                             if (!istty && !jarSuccess) throw EXIT_RUNTIME_ERROR;
                             break;
                         case COMPILE_AND_RUN:
-                            final Object res = compileAndRunFiles(files, interpreter, args, verbose, finalResult);
+                            final Object res = compileAndRunFiles(files, immediateForms, interpreter, args, verbose, finalResult);
                             if (script) exit(res);
                             break;
                         }
@@ -6662,11 +6662,11 @@ public class LambdaJ {
             finally { interpreter.currentSource = prev; }
         }
 
-        private static boolean compileFiles(final List<String> files, boolean toJar, String clsName, Path libPath, String outDir) throws IOException {
+        private static boolean compileFiles(final List<String> files, String forms, boolean toJar, String clsName, Path libPath, String outDir) throws IOException {
             final SymbolTable symtab = new ListSymbolTable();
             final MurmelJavaCompiler c = new MurmelJavaCompiler(symtab, libPath, getTmpDir());
 
-            final ObjectReader program = parseFiles(files, c.intp, true);
+            final ObjectReader program = parseFiles(files, forms, c.intp, true);
             final String outFile;
             final boolean success;
             if (toJar) {
@@ -6683,8 +6683,8 @@ public class LambdaJ {
             return success;
         }
 
-        private static Object compileAndRunFiles(List<String> files, LambdaJ interpreter, String[] args, boolean verbose, boolean finalResult) throws IOException {
-            final ObjectReader program = parseFiles(files, interpreter, verbose);
+        private static Object compileAndRunFiles(List<String> files, String forms, LambdaJ interpreter, String[] args, boolean verbose, boolean finalResult) throws IOException {
+            final ObjectReader program = parseFiles(files, forms, interpreter, verbose);
             return compileAndRunForms(program, args, interpreter, false, finalResult);
         }
 
@@ -7511,13 +7511,15 @@ public class LambdaJ {
         private static class MultiFileReadSupplier implements ReadSupplier {
             private final boolean verbose;
             private final Iterator<Path> paths;
+            private String forms;
             private final LambdaJ intp;
             private final ObjectReader delegate;
 
             private Reader reader;
 
-            MultiFileReadSupplier(List<Path> paths, LambdaJ intp, ObjectReader delegate, boolean verbose) {
+            MultiFileReadSupplier(List<Path> paths, String forms, LambdaJ intp, ObjectReader delegate, boolean verbose) {
                 this.paths = paths.iterator();
+                this.forms = forms;
                 this.intp = intp;
                 this.delegate = delegate;
                 this.verbose = verbose;
@@ -7534,15 +7536,28 @@ public class LambdaJ {
                 intp.currentSource = p;
             }
 
+            private void forms() throws IOException {
+                final Reader old = reader;
+                reader = null;
+                if (old != null) old.close();
+                if (verbose) System.out.println("parsing commandline forms...");
+                reader = new StringReader(forms);
+                forms = null;
+                delegate.setInput(this, null);
+                intp.currentSource = null;
+            }
+
             @Override public int read() throws IOException {
                 if (reader == null) {
                     if (paths.hasNext()) next();
+                    else if (forms != null) forms();
                     else return EOF;
                 }
                 try {
                     final int ret = reader.read();
                     if (ret != EOF) return ret;
                     if (paths.hasNext()) next();
+                    else if (forms != null) forms();
                     else return EOF;
                 }
                 catch (IOException e) {
@@ -7556,15 +7571,14 @@ public class LambdaJ {
             }
         }
 
-        private static ObjectReader parseFiles(List<String> files, LambdaJ interpreter, boolean verbose) {
+        private static ObjectReader parseFiles(List<String> files, String forms, LambdaJ interpreter, boolean verbose) {
             final List<Path> paths = new ArrayList<>(files.size());
             for (String fileName : files) {
                 if ("--".equals(fileName)) break;
                 paths.add(Paths.get(fileName));
             }
             final ObjectReader reader = interpreter.makeReader(NULL_READCHARS, null);
-            reader.setInput(new MultiFileReadSupplier(paths, interpreter, reader, verbose), paths.get(0));
-            interpreter.currentSource = paths.get(0);
+            reader.setInput(new MultiFileReadSupplier(paths, forms, interpreter, reader, verbose), null);
             return reader;
         }
     }

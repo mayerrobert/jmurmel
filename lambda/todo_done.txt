@@ -2548,3 +2548,7 @@ Error: reader-error - require: error reading file 'mlib': /home/runner/work/jmur
 error occurred in 00_tak_apo.lisp:4:10..4:24: (require "mlib")
 -> wenn mlib.lisp als resource mitverpackt würde und load auch ressourcen findet, wär das wuascht
 -> wsl. wg. "--initialize-at-build-time=io.github.jmurmel"
+
+
+commandline parameter --eval
+-> --eval ist der letzte parameter, alles danach wird als Murmel abgearbeitet
