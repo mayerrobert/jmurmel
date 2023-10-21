@@ -6498,9 +6498,9 @@ public class LambdaJ {
                 final boolean script = hasFlag("--script", args, false);
                 final boolean error = handleScript(args);
                 final boolean scriptFlagError;
-                if (script && (hasFlag("--repl", args, false) || hasFlag("--tty", args, false))) {
+                if (script && (hasFlag("--repl", args, false) || hasFlag("--tty", args, false) || hasFlag("--eval", args, false))) {
                     scriptFlagError = true;
-                    System.err.println("LambdaJ: when using --script neither --repl nor --tty may be used as well");
+                    System.err.println("LambdaJ: when using --script neither --repl nor --tty nor --eval may be used as well");
                 }
                 else scriptFlagError = false;
 
@@ -6520,6 +6520,7 @@ public class LambdaJ {
                 final String clsName = flagValue("--class", args);
                 final String outDir = flagValue("--outdir", args);
                 final String libDir = flagValue("--libdir", args);
+                final String immediateForms = flagValues("--eval", args);
 
                 if (argError(args) || error || scriptFlagError) {
                     System.err.println("LambdaJ: exiting because of previous errors.");
@@ -6535,7 +6536,7 @@ public class LambdaJ {
                 // process files given on the commandline
                 final List<String> files = args(args);
                 try {
-                    if (!files.isEmpty()) {
+                    if (!files.isEmpty() || immediateForms != null) {
                         switch (action) {
                         case INTERPRET:
                             interpreter.init(NULL_READCHARS, NULL_WRITECHARS);
@@ -6546,6 +6547,9 @@ public class LambdaJ {
                                 if (verbose) System.out.println("interpreting " + fileName + "...");
                                 final Path p = Paths.get(fileName);
                                 result = interpretStream(interpreter, ReadSupplier.of(p), p, printResult, history);
+                            }
+                            if (immediateForms != null) {
+                                result = interpretStream(interpreter, new StringReadSupplier(immediateForms), null, printResult, history);
                             }
                             if (finalResult && !printResult && result != null) {
                                 System.out.println();
@@ -6575,9 +6579,9 @@ public class LambdaJ {
                 interpreter.currentSource = null;
 
                 // repl() doesn't return
-                if (files.isEmpty() && istty || repl) repl(interpreter, !files.isEmpty() && action == Action.INTERPRET, istty, echo, history, args);
+                if (files.isEmpty() && immediateForms == null && istty || repl) repl(interpreter, !files.isEmpty() && action == Action.INTERPRET, istty, echo, history, args);
 
-                if (files.isEmpty()) {
+                if (files.isEmpty() && immediateForms == null) {
                     final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
                     final Charset consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
@@ -7207,6 +7211,30 @@ public class LambdaJ {
             return null;
         }
 
+        private static String flagValues(String flag, String[] args) {
+            for (int i = 0; i < args.length; i++) {
+                final String arg = args[i];
+                if ("--".equals(arg)) return null;
+                if (flag.equals(arg)) {
+                    if (args.length < i + 2) {
+                        System.err.println("LambdaJ: commandline argument " + flag + " requires a value");
+                        return null;
+                    }
+                    args[i] = null; // consume the arg
+
+                    final StringBuilder forms = new StringBuilder();
+                    for (int ii = i+1; ii < args.length; ii++) {
+                        final String form = args[ii];
+                        if ("--".equals(form)) break;
+                        args[ii] = null;
+                        forms.append(form).append(' ');
+                    }
+                    return forms.toString();
+                }
+            }
+            return null;
+        }
+
         private static boolean argError(String[] args) {
             boolean err = false;
             for (String arg: args) {
@@ -7312,6 +7340,9 @@ public class LambdaJ {
                                + "-- ...............  Can be used to indicate:\n"
                                + "                    commandline arguments after this will be passed\n"
                                + "                    to the program\n"
+                               + "--eval <forms> ...  Process the given forms after processing any files given as well.\n"
+                               + "                    All commandline arguments up to (but not including) '--'\n"
+                               + "                    will be processed as Murmel forms.\n"
                                + "--script <file> ..  Can be used to indicate:\n"
                                + "                    process the file following '--script' and pass any remaining\n"
                                + "                    commandline arguments to the Murmel program.\n"

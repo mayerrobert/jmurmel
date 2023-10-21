@@ -15,6 +15,9 @@ Misc flags:
 -- ...............  Can be used to indicate:
                     commandline arguments after this will be passed
                     to the program
+--eval <forms> ...  Process the given forms after processing any files given as well.
+                    All commandline arguments up to (but not including) '--'
+                    will be processed as Murmel forms.
 --script <file> ..  Can be used to indicate:
                     process the file following '--script' and pass any remaining
                     commandline arguments to the Murmel program.
