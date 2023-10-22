@@ -144,10 +144,18 @@ java -Xms1G -Xmx2G -XX:+PrintFlagsFinal -version | grep -e "Use.*GC " -e "Active
     display some memory and GC related settings of the currently used JVM
 
 
+JITWatch (see https://github.com/AdoptOpenJDK/jitwatch/wiki/Instructions):
+
 java -cp jitwatch-ui-1.4.7-shaded-win.jar org.adoptopenjdk.jitwatch.jarscan.JarScan --mode=maxMethodSize --limit=512 jmurmel\lambda\target\jmurmel.jar
     lists methods > 512 bytecodes
     see https://github.com/AdoptOpenJDK/jitwatch and https://github.com/AdoptOpenJDK/jitwatch/wiki/Instructions
 
-jmurmel\samples.mlib\benchmark>java -XX:+UnlockDiagnosticVMOptions -XX:+TraceClassLoading -XX:+LogCompilation -XX:LogFile=mylogfile.log -XX:+DebugNonSafepoints \
+Java 8:
+java -XX:+UnlockDiagnosticVMOptions -XX:+TraceClassLoading -XX:+LogCompilation -XX:LogFile=mylogfile.log -XX:+DebugNonSafepoints \
         -jar ..\..\lambda\target\jmurmel.jar  --libdir .. 00_tak_apo.lisp
     run the benchmark 00_tak_apo in interpreter mode and create a logfile with JIT infos for analysis with jitwatch (see https://github.com/AdoptOpenJDK/jitwatch)
+
+Java 9+:
+java -XX:+UnlockDiagnosticVMOptions -Xlog:class+load=info -XX:+LogCompilation -XX:LogFile=mylogfile.log -XX:+DebugNonSafepoints -XX:+PrintAssembly \
+        -jar ..\..\lambda\target\jmurmel.jar  --libdir .. 00_tak_apo.lisp
+    same as above but adds "-XX:+PrintAssembly" and uses "-Xlog:class+load=info" instead of Java8's "-XX:+LogCompilation"

@@ -787,17 +787,6 @@ tailcallSibling2(Object fn, Object[] oldargs, Object arg1, Object arg2)
 -> ähnlicher trick wäre im interpreter denkbar, derzeit wächst environment bei tailcalls (aber nur bei dynamic lambdas!)
 
 
-compiler: (einige) forms die nicht in der tailposition sind (isLast == false) kann man eigentlich mit { forms... } schreiben, ergebnis wird ja nicht benötigt?!?
--> geht nicht innerhalb ?:, weil das braucht eine expression
--> emitForm müsste wohl einen parameter "expr" bekommen und geeignet durchreichen
-   -> und bei expr == false müsste (if...) als Java if statt ?: emitted werden, und (cond...) als elsif kette statt ?: kette
-   -> eigentlich sollte isLast genügen: isLast == true -> expression ist erforderlich, isLast == false -> keine expression
-      -> braucht aber auch noch einen umbau von emitForms, weil das schreibt immer ignored = ...
-
-compiler: wenn rsfx==0 ist, ist die form toplevel oder toplevel in einem defun, und die form wird in "ignoredN = <form>;" reingeschrieben
--> if, let&Co könnten da anders, einfacher rausgeschrieben werden
-
-
 sollte (format) auf MessageFormat basieren? {1} statt %d usw. oder iwie als alternative?
 -> jedenfalls delegiert String.format eh nur zu Formatter, kamma auch gleich direkt verwenden
 
@@ -824,12 +813,6 @@ tests auf testng dataprovider umstellen
 die test lispfiles auch kompiliert testen, v.a. wegen der fehlerfiles
 einen unittest schreiben dass MurmelJavaProgram.getValue() alle predefined globals enthaelt
 -> junit tests mit ...Test.java, testng mit Test... .java
-
-statt überall "throw new LambdaJError(..."
--> funktionen errorArgcount(), errorMalformed(), errorInternal(), usw. einführen, erstmal werfen die eine exception
--> ggf. später statt exception optional einen handler aufrufen -> condition system
-  -> solange exceptions geworfen werden, können die funktionen vom interpreter, compiler, compiler rt und generiertem code benutzt werden
-     wenn handler gerufen werden, schauts anders aus 
 
 let* dynamic ändert globals für alle threads, sollte threadlocal verwenden
 
@@ -916,9 +899,6 @@ feature headless und ggf gui
 -> nein, features sollten nicht erst zur laufzeit ermittelt werden?
    -> besser: funktion headlessp
 MAVEN_OPTS=-Djava.awt.headless=true und dann turtle-funktionen in murmel-langref wieder aufdrehen?
-
-Adopt OpenJDK 8u (alt): https://adoptopenjdk.net/upstream.html?variant=openjdk8&jvmVariant=hotspot
-Adoptium OpenJDK 8u (Nachfolger): https://adoptium.net/?variant=openjdk8&jvmVariant=hotspot
 
 SRFI 197 hat chain operator & Co, siehe https://srfi.schemers.org/srfi-197/srfi-197.html
 ähnlich wie ->
@@ -1079,14 +1059,6 @@ siehe auch http://forum.ulisp.com/t/a-simple-object-system-for-ulisp/622
         (cons (car names) (f (cdr names))) ; this line should be "(cons (car names) (apply f (cdr names)))"
     nil))
 -> stackoverflow ist wsl ok, sollte aber in eine Murmelfehlermeldung umgelenkt werden
-
-
-
-symbolhandling ist fishy
--> symbole sollten nicht per stringvergleich sondern ueber identity verglichen werden
-  -> dadurch wirkt sich der unterschied interned/ nicht interned nicht wie gewuenscht aus, und gensym funktioniert nicht richtig
--> der reader sollte symbole auf UC stellen (ausser ||), symboltable sollte case sensitive sein
-(erl) -> compiler sollte nicht stringvergleich machen
 
 
 
