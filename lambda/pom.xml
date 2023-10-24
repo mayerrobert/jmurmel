@@ -28,16 +28,16 @@
         <profile>
             <id>up-to-21</id>
             <activation>
-                <jdk>[1.8,20]</jdk>
+                <jdk>[1.8,21]</jdk>
             </activation>
             <properties>
                 <maven.site.skip>false</maven.site.skip>
             </properties>
         </profile>
         <profile>
-            <id>from-21</id>
+            <id>from-22</id>
             <activation>
-                <jdk>[21,)</jdk>
+                <jdk>[22,)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -49,7 +49,7 @@
                         <configuration>
                             <excludes>
                                 <exclude>**/*ManualTest.java</exclude>
-                                <!-- archunit's asm currently chokes on Java 21ea's class file major version 65 todo re-enable when archunit is updated -->
+                                <!-- archunit 1.1.0's asm currently chokes on Java 22ea's class file major version 66 todo re-enable when archunit is updated -->
                                 <exclude>**/*ArchitectureTest.java</exclude>
                             </excludes>
                         </configuration>
