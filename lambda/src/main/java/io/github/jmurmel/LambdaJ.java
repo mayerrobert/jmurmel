@@ -6089,14 +6089,12 @@ public class LambdaJ {
             }
         }
 
-        @FunctionalInterface interface ThrowingBiFunction<T, U> { Object apply(T t, U u) throws Exception; }
-
         // todo ConsCell args umstellen auf Object... args?
         static Object makeProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
             final String intf = requireString("jproxy", car(args));
             final String method = requireString("jproxy", cadr(args));
             if ("java.util.Comparator".equals(intf) && "compare".equals(method)) {
-                return new Comparator<Object>() { private final ThrowingBiFunction<Object, Object> compare = getFunction(intp, program, caddr(args), int.class)::apply;
+                return new Comparator<Object>() { private final MurmelFunction compare = getFunction(intp, program, caddr(args), int.class);
                                                   @Override public String toString() { return "#<Java proxy: java.util.Comparator>"; }
                                                   @Override public int compare(Object o1, Object o2) { // the (int)-cast is safe because JFFI#getFunction() constructs a function that contains a type conversion
                                                                                                        try { return (int)compare.apply(o1, o2); }
