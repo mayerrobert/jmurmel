@@ -6089,7 +6089,7 @@ public class LambdaJ {
             }
         }
 
-        // todo ConsCell args umstellen auf Object... args?
+        // todo ConsCell args umstellen auf Object... args? intf: statt name vergleichen: klasse laden und isInstance?
         static Object makeProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
             final String intf = requireString("jproxy", car(args));
             final String method = requireString("jproxy", cadr(args));
@@ -6106,11 +6106,10 @@ public class LambdaJ {
                                         @Override public void run() { try { f.apply(); }
                                                                       catch (Exception e) { throw wrap(e); } } };
             }
-            else return makeDynamicProxy(intp, program, args);
+            else return makeDynamicProxy(intp, program, intf, args);
         }
 
-        private static Object makeDynamicProxy(LambdaJ intp, MurmelJavaProgram program, ConsCell args) {
-            final String intf = requireString("jproxy", car(args));
+        private static Object makeDynamicProxy(LambdaJ intp, MurmelJavaProgram program, String intf, ConsCell args) {
             try {
                 final Class<?> clazz = findClass(intf);
                 final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>();
@@ -6153,31 +6152,32 @@ public class LambdaJ {
 
         static MurmelFunction getFunction(LambdaJ intp, MurmelJavaProgram program, Object function, Class<?> returnType) {
             final String funcName = printSEx(function).toString();
-            if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType(funcName, ((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args), returnType); }
-            if (function instanceof Primitive)                            { return args -> convertReturnType(funcName, ((Primitive)function).applyPrimitiveVarargs(args), returnType); }
+            final Function<Object, Object> convertReturnType = makeConvertReturnType(funcName, returnType);
+            if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType.apply(((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args)); }
+            if (function instanceof Primitive)                            { return args -> convertReturnType.apply(((Primitive)function).applyPrimitiveVarargs(args)); }
             if (function instanceof Closure && intp != null)              { final CallLambda callLambda = intp.new CallLambda((Closure)function);
-                                                                            return args -> convertReturnType(funcName, callLambda.apply(args), returnType); }
-            if (function instanceof MurmelFunction && program != null)    { return args -> convertReturnType(funcName, program.funcall((MurmelFunction)function, args), returnType); /* must use the TCO trampoline */ }
+                                                                            return args -> convertReturnType.apply(callLambda.apply(args)); }
+            if (function instanceof MurmelFunction && program != null)    { return args -> convertReturnType.apply(program.funcall((MurmelFunction)function, args)); /* must use the TCO trampoline */ }
 
             throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName);
         }
 
-        private static Object convertReturnType(String func, Object value, Class<?> returnType) {
-            if (Boolean.class.equals(returnType)   || boolean.class.equals(returnType)) return value != null;
-            if (Byte.class.equals(returnType)      || byte.class.equals(returnType))    return requireIntegralNumber(func, value, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue();
-            if (Short.class.equals(returnType)     || short.class.equals(returnType))   return requireIntegralNumber(func, value, Short.MIN_VALUE, Short.MAX_VALUE).shortValue();
-            if (Integer.class.equals(returnType)   || int.class.equals(returnType))     return requireIntegralNumber(func, value, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
-            if (Long.class.equals(returnType)      || long.class.equals(returnType))    return requireIntegralNumber(func, value, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
-            if (Double.class.equals(returnType)    || double.class.equals(returnType))  return requireNumber(func, value).doubleValue();
-            if (Character.class.equals(returnType) || char.class.equals(returnType))    return requireChar(func, value);
+        private static Function<Object, Object> makeConvertReturnType(String func, Class<?> returnType) {
+            if (Boolean.class.equals(returnType)   || boolean.class.equals(returnType)) return Objects::nonNull;
+            if (Byte.class.equals(returnType)      || byte.class.equals(returnType))    return value -> requireIntegralNumber(func, value, Byte.MIN_VALUE, Byte.MAX_VALUE).byteValue();
+            if (Short.class.equals(returnType)     || short.class.equals(returnType))   return value -> requireIntegralNumber(func, value, Short.MIN_VALUE, Short.MAX_VALUE).shortValue();
+            if (Integer.class.equals(returnType)   || int.class.equals(returnType))     return value -> requireIntegralNumber(func, value, Integer.MIN_VALUE, Integer.MAX_VALUE).intValue();
+            if (Long.class.equals(returnType)      || long.class.equals(returnType))    return value -> requireIntegralNumber(func, value, Long.MIN_VALUE, Long.MAX_VALUE).longValue();
+            if (Double.class.equals(returnType)    || double.class.equals(returnType))  return value -> requireNumber(func, value).doubleValue();
+            if (Character.class.equals(returnType) || char.class.equals(returnType))    return value -> requireChar(func, value);
+            if (Void.class.equals(returnType)      || void.class.equals(returnType))    return value -> null;
 
-            if (Number.class.equals(returnType))       return requireNumber(func, value);
-            if (String.class.equals(returnType))       return requireString(func, value);
-            if (CharSequence.class.equals(returnType)) return requireCharsequence(func, value);
-            if (Void.class.equals(returnType))         return null;
+            if (Number.class.equals(returnType))       return value -> requireNumber(func, value);
+            if (String.class.equals(returnType))       return value -> requireString(func, value);
+            if (CharSequence.class.equals(returnType)) return value -> requireCharsequence(func, value);
 
-            // todo weitere typen und/ oder error oder converter aus der HashMap auslesen?
-            return value;
+            // todo weitere typen und/ oder error oder converter aus der HashMap auslesen? was passiert bei arrays?
+            return value -> value == null ? null : returnType.cast(value);
         }
     }
 
