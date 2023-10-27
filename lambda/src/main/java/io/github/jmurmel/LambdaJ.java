@@ -4241,12 +4241,12 @@ public class LambdaJ {
             return;
         }
         if (vector instanceof char[]) {
-            if (escapeAtoms) sb.print("\"" + escapeString(new String((char[])vector)) + "\"");
+            if (escapeAtoms) sb.print("\"" + escapeString(new String((char[])vector)) + '"');
             else             sb.print(new String((char[])vector));
             return;
         }
         if (vector instanceof CharSequence) {
-            if (escapeAtoms) sb.print("\"" + escapeString((CharSequence)vector) + "\"");
+            if (escapeAtoms) sb.print("\"" + escapeString((CharSequence)vector) + '"');
             else             sb.print(((CharSequence)vector));
             return;
         }
@@ -5525,7 +5525,7 @@ public class LambdaJ {
 
         /** (read eof-obj?) -> result */
         static Object read(ObjectReader lispReader, ConsCell a) {
-            if (lispReader == null) throw new LambdaJError(true, "%s: lispStdin is " + NIL, "read");
+            if (lispReader == null) throw errorUnsupported("read", "%s: lispStdin is " + NIL);
             if (a == null) {
                 final Object eof = new Object();
                 final Object ret = lispReader.readObj(eof);
@@ -5682,13 +5682,13 @@ public class LambdaJ {
         }
 
         static Object write(ObjectWriter lispPrinter, Object arg, boolean printEscape) {
-            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, "write");
+            if (lispPrinter == null) throw errorUnsupported("write", "%s: lispStdout is " + NIL);
             lispPrinter.printObj(arg, printEscape);
             return arg;
         }
 
         static Object writeln(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
-            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, "writeln");
+            if (lispPrinter == null) throw errorUnsupported("writeln", "%s: lispStdout is " + NIL);
             if (arg != null) {
                 lispPrinter.printObj(car(arg), printEscape);
             }
@@ -5697,7 +5697,7 @@ public class LambdaJ {
         }
 
         static Object lnwrite(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
-            if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, "lnwrite");
+            if (lispPrinter == null) throw errorUnsupported("lnwrite", "%s: lispStdout is " + NIL);
             lispPrinter.printEol();
             if (arg == null) return null;
             final Object o;
@@ -5736,14 +5736,14 @@ public class LambdaJ {
             try {
                 if (locString == null) {
                     if (toString) return EolUtil.anyToUnixEol(String.format(s, args)).toString();
-                    if (!haveIO) throw new LambdaJError(true, "%s: I/O is disabled", func);
-                    if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, func);
+                    if (!haveIO) throw errorUnsupported(func, "%s: I/O is disabled");
+                    if (lispPrinter == null) throw errorUnsupported(func, "%s: lispStdout is " + NIL);
                     lispPrinter.printString(EolUtil.anyToUnixEol(String.format(s, args)));
                     return null;
                 }
                 final Locale loc = Locale.forLanguageTag(locString);
                 if (toString) return EolUtil.anyToUnixEol(String.format(loc, s, args)).toString();
-                if (lispPrinter == null) throw new LambdaJError(true, "%s: lispStdout is " + NIL, func);
+                if (lispPrinter == null) throw errorUnsupported(func, "%s: lispStdout is " + NIL);
                 lispPrinter.printString(EolUtil.anyToUnixEol(String.format(loc, s, args)));
                 return null;
             } catch (IllegalFormatException e) {
@@ -5751,6 +5751,8 @@ public class LambdaJ {
                 throw new SimpleError("%s: illegal format string and/ or arguments: %s. Error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
             }
         }
+
+        @NotNull private static RuntimeException errorUnsupported(String func, String msg) { throw new LambdaJError(true, msg, func); }
 
 
         /// misc
@@ -5767,9 +5769,9 @@ public class LambdaJ {
         private static ThreadMXBean getThreadBean(final String func) {
             final ThreadMXBean threadBean = ManagementFactory.getThreadMXBean();
             if (threadBean == null)
-                throw new LambdaJError(true, "%s: ThreadMXBean not supported in this Java Runtime", func);
+                throw errorUnsupported(func, "%s: ThreadMXBean not supported in this Java Runtime");
             if (!threadBean.isCurrentThreadCpuTimeSupported())
-                throw new LambdaJError(true, "%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime", func);
+                throw errorUnsupported(func, "%s: ThreadMXBean.getCurrentThreadCpuTime() not supported in this Java Runtime");
             return threadBean;
         }
 
