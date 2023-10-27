@@ -1157,6 +1157,14 @@ multiline comment
           (hashref h (list 1 2 3))))
   '(onetwo nil))
 
+#+murmel
+(deftest hash.6 ; presized hashtable
+  (let ((h (make-hash-table 'compare-eql 10)))
+    (hashset h 2 2)
+    (hashset h 1 1)
+    (hashref h 1))
+  1)
+    
 
 ;;; test sxhash
 (deftest sxhash.1

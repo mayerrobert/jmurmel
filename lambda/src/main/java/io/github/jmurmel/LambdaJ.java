@@ -3435,7 +3435,7 @@ public class LambdaJ {
         }
     }
 
-    private Object prev() { if (handlers == null || handlers.isEmpty()) return null; return handlers.get(handlers.size()-1); }
+    private Object prev() { final ArrayList<Object> handlers = this.handlers; if (handlers == null || handlers.isEmpty()) return null; return handlers.get(handlers.size()-1); }
 
     private static class LetRetVal { final ConsCell body, env, restore; LetRetVal(ConsCell b, ConsCell e, ConsCell r) { body = b; env = e; restore = r; } }
 
@@ -5028,7 +5028,6 @@ public class LambdaJ {
         }
 
         static Object vectorCopy(Object vector, boolean adjustablep) {
-            final int length = (int)vectorLength(vector);
             if (adjustablep) {
                 if (vector instanceof Object[]) return new ArrayList<>(Arrays.asList((Object[])vector));
                 if (vector instanceof boolean[]) return new Bitvector((boolean[])vector);
@@ -5041,18 +5040,17 @@ public class LambdaJ {
                 if (vector instanceof List<?>) return new ArrayList<>((List<?>)vector);
             }
             else {
+                final int length = (int)vectorLength(vector);
                 if (vector instanceof Object[]) return Arrays.copyOf((Object[])vector, length);
                 if (vector instanceof boolean[]) return Arrays.copyOf((boolean[])vector, length);
                 if (vector instanceof Bitvector) return ((Bitvector)vector).toBooleanArray();
                 if (vector instanceof char[]) return Arrays.copyOf((char[])vector, length);
                 if (vector instanceof StringBuilder) {
-                    final StringBuilder sb = (StringBuilder)vector;  final int len = sb.length();  final char[] ret = new char[len];
-                    sb.getChars(0, len, ret, 0);
+                    final StringBuilder sb = (StringBuilder)vector;  final char[] ret = new char[length];  sb.getChars(0, length, ret, 0);
                     return sb;
                 }
                 if (vector instanceof StringBuffer) {
-                    final StringBuffer sb = (StringBuffer)vector;  final int len = sb.length();  final char[] ret = new char[len];
-                    sb.getChars(0, len, ret, 0);
+                    final StringBuffer sb = (StringBuffer)vector;    final char[] ret = new char[length];  sb.getChars(0, length, ret, 0);
                     return sb;
                 }
                 if (vector instanceof CharSequence) return vector.toString().toCharArray(); // sadly this creates an intermediate String and copies the char[] twice
@@ -5063,16 +5061,14 @@ public class LambdaJ {
 
         @SuppressWarnings("unchecked")
         static Object vectorFill(Object vector, Object value, Object _start, Object _end) {
-            final int start, end;
             final int length = (int)vectorLength(vector);
+            int start = 0, end = length;
             if (_start != null) {
                 start = requireIntegralNumber("vector-fill", _start, 0, length).intValue();
                 if (_end != null) {
                     end = requireIntegralNumber("vector-fill", _end, start+1, length).intValue();
                 }
-                else end = length;
             }
-            else { start = 0; end = length; }
 
             if (vector instanceof Object[])      { Arrays.fill((Object[])vector, start, end, value); return vector; }
             if (vector instanceof boolean[])     { Arrays.fill((boolean[])vector, start, end, requireBit("vector-fill", value)); return vector; }
@@ -7794,50 +7790,50 @@ public class LambdaJ {
         // logic, predicates
         private Object bool(boolean result) { values = null; return result ? _t : null; }
 
-        public final Object _eq        (Object... args) { twoArgs(EQ, args.length);        return bool(args[0] == args[1]); }
+        public final Object _eq        (Object... args) { twoArgs(EQ, args.length);     return bool(args[0] == args[1]); }
 
-        public final Object _eql       (Object... args) { twoArgs(EQL, args.length);        return bool(LambdaJ.Subr.eql(args[0], args[1])); }
-        public final Object _eql(Object o1, Object o2)  { return bool(LambdaJ.Subr.eql(o1, o2)); }
+        public final Object _eql       (Object... args) { twoArgs(EQL, args.length);    return bool(LambdaJ.Subr.eql(args[0], args[1])); }
+        public final Object _eql(Object o1, Object o2)  {                               return bool(LambdaJ.Subr.eql(o1, o2)); }
 
-        public final Object _equal     (Object... args) { twoArgs(EQUAL,         args.length);        return bool(LambdaJ.Subr.equal(args[0], args[1])); }
-        public final Object _equal(Object o1, Object o2) { return bool(LambdaJ.Subr.equal(o1, o2)); }
+        public final Object _equal     (Object... args) { twoArgs(EQUAL, args.length);  return bool(LambdaJ.Subr.equal(args[0], args[1])); }
+        public final Object _equal(Object o1, Object o2) {                              return bool(LambdaJ.Subr.equal(o1, o2)); }
 
-        public final Object _consp     (Object... args) { oneArg(CONSP,          args.length);        return bool(consp(args[0])); }
+        public final Object _consp     (Object... args) { oneArg(CONSP, args.length);                 return bool(consp(args[0])); }
         public final Object _consp     (Object    arg)  {                                             return bool(consp(arg)); }
-        public final Object _atom      (Object... args) { oneArg(ATOM,           args.length);        return bool(atom(args[0])); }
+        public final Object _atom      (Object... args) { oneArg(ATOM, args.length);                  return bool(atom(args[0])); }
         public final Object _atom      (Object    arg)  {                                             return bool(atom(arg)); }
-        public final Object _symbolp   (Object... args) { oneArg(SYMBOLP,        args.length);        return bool(symbolp(args[0])); }
+        public final Object _symbolp   (Object... args) { oneArg(SYMBOLP, args.length);               return bool(symbolp(args[0])); }
         public final Object _symbolp   (Object    arg)  {                                             return bool(symbolp(arg)); }
-        public final Object _null      (Object... args) { oneArg(NULL,           args.length);        return bool(args[0] == null); }
-        public final Object _numberp   (Object... args) { oneArg(NUMBERP, args.length);        return bool(numberp(args[0])); }
+        public final Object _null      (Object... args) { oneArg(NULL, args.length);                  return bool(args[0] == null); }
+        public final Object _numberp   (Object... args) { oneArg(NUMBERP, args.length);               return bool(numberp(args[0])); }
         public final Object _numberp   (Object    arg)  {                                             return bool(numberp(arg)); }
-        public final Object _floatp    (Object... args) { oneArg(FLOATP, args.length);        return bool(floatp(args[0])); }
+        public final Object _floatp    (Object... args) { oneArg(FLOATP, args.length);                return bool(floatp(args[0])); }
         public final Object _floatp    (Object    arg)  {                                             return bool(floatp(arg)); }
-        public final Object _integerp  (Object... args) { oneArg(INTEGERP, args.length);        return bool(integerp(args[0])); }
+        public final Object _integerp  (Object... args) { oneArg(INTEGERP, args.length);              return bool(integerp(args[0])); }
         public final Object _integerp  (Object    arg)  {                                             return bool(integerp(arg)); }
-        public final Object _characterp(Object... args) { oneArg(CHARACTERP, args.length);        return bool(characterp(args[0])); }
-        public final Object _randomstatep(Object... args){oneArg(RANDOM_STATE_P, args.length);      return bool(randomstatep(args[0])); }
+        public final Object _characterp(Object... args) { oneArg(CHARACTERP, args.length);            return bool(characterp(args[0])); }
+        public final Object _randomstatep(Object... args){oneArg(RANDOM_STATE_P, args.length);        return bool(randomstatep(args[0])); }
 
-        public final Object _vectorp   (Object... args) { oneArg(VECTORP, args.length);        return bool(vectorp(args[0])); }
+        public final Object _vectorp   (Object... args) { oneArg(VECTORP, args.length);               return bool(vectorp(args[0])); }
         public final Object _vectorp   (Object    arg)  {                                             return bool(vectorp(arg)); }
-        public final Object svectorp   (Object... args) { oneArg(SIMPLE_VECTOR_P, args.length);     return bool(LambdaJ.svectorp(args[0])); }
+        public final Object svectorp   (Object... args) { oneArg(SIMPLE_VECTOR_P, args.length);       return bool(LambdaJ.svectorp(args[0])); }
         public final Object svectorp   (Object    arg)  {                                             return bool(LambdaJ.svectorp(arg)); }
-        public final Object _stringp   (Object... args) { oneArg(STRINGP, args.length);        return bool(stringp(args[0])); }
+        public final Object _stringp   (Object... args) { oneArg(STRINGP, args.length);               return bool(stringp(args[0])); }
         public final Object _stringp   (Object    arg)  {                                             return bool(stringp(arg)); }
-        public final Object sstringp   (Object... args) { oneArg(SIMPLE_STRING_P, args.length);     return bool(LambdaJ.sstringp(args[0])); }
+        public final Object sstringp   (Object... args) { oneArg(SIMPLE_STRING_P, args.length);       return bool(LambdaJ.sstringp(args[0])); }
         public final Object sstringp   (Object    arg)  {                                             return bool(LambdaJ.sstringp(arg)); }
-        public final Object bitvectorp (Object... args) { oneArg(BIT_VECTOR_P, args.length);        return bool(LambdaJ.bitvectorp(args[0])); }
+        public final Object bitvectorp (Object... args) { oneArg(BIT_VECTOR_P, args.length);          return bool(LambdaJ.bitvectorp(args[0])); }
         public final Object bitvectorp (Object    arg)  {                                             return bool(LambdaJ.bitvectorp(arg)); }
-        public final Object sbitvectorp(Object... args) { oneArg(SIMPLE_BIT_VECTOR_P, args.length); return bool(LambdaJ.sbitvectorp(args[0])); }
+        public final Object sbitvectorp(Object... args) { oneArg(SIMPLE_BIT_VECTOR_P, args.length);   return bool(LambdaJ.sbitvectorp(args[0])); }
         public final Object sbitvectorp(Object    arg)  {                                             return bool(LambdaJ.sbitvectorp(arg)); }
-        public final Object hashtablep (Object... args) { oneArg(HASH_TABLE_P, args.length);        return bool(LambdaJ.hashtablep(args[0])); }
+        public final Object hashtablep (Object... args) { oneArg(HASH_TABLE_P, args.length);          return bool(LambdaJ.hashtablep(args[0])); }
         public final Object hashtablep (Object    arg)  {                                             return bool(LambdaJ.hashtablep(arg)); }
 
-        public final Object _functionp (Object... args) { oneArg(FUNCTIONP, args.length);        return bool(LambdaJ.functionp0(args[0])); }
+        public final Object _functionp (Object... args) { oneArg(FUNCTIONP, args.length);             return bool(LambdaJ.functionp0(args[0])); }
 
-        public final Object _listp     (Object... args) { oneArg(LISTP, args.length);        return bool(listp(args[0])); }
+        public final Object _listp     (Object... args) { oneArg(LISTP, args.length);                 return bool(listp(args[0])); }
         public final Object _listp     (Object    arg)  {                                             return bool(listp(arg)); }
-        public final Object _typep     (Object... args) { twoArgs(TYPEP, args.length);        return bool(typep(symtab, null, args[0], args[1])); }
+        public final Object _typep     (Object... args) { twoArgs(TYPEP, args.length);                return bool(typep(symtab, null, args[0], args[1])); }
         public final Object _typep     (Object o, Object t) {                                         return bool(typep(symtab, null, o, t)); }
 
         public final Object adjustableArrayP(Object... args) { oneArg(ADJUSTABLE_ARRAY_P, args.length); return bool(LambdaJ.Subr.adjustableArrayP(args[0])); }
@@ -7977,9 +7973,9 @@ public class LambdaJ {
                                                           if (args.length == 1) return new Object[toArrayIndex(args[0])];
                                                           return LambdaJ.Subr.makeArray(sBit, sCharacter, arraySlice(args)); }
         public final long     vectorLength(Object... args) { values = null; oneArg("vector-length", args.length); return LambdaJ.Subr.vectorLength(args[0]); }
-        public final Object   vectorCopy  (Object... args) { values = null; varargs1_2("vector-copy", args.length);   return LambdaJ.Subr.vectorCopy(args[0], args.length > 1 && args[1] != null); }
+        public final Object   vectorCopy  (Object... args) { values = null; varargs1_2("vector-copy", args.length);   return LambdaJ.Subr.vectorCopy(args[0], secondArgNotNull(args)); }
         public final Object   vectorFill  (Object... args) { values = null; varargsMinMax("vector-fill", args.length, 2, 4);
-                                                             return LambdaJ.Subr.vectorFill(args[0], args[1], args.length <= 2 ? null : args[2], args.length <= 3 ? null : args[3]); }
+                                                             return LambdaJ.Subr.vectorFill(args[0], args[1], nth(2, args), nth(3, args)); }
         public final long     vectorAdd   (Object... args) { values = null; twoArgs("vector-add", args.length); return LambdaJ.Subr.vectorAdd(args[0], args[1]); }
         public final Object   vectorToList (Object... args) {
             values = null; oneArg("vector->list", args.length);
@@ -8000,7 +7996,7 @@ public class LambdaJ {
 
             throw errorNotAVector("vector->list", maybeVector);
         }
-        public final Object   listToVector(Object... args) { values = null; varargs1_2("list->vector", args.length); return LambdaJ.Subr.listToVector(args[0], args.length > 1 && args[1] != null); }
+        public final Object   listToVector(Object... args) { values = null; varargs1_2("list->vector", args.length); return LambdaJ.Subr.listToVector(args[0], secondArgNotNull(args)); }
 
         public final long     _svlength(Object... args) { values = null; oneArg("svlength", args.length); return svlength(args[0]); }
         public final Object   _svref   (Object... args) { twoArgs("svref",   args.length); return _svref(args[0], args[1]); }
@@ -8040,7 +8036,7 @@ public class LambdaJ {
             for (int i = 0; i < len; i++) ret.append(s.charAt(i));
             return ret.first();
         }
-        public final Object listToString(Object... args) { values = null; varargs1_2("list->string", args.length); return LambdaJ.Subr.listToString(args[0], args.length > 1 && args[1] != null); }
+        public final Object listToString(Object... args) { values = null; varargs1_2("list->string", args.length); return LambdaJ.Subr.listToString(args[0], secondArgNotNull(args)); }
 
         public final long   charInt     (Object... args) { values = null; oneArg("char-code",     args.length); return (long) LambdaJ.Chk.requireChar("char-code", args[0]); }
         public final long   charInt     (Object arg)     { values = null;                                       return (long) LambdaJ.Chk.requireChar("char-code", arg); }
@@ -8077,7 +8073,7 @@ public class LambdaJ {
         }
         public final Object listToBitVector(Object... args) {
             values = null; varargs1_2("list->bit-vector", args.length);
-            return LambdaJ.Subr.listToBitVector(LambdaJ.requireList("list->bit-vector", args[0]), args.length > 1 && args[1] != null);
+            return LambdaJ.Subr.listToBitVector(LambdaJ.requireList("list->bit-vector", args[0]), secondArgNotNull(args));
         }
 
         public final Object   _seqref  (Object... args) { values = null; twoArgs("seqref",   args.length); return LambdaJ.Subr.seqref(args[0], toArrayIndex(args[1])); }
@@ -8087,9 +8083,9 @@ public class LambdaJ {
         // Hashtables
         public final Object _hash         (Object... args)      { values = null;                                               return LambdaJ.Subr.hash(symtab, arraySlice(args)); }
         public final Object makeHash      (Object... args)      { values = null; varargs0_2  (MAKE_HASH_TABLE, args.length);   return makeHashTable(symtab,
-                                                                                                                                                    args.length >= 1 ? args[0] : null,
-                                                                                                                                                    args.length >= 2 ? toNonnegInt(MAKE_HASH_TABLE, cadr(args)) : DEFAULT_HASH_SIZE); }
-        public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args.length, 2, 3);  values = hashref(args[0], args[1], args.length == 2 ? NO_DEFAULT_VALUE : args[2]); return values[0]; }
+                                                                                                                                                    nth(0, args),
+                                                                                                                                                    args.length > 1 ? toNonnegInt(MAKE_HASH_TABLE, args[1]) : DEFAULT_HASH_SIZE); }
+        public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args.length, 2, 3);  values = hashref(args[0], args[1], args.length > 2 ? args[2] : NO_DEFAULT_VALUE); return values[0]; }
         public final Object _hashset      (Object... args)      { values = null; varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
         public final Object hashTableCount(Object... args)      { values = null; oneArg("hash-table-count", args.length);      return LambdaJ.Subr.hashTableCount(args[0]); }
         public final Object _clrhash      (Object... args)      { values = null; oneArg("clrhash", args.length);               return LambdaJ.Subr.clrhash(args[0]); }
@@ -8229,6 +8225,7 @@ public class LambdaJ {
 
 
         private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
+        private static boolean secondArgNotNull(Object[] args) { return args.length > 1 && args[1] != null; }
         private Object ret(Object[] _values) { values = _values; if (_values.length == 0) return null; return _values[0]; }
 
 
@@ -8251,10 +8248,8 @@ public class LambdaJ {
 
         /** convert null, an array or a list to a (possibly empty) Object[] */
         public static Object[] toArray(Object o) {
-            if (o == null)
-                return NOARGS;
-            if (o instanceof Object[])
-                return (Object[])o;
+            if (o == null) return NOARGS;
+            if (o instanceof Object[]) return (Object[])o;
             return listToArray(o);
         }
 
