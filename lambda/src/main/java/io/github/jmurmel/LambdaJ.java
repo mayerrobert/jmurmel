@@ -4097,10 +4097,10 @@ public class LambdaJ {
             if (o1 instanceof BigDecimal && o2 instanceof BigDecimal) return ((BigDecimal)o1).compareTo((BigDecimal)o2);
             return Double.compare(((Number)o1).doubleValue(), ((Number)o2).doubleValue());
         }
-        if (mode == CompareMode.NUMBER) return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
+        if (mode == CompareMode.NUMBER) return compareHash(o1, o2);
 
         if (o1 instanceof Character && o2 instanceof Character) { return ((Character)o1).compareTo((Character)o2); }
-        if (mode == CompareMode.EQL) return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
+        if (mode == CompareMode.EQL) return compareHash(o1, o2);
 
         if (o1 instanceof CharSequence) {
             if (o2 instanceof CharSequence) return JavaUtil.compare((CharSequence)o1, (CharSequence)o2);
@@ -4116,8 +4116,10 @@ public class LambdaJ {
         if (consp(o1) && consp(o2)) { //noinspection ConstantConditions
                                       return ((ConsCell)o1).compareToEqual((ConsCell)o2); }
 
-        return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2));
+        return compareHash(o1, o2);
     }
+
+    private static int compareHash(Object o1, Object o2) { return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2)); }
 
     static int sxhashSigned(Object o) {
         if (o == null) return 97;
