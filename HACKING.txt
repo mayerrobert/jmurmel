@@ -146,9 +146,9 @@ java -Xms1G -Xmx2G -XX:+PrintFlagsFinal -version | grep -e "Use.*GC " -e "Active
 
 JITWatch (see https://github.com/AdoptOpenJDK/jitwatch/wiki/Instructions):
 
-java -cp jitwatch-ui-1.4.7-shaded-win.jar org.adoptopenjdk.jitwatch.jarscan.JarScan --mode=maxMethodSize --limit=512 jmurmel\lambda\target\jmurmel.jar
-    lists methods > 512 bytecodes
-    see https://github.com/AdoptOpenJDK/jitwatch and https://github.com/AdoptOpenJDK/jitwatch/wiki/Instructions
+java -cp jitwatch-ui-1.4.7-shaded-win.jar org.adoptopenjdk.jitwatch.jarscan.JarScan --mode=maxMethodSize --limit=325 jmurmel\lambda\target\jmurmel.jar
+    lists methods >= 325 bytecodes. Interesting sizes include 35 (default MaxInlineSize), 325 (default MaxFreqInlineSize) and 8000 (methods larger than 8000 will never be JIT compiled). 
+    See https://github.com/AdoptOpenJDK/jitwatch and https://github.com/AdoptOpenJDK/jitwatch/wiki/Instructions
 
 Java 8:
 java -XX:+UnlockDiagnosticVMOptions -XX:+TraceClassLoading -XX:+LogCompilation -XX:LogFile=mylogfile.log -XX:+DebugNonSafepoints \
