@@ -1208,8 +1208,7 @@ public class LambdaJ {
 
     /** is {@code s} an optional sign followed by one or more digits? */
     static boolean isLong(@NotNull String s) {
-        assert s != null : "tokens should not be null";
-        assert !s.isEmpty() : "tokens should not be the empty string";
+        assert s != null && !s.isEmpty() : "tokens should not be null and should not be the empty string";
 
         return isLong(s, s.length());
     }
@@ -1226,8 +1225,7 @@ public class LambdaJ {
 
     /** is {@code s} an optional sign followed by one or more digits followed by a '.'? */
     static boolean isCLDecimalLong(@NotNull String s) {
-        assert s != null : "tokens should not be null";
-        assert !s.isEmpty() : "tokens should not be the empty string";
+        assert s != null && !s.isEmpty() : "tokens should not be null and should not be the empty string";
 
         final int lenMinus1 = s.length() - 1;
         if (s.charAt(lenMinus1) != '.') return false;
@@ -1236,8 +1234,7 @@ public class LambdaJ {
     }
 
     static boolean isDouble(@NotNull String s) {
-        assert s != null : "tokens should not be null";
-        assert !s.isEmpty() : "tokens should not be the empty string";
+        assert s != null && !s.isEmpty() : "tokens should not be null and should not be the empty string";
 
         final int len;
         if ((len = s.length()) < 2) return false;
@@ -1679,7 +1676,7 @@ public class LambdaJ {
                         if (index < TOKEN_MAX) token[index++] = (char) look;
                         look = getchar();
                     }
-                    String s = tokenToString(token, 0, index);
+                    @NotNull String s = tokenToString(token, 0, index);
                     //noinspection ConstantConditions
                     if (!tokEscape && ".".equals(s)) {
                         tok = Token.DOT;
@@ -1737,7 +1734,7 @@ public class LambdaJ {
             }
         }
 
-        private static String tokenToString(char[] b, int first, int end) {
+        private static @NotNull String tokenToString(char[] b, int first, int end) {
             return new String(b, first, end - first);
         }
 
