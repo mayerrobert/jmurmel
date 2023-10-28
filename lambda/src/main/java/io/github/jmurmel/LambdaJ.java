@@ -4119,7 +4119,7 @@ public class LambdaJ {
         return compareHash(o1, o2);
     }
 
-    private static int compareHash(Object o1, Object o2) { return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2)); }
+    private static int compareHash(@NotNull Object o1, @NotNull Object o2) { return Integer.compare(System.identityHashCode(o1), System.identityHashCode(o2)); }
 
     static int sxhashSigned(Object o) {
         if (o == null) return 97;
@@ -4135,7 +4135,7 @@ public class LambdaJ {
         return o.getClass().getName().hashCode(); // see https://stackoverflow.com/questions/21126507/why-does-sxhash-return-a-constant-for-all-structs
     }
 
-    static Object macroexpandImpl(LambdaJ intp, ConsCell form) {
+    static Object macroexpandImpl(@NotNull LambdaJ intp, @NotNull ConsCell form) {
         final Object maybeSymbol = car(form);
         if (maybeSymbol == null || !symbolp(maybeSymbol)) {
             intp.values = intp.cons(form, intp.cons(null, null));
@@ -4165,15 +4165,15 @@ public class LambdaJ {
         return sb;
     }
 
-    static void printSEx(WriteConsumer w, Object obj) {
+    static void printSEx(@NotNull WriteConsumer w, Object obj) {
         _printSEx(w, obj, obj, true);
     }
 
-    static void printSEx(WriteConsumer w, Object obj, boolean printEscape) {
+    static void printSEx(@NotNull WriteConsumer w, Object obj, boolean printEscape) {
         _printSEx(w, obj, obj, printEscape);
     }
 
-    static void _printSEx(WriteConsumer sb, Object list, Object obj, boolean escapeAtoms) {
+    static void _printSEx(@NotNull WriteConsumer sb, Object list, Object obj, boolean escapeAtoms) {
         boolean headOfList = true;
         while (true) {
             if (obj instanceof ArraySlice) { sb.print(((ArraySlice)obj).printSEx(headOfList, escapeAtoms)); return; }
@@ -4197,7 +4197,7 @@ public class LambdaJ {
         }
     }
 
-    private static void printAtom(WriteConsumer sb, Object atom, boolean escapeAtoms) {
+    private static void printAtom(@NotNull WriteConsumer sb, Object atom, boolean escapeAtoms) {
         if (atom instanceof Writeable)            { ((Writeable)atom).printSEx(sb, escapeAtoms); }
         else if (escapeAtoms && characterp(atom)) { sb.print(printChar((int)(Character)atom)); }
         else if (vectorp(atom))                   { printVector(sb, atom, escapeAtoms); }
@@ -4234,7 +4234,7 @@ public class LambdaJ {
     }
 
     @SuppressWarnings("rawtypes")
-    static void printVector(WriteConsumer sb, Object vector, boolean escapeAtoms) {
+    private static void printVector(@NotNull WriteConsumer sb, Object vector, boolean escapeAtoms) {
         if (vector instanceof boolean[]) {
             sb.print("#*");
             for (boolean b: (boolean[])vector) {
@@ -4274,15 +4274,15 @@ public class LambdaJ {
         sb.print(")");
     }
 
-    static void printHash(WriteConsumer out, Map<?,?> map, boolean escapeAtoms) {
+    private static void printHash(@NotNull WriteConsumer out, Map<?,?> map, boolean escapeAtoms) {
         assert !(map instanceof EqlMap) && !(map instanceof EqualMap) : "should be printed using Writable.printSEx()";
         if (map instanceof EqlTreeMap) out.print("#H(compare-eql");
         else if (map instanceof EqualTreeMap) out.print("#H(compare-equal");
         else if (map instanceof IdentityHashMap) out.print("#H(eq");
         else out.print("#H(t");
         for (Map.Entry<?,?> entry: map.entrySet()) {
-            out.print(" ");  LambdaJ.printSEx(out, entry.getKey(), escapeAtoms);
-            out.print(" ");  LambdaJ.printSEx(out, entry.getValue(), escapeAtoms);
+            out.print(" ");  printSEx(out, entry.getKey(), escapeAtoms);
+            out.print(" ");  printSEx(out, entry.getValue(), escapeAtoms);
         }
         out.print(")");
     }
