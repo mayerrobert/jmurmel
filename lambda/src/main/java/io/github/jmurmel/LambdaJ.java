@@ -475,9 +475,14 @@ public class LambdaJ {
     }
 
     /** possibly wrap {@code t} in a {@link LambdaJError} and throw, wrap doesn't return */
-    static RuntimeException wrap(Throwable t) {
+    static RuntimeException wrap(@NotNull Throwable t) {
         if (t instanceof RuntimeException) throw (RuntimeException)t;
         throw new LambdaJError(t, t.getMessage());
+    }
+
+    /** same as {@link #wrap} but returns void so that callsites won't need a bytecode to pop the returnvalue */
+    static void wrap0(@NotNull Throwable t) {
+        throw wrap(t);
     }
 
 
@@ -1710,8 +1715,7 @@ public class LambdaJ {
                 if (index < SYMBOL_MAX) token[index++] = (char) look;
                 look = getchar(false);
             }
-            if (look == LambdaJ.EOF)
-                throw wrap(new EOFException("|-quoted symbol is missing closing |"));
+            if (look == LambdaJ.EOF) wrap0(new EOFException("|-quoted symbol is missing closing |"));
             look = getchar(); // consume trailing |
             return tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
         }
@@ -4291,8 +4295,8 @@ public class LambdaJ {
 
     /// ##  Error "handlers"
 
-    static void             errorReaderError     (String msg)                                   { wrap(new ReaderError(msg)); }
-    static void             errorReaderError     (String msg, Object... args)                   { wrap(new ReaderError(msg, args)); }
+    static void             errorReaderError     (String msg)                                   { wrap0(new ReaderError(msg)); }
+    static void             errorReaderError     (String msg, Object... args)                   { wrap0(new ReaderError(msg, args)); }
     static RuntimeException errorNotImplemented  (String msg, Object... args)                   { throw new LambdaJError(true, msg, args); }
     static RuntimeException errorInternal        (String msg, Object... args)                   { throw new LambdaJError(true, "internal error - " + msg, args); }
     static RuntimeException errorInternal        (Throwable t, String msg, Object... args)      { throw new LambdaJError(t, true, "internal error - " + msg, args); }
@@ -5531,7 +5535,7 @@ public class LambdaJ {
             if (a == null) {
                 final Object eof = new Object();
                 final Object ret = lispReader.readObj(eof);
-                if (ret == eof) wrap(new EOFException("read: EOF"));
+                if (ret == eof) wrap0(new EOFException("read: EOF"));
                 return ret;
             }
             else {
@@ -5555,7 +5559,7 @@ public class LambdaJ {
                 if (a != null) {
                     final long start = requireIntegralNumber("read-from-string", car(a), 0, MOST_POSITIVE_FIXNUM_VAL).longValue();
                     if (start > str.length()) throw new InvalidIndexError("start must be <= string length");
-                    try { count[0] = strReader.skip(start); } catch (IOException e) { wrap(e); }
+                    try { count[0] = strReader.skip(start); } catch (IOException e) { wrap0(e); }
                     a = (ConsCell)cdr(a);
 
                     if (a != null) {
@@ -5574,7 +5578,7 @@ public class LambdaJ {
             if (eof == null) {
                 final Object myeof = new Object();
                 ret = reader.readObj(myeof);
-                if (ret == myeof) wrap(new EOFException("read-from-string: EOF"));
+                if (ret == myeof) wrap0(new EOFException("read-from-string: EOF"));
             }
             else ret = reader.readObj(eof);
 
@@ -5825,7 +5829,7 @@ public class LambdaJ {
         }
 
         static void error(SymbolTable st, Object datum, Object... args) {
-            if (datum instanceof Throwable) wrap((Throwable)datum);
+            if (datum instanceof Throwable) wrap0((Throwable)datum);
 
             if (stringp(datum)) { throw new SimpleError(requireString("error", datum), args); }
 
@@ -5836,8 +5840,8 @@ public class LambdaJ {
             default: msg = String.format(requireString("error", args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
             }
 
-            if (datum == st.intern("condition")) wrap(new Throwable(msg));
-            if (datum == st.intern("error")) wrap(new Exception(msg));
+            if (datum == st.intern("condition")) wrap0(new Throwable(msg));
+            if (datum == st.intern("error")) wrap0(new Exception(msg));
 
             if (datum == st.intern("simple-error")) throw new SimpleError(msg);
 
@@ -5857,9 +5861,9 @@ public class LambdaJ {
 
             if (datum == st.intern("file-error"))   throw new InvalidPathException("(filename)", msg == null ? "(unknown reason)" : msg);
 
-            if (datum == st.intern("stream-error")) wrap(new IOException(msg));
-            if (datum == st.intern("end-of-file"))  wrap(new EOFException(msg));
-            if (datum == st.intern("reader-error")) wrap(new ReaderError(msg));
+            if (datum == st.intern("stream-error")) wrap0(new IOException(msg));
+            if (datum == st.intern("end-of-file"))  wrap0(new EOFException(msg));
+            if (datum == st.intern("reader-error")) wrap0(new ReaderError(msg));
 
             throw new SimpleTypeError("error: unknown condition type " + printSEx(datum) + ": " + msg);
         }
@@ -6101,7 +6105,7 @@ public class LambdaJ {
                 return new Runnable() { private final MurmelFunction f = getFunction(intp, program, caddr(args), void.class);
                                         @Override public String toString() { return "#<Java proxy: java.lang.Runnable>"; }
                                         @Override public void run() { try { f.apply(); }
-                                                                      catch (Exception e) { throw wrap(e); } } };
+                                                                      catch (Exception e) { wrap0(e); } } };
             }
             else return makeDynamicProxy(intp, program, intf, args);
         }
@@ -6218,7 +6222,7 @@ public class LambdaJ {
     ObjectWriter getLispPrinter(Object consumer, ObjectWriter defaultIfNull) {
         if (consumer == null) return defaultIfNull;
         if (consumer == sT) return lispPrinter;
-        if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { throw wrap(e); } });
+        if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { wrap0(e); } });
         throw new SimpleTypeError("cannot coerce %s into a printer", printSEx(consumer));
     }
 
@@ -7688,7 +7692,7 @@ public class LambdaJ {
             final Object consumer;
             if (nth >= args.length || (consumer = args[nth]) == null) return defaultIfNull;
             if (consumer == sT) return lispPrinter;
-            if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { throw wrap(e); } });
+            if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { wrap0(e); } });
             throw new SimpleTypeError("cannot coerce %s into a printer", printSEx(consumer));
         }
 

@@ -1,3 +1,11 @@
+compiler: statt global + define-methode
+  -> CompilerGlobal bekommt abstrakte methode "init()", der compiler spuckt sowas aus:
+     private CompilerGlobal xy = new CompilerGlobal() { Object init()...
+  -> vorteil: halb soviele members in der generierten klasse, bzw. wäre eine vorbereitung dass Murmel globals nicht mehr member werden sondern in ein array gesteckt werden
+  -> nachteil: bisher wurden CompilerGlobal objekte lazy bei der ersten benutzung instanziert, nachher würde alles beim instanzieren des MurmelJavaProgram instanziert
+               nachher müsste ggf. der uninitialized check bei jedem get() gemacht werden?
+
+
 feature/ featureflag ob environment() aufgerufen werden soll
 -> wenns abgedreht ist brauchts "(defun car (x) (car x))" usw.
 -> compiler müsste ggf. auch angepasst werden
