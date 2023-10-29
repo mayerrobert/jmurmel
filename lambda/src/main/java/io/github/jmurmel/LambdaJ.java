@@ -853,13 +853,13 @@ public class LambdaJ {
 
         /** {@link #arraySlice} should be preferred because it will return {@code null} instead of a "null" (empty) ArraySlice */
         ArraySlice(Object @NotNull [] arry, int offset) {
-            assert arry != null && offset < arry.length;
+            assert /*arry != null &&*/ offset < arry.length;
             this.arry = arry;  this.offset = offset;
         }
 
         /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
         private ArraySlice(@NotNull ArraySlice slice) {
-            assert slice.arry != null && slice.offset < slice.arry.length;
+            assert /*slice.arry != null &&*/ slice.offset < slice.arry.length;
             this.arry = slice.arry;  offset = slice.offset + 1;
         }
 
@@ -1213,7 +1213,7 @@ public class LambdaJ {
 
     /** is {@code s} an optional sign followed by one or more digits? */
     static boolean isLong(@NotNull String s) {
-        assert s != null && !s.isEmpty() : "tokens should not be null and should not be the empty string";
+        assert /*s != null &&*/ !s.isEmpty() : "tokens should not be null and should not be the empty string";
 
         return isLong(s, s.length());
     }
@@ -1230,7 +1230,7 @@ public class LambdaJ {
 
     /** is {@code s} an optional sign followed by one or more digits followed by a '.'? */
     static boolean isCLDecimalLong(@NotNull String s) {
-        assert s != null && !s.isEmpty() : "tokens should not be null and should not be the empty string";
+        assert /*s != null &&*/ !s.isEmpty() : "tokens should not be null and should not be the empty string";
 
         final int lenMinus1 = s.length() - 1;
         if (s.charAt(lenMinus1) != '.') return false;
@@ -1239,7 +1239,7 @@ public class LambdaJ {
     }
 
     static boolean isDouble(@NotNull String s) {
-        assert s != null && !s.isEmpty() : "tokens should not be null and should not be the empty string";
+        assert /*s != null &&*/ !s.isEmpty() : "tokens should not be null and should not be the empty string";
 
         final int len;
         if ((len = s.length()) < 2) return false;
