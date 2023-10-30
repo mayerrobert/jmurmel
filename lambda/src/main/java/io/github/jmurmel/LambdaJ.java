@@ -3011,11 +3011,14 @@ public class LambdaJ {
         }
         finally {
             if (traceOn) dbgEvalDone(isTc ? "eval TC" : EVAL, form, env, stack, level);
+            // todo vielleicht cleanupTrace() rausziehen
             if (func != null && traced != null) traceLvl = traceExit(func, result, traceLvl);
             if (traceStack != null) {
                 Object s;
                 while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
             }
+            // ende cleanupTrace
+            // todo vielleicht cleanup() rausziehen
             LambdaJError e = null;
             for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
                 final Object o = car(c);
@@ -3025,6 +3028,7 @@ public class LambdaJ {
                     catch (LambdaJError le) { e = le; }
                 }
             }
+            // ende cleanup()
             if (e != null) {
                 if (e instanceof ReturnException) return nonlocalReturn((ReturnException)e, localCatchTags);
                 throw e;
@@ -9390,14 +9394,14 @@ public class LambdaJ {
 
                 if (clearValues) {
                     if (intp.speed == 0 && symbolp(op) && ((LambdaJSymbol)op).primitive()
-                        || op == intern(DEFINE) || op == intern(DEFUN) || op == intern(DEFMACRO)) {
+                        || op == intern(DEFINE) || op == intern(DEFUN) || op == intern(DEFMACRO) || op == intern(LET) || op == intern(LETSTAR)) {
                         // omit setting values to null
                     }
                     else {
                         sb.append("        values = null;\n");
                     }
 
-                    if (op != intern(DEFINE) && op != intern(DEFUN) && op != intern(DEFMACRO)) {
+                    if (op != intern(DEFINE) && op != intern(DEFUN) && op != intern(DEFMACRO) && op != intern(LET) && op != intern(LETSTAR)) {
                         sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
                     }
                 }
@@ -9498,16 +9502,30 @@ public class LambdaJ {
 
                     case sLetStar:
                     case sLet: {
-                        if (intp.speed == 0) break; // todo only needed because without this compiling "speed0.lisp murmel-test.lisp" would fail to compile with "code too large"
                         final Object bindings = cadr(ccForm);
-                        if (bindings instanceof LambdaJSymbol) break;
+                        if (bindings instanceof LambdaJSymbol) {
+                            if (clearValues) {
+                                sb.append("        values = null;\n");
+                                sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
+                            }
+                            break;
+                        }
                         assert bindings != null : "let w/o bindings should have been replaced in expandForm";
                         rsfx++;
                         final ConsCell ccBindings = requireList(LET, bindings);
                         final ConsCell ccBody = requireList(LET, cddr(ccForm));
                         ConsCell extEnv = env;
 
-                        sb.append("        {\n");
+                        if (hasNext) {
+                            sb.append("        new Runnable() { public void run() { Object tmp = null;\n");
+                            retLhs = "        tmp = ";
+                        }
+                        else sb.append("        {\n");
+
+                        if (clearValues) {
+                            sb.append("        values = null;\n");
+                            sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
+                        }
                         ConsCell letStarEnv = env;
                         final String vName = "v" + rsfx;
                         final int nVars = listLength(ccBindings);
@@ -9527,7 +9545,8 @@ public class LambdaJ {
                         }
 
                         emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, topLevel, hasNext);
-                        sb.append("        }\n");
+                        if (hasNext) sb.append("        } }.run();\n");
+                        else sb.append("        }\n");
                         return;
                     }
 
