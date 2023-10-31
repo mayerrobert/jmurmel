@@ -44,12 +44,6 @@
             <artifactId>jmh-core</artifactId>
             <version>${jmh.version}</version>
         </dependency>
-        <dependency>
-            <groupId>org.openjdk.jmh</groupId>
-            <artifactId>jmh-generator-annprocess</artifactId>
-            <version>${jmh.version}</version>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
 
     <build>
@@ -62,7 +56,15 @@
                     <compilerVersion>${javac.target}</compilerVersion>
                     <source>${javac.target}</source>
                     <target>${javac.target}</target>
-                    <compilerArgument>-Werror</compilerArgument> <!-- this is mostly to ovveride the default "-proc:none" from toplevel pom.xml -->
+                    <compilerArgument>-Werror</compilerArgument> <!-- this is mostly to override the default "-proc:none" from toplevel pom.xml -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.openjdk.jmh</groupId>
+                            <artifactId>jmh-generator-annprocess</artifactId>
+                            <version>${jmh.version}</version>
+                        </path>
+                    </annotationProcessorPaths>
+                    <annotationProcessors>org.openjdk.jmh.generators.BenchmarkProcessor</annotationProcessors>
                 </configuration>
             </plugin>
 
