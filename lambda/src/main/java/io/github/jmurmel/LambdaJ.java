@@ -11253,7 +11253,7 @@ final class JavaCompilerHelper {
         final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
         if (comp == null) throw new LambdaJ.LambdaJError(true, "compilation of class %s failed. No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?", className);
         try (StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null)) {
-            final List<String> options = Collections.singletonList("-g"/*, "-source", "1.8", "-target", "1.8"*/);
+            final List<String> options = Arrays.asList("-g", "-proc:none" /*, "-source", "1.8", "-target", "1.8"*/);
             fm.setLocation(StandardLocation.CLASS_OUTPUT, Collections.singletonList(murmelClassLoader.getOutPath().toFile()));
             //                                     out       diag  opt      classes
             final CompilationTask c = comp.getTask(null, fm, null, options, null, Collections.singletonList(new JavaSourceFromString(className, javaSource)));
