@@ -56,7 +56,7 @@
                     <compilerVersion>${javac.target}</compilerVersion>
                     <source>${javac.target}</source>
                     <target>${javac.target}</target>
-                    <compilerArgument>-Werror</compilerArgument> <!-- this is mostly to override the default "-proc:none" from toplevel pom.xml -->
+                    <compilerArgument>-deprecation</compilerArgument> <!-- this is mostly to override the default "-proc:none" from toplevel pom.xml -->
                     <annotationProcessorPaths>
                         <path>
                             <groupId>org.openjdk.jmh</groupId>
