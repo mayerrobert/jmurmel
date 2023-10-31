@@ -3452,8 +3452,8 @@ public class LambdaJ {
         if (maybeLoopSymbol == sDynamic)                   { letDynamic = true;  namedLet = false; bindingsAndBodyForms = (ConsCell)cdr(arguments); }
         else if (maybeLoopSymbol instanceof LambdaJSymbol) { letDynamic = false; namedLet = true;  bindingsAndBodyForms = (ConsCell)cdr(arguments); }
         else                                               { letDynamic = false; namedLet = false; bindingsAndBodyForms = arguments; }
-        final ArrayList<Object> seen = new ArrayList<>(); // hopefully Hotspot will stackallocate this
 
+        final ArrayList<Object> seen = new ArrayList<>(); // hopefully Hotspot will stackallocate this
         final ConsCell ccBindings = (ConsCell)car(bindingsAndBodyForms);
         assert namedLet || ccBindings != null : "let w/o bindings should have been replaced in expandForm";
 
@@ -3467,8 +3467,8 @@ public class LambdaJ {
             ListConsCell insertPos = params; // used for named let
             if (letRec) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env);
             for (Object binding : ccBindings) {
-                final LambdaJSymbol sym = (LambdaJSymbol)car((ConsCell)binding);
-                final Object bindingForm = cadr((ConsCell)binding);
+                final ConsCell ccBinding = (ConsCell)binding;
+                final LambdaJSymbol sym = (LambdaJSymbol)car(ccBinding);
 
                 final ConsCell newBinding;
                 if (letDynamic) newBinding = lookupGlobalEntry(sym); // hier wird nur im global env gesucht. wenns gleichnamige globale UND lexical variablen gibt, bleibt die lexical unveraendert
@@ -3476,10 +3476,12 @@ public class LambdaJ {
                 else if (letRec) newBinding = insertFront(extenv, cons(sym, UNASSIGNED));
                 else newBinding = null;
 
-                final Object val = bindingForm == null ? null : eval(bindingForm, letStar || letRec ? extenv : env, stack, level, traceLvl);
+                final Object val = eval(cadr(ccBinding), letStar || letRec ? extenv : env, stack, level, traceLvl);
+
                 if (letDynamic && newBinding != null) {
                     if (!seen.contains(sym)) {
                         seen.add(sym);
+                        // todo wenn die let dynamic form in der tailposition ist koennte man einen allenfalls existierenden restore eintrag ersetzen (nur die letzte aenderung einer dynamic variablen muss rueckgaengig gemacht werden)
                         if (sym == sConditionHandler) restore = cons(new RestoreHandler(newBinding, cdr(newBinding)), restore);
                         else restore = cons(new RestoreDynamic(newBinding, cdr(newBinding)), restore);
                     }
