@@ -2647,10 +2647,10 @@ public class LambdaJ {
             tailcall:
             while (true) {
                 /// eval - lookup symbols in the current environment
-                if (symbolp(form)) return result = evalSymbol(form, env);
+                if (symbolp(form)) { result = evalSymbol(form, env); break tailcall; }
 
                 /// eval - atoms that are not symbols eval to themselves
-                if (atom(form)) return result = form;
+                if (atom(form)) { result = form; break tailcall; }
 
                 if (Thread.interrupted()) throw new InterruptedException("got interrupted");
 
@@ -2679,7 +2679,7 @@ public class LambdaJ {
                 /// eval - (quote exp) -> exp
                 case sQuote:
                 case sDefmacro: {
-                    return result = car(ccArguments);
+                    result = car(ccArguments);  break tailcall;
                 }
 
                 /// eval - (lambda dynamic? (params...) forms...) -> lambda or closure
@@ -2700,11 +2700,11 @@ public class LambdaJ {
                 case sSetQ: {
                     result = evalSetq(ccArguments, env, stack, level, traceLvl);
                     values = NO_VALUES;
-                    return result;
+                    break tailcall;
                 }
 
                 case sDeclaim: {
-                    return result = evalDeclaim(level, ccArguments);
+                    result = evalDeclaim(level, ccArguments);  break tailcall;
                 }
 
 
@@ -2715,7 +2715,7 @@ public class LambdaJ {
                     final Object symbol = car(ccArguments);
                     extendGlobal(symbol, eval(cadr(ccArguments), env, stack, level, traceLvl));
                     values = NO_VALUES;
-                    return result = symbol;
+                    result = symbol;  break tailcall;
                 }
 
                 /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
@@ -2726,7 +2726,7 @@ public class LambdaJ {
                     final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
                     selfEnvEntry.rplacd(closure);
                     extendGlobal(symbol, closure); // this will create a new env entry in the global environment, changing the global value won't change early bound recursive invocations
-                    return result = symbol;
+                    result = symbol;  break tailcall;
                 }
 
 
@@ -2734,18 +2734,18 @@ public class LambdaJ {
 
                 /// eval - (load filespec) -> object
                 case sLoad: {
-                    oneArg(LOAD, ccArguments);
-                    return result = loadFile(LOAD, car(ccArguments));
+                    oneArg(LOAD, ccArguments); // todo wieso brauchts hier einen check und requre nicht?
+                    result = loadFile(LOAD, car(ccArguments));  break tailcall;
                 }
 
                 /// eval - (require modulename optfilespec) -> object
                 case sRequire: {
-                    return result = evalRequire(ccArguments);
+                    result = evalRequire(ccArguments);  break tailcall;
                 }
 
                 /// eval - (provide modulename) -> nil
                 case sProvide: {
-                    return result = evalProvide(ccArguments);
+                    result = evalProvide(ccArguments);  break tailcall;
                 }
 
 
@@ -2789,13 +2789,13 @@ public class LambdaJ {
                     final Object oldHandler = cdr(conditionHandlerEnvEntry);
                     conditionHandlerEnvEntry.rplacd(null);
                     try {
-                        return result = eval(car(ccArguments), env, stack, level, traceLvl);
+                        result = eval(car(ccArguments), env, stack, level, traceLvl);  break tailcall;
                     }
                     catch (ReturnException e) { throw e; }
                     catch (Exception e) {
                         final Object errorObj = eval(cadr(ccArguments), env, stack, level, traceLvl);
                         values = list(errorObj, e);
-                        return result = errorObj;
+                        result = errorObj;  break tailcall;
                     }
                     finally { conditionHandlerEnvEntry.rplacd(oldHandler); }
                 }
@@ -2820,7 +2820,7 @@ public class LambdaJ {
                     } else {
                         form = caddr(ccArguments);
                     }
-                    if (form == null) return result = null;
+                    if (form == null) { result = null;  break tailcall; }
                     isTc = true; continue tailcall;
                 }
 
@@ -2860,7 +2860,7 @@ public class LambdaJ {
                     func = eval(funcOrSymbol, env, stack, level, traceLvl); // could add the same performance cheat as in function call below
                     argList = evalMultipleValuesArgs(cdr(ccArguments), env, stack, level, traceLvl);
                     if (doOpencode && funcOrSymbol instanceof LambdaJSymbol && ((LambdaJSymbol)funcOrSymbol).primitive()) {
-                        return result = ((LambdaJSymbol)funcOrSymbol).wellknownSymbol.apply(this, argList);
+                        result = ((LambdaJSymbol)funcOrSymbol).wellknownSymbol.apply(this, argList);  break tailcall;
                     }
                     funcall = true;
                     break; // fall through to "actually perform..."
@@ -2877,7 +2877,7 @@ public class LambdaJ {
                     if (symOperator.macro != null) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symOperator, form);
 
                     if (doOpencode && symOperator.primitive()) {
-                        return result = symOperator.wellknownSymbol.apply(this, evlis(ccArguments, env, stack, level, traceLvl));
+                        result = symOperator.wellknownSymbol.apply(this, evlis(ccArguments, env, stack, level, traceLvl));  break tailcall;
                     }
 
                     // respect evaluation order: the operator could be an undefined symbol, and we want that to fail before evaluation the arguments.
@@ -2898,7 +2898,7 @@ public class LambdaJ {
                         func = symbolp(funcOrSymbol) ? evalSymbol(funcOrSymbol, env) : funcOrSymbol; // could add the same performance cheat as in function call above
                         argList = listOrMalformed(APPLY, cadr(ccArguments));
                         if (doOpencode && funcOrSymbol instanceof LambdaJSymbol && ((LambdaJSymbol)funcOrSymbol).primitive()) {
-                            return result = ((LambdaJSymbol)funcOrSymbol).wellknownSymbol.apply(this, argList);
+                            result = ((LambdaJSymbol)funcOrSymbol).wellknownSymbol.apply(this, argList);  break tailcall;
                         }
                         // fall through to "actually perform..."
                     }
@@ -2940,7 +2940,7 @@ public class LambdaJ {
                     }
 
                     else if (func instanceof Primitive) {
-                        return result = applyPrimitive((Primitive) func, argList, stack, level);
+                        result = applyPrimitive((Primitive) func, argList, stack, level);  break tailcall;
                     }
 
                     else if (func instanceof Closure) {
@@ -2954,12 +2954,12 @@ public class LambdaJ {
 
                     else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
                         // compiler runtime func
-                        return result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level);
+                        result = applyCompilerPrimitive((MurmelJavaProgram.CompilerPrimitive) func, argList, stack, level);  break tailcall;
                     }
 
                     else if (func instanceof MurmelFunction) {
                         // compiled function
-                        return result = applyCompiledFunction((MurmelFunction) func, argList, stack, level);
+                        result = applyCompiledFunction((MurmelFunction) func, argList, stack, level);  break tailcall;
                     }
 
                     /* something like
@@ -2991,8 +2991,9 @@ public class LambdaJ {
                     form = car(ccForms); func = null; values = NO_VALUES; isTc = true; continue tailcall;
                 }
 
-                return result = null; // lambda/ progn/ labels/... w/o body
+                result = null;  break tailcall;  // lambda/ progn/ labels/... w/o body
             }
+            return result;
         }
 
         catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
