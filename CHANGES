@@ -7,6 +7,8 @@ Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
  * changed read-textfile and read-textfile-lines to use UTF-8 as the default charset
    (unless the charset was given as an argument)
  * changed read-textfile to no longer append a #\Newline at the end
+ * changed "dynamic": dynamic is no longer a self evaluating symbol,
+   it's syntactic meaning remains unchanged
 
  * added *random-state*
  * added the commandline parameter --eval

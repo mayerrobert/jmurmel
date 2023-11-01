@@ -74,6 +74,8 @@
   (let ((ex (gensym)))
     `(handler-case ,form
                    (condition (,ex) (values ,errorobj ,ex)))))
+
+#+sbcl (defvar *command-line-argument-list* nil)
 )
 
 
@@ -372,6 +374,19 @@ multiline comment
                    (lambda () *a*)))
 (deftest letdynamic.7
   (#-murmel funcall *a-getter*)  1)
+
+
+;;; test let dynamic while using "dynamic" as the name of a global variable
+(define dynamic 123)
+
+(defun f2 () dynamic)
+
+(deftest letdynamic.8
+  (list (f2)
+        (let #+murmel dynamic ((dynamic 456))
+          (f2))
+        (f2))
+  '(123 456 123))
 
 
 ;;; test let* dynamic

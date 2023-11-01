@@ -3241,7 +3241,7 @@ public class LambdaJ {
 
                         // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
                         if (reserved(sym)) errorReserved(getOp(sfName, letDynamic, namedLet), sym);
-                        if (sym == tag) errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
+                        if (sym == tag && sym != sDynamic) errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
 
                         if (seen != null) {
                             if (seen.contains(sym)) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "duplicate symbol %s", sym);
@@ -6256,8 +6256,6 @@ public class LambdaJ {
         }
 
         if (have(Features.HAVE_XTRA)) {
-            extendGlobal(sDynamic, sDynamic);
-
             final LambdaJSymbol sEval = intern(EVAL);
             ocEval = new OpenCodedPrimitive(sEval);
             extendGlobal(sEval, ocEval);
@@ -7624,7 +7622,7 @@ public class LambdaJ {
         }
 
         private final SymbolTable symtab = new ListSymbolTable();
-        private static final LambdaJSymbol sBit = new LambdaJSymbol(true, "bit"), sCharacter = new LambdaJSymbol(true, "character");
+        private static final LambdaJSymbol sBit = new LambdaJSymbol(true, "bit"), sCharacter = new LambdaJSymbol(true, "character"), sDynamic = new LambdaJSymbol(true, DYNAMIC);
 
         private final @NotNull ConsCell featuresEnvEntry;
         private final @NotNull ConsCell commandlineArgumentListEnvEntry;
@@ -7643,7 +7641,7 @@ public class LambdaJ {
             for (WellknownSymbol ws: WellknownSymbol.values()) {
                 symtab.intern(new LambdaJSymbol(ws.sym, true));
             }
-            symtab.intern(_dynamic);
+            symtab.intern(sDynamic);
             symtab.intern(sBit);
             symtab.intern(sCharacter);
 
@@ -7741,7 +7739,6 @@ public class LambdaJ {
 
         /// predefined global variables
         public static final LambdaJSymbol _t = LambdaJ.sT;
-        public static final LambdaJSymbol _dynamic = new LambdaJSymbol(true, DYNAMIC);
 
         public static final double _pi = Math.PI;
 
@@ -9041,7 +9038,7 @@ public class LambdaJ {
 
 
         /// Environment for compiled Murmel
-        private static final String[] globalvars = {NIL, T, PI, DYNAMIC};
+        private static final String[] globalvars = {NIL, T, PI};
         private static final String[][] aliasedGlobals = {
         { MOST_POSITIVE_FIXNUM, "mostPositiveFixnum" }, { MOST_NEGATIVE_FIXNUM, "mostNegativeFixnum" }, { ARRAY_DIMENSION_LIMIT, "arrayDimensionLimit" },
         { INTERNAL_TIME_UNITS_PER_SECOND, "itups" },
