@@ -2699,7 +2699,6 @@ public class LambdaJ {
 
                 case sSetQ: {
                     result = evalSetq(ccArguments, env, stack, level, traceLvl);
-                    values = NO_VALUES;
                     break tailcall;
                 }
 
@@ -2734,7 +2733,6 @@ public class LambdaJ {
 
                 /// eval - (load filespec) -> object
                 case sLoad: {
-                    oneArg(LOAD, ccArguments); // todo wieso brauchts hier einen check und requre nicht?
                     result = loadFile(LOAD, car(ccArguments));  break tailcall;
                 }
 
@@ -3292,11 +3290,18 @@ public class LambdaJ {
                 }
                 return ccForm;
 
+            // no macroexpansion in declaim, load, require, provide forms
             case sDeclaim:
+                return form;
             case sLoad:
+                oneArg(LOAD, ccArgs);
+                return form;
             case sRequire:
+                varargs1_2(REQUIRE, ccArgs);
+                return form;
             case sProvide:
-                return form; // no macroexpansion in declaim, load, require, provide forms
+                oneArg(PROVIDE, ccArgs);
+                return form;
 
             case sMultipleValueCall:
                 varargs1(MULTIPLE_VALUE_CALL, ccArgs);
@@ -3372,11 +3377,11 @@ public class LambdaJ {
             res = value;
             pairs = (ConsCell) cdr(pairs);
         }
+        values = NO_VALUES;
         return res;
     }
 
     private Object evalRequire(ConsCell arguments) {
-        varargs1_2(REQUIRE, arguments);
         if (!stringp(car(arguments))) errorMalformed(REQUIRE, "a string argument", arguments);
         final Object modName = car(arguments);
         if (!modules.contains(modName)) {
@@ -3390,7 +3395,6 @@ public class LambdaJ {
     }
 
     private Object evalProvide(ConsCell arguments) {
-        oneArg(PROVIDE, arguments);
         if (!stringp(car(arguments))) errorMalformed(PROVIDE, "a string argument", arguments);
         final Object modName = car(arguments);
         modules.add(modName);
