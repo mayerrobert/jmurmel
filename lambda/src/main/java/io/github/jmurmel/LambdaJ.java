@@ -2864,7 +2864,7 @@ public class LambdaJ {
 
                     // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
                     // macros can be unexpanded if the macro was defined after the defun
-                    if (symOperator.macro != null) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symOperator);
+                    if (symOperator.macro != null) errorNotAFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symOperator.toString());
 
                     if (doOpencode && symOperator.primitive()) {
                         result = symOperator.wellknownSymbol.apply(this, evlis(ccArguments, env, stack, level, traceLvl));  break tailcall;
@@ -2968,7 +2968,7 @@ public class LambdaJ {
                     }
 
                     else {
-                        throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s", printSEx(func));
+                        errorNotAFunction("function application: not a primitive or " + LAMBDA + ": %s", printSEx(func));
                     }
                 }
 
@@ -3061,14 +3061,14 @@ public class LambdaJ {
             if (atom(form)) return form;
             final ConsCell ccForm = ((ConsCell)form).copy();
             final Object op = car(ccForm);
-            if (op == null) throw new UndefinedFunction("function application: not a primitive or lambda: " + NIL);
+            if (op == null) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": " + NIL);
 
             if (consp(op)) {
                 expandForms("function application", ccForm);
                 return ccForm;
             }
 
-            if (!symbolp(op)) throw new UndefinedFunction("function application: not a primitive or lambda: %s", printSEx(op));
+            if (!symbolp(op)) errorNotAFunction("function application: not a primitive or " + LAMBDA + ": %s", printSEx(op));
             final LambdaJSymbol symOp = (LambdaJSymbol)op;
 
             if (!symOp.specialForm()) {
@@ -3754,7 +3754,7 @@ public class LambdaJ {
                 throw new ProgramError("trace: can't trace %s: it is a special form", printSEx(sym));
             }
             final ConsCell envEntry = lookupGlobalEntry(sym);
-            if (envEntry == null) throw new UndefinedFunction("trace: can't trace %s: not bound", printSEx(sym));
+            if (envEntry == null) errorNotAFunction("trace: can't trace %s: not bound", printSEx(sym));
             traced.put(cdr(envEntry), (LambdaJSymbol) sym);
         }
         return new ArraySlice(traced.values().toArray(), 0);
@@ -4326,6 +4326,8 @@ public class LambdaJ {
     static RuntimeException errorUnbound         (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is not bound", func, printSEx(form)); }
     @SuppressWarnings("SameParameterValue")
     static void             errorUnassigned      (String func, Object form)                     { throw new UnboundVariable("%s: '%s' is bound but has no assigned value", func, printSEx(form)); }
+
+    static RuntimeException errorNotAFunction    (String msg, CharSequence name)                { throw new UndefinedFunction(msg, name); }
 
     /** throws a {@link SimpleTypeError} with a message of "'func': expected a 'expected' argument but got 'actual'" */
     static RuntimeException errorArgTypeError(String expected, String func, Object actual)      { throw new SimpleTypeError("%s: expected a %s argument but got %s", func, expected, printSEx(actual)); }
@@ -6103,7 +6105,7 @@ public class LambdaJ {
 
             @Override public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
                 final MurmelFunction func = methods.get(method);
-                if (func == null) throw new UndefinedFunction("no function for method %s", method.getName());
+                if (func == null) errorNotAFunction("no function for method %s", method.getName());
                 if (args == null) return func.apply();
                 else return func.apply(args);
             }
@@ -6170,7 +6172,7 @@ public class LambdaJ {
             }
         }
 
-        static MurmelFunction getFunction(LambdaJ intp, MurmelJavaProgram program, Object function, Class<?> returnType) {
+        static @NotNull MurmelFunction getFunction(LambdaJ intp, MurmelJavaProgram program, Object function, Class<?> returnType) {
             final String funcName = printSEx(function).toString();
             final Function<Object, Object> convertReturnType = makeConvertReturnType(funcName, returnType);
             if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return args -> convertReturnType.apply(((MurmelJavaProgram.CompilerPrimitive)function).applyCompilerPrimitive(args)); }
@@ -6179,7 +6181,7 @@ public class LambdaJ {
                                                                             return args -> convertReturnType.apply(callLambda.apply(args)); }
             if (function instanceof MurmelFunction && program != null)    { return args -> convertReturnType.apply(program.funcall((MurmelFunction)function, args)); /* must use the TCO trampoline */ }
 
-            throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName);
+            throw errorNotAFunction("getFunction: not a primitive or " + LAMBDA + ": %s", funcName);
         }
 
         private static Function<Object, Object> makeConvertReturnType(String func, Class<?> returnType) {
@@ -6324,22 +6326,22 @@ public class LambdaJ {
      *  f.apply(1, 2, 3);  // this will throw a "stale function..." Exception
      *  </pre>
      */
-    public MurmelFunction getFunction(String funcName) {
+    public @NotNull MurmelFunction getFunction(String funcName) {
         return getFunction(this, funcName, getValue(funcName));
     }
 
-    private static MurmelFunction getFunction(LambdaJ intp, String funcName, Object function) {
+    private static @NotNull MurmelFunction getFunction(LambdaJ intp, String funcName, Object function) {
         if (function instanceof MurmelJavaProgram.CompilerPrimitive)  { return ((MurmelJavaProgram.CompilerPrimitive)function)::applyCompilerPrimitive; }
         if (function instanceof Primitive)                            { return ((Primitive)function)::applyPrimitiveVarargs; }
         if (function instanceof Closure)                              { return intp.new CallLambda((Closure)function); }
         if (function instanceof MurmelFunction)                       { return args -> intp.compiledProgram.funcall((MurmelFunction)function, args); /* must use the TCO trampoline */ }
 
-        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName);
+        throw errorNotAFunction("getFunction: not a primitive or " + LAMBDA + ": %s", funcName);
     }
 
     public interface MurmelProgram {
         Object getValue(String globalSymbol);
-        MurmelFunction getFunction(String funcName);
+        @NotNull MurmelFunction getFunction(String funcName);
 
         Object body();
 
@@ -6367,7 +6369,7 @@ public class LambdaJ {
         }
 
         @Override public Object getValue(String globalSymbol) { return LambdaJ.this.getValue(globalSymbol); }
-        @Override public MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
+        @Override public @NotNull MurmelFunction getFunction(String funcName) { return LambdaJ.this.getFunction(funcName); }
 
         @Override public void setCommandlineArgumentList(ConsCell args) {
             extendGlobal(intern(COMMAND_LINE_ARGUMENT_LIST), args);
@@ -7718,7 +7720,7 @@ public class LambdaJ {
         @Override public final ObjectWriter getLispPrinter() { return lispPrinter; }
         @Override public final void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { lispReader = lispStdin; lispPrinter = lispStdout; }
 
-        @Override public final MurmelFunction getFunction(String func) {
+        @Override public final @NotNull MurmelFunction getFunction(String func) {
             final Object maybeFunction = getValue(func);
             if (maybeFunction instanceof MurmelFunction) {
                 return args -> funcall((MurmelFunction)maybeFunction, args);
@@ -7726,7 +7728,7 @@ public class LambdaJ {
             if (maybeFunction instanceof CompilerPrimitive) {
                 return args -> funcall((CompilerPrimitive)maybeFunction, args);
             }
-            throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", func);
+            throw LambdaJ.errorNotAFunction("getFunction: not a primitive or " + LAMBDA + ": %s", func);
         }
 
         protected abstract Object runbody() throws Exception;
@@ -8617,7 +8619,7 @@ public class LambdaJ {
         private static void errorNotAList(Object s)   { throw new SimpleTypeError("not a cons/list: %s", printSEx(s)); }
         private static void errorNotACharacter(Object s) { throw new SimpleTypeError("not a character: %s", printSEx(s)); }
         private static void errorNotAString(Object s) { throw new SimpleTypeError("not a string: %s", printSEx(s)); }
-        private static RuntimeException errorNotAFunction(Object fn) { throw new UndefinedFunction("not a function: %s", printSEx(fn)); }
+        private static RuntimeException errorNotAFunction(Object fn) { throw LambdaJ.errorNotAFunction("not a function: %s", printSEx(fn)); }
         private static RuntimeException errorNotAFrame(String s, Object o) {
             if (o != null) throw new SimpleTypeError("%s: not a frame: %s", s, printSEx(o));
             throw new SimpleTypeError("%s: no frame argument and no current frame", s);
@@ -9842,7 +9844,7 @@ public class LambdaJ {
 
                     default:
                         /// * macro expansion - all macros were already expanded
-                        if (null != symop.macro) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symop);
+                        if (null != symop.macro) errorNotAFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symop.toString());
 
                         /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                         if (symbolEq(symop, "macroexpand-1")) {
@@ -10414,7 +10416,7 @@ public class LambdaJ {
                 final Object applyOp = car(args);
                 final Object applyArg = cadr(args);
 
-                if (applyOp == null || applyOp == sNil) throw new UndefinedFunction("function application: not a primitive or lambda: " + NIL);
+                if (applyOp == null || applyOp == sNil) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": " + NIL);
                 if (applyOp == intp.intern(LIST)) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(')'); return true; }
 
                 if (applyOp != sApply) { // apply needs special treatment for TCO
