@@ -75,6 +75,7 @@
         <launch4j.skip>true</launch4j.skip>
 
         <modernizer-maven-plugin.version>2.7.0</modernizer-maven-plugin.version>
+        <javassist.version>3.29.2-GA</javassist.version>
 
         <!-- report maven plugins -->
         <maven-site-plugin.version>3.12.1</maven-site-plugin.version>
