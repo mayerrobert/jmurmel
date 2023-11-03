@@ -2699,12 +2699,11 @@ public class LambdaJ {
                 }
 
                 case sSetQ: {
-                    result = evalSetq(ccArguments, env, stack, level, traceLvl);
-                    break tailcall;
+                    result = evalSetq(ccArguments, env, stack, level, traceLvl);  break tailcall;
                 }
 
                 case sDeclaim: {
-                    result = evalDeclaim(level, ccArguments);  break tailcall;
+                    evalDeclaim(level, ccArguments);  result = null;  break tailcall;
                 }
 
 
@@ -2712,21 +2711,13 @@ public class LambdaJ {
 
                 /// eval - (define symbol exp) -> symbol with a side of global environment extension
                 case sDefine: {
-                    final Object symbol = car(ccArguments);
-                    extendGlobal(symbol, eval(cadr(ccArguments), env, stack, level, traceLvl));
-                    values = NO_VALUES;
-                    result = symbol;  break tailcall;
+                    result = evalDefine(ccArguments, env, stack, level, traceLvl);  break tailcall;
                 }
 
                 /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
                 // shortcut for (define symbol (lambda (params...) forms...)) with one difference: defun will early bind recursive invocations
                 case sDefun: {
-                    final Object symbol = car(ccArguments);
-                    final AbstractConsCell selfEnvEntry = new ListConsCell(symbol, null);
-                    final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
-                    selfEnvEntry.rplacd(closure);
-                    extendGlobal(symbol, closure); // this will create a new env entry in the global environment, changing the global value won't change early bound recursive invocations
-                    result = symbol;  break tailcall;
+                    result = evalDefun(ccArguments, env);  break tailcall;
                 }
 
 
@@ -2744,7 +2735,7 @@ public class LambdaJ {
 
                 /// eval - (provide modulename) -> nil
                 case sProvide: {
-                    result = evalProvide(ccArguments);  break tailcall;
+                    evalProvide(ccArguments);  result = null;  break tailcall;
                 }
 
 
@@ -3382,6 +3373,24 @@ public class LambdaJ {
         return res;
     }
 
+    @NotNull
+    private Object evalDefine(ConsCell ccArguments, ConsCell env, int stack, int level, int traceLvl) {
+        final Object symbol = car(ccArguments);
+        extendGlobal(symbol, eval(cadr(ccArguments), env, stack, level, traceLvl));
+        values = NO_VALUES;
+        return symbol;
+    }
+
+    @NotNull
+    private Object evalDefun(ConsCell ccArguments, ConsCell env) {
+        final Object symbol = car(ccArguments);
+        final AbstractConsCell selfEnvEntry = new ListConsCell(symbol, null);
+        final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
+        selfEnvEntry.rplacd(closure);
+        extendGlobal(symbol, closure); // this will create a new env entry in the global environment, changing the global value won't change early bound recursive invocations
+        return symbol;
+    }
+
     private Object evalRequire(ConsCell arguments) {
         if (!stringp(car(arguments))) errorMalformed(REQUIRE, "a string argument", arguments);
         final Object modName = car(arguments);
@@ -3395,14 +3404,13 @@ public class LambdaJ {
         return null;
     }
 
-    private Object evalProvide(ConsCell arguments) {
+    private void evalProvide(ConsCell arguments) {
         if (!stringp(car(arguments))) errorMalformed(PROVIDE, "a string argument", arguments);
         final Object modName = car(arguments);
         modules.add(modName);
-        return null;
     }
 
-    Object evalDeclaim(int level, ConsCell arguments) {
+    void evalDeclaim(int level, ConsCell arguments) {
         if (level != 1) errorMalformed(DECLAIM, "must be a toplevel form");
         if (caar(arguments) == intern(OPTIMIZE)) {
             final Object rest = cdar(arguments);
@@ -3413,7 +3421,6 @@ public class LambdaJ {
                 this.speed = ((Number)speed).shortValue();
             }
         }
-        return null;
     }
 
     private ConsCell evalLabels(ConsCell localFunctions, ConsCell env) {
