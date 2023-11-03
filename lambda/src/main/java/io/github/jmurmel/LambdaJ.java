@@ -2864,7 +2864,7 @@ public class LambdaJ {
 
                     // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
                     // macros can be unexpanded if the macro was defined after the defun
-                    if (symOperator.macro != null) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symOperator, form);
+                    if (symOperator.macro != null) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symOperator);
 
                     if (doOpencode && symOperator.primitive()) {
                         result = symOperator.wellknownSymbol.apply(this, evlis(ccArguments, env, stack, level, traceLvl));  break tailcall;
@@ -6334,7 +6334,7 @@ public class LambdaJ {
         if (function instanceof Closure)                              { return intp.new CallLambda((Closure)function); }
         if (function instanceof MurmelFunction)                       { return args -> intp.compiledProgram.funcall((MurmelFunction)function, args); /* must use the TCO trampoline */ }
 
-        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName != null ? funcName : printSEx(function));
+        throw new UndefinedFunction("getFunction: not a primitive or lambda: %s", funcName);
     }
 
     public interface MurmelProgram {
@@ -9842,7 +9842,7 @@ public class LambdaJ {
 
                     default:
                         /// * macro expansion - all macros were already expanded
-                        if (null != symop.macro) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symop, form);
+                        if (null != symop.macro) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": %s is a macro not a function", symop);
 
                         /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                         if (symbolEq(symop, "macroexpand-1")) {
