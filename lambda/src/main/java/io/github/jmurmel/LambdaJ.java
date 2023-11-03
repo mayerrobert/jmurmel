@@ -1158,7 +1158,8 @@ public class LambdaJ {
     private static class SExpressionWriter implements ObjectWriter {
         private final @NotNull WriteConsumer out;
 
-        SExpressionWriter(@NotNull WriteConsumer out) { assert out != null; this.out = out; }
+        SExpressionWriter(@NotNull WriteConsumer out) { //noinspection ConstantConditions
+                                                        assert out != null; this.out = out; }
 
         @Override public void printObj(Object o, boolean printEscape) { printSEx(out, o, printEscape); }
         @Override public void printEol() { out.print("\n"); }
@@ -3239,7 +3240,7 @@ public class LambdaJ {
 
                         // don't use notReserved(), this way getOp() only allocates space for string concatenation if needed to actually display an error message
                         if (reserved(sym)) errorReserved(getOp(sfName, letDynamic, namedLet), sym);
-                        if (sym == tag && sym != sDynamic) errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "can't use loop symbol %s as a variable", sym);
+                        if (sym == tag && sym != sDynamic) errorMalformedFmt(getOp(sfName, false, true), "can't use loop symbol %s as a variable", sym);
 
                         if (seen != null) {
                             if (seen.contains(sym)) throw errorMalformedFmt(getOp(sfName, letDynamic, namedLet), "duplicate symbol %s", sym);
@@ -11290,7 +11291,8 @@ final class JavaSourceFromString extends SimpleJavaFileObject {
 final class MurmelClassLoader extends ClassLoader {
     private final @NotNull Path outPath;
 
-    MurmelClassLoader(@NotNull Path outPath) { assert outPath != null; this.outPath = outPath; }
+    MurmelClassLoader(@NotNull Path outPath) { //noinspection ConstantConditions 
+                                               assert outPath != null; this.outPath = outPath; }
 
     @Override public Class<?> findClass(String name) throws ClassNotFoundException {
         try {
@@ -11421,6 +11423,7 @@ final class UnixToAnyEol implements LambdaJ.WriteConsumer {
     private final String eol;
 
     UnixToAnyEol(@NotNull LambdaJ.WriteConsumer wrapped, String eol) {
+        //noinspection ConstantConditions
         assert wrapped != null;
         this.wrapped = wrapped;
         this.eol = eol;
