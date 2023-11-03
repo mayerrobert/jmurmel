@@ -2674,7 +2674,7 @@ public class LambdaJ {
                 ConsCell argList = null;
 
                 final LambdaJSymbol symOperator; // will be the car of the form as a LambdaJSymbol if it is a symbol, null otherwise
-                if (symbolp(operator)) switch ((symOperator = (LambdaJSymbol)operator).wellknownSymbol) {
+                if (symbolp(operator)) special_forms: switch ((symOperator = (LambdaJSymbol)operator).wellknownSymbol) {
                 /// eval - special forms
 
                 /// eval - (quote exp) -> exp
@@ -2793,14 +2793,14 @@ public class LambdaJ {
                 /// eval - (cond (condform forms...)... ) -> object
                 case sCond: {
                     for (ConsCell l = ccArguments; l != null; l = (ConsCell)cdr(l)) {
-                        final ConsCell clause = (ConsCell)car(l); final Object condition = car(clause);
-                        if (condition == sT || eval(condition, env, stack, level, traceLvl) != null) {
+                        final ConsCell clause = (ConsCell)car(l);
+                        if (eval(car(clause), env, stack, level, traceLvl) != null) {
                             ccForms = (ConsCell) cdr(clause);
-                            break;
+                            funcall = false;
+                            break special_forms; // fall through to "eval a list of forms"
                         }
                     }
-                    funcall = false;
-                    break; // fall through to "eval a list of forms"
+                    result = null;  break tailcall;
                 }
 
                 /// eval - (if condform form optionalform) -> object
