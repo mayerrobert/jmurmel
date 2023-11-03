@@ -3375,8 +3375,8 @@ public class LambdaJ {
 
     @NotNull
     private Object evalDefine(ConsCell ccArguments, ConsCell env, int stack, int level, int traceLvl) {
-        final Object symbol = car(ccArguments);
-        extendGlobal(symbol, eval(cadr(ccArguments), env, stack, level, traceLvl));
+        final Object symbol;
+        extendGlobal(symbol = car(ccArguments), eval(cadr(ccArguments), env, stack, level, traceLvl));
         values = NO_VALUES;
         return symbol;
     }
@@ -3406,8 +3406,7 @@ public class LambdaJ {
 
     private void evalProvide(ConsCell arguments) {
         if (!stringp(car(arguments))) errorMalformed(PROVIDE, "a string argument", arguments);
-        final Object modName = car(arguments);
-        modules.add(modName);
+        modules.add(car(arguments));
     }
 
     void evalDeclaim(int level, ConsCell arguments) {
@@ -8105,9 +8104,9 @@ public class LambdaJ {
 
         // Hashtables
         public final Object _hash         (Object... args)      { values = null;                                               return LambdaJ.Subr.hash(symtab, arraySlice(args)); }
-        public final Object makeHash      (Object... args)      { values = null; varargs0_2  (MAKE_HASH_TABLE, args.length);   return makeHashTable(symtab,
-                                                                                                                                                    nth(0, args),
-                                                                                                                                                    args.length > 1 ? toNonnegInt(MAKE_HASH_TABLE, args[1]) : DEFAULT_HASH_SIZE); }
+        public final Object makeHash      (Object... args)      { values = null; varargsMinMax(MAKE_HASH_TABLE, args.length, 0, 2); return makeHashTable(symtab,
+                                                                                                                                                         nth(0, args),
+                                                                                                                                                         args.length > 1 ? toNonnegInt(MAKE_HASH_TABLE, args[1]) : DEFAULT_HASH_SIZE); }
         public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args.length, 2, 3);  values = hashref(args[0], args[1], args.length > 2 ? args[2] : NO_DEFAULT_VALUE); return values[0]; }
         public final Object _hashset      (Object... args)      { values = null; varargsMinMax("hashset", args.length, 2, 3);  return hashset(arraySlice(args)); }
         public final Object hashTableCount(Object... args)      { values = null; oneArg("hash-table-count", args.length);      return LambdaJ.Subr.hashTableCount(args[0]); }
@@ -8150,10 +8149,11 @@ public class LambdaJ {
         public final Object readTextfile      (Object... args)  { varargs1_2("read-textfile",           args.length);       values = null; return LambdaJ.Subr.readTextfile(arraySlice(args)); }
         public final Object writeTextfileLines(Object... args)  { varargsMinMax("write-textfile-lines", args.length, 2, 4); values = null; return LambdaJ.Subr.writeTextfileLines(arraySlice(args)); }
         public final Object writeTextfile     (Object... args)  { varargsMinMax("write-textfile",       args.length, 2, 4); values = null; return LambdaJ.Subr.writeTextfile(arraySlice(args)); }
-        public final Object writeToString     (Object... args)  { varargs1_2("write-to-string",         args.length);       values = null; return LambdaJ.Subr.writeToString(args[0], args.length < 2 || args[1] != null); }
-        public final Object _write            (Object... args)  { varargsMinMax("write",                args.length, 1, 3); values = null; return LambdaJ.Subr.write  (getLispPrinter(args, 2, lispPrinter), args[0], args.length < 2 || args[1] != null); }
-        public final Object _writeln          (Object... args)  { varargsMinMax("writeln",              args.length, 0, 3); values = null; return LambdaJ.Subr.writeln(getLispPrinter(args, 2, lispPrinter), arraySlice(args), args.length < 2 || args[1] != null); }
-        public final Object _lnwrite          (Object... args)  { varargsMinMax("lnwrite",              args.length, 0, 3); values = null; return LambdaJ.Subr.lnwrite(getLispPrinter(args, 2, lispPrinter), arraySlice(args), args.length < 2 || args[1] != null); }
+        public final Object writeToString     (Object... args)  { varargs1_2("write-to-string",         args.length);       values = null; return LambdaJ.Subr.writeToString(args[0], noSecondArgOrNotNull(args)); }
+        public final Object _write            (Object... args)  { varargsMinMax("write",                args.length, 1, 3); values = null; return LambdaJ.Subr.write  (getLispPrinter(args, 2, lispPrinter), args[0], noSecondArgOrNotNull(args)); }
+
+        public final Object _writeln          (Object... args)  { varargsMinMax("writeln",              args.length, 0, 3); values = null; return LambdaJ.Subr.writeln(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
+        public final Object _lnwrite          (Object... args)  { varargsMinMax("lnwrite",              args.length, 0, 3); values = null; return LambdaJ.Subr.lnwrite(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
 
         public final Object format            (Object... args)  { varargs2("format",                    args.length);       values = null; return LambdaJ.Subr.format(getLispPrinter(args, 0, null), true, arraySlice(args)); }
         public final Object formatLocale      (Object... args)  { varargs3("format-locale",             args.length);       values = null; return LambdaJ.Subr.formatLocale(getLispPrinter(args, 0, null), true, arraySlice(args)); }
@@ -8248,7 +8248,11 @@ public class LambdaJ {
 
 
         private static Object nth(int n, Object[] args) { return args.length > n ? args[n] : null; }
-        private static boolean secondArgNotNull(Object[] args) { return args.length > 1 && args[1] != null; }
+
+        private static boolean secondArgNotNull    (Object[] args) { return args.length > 1 && args[1] != null; }
+        private static boolean noSecondArgOrNotNull(Object[] args) { return args.length < 2 || args[1] != null; }
+
+
         private Object ret(Object[] _values) { values = _values; if (_values.length == 0) return null; return _values[0]; }
 
 
@@ -8641,9 +8645,6 @@ public class LambdaJ {
 
         /** 0..1 args */
         private static void varargs0_1(String expr, int argCount) { if (argCount > 1)                 errorArgCount(expr, 0, 1, argCount); }
-        /** 0..2 args */
-        @SuppressWarnings("SameParameterValue")
-        private static void varargs0_2(String expr, int argCount) { if (argCount > 2)                 errorArgCount(expr, 0, 2, argCount); }
         /** one or more arguments */
         private static void varargs1(String expr, int argCount)   { if (argCount == 0)                errorArgCount(expr, 1, -1, 0); }
         /** 1..2 args */
