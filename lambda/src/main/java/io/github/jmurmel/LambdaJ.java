@@ -3002,29 +3002,36 @@ public class LambdaJ {
         }
         finally {
             if (traceOn) dbgEvalDone(isTc ? "eval TC" : EVAL, form, env, stack, level);
-            // todo vielleicht cleanupTrace() rausziehen
-            if (func != null && traced != null) traceLvl = traceExit(func, result, traceLvl);
-            if (traceStack != null) {
-                Object s;
-                while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
-            }
-            // ende cleanupTrace
-            // todo vielleicht cleanup() rausziehen
-            LambdaJError e = null;
-            for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
-                final Object o = car(c);
-                if (o instanceof RestoreDynamic) ((RestoreDynamic)o).restore();
-                else {
-                    try { eval(o, env, stack, level, traceLvl); }
-                    catch (LambdaJError le) { e = le; }
-                }
-            }
-            // ende cleanup()
+            traceLvl = cleanupTrace(traceLvl, func, result, traceStack);
+            final LambdaJError e = cleanup(env, stack, level, traceLvl, restore);
             if (e != null) {
                 if (e instanceof ReturnException) return nonlocalReturn((ReturnException)e, localCatchTags);
                 throw e;
             }
         }
+    }
+
+    private int cleanupTrace(int traceLvl, Object func, Object result, Deque<Object> traceStack) {
+        if (func != null && traced != null) traceLvl = traceExit(func, result, traceLvl);
+        if (traceStack != null) {
+            Object s;
+            while ((s = traceStack.pollLast()) != null) traceLvl = traceExit(s, result, traceLvl);
+        }
+        return traceLvl;
+    }
+
+    @Null
+    private LambdaJError cleanup(ConsCell env, int stack, int level, int traceLvl, ConsCell restore) {
+        LambdaJError e = null;
+        for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
+            final Object o = car(c);
+            if (o instanceof RestoreDynamic) ((RestoreDynamic)o).restore();
+            else {
+                try { eval(o, env, stack, level, traceLvl); }
+                catch (LambdaJError le) { e = le; }
+            }
+        }
+        return e;
     }
 
     private Object nonlocalReturn(ReturnException re, ConsCell localCatchTags) {
