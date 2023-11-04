@@ -824,7 +824,7 @@ public class LambdaJ {
     private static final class DynamicLambda extends Closure {
         DynamicLambda(Object paramss, ConsCell body) { super(paramss, body, null); }
         @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) { return intp.zip("dynamic function application", params, args, env, true); }
-        @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { out.print("#<interpreted dynamic closure>"); }
+        @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { out.print("#<interpreted " + LAMBDA_DYNAMIC + ">"); }
     }
 
     private static final class ArraySlice extends ConsCell {
@@ -2687,15 +2687,13 @@ public class LambdaJ {
                 case sLambda: {
                     final ConsCell ccParamsAndForms = (ConsCell)cdr(ccForm);
                     nCells++;
-                    result = "#<" + LAMBDA + ">";
-                    return Closure.of(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), env);
+                    result = Closure.of(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms), env);  break tailcall;
                 }
 
                 case sLambdaDynamic: {
                     final ConsCell ccParamsAndForms = (ConsCell)cdr(ccForm);
                     nCells++;
-                    result = "#<" + LAMBDA_DYNAMIC + ">";
-                    return new DynamicLambda(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms));
+                    result = new DynamicLambda(car(ccParamsAndForms), (ConsCell)cdr(ccParamsAndForms));  break tailcall;
                 }
 
                 case sSetQ: {
