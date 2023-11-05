@@ -749,7 +749,9 @@ multiline comment
 (test-predicates *predicates-for-vector*)
 
 (deftest functionp.1 (functionp #'write) t)
-(deftest functionp.1 (functionp 1) nil)
+(deftest functionp.2 (functionp 1) nil)
+(deftest functionp.3 (functionp #'apply) t)
+(deftest functionp.4 (functionp #'eval) t)
 
 
 ; *******************************************************************
