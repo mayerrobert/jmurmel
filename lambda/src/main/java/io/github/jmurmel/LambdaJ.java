@@ -2549,14 +2549,13 @@ public class LambdaJ {
         return ret;
     }
 
-    private static final class OpenCodedPrimitive implements Primitive {
+    private static final class OpenCodedPrimitive implements Writeable {
         private final @NotNull LambdaJSymbol symbol;
 
         private OpenCodedPrimitive(@NotNull LambdaJSymbol symbol) { this.symbol = symbol; }
 
         @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print(toString()); }
         @Override public String toString() { return "#<opencoded primitive: " + symbol + '>'; }
-        @Override public Object applyPrimitive(ConsCell a) { throw errorInternal("unexpected"); }
     }
     private OpenCodedPrimitive ocEval, ocApply;
 
@@ -2920,14 +2919,7 @@ public class LambdaJ {
                     /// eval - actually perform the function call that was set up by "apply" or "multiple-value-call" or "function call" above. "set up" means: func and argList were assigned
                     if (traced != null) traceLvl = traceEnter(func, argList, traceLvl);
                     values = NO_VALUES;
-                    if (func instanceof OpenCodedPrimitive) {
-                        form = cons(func, argList);
-                        if (traced != null) traceStack = push(func, traceStack);
-                        func = null;
-                        isTc = true; continue tailcall;
-                    }
-
-                    else if (func instanceof Primitive) {
+                    if (func instanceof Primitive) {
                         result = applyPrimitive((Primitive) func, argList, stack, level);  break tailcall;
                     }
 
@@ -2938,6 +2930,13 @@ public class LambdaJ {
                         if (traceFunc)  tracer.println(pfx(stack, level) + " #<" + LAMBDA + " " + ccFunc.params() + "> " + printSEx(argList));
                         ccForms = ccFunc.body;
                         // fall through to "eval a list of forms"
+                    }
+
+                    else if (func instanceof OpenCodedPrimitive) {
+                        form = cons(func, argList);
+                        if (traced != null) traceStack = push(func, traceStack);
+                        func = null;
+                        isTc = true; continue tailcall;
                     }
 
                     else if (func instanceof MurmelJavaProgram.CompilerPrimitive) {
@@ -2956,7 +2955,7 @@ public class LambdaJ {
                        would end up here. That was legal in CLtL1 and was made illegal in Common Lisp, and wouldn't work in compiled Murmel,
                        nor would something similar work in Common Lisp (see "Issue FUNCTION-TYPE Writeup" http://www.lispworks.com/documentation/lw71/CLHS/Issues/iss175_w.htm).
                      */
-                    else if (have(Features.HAVE_OLDLAMBDA) && consp(func) && car(func) == sLambda) {
+                    else if (func instanceof ConsCell && car(func) == sLambda && have(Features.HAVE_OLDLAMBDA)) {
                         final Object paramsAndBody = cdr(func);
                         env = zip("old " + LAMBDA + " application", car(paramsAndBody), argList, env, true);
 
@@ -3985,7 +3984,7 @@ public class LambdaJ {
     static boolean hashtablep(Object o)  { return o instanceof Map; }
 
     final  boolean functionp(Object o)   { return functionp0(o) || have(Features.HAVE_OLDLAMBDA) && consp(o) && car(o) == sLambda; }
-    static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction; }
+    static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction || o instanceof OpenCodedPrimitive; }
 
     static boolean listp(Object o)       { return o == null || consp(o); }
 
