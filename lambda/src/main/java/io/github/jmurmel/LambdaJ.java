@@ -489,7 +489,7 @@ public class LambdaJ {
     /// ## Data types used by interpreter program as well as interpreted programs
 
     /** for nonlocal returns */
-    static class ReturnException extends LambdaJError {
+    static final class ReturnException extends LambdaJError {
         final Object tag, result;
         final Object[] values;
 
@@ -2549,7 +2549,7 @@ public class LambdaJ {
         return ret;
     }
 
-    private static class OpenCodedPrimitive implements Primitive {
+    private static final class OpenCodedPrimitive implements Primitive {
         private final @NotNull LambdaJSymbol symbol;
 
         private OpenCodedPrimitive(@NotNull LambdaJSymbol symbol) { this.symbol = symbol; }
@@ -2858,7 +2858,7 @@ public class LambdaJ {
                 /// eval - (operatorform argforms...) -> object
                 default: {
                     // check if we forgot to handle a special form. All special forms should be handled in the cases above.
-                    assert !symOperator.specialForm() : ccForm.lineInfo() + "unexpected special form " + symOperator;
+                    assert !symOperator.specialForm() : "unexpected special form " + symOperator;
 
                     // check if expandForm() has expanded all macros and make sure that expandForm() is used prior to any eval() call with a form that may contain macro calls
                     // macros can be unexpanded if the macro was defined after the defun
@@ -2971,15 +2971,16 @@ public class LambdaJ {
                 }
 
                 /// eval - eval a list of forms
-                if (ccForms != null) {
-                    for (; cdr(ccForms) != null; ccForms = listOrMalformed(LAMBDA + " application", cdr(ccForms))) { // must use listOrMalformed() to avoid CCE on e.g. (apply f '(1 . 2))
-                        eval(car(ccForms), env, stack, level, traceLvl);
-                    }
-                    if (traced != null) traceStack = push(operator, traceStack);
-                    form = car(ccForms); func = null; values = NO_VALUES; isTc = true; continue tailcall;
+                if (ccForms == null) {
+                    result = null;  break tailcall;  // lambda/ progn/ labels/... w/o body
                 }
 
-                result = null;  break tailcall;  // lambda/ progn/ labels/... w/o body
+                for (; consp(cdr(ccForms)); ccForms = (ConsCell)cdr(ccForms)) {
+                    eval(car(ccForms), env, stack, level, traceLvl);
+                }
+                assert cdr(ccForms) == null : "dotted list of forms is illegal";
+                if (traced != null) traceStack = push(operator, traceStack);
+                form = car(ccForms); func = null; values = NO_VALUES; isTc = true;
             }
             return result;
         }
@@ -2990,7 +2991,7 @@ public class LambdaJ {
                 final Object handler = cdr(conditionHandlerEnvEntry);
                 if (functionp(handler)) {
                     conditionHandlerEnvEntry.rplacd(prev());
-                    try { eval(list(handler, e), env); }
+                    try { eval(list(handler, e), env, stack, level, traceLvl); }
                     catch (ReturnException re) { return result = nonlocalReturn(re, localCatchTags); }
                     finally { conditionHandlerEnvEntry.rplacd(handler); }
                 }
