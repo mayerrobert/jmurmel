@@ -22,6 +22,11 @@ public final class MethodLength {
         pr(LambdaJ.Chk.class);
         pr(LambdaJ.Subr.class);
         pr(LambdaJ.MurmelJavaProgram.class);
+        
+        pr(LambdaJ.class, "isSExSyntax");
+        pr(LambdaJ.class, "isSExSyntax2");
+        pr(LambdaJ.class, "isSExSyntax3");
+        pr(LambdaJ.SExpressionReader.class, "isSpaceOrSyntaxOrEof");
     }
 
     private static void pr(Class<?> clazz) throws Exception {
@@ -71,5 +76,17 @@ public final class MethodLength {
             }
         }
         System.out.println();
+    }
+
+    private static void pr(Class<?> clazz, String methodName) throws Exception {
+        final String fileName = clazz.getName().substring("io.github.jmurmel.".length()) + ".class";
+
+        try (InputStream is = Objects.requireNonNull(clazz.getResourceAsStream(fileName), "cannot open class file")) {
+            final ClassFile cf = new ClassFile(new DataInputStream(is));
+            final MethodInfo mi = cf.getMethod(methodName);
+            final String qName = clazz.getName() + '.' + methodName;
+            if (mi == null) System.out.println(qName + ": not found");
+            else System.out.println(qName + ": " + mi.getCodeAttribute().getCode().length + " bytes");
+        }
     }
 }
