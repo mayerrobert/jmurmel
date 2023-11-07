@@ -1211,6 +1211,20 @@ public class LambdaJ {
 
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
+    /*static boolean isSExSyntax2(int x) { return (x >= '\'' && x <= ')') || x == ',' || x == '`'; }
+
+    static boolean isSExSyntax3(int x) {
+        switch (x) {
+        case '\'':
+        case '(':
+        case ')':
+        case ',': // fallthrough
+        case '`':
+            return true;
+        default:
+            return false;
+        }
+    }*/
 
     /** is {@code s} an optional sign followed by one or more digits? */
     static boolean isLong(@NotNull String s) {
@@ -1385,7 +1399,7 @@ public class LambdaJ {
         private boolean isBar(int x)    { return !escape && x == '|'; }
 
         @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-        private boolean isSyntax(int x) { return !escape && isSExSyntax(x); }
+        private boolean isSpaceOrSyntaxOrEof(int x) { return !escape && (isWhiteSpace(x) || isSExSyntax(x)) || x == EOF; }
 
         /*java.io.PrintWriter debug;
         {
@@ -1567,7 +1581,7 @@ public class LambdaJ {
 
         private String readerMacroToken() {
             int index = 0;
-            while (look != EOF && !isSpace(look) && !isSyntax(look)) {
+            while (!isSpaceOrSyntaxOrEof(look)) {
                 if (index < TOKEN_MAX) token[index++] = (char)look;
                 look = getchar(false);
             }
@@ -1677,7 +1691,7 @@ public class LambdaJ {
                 if (tok == null) {
                     int index = 0;
                     boolean escapeSeen = false;
-                    while (look != eof && !isSpace(look) && !isSyntax(look)) {
+                    while (!isSpaceOrSyntaxOrEof(look)) {
                         if (escape) escapeSeen = true;
                         if (index < TOKEN_MAX) token[index++] = (char) look;
                         look = getchar();
