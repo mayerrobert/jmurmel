@@ -44,8 +44,8 @@ public final class MethodLength {
                                + " synthetic static or instance methods: ");
             System.out.println(cf.getMethods().stream()
                                .filter(f -> (f.getAccessFlags() & AccessFlag.SYNTHETIC) != 0)
-                               .map(mi -> mi.getName() + mi.getDescriptor())
-                               .collect(Collectors.joining(", ")));
+                               .map(MethodLength::fmtSyntheticMethos)
+                               .collect(Collectors.joining("\n  ")));
             System.out.println(cf.getMethods().stream()
                                  .filter(f -> (f.getAccessFlags() & AccessFlag.SYNTHETIC) == 0)
                                  .filter(f -> (f.getAccessFlags() & AccessFlag.STATIC) != 0)
@@ -94,5 +94,21 @@ public final class MethodLength {
                 }
             }
         }
+    }
+
+    private static String fmtSyntheticMethos(MethodInfo mi) {
+        String ret = mi.getName() + mi.getDescriptor();
+        final CodeAttribute ca = mi.getCodeAttribute();
+        if (ca == null) return ret;
+
+        final int codeLength = ca.getCodeLength();
+        if (codeLength > 35) ret += " ( *** ";
+        else ret += " (";
+
+        ret += codeLength + " bytes";
+        if ((mi.getAccessFlags() & AccessFlag.STATIC) == 0) ret += ", non-static)";
+        else  ret += ", static)";
+        
+        return ret;
     }
 }
