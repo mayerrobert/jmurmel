@@ -11,6 +11,7 @@ import javassist.bytecode.MethodInfo;
 import java.io.DataInputStream;
 import java.io.InputStream;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 public final class MethodLength {
 
@@ -22,11 +23,11 @@ public final class MethodLength {
         pr(LambdaJ.Chk.class);
         pr(LambdaJ.Subr.class);
         pr(LambdaJ.MurmelJavaProgram.class);
-        
-        pr(LambdaJ.class, "isSExSyntax");
-        pr(LambdaJ.class, "isSExSyntax2");
-        pr(LambdaJ.class, "isSExSyntax3");
-        pr(LambdaJ.SExpressionReader.class, "isSpaceOrSyntaxOrEof");
+
+        pr(LambdaJ.Subr.class, "slength");
+        pr(LambdaJ.Chk.class, "requireCharsequence");
+        pr(LambdaJ.class, "requireString");
+        pr(LambdaJ.class, "requireList");
     }
 
     private static void pr(Class<?> clazz) throws Exception {
@@ -37,10 +38,14 @@ public final class MethodLength {
             final ClassFile cf = new ClassFile(new DataInputStream(is));
 
             System.out.println(cf.getMethods().size() + " methods total");
-            System.out.println(cf.getMethods().stream()
+            System.out.print(cf.getMethods().stream()
                                  .filter(f -> (f.getAccessFlags() & AccessFlag.SYNTHETIC) != 0)
                                  .count()
-                               + " synthetic static or instance methods");
+                               + " synthetic static or instance methods: ");
+            System.out.println(cf.getMethods().stream()
+                               .filter(f -> (f.getAccessFlags() & AccessFlag.SYNTHETIC) != 0)
+                               .map(mi -> mi.getName() + mi.getDescriptor())
+                               .collect(Collectors.joining(", ")));
             System.out.println(cf.getMethods().stream()
                                  .filter(f -> (f.getAccessFlags() & AccessFlag.SYNTHETIC) == 0)
                                  .filter(f -> (f.getAccessFlags() & AccessFlag.STATIC) != 0)
@@ -72,7 +77,7 @@ public final class MethodLength {
                 final CodeAttribute ca = mi.getCodeAttribute();
                 if (ca == null) continue; // abstract or native
                 final int bLen = ca.getCode().length;
-                if ((bLen > 35 && bLen <= 38) || bLen > 325) System.out.println(mi.getName() + " " + mi.getDescriptor() + ": " + bLen + " bytes, max stack = " + ca.getMaxStack());
+                if ((bLen > 35 && bLen <= 38) || bLen > 325) System.out.println(mi.getName() + mi.getDescriptor() + ": " + bLen + " bytes, max stack = " + ca.getMaxStack());
             }
         }
         System.out.println();
@@ -83,10 +88,11 @@ public final class MethodLength {
 
         try (InputStream is = Objects.requireNonNull(clazz.getResourceAsStream(fileName), "cannot open class file")) {
             final ClassFile cf = new ClassFile(new DataInputStream(is));
-            final MethodInfo mi = cf.getMethod(methodName);
-            final String qName = clazz.getName() + '.' + methodName;
-            if (mi == null) System.out.println(qName + ": not found");
-            else System.out.println(qName + ": " + mi.getCodeAttribute().getCode().length + " bytes");
+            for (MethodInfo mi: cf.getMethods()) {
+                if (methodName.equals(mi.getName())) {
+                    System.out.println((clazz.getName() + '.' + methodName) + mi.getDescriptor() + ": " + mi.getCodeAttribute().getCode().length + " bytes");
+                }
+            }
         }
     }
 }
