@@ -4072,8 +4072,8 @@ public class LambdaJ {
     /// ###  Misc. helpers and printing of S-expressions
 
     static String requireString(String func, Object c) {
-        if (!stringp(c)) errorNotAString(func, c);
         if (c instanceof char[]) return String.valueOf((char[])c);
+        if (!(c instanceof CharSequence)) errorNotAString(func, c);
         return c.toString();
     }
 
@@ -4354,7 +4354,7 @@ public class LambdaJ {
     static RuntimeException errorNotABit         (String func, Object actual)                   { throw errorArgTypeError("bit", func, actual); }
     static RuntimeException errorNotAVector      (String func, Object actual)                   { throw errorArgTypeError(VECTOR, func, actual); }
     static RuntimeException errorNotASimpleVector(String func, Object actual)                   { throw errorArgTypeError("simple " + VECTOR, func, actual); }
-    static RuntimeException errorNotAString      (String func, Object actual)                   { throw errorArgTypeError("string", func, actual); }
+    static void             errorNotAString      (String func, Object actual)                   { throw errorArgTypeError("string", func, actual); }
     static RuntimeException errorNotABitVector   (String func, Object actual)                   { throw errorArgTypeError("bitvector", func, actual); }
     static void             errorNotACons        (String func, Object actual)                   { throw errorArgTypeError(CONS, func, actual); }
     static void             errorNotAList        (String func, Object actual)                   { throw errorArgTypeError(LIST, func, actual); }
@@ -4529,8 +4529,8 @@ public class LambdaJ {
 
         /** Return {@code c} as a Character, error if {@code c} is not a Character. */
         static Character requireChar(String func, Object c) {
-            if (!(c instanceof Character)) throw errorArgTypeError("character", func, c);
-            return (Character)c;
+            if (c instanceof Character) return (Character)c;
+            throw errorArgTypeError("character", func, c);
         }
 
         static boolean requireBit(String func, Object value) {
@@ -4539,8 +4539,8 @@ public class LambdaJ {
 
         @SuppressWarnings("SameParameterValue")
         static Object[] requireSimpleVector(String func, Object c) {
-            if (!svectorp(c)) throw errorNotASimpleVector(func, c);
-            return (Object[])c;
+            if (svectorp(c)) return (Object[])c;
+            throw errorNotASimpleVector(func, c);
         }
 
         /** return {@code c} as a String, error if {@code c} is not a string, character or symbol */
@@ -4553,7 +4553,7 @@ public class LambdaJ {
 
         static CharSequence requireCharsequence(String func, Object c) {
             if (c instanceof char[]) return String.valueOf((char[])c);
-            if (!(c instanceof CharSequence)) throw errorNotAString(func, c);
+            if (!(c instanceof CharSequence)) errorNotAString(func, c);
             return (CharSequence)c;
         }
 
@@ -4565,8 +4565,8 @@ public class LambdaJ {
 
         @SuppressWarnings("unchecked")
         static Map<Object, Object> requireHash(String func, Object a) {
-            if (!hashtablep(a)) errorArgTypeError("hashtable", func, a);
-            return (Map<Object, Object>)a;
+            if (hashtablep(a)) return (Map<Object, Object>)a;
+            throw errorArgTypeError("hashtable", func, a);
         }
 
 
@@ -4583,6 +4583,7 @@ public class LambdaJ {
         }
 
         /** convert {@code a} to a double, error if {@code a} is not a number and/ or cannot be represented as a double (reducing precision is allowed). */
+        static double toDouble(Object a) { return toDouble("?", a); }
         static double toDouble(String func, Object a) {
             final Number n = requireNumber(func, a);
 
@@ -5187,8 +5188,8 @@ public class LambdaJ {
 
         static long slength(Object maybeVector) {
             if (maybeVector instanceof char[])       return ((char[])maybeVector).length;
-            if (maybeVector instanceof CharSequence) return ((CharSequence)maybeVector).length();
-            throw errorNotAString("slength", maybeVector);
+            if (!(maybeVector instanceof CharSequence)) errorNotAString("slength", maybeVector);
+            return ((CharSequence)maybeVector).length();
         }
 
         static char sref(Object maybeString, int idx) {
@@ -5200,8 +5201,8 @@ public class LambdaJ {
             if (maybeString instanceof char[]) return ((char[])maybeString)[idx] = newValue;
             if (maybeString instanceof StringBuilder) { ((StringBuilder)maybeString).setCharAt(idx, newValue); return newValue; }
             if (maybeString instanceof StringBuffer) { ((StringBuffer)maybeString).setCharAt(idx, newValue); return newValue; }
-            if (maybeString instanceof String) { throw new SimpleTypeError("%s: cannot modify readonly string", "sset"); }
-            throw errorNotAString("sset", maybeString);
+            if (!(maybeString instanceof String)) errorNotAString("sset", maybeString);
+            throw new SimpleTypeError("%s: cannot modify readonly string", "sset");
         }
 
         static boolean stringEq(Object o1, Object o2) {
@@ -8218,12 +8219,12 @@ public class LambdaJ {
             return ret;
         }
 
-        public final Object openFrame    (Object... args) { varargs0_1("open-frame",    args.length); return requireFrame("open-frame",     nth(0, args)).open();    }
-        public final Object closeFrame   (Object... args) { varargs0_1("close-frame",   args.length); return requireFrame("close-frame",    nth(0, args)).close();   }
-        public final Object resetFrame   (Object... args) { varargs0_1("reset-frame",   args.length); return requireFrame("reset-frame",    nth(0, args)).reset();   }
-        public final Object clearFrame   (Object... args) { varargs0_1("clear-frame",   args.length); return requireFrame("clear-frame",    nth(0, args)).clear();   }
-        public final Object repaintFrame (Object... args) { varargs0_1("repaint-frame", args.length); return requireFrame("repaint-frame",  nth(0, args)).repaint(); }
-        public final Object flushFrame   (Object... args) { varargs0_1("flush-frame",   args.length); return requireFrame("flush-frame",    nth(0, args)).flush();   }
+        public final Object openFrame    (Object... args) { varargs0_1("open-frame",    args.length); return requireFrame("open-frame",     0, args).open();    }
+        public final Object closeFrame   (Object... args) { varargs0_1("close-frame",   args.length); return requireFrame("close-frame",    0, args).close();   }
+        public final Object resetFrame   (Object... args) { varargs0_1("reset-frame",   args.length); return requireFrame("reset-frame",    0, args).reset();   }
+        public final Object clearFrame   (Object... args) { varargs0_1("clear-frame",   args.length); return requireFrame("clear-frame",    0, args).clear();   }
+        public final Object repaintFrame (Object... args) { varargs0_1("repaint-frame", args.length); return requireFrame("repaint-frame",  0, args).repaint(); }
+        public final Object flushFrame   (Object... args) { varargs0_1("flush-frame",   args.length); return requireFrame("flush-frame",    0, args).flush();   }
 
         // set new current frame, return previous frame
         public final Object currentFrame (Object... args) { varargs0_1("current-frame", args.length);
@@ -8231,28 +8232,28 @@ public class LambdaJ {
                                                             if (args.length > 0 && args[0] != null) current_frame = requireFrame("current-frame", args[0]);
                                                             return prev; }
 
-        public final Object pushPos      (Object... args) { varargs0_1("push-pos",      args.length); return requireFrame("push-pos",       nth(0, args)).pushPos(); }
-        public final Object popPos       (Object... args) { varargs0_1("pop-pos",       args.length); return requireFrame("pop-pos",        nth(0, args)).popPos();  }
+        public final Object pushPos      (Object... args) { varargs0_1("push-pos",      args.length); return requireFrame("push-pos",       0, args).pushPos(); }
+        public final Object popPos       (Object... args) { varargs0_1("pop-pos",       args.length); return requireFrame("pop-pos",        0, args).popPos();  }
 
-        public final Object penUp        (Object... args) { varargs0_1("pen-up",        args.length); return requireFrame("pen-up",         nth(0, args)).penUp();   }
-        public final Object penDown      (Object... args) { varargs0_1("pen-down",      args.length); return requireFrame("pen-down",       nth(0, args)).penDown(); }
+        public final Object penUp        (Object... args) { varargs0_1("pen-up",        args.length); return requireFrame("pen-up",         0, args).penUp();   }
+        public final Object penDown      (Object... args) { varargs0_1("pen-down",      args.length); return requireFrame("pen-down",       0, args).penDown(); }
 
-        public final Object color        (Object... args) { varargs1_2("color",         args.length); return requireFrame("color",          nth(1, args)).color  (toInt(args[0])); }
-        public final Object bgColor      (Object... args) { varargs1_2("bgcolor",       args.length); return requireFrame("bgcolor",        nth(1, args)).bgColor(toInt(args[0])); }
+        public final Object color        (Object... args) { varargs1_2("color",         args.length); return requireFrame("color",          1, args).color  (toInt(args[0])); }
+        public final Object bgColor      (Object... args) { varargs1_2("bgcolor",       args.length); return requireFrame("bgcolor",        1, args).bgColor(toInt(args[0])); }
 
-        public final Object text         (Object... args) { varargs1_2("text",          args.length); return requireFrame("text",           nth(1, args)).text   (args[0].toString()); }
+        public final Object text         (Object... args) { varargs1_2("text",          args.length); return requireFrame("text",           1, args).text   (args[0].toString()); }
 
-        public final Object right        (Object... args) { varargs1_2("right",         args.length); return requireFrame("right",          nth(1, args)).right  (toDouble(args[0])); }
-        public final Object left         (Object... args) { varargs1_2("left",          args.length); return requireFrame("left",           nth(1, args)).left   (toDouble(args[0])); }
-        public final Object forward      (Object... args) { varargs1_2("forward",       args.length); return requireFrame("forward",        nth(1, args)).forward(toDouble(args[0])); }
+        public final Object right        (Object... args) { varargs1_2("right",         args.length); return requireFrame("right",          1, args).right  (toDouble(args[0])); }
+        public final Object left         (Object... args) { varargs1_2("left",          args.length); return requireFrame("left",           1, args).left   (toDouble(args[0])); }
+        public final Object forward      (Object... args) { varargs1_2("forward",       args.length); return requireFrame("forward",        1, args).forward(toDouble(args[0])); }
 
-        public final Object moveTo       (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return requireFrame("move-to",        nth(2, args)).moveTo(toDouble(args[0]), toDouble(args[1]));  }
-        public final Object lineTo       (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return requireFrame("line-to",        nth(2, args)).lineTo(toDouble(args[0]), toDouble(args[1]));  }
-        public final Object moveRel      (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return requireFrame("move-rel",       nth(2, args)).moveRel(toDouble(args[0]), toDouble(args[1])); }
-        public final Object lineRel      (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return requireFrame("line-rel",       nth(2, args)).lineRel(toDouble(args[0]), toDouble(args[1])); }
+        public final Object moveTo       (Object... args) { varargsMinMax("move-to",       args.length, 2, 3); return requireFrame("move-to",        2, args).moveTo(toDouble(args[0]), toDouble(args[1]));  }
+        public final Object lineTo       (Object... args) { varargsMinMax("line-to",       args.length, 2, 3); return requireFrame("line-to",        2, args).lineTo(toDouble(args[0]), toDouble(args[1]));  }
+        public final Object moveRel      (Object... args) { varargsMinMax("move-rel",      args.length, 2, 3); return requireFrame("move-rel",       2, args).moveRel(toDouble(args[0]), toDouble(args[1])); }
+        public final Object lineRel      (Object... args) { varargsMinMax("line-rel",      args.length, 2, 3); return requireFrame("line-rel",       2, args).lineRel(toDouble(args[0]), toDouble(args[1])); }
 
-        public final Object makeBitmap   (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return requireFrame("make-bitmap",    nth(2, args)).makeBitmap(toInt(args[0]), toInt(args[1]));  }
-        public final Object discardBitmap(Object... args) { varargs0_1("discard-bitmap",   args.length);       return requireFrame("discard-bitmap", nth(0, args)).discardBitmap();   }
+        public final Object makeBitmap   (Object... args) { varargsMinMax("make-bitmap",   args.length, 2, 3); return requireFrame("make-bitmap",    2, args).makeBitmap(toInt(args[0]), toInt(args[1]));  }
+        public final Object discardBitmap(Object... args) { varargs0_1("discard-bitmap",   args.length);       return requireFrame("discard-bitmap", 0, args).discardBitmap();   }
 
         public final Object setPixel     (Object... args) { varargsMinMax("set-pixel",     args.length, 3, 4); return setPixel(toInt(args[0]), toInt(args[1]), toInt(args[2]), nth(3, args)); }
         public final Object setPixel     (Object x, Object y, Object rgb) { return setPixel(x, y, rgb, null);  }
@@ -8326,7 +8327,7 @@ public class LambdaJ {
             // the redundant checks are faster than instanceof Number and will succeed most of the time
             if (n instanceof Long)    return ((Long)n).doubleValue();
             if (n instanceof Double)  return (Double) n;
-            return LambdaJ.Chk.toDouble("?", n);
+            return LambdaJ.Chk.toDouble(n);
         }
         public static double toDouble(Double n) { if (n != null) return n;  throw errorNotANumber(null); }
         public static double toDouble(double n) { return n; }
@@ -8418,10 +8419,10 @@ public class LambdaJ {
             return LambdaJ.Chk.requireNumber("?", o);
         }
 
+        private TurtleFrame requireFrame(String func, int n, Object[] arg) { return requireFrame(func, nth(n, arg)); }
         private TurtleFrame requireFrame(String s, Object o) {
             values = null;
-            final TurtleFrame ret;
-            if (o == null && (ret = current_frame) != null) return ret;
+            if (o == null) o = current_frame;
             if (o instanceof TurtleFrame) return (TurtleFrame)o;
             throw errorNotAFrame(s, o);
         }
