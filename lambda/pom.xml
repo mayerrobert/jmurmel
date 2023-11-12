@@ -58,8 +58,6 @@
                         <configuration>
                             <excludes>
                                 <exclude>**/*ManualTest.java</exclude>
-                                <!-- archunit 1.1.0's asm currently chokes on Java 22ea's class file major version 66 todo re-enable when archunit is updated -->
-                                <exclude>**/*ArchitectureTest.java</exclude>
                             </excludes>
                         </configuration>
                     </plugin>
