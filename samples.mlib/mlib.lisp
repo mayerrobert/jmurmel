@@ -860,17 +860,24 @@
 (defmacro dotimes (loop-def . body)
   (let ((var (car loop-def))
         (countform (cadr loop-def))
-        (count (gensym))
-        (loop (gensym))
+        (count (gensym "count"))
+        (loop (gensym "loop"))
         (resultform (cddr loop-def)))
-    `(let ((,var 0)
-           (,count ,countform))
-       (if (<= ,count 0) (progn ,@resultform)
-         (if (>= ,var ,count) (progn ,@resultform)
+    (if (integerp countform)
+
+          (if (<= countform 0) `(progn ,@resultform)
+            `(let ((,var 0))
+               (let ,loop ()
+                 ,@body
+                 (if (>= (incf ,var) ,countform) (progn ,@resultform)
+                   (,loop)))))
+
+      `(let ((,var 0)
+             (,count ,countform))
+         (if (<= ,count 0) (progn ,@resultform)
            (let ,loop ()
              ,@body
-             (incf ,var)
-             (if (>= ,var ,count) (progn ,@resultform)
+             (if (>= (incf ,var) ,count) (progn ,@resultform)
                (,loop))))))))
 
 

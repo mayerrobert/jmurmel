@@ -1,3 +1,5 @@
+module-info: https://github.com/brettwooldridge/SparseBitSet/pull/28/files
+
 compiler: die quoted forms vielleicht nicht als member rausgenerieren sondern alle in ein array stecken?
 -> z.b. murmel-test.lisp hat hunderte davon
 -> max class file grösse: https://stackoverflow.com/questions/42294998/what-is-the-maximum-size-of-a-java-class-file#:~:text=class%20file%20contains%20a%20magic,is%20limited%20to%2065535%20bytes.
