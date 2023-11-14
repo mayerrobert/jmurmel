@@ -895,12 +895,13 @@
         (lst (gensym))
         (loop (gensym))
         (result (cddr loop-def)))
-    `(let ,loop ((,lst ,listform))
+    `(let* ,loop ((,lst ,listform)
+                  (,var (car ,lst)))
        (if ,lst
-             (let ((,var (car ,lst)))
+             (progn
                ,@body
-               (,loop (cdr ,lst)))
-         ,(if result `(let ((,var nil)) ,@result) )))))
+               (,loop (cdr ,lst) (cadr ,lst)))
+         (progn ,@result)))))
 
 
 ;;; = Macro: dovector
@@ -948,13 +949,14 @@
         (lst (gensym))
         (loop (gensym))
         (result (cdddr loop-def)))
-    `(let ,loop ((,lst ,listform))
+    `(let* ,loop ((,lst ,listform)
+                  (,key-var (car ,lst))
+                  (,value-var (cadr ,lst)))
        (if ,lst
              (if (cdr ,lst)
-                   (let ((,key-var (car ,lst))
-                         (,value-var (cadr ,lst)))
+                   (progn
                      ,@body
-                     (,loop (cddr ,lst)))
+                     (,loop (cddr ,lst) (caddr ,lst) (car (cdddr ,lst))))
                (error "doplist - odd number of elements in plist"))
          (progn ,@result)))))
 
