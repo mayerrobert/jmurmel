@@ -254,7 +254,6 @@ public class LambdaJ {
             wellknownSymbol = ws;
         }
 
-        public boolean wellknown() { return wellknownSymbol != WellknownSymbol.interned && wellknownSymbol != WellknownSymbol.notInterned; }
         public boolean specialForm() { return wellknownSymbol.kind == WellknownSymbolKind.SF; }
         public boolean primitive() { return wellknownSymbol.kind == WellknownSymbolKind.PRIM; }
 
@@ -2148,7 +2147,10 @@ public class LambdaJ {
     }
 
     static boolean reserved(LambdaJSymbol sym) {
-        return sym == null || sym.wellknownSymbol == WellknownSymbol.sNil || sym.wellknownSymbol == WellknownSymbol.sT || sym.specialForm();
+        if (sym == null) return true;
+        final WellknownSymbolKind k = sym.wellknownSymbol.kind;
+        return k == WellknownSymbolKind.SF          // special forms
+               || k == WellknownSymbolKind.SYMBOL;  // nil and t
     }
 
 
@@ -2246,7 +2248,7 @@ public class LambdaJ {
         sLoad(LOAD, WellknownSymbolKind.SF), sRequire(REQUIRE, WellknownSymbolKind.SF), sProvide(PROVIDE, WellknownSymbolKind.SF),
         sDeclaim(DECLAIM, WellknownSymbolKind.SF),
 
-        // predefined global variables
+        // predefined global variables. Java usage is indirectly through WellknownSymbol.of().
         sNil(NIL, WellknownSymbolKind.SYMBOL), sT(T, WellknownSymbolKind.SYMBOL),
 
         // logic, predicates
