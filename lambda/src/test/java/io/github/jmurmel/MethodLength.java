@@ -90,7 +90,8 @@ public final class MethodLength {
             final ClassFile cf = new ClassFile(new DataInputStream(is));
             for (MethodInfo mi: cf.getMethods()) {
                 if (methodName.equals(mi.getName())) {
-                    System.out.println((clazz.getName() + '.' + methodName) + mi.getDescriptor() + ": " + mi.getCodeAttribute().getCode().length + " bytes");
+                    final CodeAttribute ca = mi.getCodeAttribute();
+                    System.out.println((clazz.getName() + '.' + methodName) + mi.getDescriptor() + ": " + ca.getCode().length + " bytes, max stack = " + ca.getMaxStack());
                 }
             }
         }
