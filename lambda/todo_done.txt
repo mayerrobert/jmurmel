@@ -2573,3 +2573,7 @@ error occurred in 00_tak_apo.lisp:4:10..4:24: (require "mlib")
 
 commandline parameter --eval
 -> --eval ist der letzte parameter, alles danach wird als Murmel abgearbeitet
+
+
+eval: die (grosse) finally clause steht im bytecode nach jedem return
+-> statt return -> break tailcall und nach der whileschleife 1x return result

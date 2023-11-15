@@ -4,10 +4,6 @@ compiler: die quoted forms vielleicht nicht als member rausgenerieren sondern al
 -> z.b. murmel-test.lisp hat hunderte davon
 -> max class file grösse: https://stackoverflow.com/questions/42294998/what-is-the-maximum-size-of-a-java-class-file#:~:text=class%20file%20contains%20a%20magic,is%20limited%20to%2065535%20bytes.
    64k methoden + 64k attribute, 64k max constant pool size (wsl. 64k einträge), wsl 1-2GB max sourcefile größe
-   
-
-eval: die (grosse) finally clause steht im bytecode nach jedem return
--> statt return -> break tailcall und nach der whileschleife 1x return result
 
 
 compiler: statt global + define-methode
