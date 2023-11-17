@@ -10,7 +10,6 @@
 # supported CodeQL languages.
 #
 name: "CodeQL"
-
 on:
   push:
     paths-ignore:
@@ -40,14 +39,17 @@ env:
   JAVA_VERSION: 11
   # 19 makes "run-compiled-langref" fail. It seems that CodeQL somehow changes some stuff.
 
+permissions:
+  contents: read
+
 jobs:
   analyze:
-    name: Analyze
-    runs-on: ubuntu-latest
     permissions:
       actions: read
       contents: read
       security-events: write
+    name: Analyze
+    runs-on: ubuntu-latest
 
     strategy:
       fail-fast: false
@@ -58,11 +60,11 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v4
+      uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
     # Initializes the CodeQL tools for scanning.
     - name: Initialize CodeQL
-      uses: github/codeql-action/init@v2
+      uses: github/codeql-action/init@689fdc5193eeb735ecb2e52e819e3382876f93f4 # v2.22.6
       with:
         languages: ${{ matrix.language }}
         # If you wish to specify custom queries, you can do so here or in a config file.
@@ -71,13 +73,13 @@ jobs:
         # queries: ./path/to/local/query, your-org/your-repo/queries@main
 
     - name: Set up JDK ${{ matrix.Java }}
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
       with:
         java-version: ${{ env.JAVA_VERSION }}
         distribution: 'zulu'
 
     - name: Restore Maven repo
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -86,4 +88,4 @@ jobs:
       run: mvn -V -B clean package --file pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v2
+      uses: github/codeql-action/analyze@689fdc5193eeb735ecb2e52e819e3382876f93f4 # v2.22.6
