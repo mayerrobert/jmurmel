@@ -29,8 +29,6 @@ permissions:
 jobs:
   build:
 
-    permissions:
-      contents: write  # for actions/upload-artifact
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
