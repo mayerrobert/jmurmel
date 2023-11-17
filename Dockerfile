@@ -47,7 +47,7 @@
 
 
 # maven:3.8.6-openjdk-18-slim is based on "Debian 11.3" aka "Bullseye"
-FROM maven:3.8.6-openjdk-18-slim AS builder
+FROM maven:3.8-openjdk-18-slim AS builder
 # binutils are needed for "jlink ... --strip-debug". Saves 4MB in the final image.
 RUN apt-get update && apt-get install -y --no-install-recommends binutils && rm -rf /var/lib/apt/lists/*
 
