@@ -46,7 +46,7 @@
 #
 
 
-FROM maven:3.9.5-amazoncorretto-21-debian-bookworm AS builder
+FROM maven:3-amazoncorretto-21-debian-bookworm AS builder
 # binutils are needed for "jlink ... --strip-debug". Saves 4MB in the final image.
 RUN apt-get update && apt-get install -y --no-install-recommends binutils && rm -rf /var/lib/apt/lists/*
 
