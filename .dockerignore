@@ -5,6 +5,7 @@
 Dockerfile
 graalvm*
 lambdajbm*
+samples.murmel*
 scribbles*
 scripts*
 *.iml

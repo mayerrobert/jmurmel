@@ -46,12 +46,13 @@
 #
 
 
-FROM maven:3.9.5-amazoncorretto-21-debian-bookworm AS builder
+FROM maven:3-amazoncorretto-21-debian-bookworm AS builder
 # binutils are needed for "jlink ... --strip-debug". Saves 4MB in the final image.
 RUN apt-get update && apt-get install -y --no-install-recommends binutils && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /jmurmel
 COPY . .
+#RUN ls -lhR
 RUN mvn -B package -f lambda/pom.xml -DskipTests && \
     jlink --output jdkbuild/jdk --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,java.desktop,jdk.compiler,jdk.zipfs,jdk.jfr,jdk.localedata,java.management
 
