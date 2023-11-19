@@ -14,23 +14,28 @@ env:
   JAVA_VERSION: 8
   JAVA_TARGET: 8
 
+permissions:
+  contents: read
+
 jobs:
   build:
 
+    permissions:
+      contents: write  # for softprops/action-gh-release to create GitHub release
     runs-on: ubuntu-latest
     name: Release
 
     steps:
-    - uses: actions/checkout@v4
+    - uses: actions/checkout@b4ffde65f46336ab88eb53be808477a3936bae11 # v4.1.1
 
     - name: Set up JDK ${{ env.JAVA_VERSION }}
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@0ab4596768b603586c0de567f2430c30f5b0d2b0 # v3.13.0
       with:
         java-version: ${{ env.JAVA_VERSION }}
         distribution: 'zulu'
 
     - name: Restore Maven repo
-      uses: actions/cache/restore@v3
+      uses: actions/cache/restore@704facf57e6136b1bc63b828d79edcd491f0ee84 # v3.3.2
       with:
         path: ~/.m2/repository
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
@@ -45,7 +50,7 @@ jobs:
       run: zip -j ${{ github.ref_name }}-w64-slim.zip LICENSE scripts/target/jmurmel.exe lambda/target/jmurmel.jar samples.mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html && zip -r ${{ github.ref_name }}-w64-slim.zip legal/launch4j/
 
     - name: Create release and upload files
-      uses: softprops/action-gh-release@v1
+      uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
       with:
         prerelease: true
         files: |
