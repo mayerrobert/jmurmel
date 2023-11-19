@@ -21,13 +21,13 @@
     </properties>
 
     <build>
+        <finalName>unsupported</finalName>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>${maven-jar-plugin.version}</version>
                 <configuration>
-                    <finalName>unsupported</finalName>
                     <includes>
                         <include>**/JavaCompilerHelper.class</include>
                         <include>**/TurtleFrame.class</include>

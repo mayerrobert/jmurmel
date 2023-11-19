@@ -67,6 +67,7 @@
     </profiles>
 
     <build>
+        <finalName>jmurmel</finalName>
         <resources>
             <resource>
                 <directory>src/main/resources</directory>
@@ -136,7 +137,6 @@
                 <artifactId>maven-jar-plugin</artifactId>
                 <version>${maven-jar-plugin.version}</version>
                 <configuration>
-                    <finalName>jmurmel</finalName>
                     <archive>
                         <manifest>
                             <!-- <addClasspath>true</addClasspath> -->
