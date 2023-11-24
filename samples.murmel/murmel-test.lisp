@@ -464,8 +464,18 @@ multiline comment
 )
 
 
-(deftest labels
+(deftest labels.1
   (labels () 1) 1)
+
+(defmacro m()
+  (let ((l1 (gensym))
+        (l2 (gensym)))
+    `(labels ((,l1 () 1)
+              (,l2 () (,l1)))
+       (,l2))))
+
+(deftest labels.2
+  (m) 1)
 
 
 ;;; catch, throw

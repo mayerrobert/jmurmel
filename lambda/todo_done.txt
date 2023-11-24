@@ -2577,3 +2577,5 @@ commandline parameter --eval
 
 eval: die (grosse) finally clause steht im bytecode nach jedem return
 -> statt return -> break tailcall und nach der whileschleife 1x return result
+
+labels forms wo mehr als ein name ein gensym ist gibt wsl. javacompilerfehler

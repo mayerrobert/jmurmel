@@ -19,6 +19,7 @@ Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
  * fixed compiled presized "make-hash-table"
  * fixed mlib: key-var and value-var now are bound to nil in the result form in "doplist"
    (was: not bound)
+ * fixed miscompilation when using gensymmed local function names in "labels"
 
 
 Changes in JMurmel-1.4.3 relative to JMurmel-1.4.2

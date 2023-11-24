@@ -10129,9 +10129,11 @@ public class LambdaJ {
             sb.append(isLast ? "tailcall(" : "funcall(");
             sb.append("new MurmelFunction() {\n");
 
-            final ConsCell params = paramList(LABELS, localFuncs, true);
-            for (Object localFunc: params) {
-                env = extenv(LABELS, localFunc, rsfx, env);
+            int ctr = 0;
+            for (Object localFunc: paramList(LABELS, localFuncs, true)) {
+                final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(LABELS, localFunc);
+                final String javaName = "lf" + ctr++ + '_' + rsfx; // don't use the Murmel symbol name in case several local functions' names are gensymmed
+                env = extenvIntern(sym, javaName, env);
             }
 
             for (Object symbolParamsAndBody: (ConsCell) localFuncs) {

@@ -59,8 +59,6 @@ load liest files als UTF-8
 
 statt Files.newBufferedReader kann meist ReadSupplier.of(Path) verwendet werden
 
-labels forms wo mehr als ein name ein gensym ist gibt wsl. javacompilerfehler
-
 sample mit teapot?
 https://www.reddit.com/r/ProgrammingLanguages/comments/1612opy/i_revamped_my_tree_walking_interpreter_into_a/
 
