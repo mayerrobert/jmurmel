@@ -1838,12 +1838,7 @@ public class LambdaJ {
                         backquote++;
                         readToken();
                         final Object exp = readObject(_startLine, _startChar, eof);
-                        if (backquote == 1) {
-                            o = qq_expand(exp);
-                            //System.out.println("bq expansion in:  (backquote " + printSEx(exp) + ')');
-                            //System.out.println("bq expansion out: " + printSEx(o));
-                            //System.out.println();
-                        }
+                        if (backquote == 1) o = qq_expand(exp);
                         else o = cons(startLine, startChar, sQuasiquote, cons(startLine, startChar, exp, null));
                     }
                     finally { backquote--; }
@@ -1852,16 +1847,16 @@ public class LambdaJ {
                 if (tok == Token.COMMA) {
                     if (backquote == 0) errorReaderError("comma is not inside a backquote" + posInfo(startLine, startChar));
                     skipWs();
-                    final boolean splice;
+                    final Object unquote;
                     if (look == '.') errorReaderError(",. is not supported" + posInfo(startLine, startChar));
-                    if (look == '@') { splice = true; look = getchar(); }
-                    else splice = false;
+                    if (look == '@') { unquote = sUnquote_splice; look = getchar(); }
+                    else unquote = sUnquote;
                     final int _startLine = lineNo, _startChar = charNo;
                     final Object o;
                     try {
                         backquote--;
                         readToken();
-                        o = cons(startLine, startChar, splice ? sUnquote_splice : sUnquote, cons(startLine, startChar, readObject(_startLine, _startChar, eof), null));
+                        o = cons(startLine, startChar, unquote, cons(startLine, startChar, readObject(_startLine, _startChar, eof), null));
                     }
                     finally { backquote++; }
                     return o;
