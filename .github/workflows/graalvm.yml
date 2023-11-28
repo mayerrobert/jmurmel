@@ -5,6 +5,7 @@ on:
     paths-ignore:
       - CHANGES
       - Dockerfile
+      - Dockerfile.distroless
       - "**.md"
       - "**.txt"
       - "**.html"
