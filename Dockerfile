@@ -44,6 +44,12 @@
 #
 #    $ podman image prune
 #
+# Hint: use
+#
+#    $ podman run -it --rm --entrypoint=bash jmurmel
+#
+# if you want to check what's inside the container.
+#
 
 
 FROM maven:3-amazoncorretto-21-debian-bookworm AS builder

@@ -1,6 +1,17 @@
 Ideen zur Beschleunigung des Interpreters, eigentlich gehts immer um das Vermeiden der linearen Suche in assq beim aufloesen von Symbols
 =========================================
 
+https://justine.lol/sectorlisp2/ hat eine rekursionsoptimierung (oder nur tailcalls?) für dynamic lambdas:
+function Peel(x, a) {
+  return a && x == Car(Car(a)) ? Cdr(a) : a;
+}
+
+function Pairlis(x, y, a) {
+  return x ? Cons(Cons(Car(x), Car(y)),
+                  Pairlis(Cdr(x), Cdr(y),
+                          Peel(Car(x), a))) : a;
+}
+
 environment() könnte statt ConsCell-Liste eine ArraySlice Liste basteln
 -> weniger speicherverbrauch durch weniger objekte
 -> assq() könnte schneller sein weil mitm iterator über ein array iterieren müsste schneller sein als (cdr-) pointer chasing

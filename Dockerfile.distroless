@@ -1,0 +1,74 @@
+#
+# Dockerfile for JMurmel w/o X11 graphics
+#
+# Will build a docker image from a local clone of https://github.com/mayerrobert/jmurmel.git
+# The resulting docker image should be a lot smaller than when using "Dockerfile".
+# Needs docker or podman and a local git repo containing the jmurmel files.
+# A local Java- or maven installation is not needed.
+#
+# Do something like
+#
+#    $ git clone https://github.com/mayerrobert/jmurmel.git
+#    $ cd jmurmel
+#
+# and then:
+#
+# Usage:
+#
+#    $ podman build -t jmurmel-dl -f ./Dockerfile.distroless
+#    $ podman run -it --rm jmurmel-dl
+#
+# The "podman build..." command will build a docker image from the local jmurmel git repo.
+# The "podman run..." command will launch an interactive REPL session.
+#
+# You may want to mount your current working directory into the container so that JMurmel
+# will "see" your local files:
+#
+#    $ podman run -it --rm -v .:/work -w /work jmurmel-dl
+#
+# The above command will make the current working directory available as "/work"
+# inside the container and cd to it before launching JMurmel.
+#
+#
+# Optional: after the build command some docker images could be deleted
+# unless you want to keep them around to rebuild again and/ or use them for other purposes:
+#
+#    $ podman rmi maven:3.9.5-amazoncorretto-21-debian-bookworm
+#
+# maybe followed by
+#
+#    $ podman image prune
+#
+# Hint: if you used "base-debian12:debug" then you can use
+#
+#    $ podman run -it --rm --entrypoint=sh jmurmel-dl
+#
+# if you want to check what's inside the container.
+#
+
+
+FROM maven:3-amazoncorretto-21-debian-bookworm AS builder
+# binutils are needed for "jlink ... --strip-debug". Saves 4MB in the final image.
+RUN apt-get update && apt-get install -y --no-install-recommends binutils && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /jmurmel
+COPY . .
+#RUN ls -lhR
+RUN mvn -B package -f lambda/pom.xml -DskipTests && \
+    jlink --output jdkbuild/jdk --compress=2 --no-header-files --no-man-pages --strip-debug --add-modules java.base,jdk.compiler,jdk.zipfs,jdk.jfr,jdk.localedata,java.management
+
+
+
+# see https://github.com/GoogleContainerTools/distroless
+#FROM gcr.io/distroless/base-debian12:debug
+FROM gcr.io/distroless/base-debian12
+
+ARG CHIPSET_ARCH=x86_64-linux-gnu
+
+COPY --from=builder /lib/${CHIPSET_ARCH}/libz.so.1 /lib/${CHIPSET_ARCH}/
+COPY --from=builder /jmurmel/jdkbuild /jmurmel/lambda/target/jmurmel.jar /jmurmel/samples.mlib/mlib.lisp /jmurmel
+
+WORKDIR /jmurmel
+
+# might want to add Java heap options e.g. -Xms500m -Xmx4G
+ENTRYPOINT [ "/jmurmel/jdk/bin/java", "-Xss2m", "-XX:+UseParallelGC", "-jar", "/jmurmel/jmurmel.jar" ]

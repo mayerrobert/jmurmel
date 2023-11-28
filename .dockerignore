@@ -2,7 +2,7 @@
 .idea
 */target
 
-Dockerfile
+Dockerfile*
 graalvm*
 lambdajbm*
 samples.murmel*
