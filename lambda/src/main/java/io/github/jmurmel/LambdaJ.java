@@ -759,7 +759,7 @@ public class LambdaJ {
             if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: (%s)", "function application", p2);
             final Object cddrArgs = cdr(cdrArgs);
             if (cddrArgs != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", cddrArgs);
-            return intp.acons(p2, car(cdrArgs), intp.acons(p1, car(args), closure));
+            return intp.acons(p1, car(args), intp.acons(p2, car(cdrArgs), closure));
         }
     }
 
@@ -779,7 +779,7 @@ public class LambdaJ {
             if (cddrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cddr(params));
             final Object cdddrArgs = cdr(cddrArgs);
             if (cdddrArgs != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", cdddrArgs);
-            return intp.acons(p3, car(cddrArgs), intp.acons(p2, car(cdrArgs), intp.acons(p1, car(args), closure)));
+            return intp.acons(p1, car(args), intp.acons(p2, car(cdrArgs), intp.acons(p3, car(cddrArgs), closure)));
         }
     }
 
@@ -800,7 +800,7 @@ public class LambdaJ {
 
         @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
             if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
-            return intp.acons(more, cdr(args), intp.acons(p, car(args), closure));
+            return intp.acons(p, car(args), intp.acons(more, cdr(args), closure));
         }
     }
 
@@ -816,7 +816,7 @@ public class LambdaJ {
             if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
             final Object cdrArgs = cdr(args);
             if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cdr(params));
-            return intp.acons(more, cdr(cdrArgs), intp.acons(p2, car(cdrArgs), intp.acons(p1, car(args), closure)));
+            return intp.acons(p1, car(args), intp.acons(p2, car(cdrArgs), intp.acons(more, cdr(cdrArgs), closure)));
         }
     }
 
@@ -3568,28 +3568,25 @@ public class LambdaJ {
         return symbolEntry;
     }
 
-    /** build an extended environment for a function invocation:<pre>
-     *  loop over params and args
-     *    construct a cons (param . arg)
-     *    prepend the environment with above cons
-     *  return extended environment</pre>
-     *
+    /** build an extended environment for a function invocation.
      *  Similar to CL pairlis, but {@code #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
      *  e.g. (zip '(a b . c) '(1 2 3 4 5)) -> ((a . 1) (b . 2) (c 3 4 5)) */
-    final ConsCell zip(String func, Object params, ConsCell args, ConsCell env, boolean match) {
-        if (params == null && args == null) return env; // shortcut for no params/ no args
-
-        while (consp(params)) {
-            if (match && args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", func, params);
-            env = acons(car((ConsCell)params), car(args), env);
-            params = cdr((ConsCell)params);
-            args = (ConsCell)cdr(args);
+    final ConsCell zip(String func, Object params, Object args, ConsCell env, boolean match) {
+        if (params == null) {
+            if (match && args != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", func, args);
+            return env;
         }
-        // if paramList is a dotted list whose last cdr is a non-nil symbol: the last param will be bound to the list of remaining args
-        if (params != null && symbolp(params)) return acons(params, args, env);
+        if (symbolp(params)) return acons(params, args, env);
+        if (match && args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", func, params);
+        final Object sym = car(params);
+        return acons(sym, car(args), zip(func, cdr(params), cdr(args), peel(sym, env), match));
+    }
 
-        if (match && args != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", func, args);
-        return env;
+    /** this helps in limiting environment growth for recursive calls of dynamic lambdas:
+     *  parameters in the current dynamic environment will be peeled off before adding them.
+     *  Not too useful for lexical closures except when the closure's parameters hide closed over variables. */
+    private static ConsCell peel(Object sym, ConsCell env) {
+        return env != null && sym == caar(env) ? (ConsCell)cdr(env) : env;
     }
 
     static void errorApplicationArgCount(String msg, String func, Object params) {
