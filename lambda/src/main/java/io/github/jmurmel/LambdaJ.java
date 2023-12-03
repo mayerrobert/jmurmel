@@ -3584,7 +3584,7 @@ public class LambdaJ {
 
     /** this helps in limiting environment growth for recursive calls of dynamic lambdas:
      *  parameters in the current dynamic environment will be peeled off before adding them.
-     *  Not too useful for lexical closures except when the closure's parameters hide closed over variables. */
+     *  Not too useful for lexical closures except when the closure's parameters hide closed over variables (as is the case in recursion). */
     private static ConsCell peel(Object sym, ConsCell env) {
         return env != null && sym == car(env.car()) ? (ConsCell)env.cdr() : env;
     }

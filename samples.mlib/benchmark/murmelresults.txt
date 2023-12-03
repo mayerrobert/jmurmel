@@ -1,106 +1,106 @@
 Benchmark results
-26.11.2023 
+03.12.2023 
 
-Version 1.4.4-SNAPSHOT/Built from branch master jmurmel-all-1.4.3-283-gfb13796 2023-11-25T08:47:37+0100/Built by Robert 2023-11-25T16:32:12+0100
+Version 1.4.4-SNAPSHOT/Built from branch master jmurmel-all-1.4.3-292-gcd439c4 2023-12-03T06:39:40+0100/Built by Robert 2023-12-03T10:45:59+0100
 
 *** jmurmel (compiled): 00_tak_apo.lisp ***
 tak´ result: 7
 warmup done.
-tak´: did 2650 iterations in 5,01717 seconds walltime, 528,186 iterations/second, avg/min/max 1,89327/1,79839/13,6532 milliseconds/iteration
+tak´: did 2660 iterations in 5,00501 seconds walltime, 531,468 iterations/second, avg/min/max 1,88158/1,79449/13,6376 milliseconds/iteration
 
 *** jmurmel (interpreted): 00_tak_apo.lisp ***
 tak´ result: 7
 warmup done.
-tak´: did 160 iterations in 5,07261 seconds walltime, 31,5419 iterations/second, avg/min/max 31,7038/31,1568/57,3107 milliseconds/iteration
+tak´: did 150 iterations in 5,26020 seconds walltime, 28,5161 iterations/second, avg/min/max 35,0680/34,7022/76,0833 milliseconds/iteration
 
 *** jmurmel (compiled): 3.01_tak.lisp ***
 tak result: 7
 warmup done.
-tak: did 2660 iterations in 5,01344 seconds walltime, 530,574 iterations/second, avg/min/max 1,88475/1,78757/14,5818 milliseconds/iteration
+tak: did 2580 iterations in 5,00068 seconds walltime, 515,930 iterations/second, avg/min/max 1,93825/1,83287/14,2388 milliseconds/iteration
 
 *** jmurmel (interpreted): 3.01_tak.lisp ***
 tak result: 7
 warmup done.
-tak: did 160 iterations in 5,18470 seconds walltime, 30,8600 iterations/second, avg/min/max 32,4044/32,2503/66,6982 milliseconds/iteration
+tak: did 160 iterations in 5,29552 seconds walltime, 30,2142 iterations/second, avg/min/max 33,0970/32,8045/58,9782 milliseconds/iteration
 
 *** jmurmel (compiled): 3.02_stak.lisp ***
 stak result: 7
 warmup done.
-stak: did 580 iterations in 5,02777 seconds walltime, 115,359 iterations/second, avg/min/max 8,66857/8,26456/33,6193 milliseconds/iteration
+stak: did 610 iterations in 5,08548 seconds walltime, 119,949 iterations/second, avg/min/max 8,33685/8,02197/80,0246 milliseconds/iteration
 
 *** jmurmel (interpreted): 3.02_stak.lisp ***
 stak result: 7
 warmup done.
-stak: did 90 iterations in 5,22348 seconds walltime, 17,2299 iterations/second, avg/min/max 58,0387/57,3895/94,2320 milliseconds/iteration
+stak: did 100 iterations in 5,53334 seconds walltime, 18,0723 iterations/second, avg/min/max 55,3334/55,0919/79,9331 milliseconds/iteration
 
 *** jmurmel (compiled): 3.03_ctak.lisp ***
 ctak result: 7
 warmup done.
-ctak: did 460 iterations in 5,02585 seconds walltime, 91,5268 iterations/second, avg/min/max 10,9258/10,7117/57,5739 milliseconds/iteration
+ctak: did 440 iterations in 5,00927 seconds walltime, 87,8372 iterations/second, avg/min/max 11,3847/10,8358/62,3689 milliseconds/iteration
 
 *** jmurmel (interpreted): 3.03_ctak.lisp ***
 ctak result: 7
 warmup done.
-ctak: did 130 iterations in 5,33191 seconds walltime, 24,3815 iterations/second, avg/min/max 41,0147/40,6324/59,5939 milliseconds/iteration
+ctak: did 120 iterations in 5,03912 seconds walltime, 23,8137 iterations/second, avg/min/max 41,9927/41,3398/68,6196 milliseconds/iteration
 
 *** jmurmel (compiled): 3.04_takL.lisp ***
 takL result: (7 6 5 4 3 2 1)
 warmup done.
-takL: did 300 iterations in 5,13083 seconds walltime, 58,4700 iterations/second, avg/min/max 17,1028/16,7357/61,4013 milliseconds/iteration
+takL: did 300 iterations in 5,09099 seconds walltime, 58,9277 iterations/second, avg/min/max 16,9700/16,5203/64,3990 milliseconds/iteration
 
 *** jmurmel (interpreted): 3.04_takL.lisp ***
 takL result: (7 6 5 4 3 2 1)
 warmup done.
-takL: did 20 iterations in 5,76847 seconds walltime, 3,46712 iterations/second, avg/min/max 288,423/287,425/307,751 milliseconds/iteration
+takL: did 20 iterations in 5,33824 seconds walltime, 3,74655 iterations/second, avg/min/max 266,912/266,603/286,742 milliseconds/iteration
 
 *** jmurmel (compiled): 3.08_destru.lisp ***
 destru result: null
 warmup done.
-destru: did 450 iterations in 5,11260 seconds walltime, 88,0179 iterations/second, avg/min/max 11,3613/11,0544/23,9782 milliseconds/iteration
+destru: did 460 iterations in 5,10911 seconds walltime, 90,0353 iterations/second, avg/min/max 11,1068/10,7042/22,2831 milliseconds/iteration
 
 *** jmurmel (interpreted): 3.08_destru.lisp ***
 destru result: null
 warmup done.
-destru: did 30 iterations in 6,11682 seconds walltime, 4,90451 iterations/second, avg/min/max 203,894/203,367/229,341 milliseconds/iteration
+destru: did 30 iterations in 6,02943 seconds walltime, 4,97560 iterations/second, avg/min/max 200,981/200,571/223,707 milliseconds/iteration
 
 *** jmurmel (compiled): 3.10_deriv.lisp ***
 deriv (5000x) result: null
 warmup done.
-deriv (5000x): did 490 iterations in 5,00183 seconds walltime, 97,9641 iterations/second, avg/min/max 10,2078/9,71455/28,1748 milliseconds/iteration
+deriv (5000x): did 490 iterations in 5,05128 seconds walltime, 97,0051 iterations/second, avg/min/max 10,3087/9,89770/30,9459 milliseconds/iteration
 
 *** jmurmel (interpreted): 3.10_deriv.lisp ***
 deriv (5000x) result: null
 warmup done.
-deriv (5000x): did 50 iterations in 5,77414 seconds walltime, 8,65929 iterations/second, avg/min/max 115,483/113,874/140,096 milliseconds/iteration
+deriv (5000x): did 50 iterations in 5,71062 seconds walltime, 8,75561 iterations/second, avg/min/max 114,212/113,908/128,007 milliseconds/iteration
 
 *** jmurmel (compiled): array1.lisp ***
 array1 10 10000 result: 10000
 warmup done.
-array1 10 10000: did 660 iterations in 5,03667 seconds walltime, 131,039 iterations/second, avg/min/max 7,63132/7,30768/15,3677 milliseconds/iteration
+array1 10 10000: did 660 iterations in 5,05215 seconds walltime, 130,638 iterations/second, avg/min/max 7,65477/7,30660/15,9652 milliseconds/iteration
 
 *** jmurmel (interpreted): array1.lisp ***
 array1 10 10000 result: 10000
 warmup done.
-array1 10 10000: did 50 iterations in 5,59338 seconds walltime, 8,93914 iterations/second, avg/min/max 111,868/111,305/131,970 milliseconds/iteration
+array1 10 10000: did 50 iterations in 5,93946 seconds walltime, 8,41827 iterations/second, avg/min/max 118,789/118,553/142,923 milliseconds/iteration
 
 *** jmurmel (compiled): q.lisp ***
 q result: 12.0
 warmup done.
-q: did 1140 iterations in 5,01872 seconds walltime, 227,150 iterations/second, avg/min/max 4,40239/4,18587/19,8995 milliseconds/iteration
+q: did 1150 iterations in 5,02965 seconds walltime, 228,644 iterations/second, avg/min/max 4,37361/4,16500/20,3355 milliseconds/iteration
 q2 result: 31.0
 warmup done.
-q2: did 860 iterations in 5,04266 seconds walltime, 170,545 iterations/second, avg/min/max 5,86356/5,63435/11,0309 milliseconds/iteration
+q2: did 850 iterations in 5,03346 seconds walltime, 168,870 iterations/second, avg/min/max 5,92172/5,65878/75,4915 milliseconds/iteration
 q2* result: 31.0
 warmup done.
-q2*: did 890 iterations in 5,02211 seconds walltime, 177,216 iterations/second, avg/min/max 5,64282/5,33199/9,53853 milliseconds/iteration
+q2*: did 930 iterations in 5,02282 seconds walltime, 185,155 iterations/second, avg/min/max 5,40088/5,12997/9,92920 milliseconds/iteration
 
 *** jmurmel (interpreted): q.lisp ***
 q result: 12.0
 warmup done.
-q: did 100 iterations in 5,29689 seconds walltime, 18,8790 iterations/second, avg/min/max 52,9689/52,7825/71,0526 milliseconds/iteration
+q: did 110 iterations in 5,40974 seconds walltime, 20,3337 iterations/second, avg/min/max 49,1794/48,5491/65,9722 milliseconds/iteration
 q2 result: 31.0
 warmup done.
-q2: did 50 iterations in 5,59983 seconds walltime, 8,92885 iterations/second, avg/min/max 111,997/110,394/136,253 milliseconds/iteration
+q2: did 50 iterations in 5,21365 seconds walltime, 9,59021 iterations/second, avg/min/max 104,273/102,679/104,987 milliseconds/iteration
 q2* result: 31.0
 warmup done.
-q2*: did 60 iterations in 5,49090 seconds walltime, 10,9272 iterations/second, avg/min/max 91,5150/90,9533/92,0667 milliseconds/iteration
+q2*: did 70 iterations in 5,70203 seconds walltime, 12,2763 iterations/second, avg/min/max 81,4576/80,2184/89,7444 milliseconds/iteration
