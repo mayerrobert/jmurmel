@@ -3586,7 +3586,7 @@ public class LambdaJ {
      *  parameters in the current dynamic environment will be peeled off before adding them.
      *  Not too useful for lexical closures except when the closure's parameters hide closed over variables. */
     private static ConsCell peel(Object sym, ConsCell env) {
-        return env != null && sym == caar(env) ? (ConsCell)cdr(env) : env;
+        return env != null && sym == car(env.car()) ? (ConsCell)env.cdr() : env;
     }
 
     static void errorApplicationArgCount(String msg, String func, Object params) {
