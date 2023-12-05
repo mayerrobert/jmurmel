@@ -3571,15 +3571,15 @@ public class LambdaJ {
     /** build an extended environment for a function invocation.
      *  Similar to CL pairlis, but {@code #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
      *  e.g. (zip '(a b . c) '(1 2 3 4 5)) -> ((a . 1) (b . 2) (c 3 4 5)) */
-    final ConsCell zip(String func, Object params, Object args, ConsCell env, boolean match) {
+    final ConsCell zip(String func, Object params, ConsCell args, ConsCell env, boolean match) {
         if (params == null) {
             if (match && args != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", func, args);
             return env;
         }
-        if (symbolp(params)) return acons(params, args, env);
+        if (symbolp(params)) return acons(params, args, peel(params, env));
         if (match && args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", func, params);
         final Object sym = car(params);
-        return acons(sym, car(args), zip(func, cdr(params), cdr(args), peel(sym, env), match));
+        return acons(sym, car(args), zip(func, cdr(params), (ConsCell)cdr(args), peel(sym, env), match));
     }
 
     /** this helps in limiting environment growth for recursive calls of dynamic lambdas:
