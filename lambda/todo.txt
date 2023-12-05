@@ -1,3 +1,5 @@
+https://github.com/OpenHFT/Java-Runtime-Compiler hat einen in-memory filemanager zum kompilieren
+
 module-info: https://github.com/brettwooldridge/SparseBitSet/pull/28/files
 
 compiler: die quoted forms vielleicht nicht als member rausgenerieren sondern alle in ein array stecken?
