@@ -3572,14 +3572,25 @@ public class LambdaJ {
      *  Similar to CL pairlis, but {@code #zip} will also pair the last cdr of a dotted list with the rest of {@code args},
      *  e.g. (zip '(a b . c) '(1 2 3 4 5)) -> ((a . 1) (b . 2) (c 3 4 5)) */
     final ConsCell zip(String func, Object params, ConsCell args, ConsCell env, boolean match) {
-        if (params == null) {
-            if (match && args != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", func, args);
-            return env;
+        if (params == null && args == null) return env; // shortcut for no params/ no args
+
+        final ListBuilder ret = new ListBuilder();
+        while (consp(params)) {
+            if (match && args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", func, params);
+            final Object sym = car((ConsCell)params);
+            ret.append(cons(sym, car(args)));
+            env = peel(sym, env);
+            params = cdr((ConsCell)params);
+            args = (ConsCell)cdr(args);
         }
-        if (symbolp(params)) return acons(params, args, peel(params, env));
-        if (match && args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", func, params);
-        final Object sym = car(params);
-        return acons(sym, car(args), zip(func, cdr(params), (ConsCell)cdr(args), peel(sym, env), match));
+        // if paramList is a dotted list whose last cdr is a non-nil symbol: the last param will be bound to the list of remaining args
+        if (params != null && symbolp(params)) {
+            ret.append(cons(params, args));
+            env = peel(params, env);
+        }
+        else if (match && args != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", func, args);
+        ret.appendLast(env);
+        return (ConsCell)ret.first();
     }
 
     /** this helps in limiting environment growth for recursive calls of dynamic lambdas:
