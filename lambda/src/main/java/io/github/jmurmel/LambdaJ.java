@@ -615,7 +615,7 @@ public class LambdaJ {
 
         private Object car, cdr;
 
-        private AbstractConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
+        AbstractConsCell(Object car, Object cdr)    { this.car = car; this.cdr = cdr; }
         @Override public @NotNull String toString() { return LambdaJ.printSEx(this, false).toString(); }
         @Override public @NotNull ConsIterator iterator() { return new ListConsCellIterator(this); }
 
@@ -667,7 +667,8 @@ public class LambdaJ {
 
     private static final class ListConsCell extends AbstractConsCell {
         private static final long serialVersionUID = 1L;
-        private ListConsCell(Object car, Object cdr) { super(car, cdr); }
+
+        ListConsCell(Object car, Object cdr) { super(car, cdr); }
 
         @Override public @NotNull ConsCell copy() { return cons(car(), cdr()); }
     }
@@ -678,12 +679,12 @@ public class LambdaJ {
         private final int startLineNo, startCharNo;
         private int lineNo, charNo;
 
-        @Override public @NotNull SExpConsCell copy() { return new SExpConsCell(path, startLineNo, startCharNo, lineNo, charNo, car(), cdr()); }
-
-        private SExpConsCell(Path path, int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
+        SExpConsCell(Path path, int startLine, int startChar, int line, int charNo, Object car, Object cdr)    {
             super(car, cdr);
             this.path = path; this.startLineNo = startLine; this.startCharNo = startChar; this.lineNo = line; this.charNo = charNo;
         }
+
+        @Override public @NotNull ConsCell copy() { return new SExpConsCell(path, startLineNo, startCharNo, lineNo, charNo, car(), cdr()); }
 
         @Override void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
         @Override void adjustEnd(SExpConsCell cell) { this.lineNo = cell.lineNo; this.charNo = cell.charNo; }
