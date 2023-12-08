@@ -699,7 +699,7 @@ public class LambdaJ {
 
         private Closure(Object params, ConsCell body, ConsCell closure)    { this.params = params; this.body = body; this.closure = closure; }
         Object params() { return params; }
-        ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) { return intp.zip("function application", params, args, closure, true); }
+        ConsCell zip(@NotNull LambdaJ intp, ConsCell args, ConsCell env) { return intp.zip("function application", params, args, closure, true); }
         @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { out.print("#<interpreted closure>"); }
 
         static @NotNull Closure of(Object params, ConsCell body, ConsCell closure) {
@@ -719,14 +719,18 @@ public class LambdaJ {
 
             return new Closure(ccParams, body, closure);
         }
+
+        static void tooManyArgs(Object args)        { errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", args); }
+        static void notEnoughArgs(Object paramList) { errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", paramList); }
+        static void notEnoughArgsLst(Object param)  { errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: (%s)", "function application", param); }
     }
 
     // no arguments
     private static final class Closure0 extends Closure {
         Closure0(ConsCell body, ConsCell closure) { super(null, body, closure); }
 
-        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
-            if (args != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", args);
+        @Override ConsCell zip(@NotNull LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args != null) tooManyArgs(args);
             return closure;
         }
     }
@@ -737,10 +741,10 @@ public class LambdaJ {
 
         @Override Object params() { return ConsCell.cons(params, null); }
 
-        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
-            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", intp.cons(params, null));
+        @Override ConsCell zip(@NotNull LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) notEnoughArgsLst(params);
             final Object cdrArgs = cdr(args);
-            if (cdrArgs != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", cdrArgs);
+            if (cdrArgs != null) tooManyArgs(cdrArgs);
             return intp.acons(params, car(args), closure);
         }
     }
@@ -753,12 +757,12 @@ public class LambdaJ {
             p1 = car(params); p2 = cadr(params);
         }
 
-        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
-            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
+        @Override ConsCell zip(@NotNull LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) notEnoughArgs(params);
             final Object cdrArgs = cdr(args);
-            if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: (%s)", "function application", p2);
+            if (cdrArgs == null) notEnoughArgsLst(p2);
             final Object cddrArgs = cdr(cdrArgs);
-            if (cddrArgs != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", cddrArgs);
+            if (cddrArgs != null) tooManyArgs(cddrArgs);
             return intp.acons(p1, car(args), intp.acons(p2, car(cdrArgs), closure));
         }
     }
@@ -771,14 +775,14 @@ public class LambdaJ {
             p1 = car(params); p2 = cadr(params); p3 = caddr(params);
         }
 
-        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
-            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
+        @Override ConsCell zip(@NotNull LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) notEnoughArgs(params);
             final Object cdrArgs = cdr(args);
-            if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cdr(params));
+            if (cdrArgs == null) notEnoughArgs(cdr(params));
             final Object cddrArgs = cdr(cdrArgs);
-            if (cddrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cddr(params));
+            if (cddrArgs == null) notEnoughArgs(cddr(params));
             final Object cdddrArgs = cdr(cddrArgs);
-            if (cdddrArgs != null) errorApplicationArgCount("%s: too many arguments. Remaining arguments: %s", "function application", cdddrArgs);
+            if (cdddrArgs != null) tooManyArgs(cdddrArgs);
             return intp.acons(p1, car(args), intp.acons(p2, car(cdrArgs), intp.acons(p3, car(cddrArgs), closure)));
         }
     }
@@ -787,7 +791,7 @@ public class LambdaJ {
     private static final class ClosureVararg extends Closure {
         ClosureVararg(Object param, ConsCell body, ConsCell closure) { super(param, body, closure); }
 
-        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) { return intp.acons(params, args, closure); }
+        @Override ConsCell zip(@NotNull LambdaJ intp, ConsCell args, ConsCell env) { return intp.acons(params, args, closure); }
     }
 
     // one or more arguments
@@ -798,8 +802,8 @@ public class LambdaJ {
             p = car(params); more = cdr(params);
         }
 
-        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
-            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
+        @Override ConsCell zip(@NotNull LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) notEnoughArgs(params);
             return intp.acons(p, car(args), intp.acons(more, cdr(args), closure));
         }
     }
@@ -812,17 +816,17 @@ public class LambdaJ {
             p1 = car(params); p2 = cadr(params); more = cddr(params);
         }
 
-        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) {
-            if (args == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", params);
+        @Override ConsCell zip(@NotNull LambdaJ intp, ConsCell args, ConsCell env) {
+            if (args == null) notEnoughArgs(params);
             final Object cdrArgs = cdr(args);
-            if (cdrArgs == null) errorApplicationArgCount("%s: not enough arguments. Parameters w/o argument: %s", "function application", cdr(params));
+            if (cdrArgs == null) notEnoughArgs(cdr(params));
             return intp.acons(p1, car(args), intp.acons(p2, car(cdrArgs), intp.acons(more, cdr(cdrArgs), closure)));
         }
     }
 
     private static final class DynamicLambda extends Closure {
         DynamicLambda(Object paramss, ConsCell body) { super(paramss, body, null); }
-        @Override ConsCell zip(LambdaJ intp, ConsCell args, ConsCell env) { return intp.zip("dynamic function application", params, args, env, true); }
+        @Override ConsCell zip(@NotNull LambdaJ intp, ConsCell args, ConsCell env) { return intp.zip("dynamic function application", params, args, env, true); }
         @Override public void printSEx(WriteConsumer out, boolean escapeAtoms) { out.print("#<interpreted " + LAMBDA_DYNAMIC + ">"); }
     }
 
