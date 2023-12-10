@@ -1,8 +1,9 @@
 
 Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
+released: 2023-12-10
 
  * changed *command-line-argument-list* in compiled Murmel to a regular mutable list
- * changed load and require in comiled Murmel: must appear at toplevel
+ * changed load and require in compiled Murmel: must appear at toplevel
  * changed/fixed car to accept all strings
  * changed read-textfile and read-textfile-lines to use UTF-8 as the default charset
    (unless the charset was given as an argument)
