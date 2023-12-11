@@ -6626,7 +6626,7 @@ public class LambdaJ {
                 interpreter.currentSource = null;
 
                 // repl() doesn't return
-                if (files.isEmpty() && immediateForms == null && istty || repl) repl(interpreter, !files.isEmpty() && action == Action.INTERPRET, istty, echo, history, args);
+                if (files.isEmpty() && immediateForms == null && istty || repl) repl(interpreter, (immediateForms != null || !files.isEmpty()) && action == Action.INTERPRET, istty, echo, history, args);
 
                 if (files.isEmpty() && immediateForms == null) {
                     final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
