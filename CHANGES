@@ -1,4 +1,14 @@
 
+Changes in JMurmel-1.4.5 relative to JMurmel-1.4.4
+
+ * changed the commandline parameter --eval: environment is no longer reset before REPL
+   so that e.g.
+     jmurmel --repl --eval (load \"mlib\")
+   works as expected
+
+ * mlib: added dotted-nthcdr, ldiff, tailp, butlast, nbutlast
+
+
 Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
 released: 2023-12-10
 

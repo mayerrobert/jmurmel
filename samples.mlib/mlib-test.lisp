@@ -276,9 +276,67 @@
 )
 
 
+;; test butlast
+(tests butlast
+  (butlast (list 1 2 3 4 5))     => (1 2 3 4)
+  (butlast (list 1 2 3 4 5) 1)   => (1 2 3 4)
+  (butlast (list 1 2 3 4 5) 0)   => (1 2 3 4 5)
+  (butlast (list 1 2 3 4 5) 5)   => nil
+  (butlast (list 1 2 3 4 5) 20)  => nil
+)
+
+
+;; test nbutlast
+(tests nbutlast
+  (nbutlast (list 1 2 3 4 5))     => (1 2 3 4)
+  (nbutlast (list 1 2 3 4 5) 1)   => (1 2 3 4)
+  (nbutlast (list 1 2 3 4 5) 0)   => (1 2 3 4 5)
+  (nbutlast (list 1 2 3 4 5) 5)   => nil
+  (nbutlast (list 1 2 3 4 5) 20)  => nil
+)
+
+(define foo nil)
+(define lst nil)
+(tests xbutlast
+ (setq lst '(1 2 3 4 5 6 7 8 9)) =>  (1 2 3 4 5 6 7 8 9)
+ (butlast lst) =>  (1 2 3 4 5 6 7 8)
+ (butlast lst 5) =>  (1 2 3 4)
+ (butlast lst (+ 5 5)) =>  NIL
+ lst =>  (1 2 3 4 5 6 7 8 9)
+ (nbutlast lst 3) =>  (1 2 3 4 5 6)
+ lst =>  (1 2 3 4 5 6)
+ (nbutlast lst 99) =>  NIL
+ lst =>  (1 2 3 4 5 6)
+ (butlast '(a b c d)) =>  (A B C)
+ (butlast '((a b) (c d))) =>  ((A B))
+ (butlast '(a)) =>  NIL
+ (butlast nil) =>  NIL
+ (setq foo (list 'a 'b 'c 'd)) =>  (A B C D)
+ (nbutlast foo) =>  (A B C)
+ foo =>  (A B C)
+ (nbutlast (list 'a)) =>  NIL
+ (nbutlast '()) =>  NIL
+)
+
+
+;; test ldiff
+(tests ldiff
+  (let* ((obj (list  4 5)) (lst (list* 1 2 3 obj))) (list lst obj (ldiff lst obj))) => ((1 2 3 4 5)   (4 5)   (1 2 3))
+  (let* ((obj (list* 4 5)) (lst (list* 1 2 3 obj))) (list lst obj (ldiff lst obj))) => ((1 2 3 4 . 5) (4 . 5) (1 2 3))
+  (let* ((obj 4)           (lst (list* 1 2 3 obj))) (list lst obj (ldiff lst obj))) => ((1 2 3 . 4)   4       (1 2 3))
+)
+
+
+;; test tailp
+(tests tailp
+  (let* ((obj (list  4 5)) (lst (list* 1 2 3 obj))) (list lst obj (tailp obj lst))) => ((1 2 3 4 5)   (4 5)   t)
+  (let* ((obj (list* 4 5)) (lst (list* 1 2 3 obj))) (list lst obj (tailp obj lst))) => ((1 2 3 4 . 5) (4 . 5) t)
+  (let* ((obj 4)           (lst (list* 1 2 3 obj))) (list lst obj (tailp obj lst))) => ((1 2 3 . 4)   4       t)
+)
+
+
 ;; test nconc
 (define y nil)
-(define foo nil)
 (define bar nil)
 (define baz nil)
 

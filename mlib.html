@@ -28,8 +28,9 @@ mlib provides the following Common Lisp-like functions and macros:
     - [prog1, prog2](#macro-prog1-prog2)
     - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [typecase](#macro-typecase)
 - conses and lists
-    - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [copy-list](#function-copy-list)
-    - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
+    - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
+    - [list-length](#function-list-length), [last](#function-last), [butlast](#function-butlast), [nbutlast](#function-nbutlast), [ldiff](#function-ldiff), [tailp](#function-tailp)
+    - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
     - [acons](#function-acons)
     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
     - [multiple-value-list](#macro-multiple-value-list), [nth-value](#macro-nth-value)
@@ -198,13 +199,17 @@ Since: 1.1
 
 `c..r` repeatedly apply `car` and/ or `cdr` as the name suggests.
 
-### Function: nthcdr, nth
+### Function: nthcdr, dotted-nthcdr, nth
     (nthcdr n lst) -> nth-tail
+    (dotted-nthcdr n lst) -> nth-tail
     (nth n lst) -> nth-element
 
 Since: 1.1
 
 `nthcdr` applies `cdr` n times and returns the result.
+`dotted-nthcdr` works similar to `nthcdr` except:
+going past the end of a dotted list returns `nil`
+(and not an error as `nthcdr` would).
 `nth` works as if `(car (nthcdr n lst))` was invoked.
 
 ### Function: copy-list
@@ -438,6 +443,40 @@ Since: 1.2
 
 Iterates over key-value pairs of `plist-form`.
 Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
+
+### Function: butlast
+    (butlast lst n?) -> result-list
+
+Since: 1.4.5
+
+`butlast` returns a copy of `lst` from which the last `n` conses have been omitted.
+If `n` is not supplied, its value is 1. If there are fewer than `n` conses in `lst`, `nil` is returned.
+
+### Function: nbutlast
+    (nbutlast lst n?) -> result-list
+
+Since: 1.4.5
+
+`nbutlast` is like `butlast`, but `nbutlast` may modify `lst`.
+It changes the cdr of the cons n+1 from the end of `lst` to `nil` except
+if there are fewer than `n` conses in `lst`, `nil` is returned and `lst` is not modified.
+
+### Function: ldiff
+    (ldiff lst obj) -> result-list
+
+Since: 1.4.5
+
+Return a new list, whose elements are those of `lst` that appear before
+`obj`. If `obj` is not a tail of `lst`, a copy of `lst` is returned.
+`lst` must be a proper list or a dotted list.
+
+### Function: tailp
+    (tailp obj lst) -> boolean
+
+Since: 1.4.5
+
+ Return `true` if `obj` is the same as some tail of `lst`, otherwise
+ returns `false`. `lst` must be a proper list or a dotted list.
 
 ### Macro: destructuring-bind
     (destructuring-bind (vars*) expression forms*)

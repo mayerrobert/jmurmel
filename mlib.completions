@@ -83,6 +83,10 @@ acons
 get-setf-expansion
 nreconc
 revappend
+butlast
+nbutlast
+ldiff
+tailp
 nconc
 copy-list
 last

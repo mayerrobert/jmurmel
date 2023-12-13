@@ -24,8 +24,9 @@
 ;;;     - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [typecase](#macro-typecase)
 
 ;;; - conses and lists
-;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, nth](#function-nthcdr-nth), [copy-list](#function-copy-list)
-;;;     - [list-length](#function-list-length), [last](#function-last), [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
+;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
+;;;     - [list-length](#function-list-length), [last](#function-last), [butlast](#function-butlast), [nbutlast](#function-nbutlast), [ldiff](#function-ldiff), [tailp](#function-tailp)
+;;;     - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
 ;;;     - [acons](#function-acons)
 ;;;     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
 ;;;     - [multiple-value-list](#macro-multiple-value-list), [nth-value](#macro-nth-value)
@@ -364,18 +365,33 @@
         (t (error 'simple-type-error "must be an integer >= 0: %s" n))))
 
 
-;;; = Function: nthcdr, nth
+;;; = Function: nthcdr, dotted-nthcdr, nth
 ;;;     (nthcdr n lst) -> nth-tail
+;;;     (dotted-nthcdr n lst) -> nth-tail
 ;;;     (nth n lst) -> nth-element
 ;;;
 ;;; Since: 1.1
 ;;;
 ;;; `nthcdr` applies `cdr` n times and returns the result.
+;;; `dotted-nthcdr` works similar to `nthcdr` except:
+;;; going past the end of a dotted list returns `nil`
+;;; (and not an error as `nthcdr` would).
 ;;; `nth` works as if `(car (nthcdr n lst))` was invoked.
 (defun nthcdr (n lst)
   (let loop ((n (m%nonneg-integer-number n)) (lst lst))
     (if (<= n 0) lst
-      (loop (1- n) (cdr lst)))))
+      (if lst
+            (loop (1- n) (cdr lst))
+        ()))))
+
+; For [n]butlast
+(defun dotted-nthcdr (n lst)
+  (let loop ((n (m%nonneg-integer-number n)) (lst lst))
+    (if (<= n 0) lst
+      (if (consp lst)
+            (loop (1- n) (cdr lst))
+        ()))))
+
 
 (m%def-macro-fun nth (n lst)
   `(car (nthcdr ,n ,lst)))
@@ -966,6 +982,113 @@
 ;     (when ,expr
 ;        ,@body
 ;        (loop))))
+
+
+; more lists **********************************************************
+
+;;; = Function: butlast
+;;;     (butlast lst n?) -> result-list
+;;;
+;;; Since: 1.4.5
+;;;
+;;; `butlast` returns a copy of `lst` from which the last `n` conses have been omitted.
+;;; If `n` is not supplied, its value is 1. If there are fewer than `n` conses in `lst`, `nil` is returned.
+(defun butlast (lst . n)
+  (setq n (if n (m%nonneg-integer-number (car n))
+            1))
+
+  (if (= 0 n) (copy-list lst)
+
+    (let ((head (dotted-nthcdr (1- n) lst))
+          result
+          splice)
+      (if (consp head)            ; there are at least n
+        (if (consp (cdr head))    ; conses
+          (progn
+            (setq result (cons () ()))
+            (setq splice result)
+            (do ((trail lst (cdr trail))
+                 (head head (cdr head)))
+                ;; HEAD is n-1 conses ahead of TRAIL;
+                ;; when HEAD is at the last cons, return
+                ;; the data copied so far.
+                ((atom (cdr head))
+                 (cdr result))
+              (setq splice (cdr (rplacd splice (list (car trail))))))))))))
+
+
+;;; = Function: nbutlast
+;;;     (nbutlast lst n?) -> result-list
+;;;
+;;; Since: 1.4.5
+;;;
+;;; `nbutlast` is like `butlast`, but `nbutlast` may modify `lst`.
+;;; It changes the cdr of the cons n+1 from the end of `lst` to `nil` except
+;;; if there are fewer than `n` conses in `lst`, `nil` is returned and `lst` is not modified.
+(defun nbutlast (lst . n)
+  (setq n (if n (m%nonneg-integer-number (car n))
+            1))
+
+  (if (= 0 n) lst
+
+    (let ((head (dotted-nthcdr (1- n) lst)))
+      (if (consp head)            ; there are more than n
+        (if (consp (cdr head))    ; conses.
+          ;; TRAIL trails by n cons to be able to
+          ;; cut the list at the cons just before.
+          (do ((trail lst (cdr trail))
+               (head (cdr head) (cdr head)))
+              ((atom (cdr head))
+               (rplacd trail nil)
+               lst)))))))
+
+
+;;; = Function: ldiff
+;;;     (ldiff lst obj) -> result-list
+;;;
+;;; Since: 1.4.5
+;;;
+;;; Return a new list, whose elements are those of `lst` that appear before
+;;; `obj`. If `obj` is not a tail of `lst`, a copy of `lst` is returned.
+;;; `lst` must be a proper list or a dotted list.
+(defun ldiff (lst obj)
+;  (do* ((lst lst (cdr lst))
+;        (result (list ()))
+;        (splice result))
+;       ((if (atom lst) t (if (eq lst obj) t))
+;        (if (eq lst obj)
+;            (cdr result)
+;            (progn (rplacd splice lst) (cdr result))))
+;
+;       (setq splice (cdr (rplacd splice (list (car lst)))))))
+
+  (let* ((result (list ()))
+         (splice result))
+    (let loop ((lst lst))
+      (if (eq lst obj) nil
+        (if (atom lst) (rplacd splice lst)
+          (progn
+            (setq splice (cdr (rplacd splice (list (car lst)))))
+            (loop (cdr lst))))))
+    (cdr result)))
+
+
+;;; = Function: tailp
+;;;     (tailp obj lst) -> boolean
+;;;
+;;; Since: 1.4.5
+;;;
+;;;  Return `true` if `obj` is the same as some tail of `lst`, otherwise
+;;;  returns `false`. `lst` must be a proper list or a dotted list.
+(defun tailp (object lst)
+;  (do ((list list (cdr list)))
+;      ((atom list) (eql list object))
+;    (if (eql object list)
+;        (return t))))
+  (let loop ((lst lst))
+    (if (eq object lst) t
+      (if (atom lst) nil
+        (loop (cdr lst))))))
 
 
 ; places **************************************************************
