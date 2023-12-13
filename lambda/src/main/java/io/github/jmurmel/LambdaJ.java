@@ -1175,7 +1175,7 @@ public class LambdaJ {
     /// ## Scanner, symboltable and S-expression reader
 
     static class ListSymbolTable implements SymbolTable {
-        private final Map<String,LambdaJSymbol> symbols = JavaUtil.newHashMap(WellknownSymbol.values().length + 10);
+        private final @NotNull Map<@NotNull String, @NotNull LambdaJSymbol> symbols = JavaUtil.newHashMap(WellknownSymbol.values().length + 10);
 
         @Override public @NotNull LambdaJSymbol intern(@NotNull LambdaJSymbol sym) {
             final String symNameLC = sym.name.toLowerCase();
@@ -3034,8 +3034,7 @@ public class LambdaJ {
         return traceLvl;
     }
 
-    @Null
-    private LambdaJError cleanup(ConsCell env, int stack, int level, int traceLvl, ConsCell restore) {
+    private @Null LambdaJError cleanup(ConsCell env, int stack, int level, int traceLvl, ConsCell restore) {
         LambdaJError e = null;
         for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
             final Object o = car(c);
@@ -3048,7 +3047,7 @@ public class LambdaJ {
         return e;
     }
 
-    private Object nonlocalReturn(ReturnException re, ConsCell localCatchTags) {
+    private @NotNull Object nonlocalReturn(@NotNull ReturnException re, ConsCell localCatchTags) {
         if (localCatchTags != null) {
             final Object thrownTag = re.tag;
             for (ConsCell i = localCatchTags; i != null; i = (ConsCell)cdr(i)) {
@@ -3394,16 +3393,14 @@ public class LambdaJ {
         return res;
     }
 
-    @NotNull
-    private Object evalDefine(ConsCell ccArguments, ConsCell env, int stack, int level, int traceLvl) {
+    private @NotNull Object evalDefine(ConsCell ccArguments, ConsCell env, int stack, int level, int traceLvl) {
         final Object symbol;
         extendGlobal(symbol = car(ccArguments), eval(cadr(ccArguments), env, stack, level, traceLvl));
         values = NO_VALUES;
         return symbol;
     }
 
-    @NotNull
-    private Object evalDefun(ConsCell ccArguments, ConsCell env) {
+    private @NotNull Object evalDefun(ConsCell ccArguments, ConsCell env) {
         final Object symbol = car(ccArguments);
         final AbstractConsCell selfEnvEntry = new ListConsCell(symbol, null);
         final Object closure = makeClosure(cadr(ccArguments), (ConsCell)cddr(ccArguments), cons(selfEnvEntry, env));
@@ -7274,7 +7271,7 @@ public class LambdaJ {
                         final String form = args[ii];
                         if ("--".equals(form)) break;
                         args[ii] = null;
-                        forms.append(form).append(' ');
+                        if (form != null) forms.append(form).append(' ');
                     }
                     return forms.toString();
                 }
