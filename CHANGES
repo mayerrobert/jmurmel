@@ -6,7 +6,7 @@ Changes in JMurmel-1.4.5 relative to JMurmel-1.4.4
      jmurmel --repl --eval (load \"mlib\")
    works as expected
 
- * mlib: added dotted-nthcdr, ldiff, tailp, butlast, nbutlast
+ * mlib: added dotted-nthcdr, ldiff, tailp, butlast, nbutlast, adjoin, pushnew
 
 
 Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3

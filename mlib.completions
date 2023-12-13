@@ -23,6 +23,7 @@ pop
 prog1
 prog2
 push
+pushnew
 reverse-collecting
 setf
 summing
@@ -69,6 +70,7 @@ unzip-tails
 unzip
 reverse
 member
+adjoin
 complement
 constantly
 identity

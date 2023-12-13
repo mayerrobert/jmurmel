@@ -26,7 +26,7 @@
 ;;; - conses and lists
 ;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
 ;;;     - [list-length](#function-list-length), [last](#function-last), [butlast](#function-butlast), [nbutlast](#function-nbutlast), [ldiff](#function-ldiff), [tailp](#function-tailp)
-;;;     - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
+;;;     - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member), [adjoin](#function-adjoin)
 ;;;     - [acons](#function-acons)
 ;;;     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
 ;;;     - [multiple-value-list](#macro-multiple-value-list), [nth-value](#macro-nth-value)
@@ -38,7 +38,7 @@
 ;;;     - [destructuring-bind](#macro-destructuring-bind)
 ;;;     - [get-setf-expansion](#function-get-setf-expansion)
 ;;;     - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
-;;;     - [push](#macro-push), [pop](#macro-pop)
+;;;     - [push](#macro-push), [pop](#macro-pop), [pushnew](#macro-pushnew)
 
 ;;; - numbers, characters
 ;;;     - [abs](#function-abs), [min](#function-min), [max](#function-max), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
@@ -654,6 +654,19 @@
             (if (pred item (car lst))
                   lst
               (loop (cdr lst)))))))
+
+
+;;; = Function: adjoin
+;;;     (adjoin item list [test]) -> result-list
+;;;
+;;; Since: 1.4.5
+;;;
+;;; Tests whether `item` is the same as an existing element of `lst`.
+;;; If the `item` is not an existing element, `adjoin` adds it to `lst` (as if by `cons`)
+;;; and returns the resulting list; otherwise, nothing is added and the original list is returned.
+(defun adjoin (item lst . test)
+  (if (apply member (list* item lst test)) lst
+    (cons item lst)))
 
 
 ;;; = Function: acons
@@ -1374,6 +1387,24 @@
     (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
       `(let* (,@(mapcar list vars vals)
               (,(car store-vars) (cons ,item ,reader-form)))
+         ,writer-form))))
+
+
+;;; = Macro: pushnew
+;;;     (pushnew item place [test]) -> new-place-value
+;;;
+;;; Since: 1.4.5
+;;;
+;;; `pushnew` tests whether `item` is the same as any existing element of the list stored in `place`.
+;;; If `item` is not, it is prepended to the list, and the new list is stored in `place`.
+;;;
+;;; `pushnew` returns the new list that is stored in `place`.
+(defmacro pushnew (item place . test)
+  (if (symbolp place)
+        `(setq ,place (adjoin ,item ,place ,@test))
+    (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
+      `(let* (,@(mapcar list vars vals)
+              (,(car store-vars) (adjoin ,item ,reader-form ,@test)))
          ,writer-form))))
 
 

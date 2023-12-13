@@ -1,3 +1,6 @@
+Clojure hat counted?, liefert true für ISeq, false für Cons
+Murmel könnte countedp bekommen, true für ArraySlice, und counted (wandelt ConsCell zu ArraySlice)
+
 https://github.com/OpenHFT/Java-Runtime-Compiler hat einen in-memory filemanager zum kompilieren
 
 module-info: https://github.com/brettwooldridge/SparseBitSet/pull/28/files

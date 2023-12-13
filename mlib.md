@@ -26,7 +26,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - conses and lists
     - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
     - [list-length](#function-list-length), [last](#function-last), [butlast](#function-butlast), [nbutlast](#function-nbutlast), [ldiff](#function-ldiff), [tailp](#function-tailp)
-    - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member)
+    - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member), [adjoin](#function-adjoin)
     - [acons](#function-acons)
     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
     - [multiple-value-list](#macro-multiple-value-list), [nth-value](#macro-nth-value)
@@ -36,7 +36,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [destructuring-bind](#macro-destructuring-bind)
     - [get-setf-expansion](#function-get-setf-expansion)
     - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
-    - [push](#macro-push), [pop](#macro-pop)
+    - [push](#macro-push), [pop](#macro-pop), [pushnew](#macro-pushnew)
 - numbers, characters
     - [abs](#function-abs), [min](#function-min), [max](#function-max), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
     - [char=](#function-char), [char](#function-char-1), [bit](#function-bit)
@@ -318,6 +318,15 @@ Example usage:
     (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b)))
         ; => (b c 1 2 3)
 
+### Function: adjoin
+    (adjoin item list [test]) -> result-list
+
+Since: 1.4.5
+
+Tests whether `item` is the same as an existing element of `lst`.
+If the `item` is not an existing element, `adjoin` adds it to `lst` (as if by `cons`)
+and returns the resulting list; otherwise, nothing is added and the original list is returned.
+
 ### Function: acons
     (acons key datum alist) -> new-alist
 
@@ -568,6 +577,16 @@ Since: 1.1
 
 `push` prepends `item` to the list that is stored in `place`,
 stores the resulting list in `place`, and returns the list.
+
+### Macro: pushnew
+    (pushnew item place [test]) -> new-place-value
+
+Since: 1.4.5
+
+`pushnew` tests whether `item` is the same as any existing element of the list stored in `place`.
+If `item` is not, it is prepended to the list, and the new list is stored in `place`.
+
+`pushnew` returns the new list that is stored in `place`.
 
 ### Macro: pop
     (pop place) -> element

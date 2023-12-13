@@ -412,6 +412,25 @@
 )
 
 
+;; test adjoin
+(define slist nil)
+(tests adjoin
+ (setq slist '()) =>  NIL 
+ (adjoin 'a slist) =>  (A) 
+ slist =>  NIL 
+ (setq slist (adjoin (list 'test-item 1) slist)) =>  ((TEST-ITEM 1)) 
+ (adjoin (list 'test-item 1) slist) =>  ((TEST-ITEM 1) (TEST-ITEM 1)) 
+
+ ;(adjoin '(test-item 1) slist #-murmel :test 'equal) =>  ((TEST-ITEM 1))   ; CL accepts a symbol as a test, Murmel does not
+ (adjoin (list 'test-item 1) slist #-murmel :test #'equal) =>  ((TEST-ITEM 1)) 
+
+ ;(adjoin '(new-test-item 1) slist :key #'cadr) =>  ((TEST-ITEM 1))         ; CL supports :key, Murmel does not 
+ (adjoin '(new-test-item 1) slist #-murmel :test (lambda (l r) (eql (cadr l) (cadr r)))) =>  ((TEST-ITEM 1)) 
+
+ (adjoin (list 'new-test-item 1) slist) =>  ((NEW-TEST-ITEM 1) (TEST-ITEM 1))
+)
+
+
 ;; test acons
 (define alist '()) ; => alist
 (tests acons
@@ -679,6 +698,23 @@
   ctr => 1
 )
 
+
+(tests pushnew
+ (setq x '(a (b c) d)) =>  (A (B C) D)
+ (pushnew 5 (cadr x)) =>  (5 B C)   
+ x =>  (A (5 B C) D)
+ (pushnew 'b (cadr x)) =>  (5 B C)  
+ x =>  (A (5 B C) D)
+ (setq lst '((1) (1 2) (1 2 3))) =>  ((1) (1 2) (1 2 3))
+ (pushnew '(2) lst) =>  ((2) (1) (1 2) (1 2 3))
+ (pushnew '(1) lst) =>  ((1) (2) (1) (1 2) (1 2 3))
+
+ ;(pushnew '(1) lst :test 'equal) =>  ((1) (2) (1) (1 2) (1 2 3))           ; CL supports symbols as :test, Murmel does not
+ (pushnew '(1) lst #-murmel :test #'equal) =>  ((1) (2) (1) (1 2) (1 2 3))
+
+ ;(pushnew '(1) lst :key #'car) =>  ((1) (2) (1) (1 2) (1 2 3))             ; CL has :key, Murmel does not
+ (pushnew '(1) lst #-murmel :test (lambda (l r) (eql (car l) (car r)))) =>  ((1) (2) (1) (1 2) (1 2 3)) 
+)
 
 
 ;;; - numbers, characters
