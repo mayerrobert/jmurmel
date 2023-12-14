@@ -25,7 +25,11 @@
 
 #+murmel (require "mlib")
 #-murmel (defmacro define (n v) `(defparameter ,n ,v))
-#-murmel (defun writeln (&optional (o nil) (escape t)) (when o (princ o)) (terpri))
+#-murmel
+(defun writeln (&optional (o nil) (escape t))
+  (when o (funcall (if escape #'print #'princ) o))
+  (terpri)
+  o)
 
 (define *success-count* 0)
 (define *error-count* 0)
@@ -222,7 +226,7 @@
     lst =>  ("one" ("two" 3))
     slst =>  ("one" ("two" 3))
     clst =>  (1 ("two" 3))
-    
+
     (setq lst '(1 2 . 3)) => (1 2 . 3)
     (setq clst (copy-list lst)) => (1 2 . 3)
     (eq lst clst) => nil
@@ -365,7 +369,6 @@
 
   (nconc nil (list 1 2 3) nil) => (1 2 3)
 
-  (nconc '(1 2 . 3) '(11 22 . 33)) => (1 2 11 22 . 33)
   (nconc (list* 1 2 3) (list* 11 22 33)) => (1 2 11 22 . 33)
 
 
@@ -415,17 +418,17 @@
 ;; test adjoin
 (define slist nil)
 (tests adjoin
- (setq slist '()) =>  NIL 
- (adjoin 'a slist) =>  (A) 
- slist =>  NIL 
- (setq slist (adjoin (list 'test-item 1) slist)) =>  ((TEST-ITEM 1)) 
- (adjoin (list 'test-item 1) slist) =>  ((TEST-ITEM 1) (TEST-ITEM 1)) 
+ (setq slist '()) =>  NIL
+ (adjoin 'a slist) =>  (A)
+ slist =>  NIL
+ (setq slist (adjoin (list 'test-item 1) slist)) =>  ((TEST-ITEM 1))
+ (adjoin (list 'test-item 1) slist) =>  ((TEST-ITEM 1) (TEST-ITEM 1))
 
  ;(adjoin '(test-item 1) slist #-murmel :test 'equal) =>  ((TEST-ITEM 1))   ; CL accepts a symbol as a test, Murmel does not
- (adjoin (list 'test-item 1) slist #-murmel :test #'equal) =>  ((TEST-ITEM 1)) 
+ (adjoin (list 'test-item 1) slist #-murmel :test #'equal) =>  ((TEST-ITEM 1))
 
- ;(adjoin '(new-test-item 1) slist :key #'cadr) =>  ((TEST-ITEM 1))         ; CL supports :key, Murmel does not 
- (adjoin '(new-test-item 1) slist #-murmel :test (lambda (l r) (eql (cadr l) (cadr r)))) =>  ((TEST-ITEM 1)) 
+ ;(adjoin '(new-test-item 1) slist :key #'cadr) =>  ((TEST-ITEM 1))         ; CL supports :key, Murmel does not
+ (adjoin '(new-test-item 1) slist #-murmel :test (lambda (l r) (eql (cadr l) (cadr r)))) =>  ((TEST-ITEM 1))
 
  (adjoin (list 'new-test-item 1) slist) =>  ((NEW-TEST-ITEM 1) (TEST-ITEM 1))
 )
@@ -701,9 +704,9 @@
 
 (tests pushnew
  (setq x '(a (b c) d)) =>  (A (B C) D)
- (pushnew 5 (cadr x)) =>  (5 B C)   
+ (pushnew 5 (cadr x)) =>  (5 B C)
  x =>  (A (5 B C) D)
- (pushnew 'b (cadr x)) =>  (5 B C)  
+ (pushnew 'b (cadr x)) =>  (5 B C)
  x =>  (A (5 B C) D)
  (setq lst '((1) (1 2) (1 2 3))) =>  ((1) (1 2) (1 2 3))
  (pushnew '(2) lst) =>  ((2) (1) (1 2) (1 2 3))
@@ -713,7 +716,7 @@
  (pushnew '(1) lst #-murmel :test #'equal) =>  ((1) (2) (1) (1 2) (1 2 3))
 
  ;(pushnew '(1) lst :key #'car) =>  ((1) (2) (1) (1 2) (1 2 3))             ; CL has :key, Murmel does not
- (pushnew '(1) lst #-murmel :test (lambda (l r) (eql (car l) (car r)))) =>  ((1) (2) (1) (1 2) (1 2 3)) 
+ (pushnew '(1) lst #-murmel :test (lambda (l r) (eql (car l) (car r)))) =>  ((1) (2) (1) (1 2) (1 2 3))
 )
 
 
@@ -904,7 +907,7 @@
     k => (one two three)
     (map-into l (lambda () (setq n (1+ n)))) => (1 2 3 4 5)
     n => 5
-    
+
     (map-into l (lambda #+murmel ignore #-murmel (&rest ignore) (setq n (1+ n))) nil) => (1 2 3 4 5)
     n => 5
     (map-into l #'+ l #(10.0 20.0 30.0)) => (11.0 22.0 33.0 4 5)
@@ -979,15 +982,14 @@
     (list (hash-table-count h)
           (remhash 1 h)
           (remhash 1 h)
-          (hash-table-count h))) => (1 t nil 0) 
-
+          (hash-table-count h))) => (1 t nil 0)
 )
 
 (tests maphash.1
   (let ((table (make-hash-table)))
     (dotimes (i 10) (setf (gethash i table) i))  ;  =>  NIL
     (let ((sum-of-squares 0))
-       (maphash #'(lambda (key val) 
+       (maphash #'(lambda (key val)
                     (let ((square (* val val)))
                       (incf sum-of-squares square)
                       (setf (gethash key table) square)))
@@ -999,11 +1001,11 @@
 ;            table) =>  NIL
 ;  (hash-table-count table) =>  5
 ;  (maphash #'(lambda (k v) (print (list k v))) table)
-; (0 0) 
-; (8 64) 
-; (2 4) 
-; (6 36) 
-; (4 16) 
+; (0 0)
+; (8 64)
+; (2 4)
+; (6 36)
+; (4 16)
 ; =>  NIL
 )
 
