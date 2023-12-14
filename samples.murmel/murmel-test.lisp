@@ -38,11 +38,11 @@
                    (c (cdr c))))
        (if (= idx 0)
              (car seq)
-         (error "idx must be >= 0")))) 
+         (error "idx must be >= 0"))))
 
     (vector
      (elt seq idx))
-    
+
     (t (error "not a nonempty sequence"))))
 
 (defun seqset (seq idx val)
@@ -54,10 +54,10 @@
                    (c (rplacd c val))))
        (if (= idx 0)
              (rplaca seq val)
-         (error "idx must be >= 0")))) 
+         (error "idx must be >= 0"))))
     (vector
      (setf (elt seq idx) val)))
-     
+
   val)
 
 (defun vector-copy (vec)
@@ -120,8 +120,8 @@
                                          (cond ((= i lena) t)
                                                ((null (tequal (seqref a i) (seqref b i))) nil)
                                                (t (loop (1+ i)))))
-                                   nil)) 
-                                   
+                                   nil))
+
                       #-murmel (equalp a b)
                   nil)
             nil))))))
@@ -232,11 +232,11 @@ multiline comment
 (deftest backquote.6  `(nil) '(nil))
 (deftest backquote.7  `(1) '(1))
 (deftest backquote.8  `(x) '(x))
-(deftest backquote.9  (let* ((x 1)) `(,x) ) '(1)) 
-(deftest backquote.10 (let* ((x '(1))) `(,@x) ) '(1)) 
-#+murmel (deftest backquote.11  (let* ((x '(1))) `(`,,@x) ) '(1)) 
-#+murmel (deftest backquote.12  (let* ((x '(1)) (y '(2))) `(`,,@x ,@y) ) '(1 2)) 
-#+murmel (deftest backquote.13 (let* ((x '(1)) (y '(2))) `(`,,@x ,y) ) '(1 (2))) 
+(deftest backquote.9  (let* ((x 1)) `(,x) ) '(1))
+(deftest backquote.10 (let* ((x '(1))) `(,@x) ) '(1))
+#+murmel (deftest backquote.11  (let* ((x '(1))) `(`,,@x) ) '(1))
+#+murmel (deftest backquote.12  (let* ((x '(1)) (y '(2))) `(`,,@x ,@y) ) '(1 2))
+#+murmel (deftest backquote.13 (let* ((x '(1)) (y '(2))) `(`,,@x ,y) ) '(1 (2)))
 
 (deftest backquote.14
   (let ((a "A") (c "C") (d '("D" "DD")))
@@ -334,7 +334,7 @@ multiline comment
 ;;; test let dynamic
 (setq *a* 1 *b* 2 *c* 3)
 (defun globals-as-list ()
-  (list *a* *b* *c*)) 
+  (list *a* *b* *c*))
 
 (deftest letdynamic.1
   (append (let #+murmel dynamic ((*a* 123) (*b* *a*) (*c* (1+ *c*))) (globals-as-list))
@@ -504,7 +504,7 @@ multiline comment
                                         (throw 'tag "outer")))
                           "outer")
 
-(deftest unwind-protect.5  (catch nil 
+(deftest unwind-protect.5  (catch nil
                              (unwind-protect (throw nil 1)
                                (throw nil 2)))  2)
 
@@ -609,7 +609,7 @@ multiline comment
 (deftest eval.7 (eval ''hello) 'hello)
 
 ;; *command-line-argument-list* was immutable in compiled Murmel, changing it with eval had no effect
-(deftest eval.8 (eval '(setq *commandline-argument-list* (list 1 2))) '(1 2))
+(deftest eval.8 (eval '(setq *command-line-argument-list* (list 1 2))) '(1 2))
 
 ;; check that *command-line-argument-list are correctly passed between interpreter <=> compiled Murmel
 (deftest eval.9 (progn (setq *command-line-argument-list* '(1 2 3))
@@ -743,12 +743,12 @@ multiline comment
                       (expected (car expected-results))
                       (actual (apply predicate (list value))))
                  #+murmel (assert-equal expected actual (format nil "(%s %s)" name value))
-  
+
                  #-murmel (assert-equal expected actual (format nil "(~A ~A)" name value))
-  
+
                  (if (cdr predicate-names)
                    (do-one-test (cdr predicate-names) (cdr predicates) value (cdr expected-results)))))
-  
+
              (do-all-tests (test-descriptors)
                (do-one-test (cdr predicate-names) (cdr predicates) (car (car test-descriptors)) (cdr (car test-descriptors)))
                (if (cdr test-descriptors)
@@ -1191,7 +1191,7 @@ multiline comment
     (hashset h 1 1)
     (hashref h 1))
   1)
-    
+
 
 ;;; test sxhash
 (deftest sxhash.1
@@ -1503,7 +1503,7 @@ multiline comment
   (let* (value
          (apply-runnable (jmethod "java.lang.Runnable" "run"))
          (runnable (jproxy "java.lang.Runnable" "run" (lambda () (setq value 123)))))
-  
+
         (apply-runnable runnable)
         value)
   123)

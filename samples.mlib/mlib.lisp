@@ -1065,16 +1065,6 @@
 ;;; `obj`. If `obj` is not a tail of `lst`, a copy of `lst` is returned.
 ;;; `lst` must be a proper list or a dotted list.
 (defun ldiff (lst obj)
-;  (do* ((lst lst (cdr lst))
-;        (result (list ()))
-;        (splice result))
-;       ((if (atom lst) t (if (eq lst obj) t))
-;        (if (eq lst obj)
-;            (cdr result)
-;            (progn (rplacd splice lst) (cdr result))))
-;
-;       (setq splice (cdr (rplacd splice (list (car lst)))))))
-
   (let* ((result (list ()))
          (splice result))
     (let loop ((lst lst))
@@ -1094,10 +1084,6 @@
 ;;;  Return `true` if `obj` is the same as some tail of `lst`, otherwise
 ;;;  returns `false`. `lst` must be a proper list or a dotted list.
 (defun tailp (object lst)
-;  (do ((list list (cdr list)))
-;      ((atom list) (eql list object))
-;    (if (eql object list)
-;        (return t))))
   (let loop ((lst lst))
     (if (eq object lst) t
       (if (atom lst) nil
