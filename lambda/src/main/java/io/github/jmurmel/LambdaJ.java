@@ -1405,36 +1405,27 @@ public class LambdaJ {
         @SuppressWarnings("BooleanMethodIsAlwaysInverted")
         private boolean isSpaceOrSyntaxOrEof(int x) { return !escape && (isWhiteSpace(x) || isSExSyntax(x)) || x == EOF; }
 
-        /*java.io.PrintWriter debug;
-        {
-            try {
-                debug = new java.io.PrintWriter(Files.newBufferedWriter(Paths.get("scanner.log")));
-            } catch (IOException e) { }
-        }*/
-
-        private int prev;
+        private boolean prevWasCR;
         private int readchar() throws IOException {
             final int c = in.read();
-            //debug.println(String.format("%d:%d: char %-3d %s", lineNo, charNo, c, Character.isWhitespace(c) ? "" : String.valueOf((char)c))); debug.flush();
             if (c == '\r') {
-                prev = '\r';
+                prevWasCR = true;
                 lineNo++;
                 charNo = 0;
                 return '\n';
             }
-            if (c == '\n' && prev == '\r') {
+            if (c == '\n' && prevWasCR) {
                 // current char is a \n, previous char was a \r which was returned as a \n.
                 // Therefore the current \n is silently dropped, return the next char.
-                prev = '\n';
+                prevWasCR = false;
                 return readchar();
             }
             if (c == '\n') {
-                prev = '\n';
                 lineNo++;
                 charNo = 0;
                 return '\n';
             }
-            prev = c; prevLineNo = lineNo; prevCharNo = charNo;
+            prevWasCR = false; prevLineNo = lineNo; prevCharNo = charNo;
             if (c != EOF) { charNo++; }
             return c;
         }
@@ -1773,7 +1764,7 @@ public class LambdaJ {
 
         @Override public Object readObj(Object eof) {
             if (!init) {
-                prev = EOF;
+                prevWasCR = false;
                 lineNo = 1; charNo = 0;
                 look = getchar();
                 init = true;
