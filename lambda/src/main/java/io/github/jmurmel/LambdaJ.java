@@ -9550,8 +9550,9 @@ public class LambdaJ {
                         ConsCell extEnv = env;
 
                         if (hasNext) {
-                            sb.append("        new Runnable() { public void run() { Object tmp = null;\n");
-                            retLhs = "        tmp = ";
+                            sb.append("        new Runnable() { public void run() {\n" 
+                                    + "        Object tmp = null;\n");
+                            retLhs  = "        tmp = ";
                         }
                         else sb.append("        {\n");
 
@@ -10099,7 +10100,7 @@ public class LambdaJ {
         }
 
         /** args = (formsym (sym...) form...) */
-        private void emitLabel(String func, WrappingWriter sb, ConsCell symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
+        private void emitNamedLetBody(String func, WrappingWriter sb, ConsCell symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(func, car(symbolParamsAndForms));
             env = extenv(func, symbol, rsfx, env);
 
@@ -10107,6 +10108,17 @@ public class LambdaJ {
                     + "        private final MurmelFunction ").append(javasym(symbol, env, symbolParamsAndForms)).append(" = this;\n" // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"
                     + "        public Object apply(Object... args").append(rsfx).append(") {\n");
             env = params(func, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
+            emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false);
+            sb.append("        } }");
+        }
+
+        /** args = (formsym (sym...) form...) */
+        private void emitLocalFunc(WrappingWriter sb, ConsCell symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
+            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(Names.LABELS, car(symbolParamsAndForms));
+
+            sb.append("new MurmelFunction() {\n"
+                      + "        public Object apply(Object... args").append(rsfx).append(") {\n");
+            env = params(LABELS, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
             emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false);
             sb.append("        } }");
         }
@@ -10135,7 +10147,7 @@ public class LambdaJ {
             for (Object symbolParamsAndBody: (ConsCell) localFuncs) {
                 final ConsCell ccSymbolParamsAndBody = (ConsCell)symbolParamsAndBody;
                 sb.append("        private final MurmelFunction ").append(javasym(car(ccSymbolParamsAndBody), env, ccSymbolParamsAndBody)).append(" = ");
-                emitLabel(LABELS, sb, ccSymbolParamsAndBody, env, topEnv, rsfx+1);
+                emitLocalFunc(sb, ccSymbolParamsAndBody, env, topEnv, rsfx+1);
                 sb.append(";\n");
             }
 
@@ -10161,7 +10173,7 @@ public class LambdaJ {
             final ConsCell params = paramList(op, ccBindings, false);
             if (named) {
                 // named let
-                emitLabel(op, sb, cons(loopLabel, cons(params, body)), env, topEnv, rsfx+1);
+                emitNamedLetBody(op, sb, cons(loopLabel, cons(params, body)), env, topEnv, rsfx+1);
             } else {
                 // regular let
                 emitLambda(sb, cons(params, body), env, topEnv, rsfx+1, false);
