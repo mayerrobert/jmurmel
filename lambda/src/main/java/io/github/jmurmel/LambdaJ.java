@@ -3061,6 +3061,7 @@ public class LambdaJ {
                 // must expand a second time in case the progn contained a load/require that contained defmacro
                 expandAndEval(car(rest), env);
             }
+            values = NO_VALUES;
             return expandAndEval(car(rest), env);
         }
         return eval(expansion, env);

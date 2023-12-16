@@ -8,6 +8,8 @@ Changes in JMurmel-1.4.5 relative to JMurmel-1.4.4
 
  * mlib: added dotted-nthcdr, ldiff, tailp, butlast, nbutlast, adjoin, pushnew
 
+ * fixed interpreted "(let () (values 1 2 3) 10)"
+
 
 Changes in JMurmel-1.4.4 relative to JMurmel-1.4.3
 released: 2023-12-10
