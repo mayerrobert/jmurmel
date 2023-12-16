@@ -14,8 +14,8 @@ jmurmel.exe will end up in scripts/target
 <launch4jConfig>
     <headerType>console</headerType>
     <outfile>target/jmurmel.exe</outfile>
-    <jar>jmurmel.jar</jar>
-    <dontWrapJar>true</dontWrapJar>
+    <jar>../lambda/target/jmurmel.jar</jar>
+    <dontWrapJar>false</dontWrapJar>
     <errTitle>JMurmel</errTitle>
     <downloadUrl>https://jdk.java.net/</downloadUrl>
     <supportUrl>https://jmurmel.github.io</supportUrl>
@@ -35,7 +35,7 @@ jmurmel.exe will end up in scripts/target
         <requiresJdk>false</requiresJdk>
         <requires64Bit>true</requires64Bit>
         <minVersion>1.8</minVersion>
-        <maxVersion>21</maxVersion>
+        <maxVersion>22</maxVersion>
         <!--
         <initialHeapSize>MB</initialHeapSize>
         <initialHeapPercent>%</initialHeapPercent>
@@ -43,34 +43,35 @@ jmurmel.exe will end up in scripts/target
         <maxHeapPercent>%</maxHeapPercent>
         ...
         -->
-      <opt>-Xss2m</opt>
-  </jre>
-  <versionInfo>
-      <fileDescription>Murmel interpreter/ compiler</fileDescription>
-      <fileVersion>1.4.0.0</fileVersion>
-      <txtFileVersion>1.4</txtFileVersion>
+        <opt>-Xss2m</opt>
+    </jre>
+    <versionInfo>
+        <fileDescription>Murmel interpreter/ compiler https://jmurmel.github.io</fileDescription>
+        <fileVersion>1.4.5.0</fileVersion>
+        <txtFileVersion>1.4.5</txtFileVersion>
 
-      <productName>JMurmel</productName>
-      <productVersion>1.4.0.0</productVersion>
-      <txtProductVersion>1.4</txtProductVersion>
+        <productName>JMurmel</productName>
+        <productVersion>1.4.5.0</productVersion>
+        <txtProductVersion>1.4.5</txtProductVersion>
 
-      <copyright>Copyright (C) 2020-2023 by Robert Mayer</copyright>
+        <copyright>Copyright (C) 2020-2023 by Robert Mayer</copyright>
 
-      <internalName>jmurmel.jar</internalName>
-      <originalFilename>jmurmel.exe</originalFilename>
-<!--
-    <companyName>text</companyName>
-    <trademarks>text</trademarks>
--->
-      <language>ENGLISH_US</language>
-  </versionInfo>
-<!--
-  <messages>
-    <startupErr>text</startupErr>
-    <jreNotFoundErr>text</jreNotFoundErr>
-    <jreVersionErr>text</jreVersionErr>
-    <launcherErr>text</launcherErr>
-    <instanceAlreadyExistsMsg>text</instanceAlreadyExistsMsg>
-  </messages>
--->
+        <internalName>jmurmel.jar</internalName>
+        <originalFilename>jmurmel.exe</originalFilename>
+        <!--
+        <companyName>text</companyName>
+        <trademarks>text</trademarks>
+        -->
+        <language>ENGLISH_US</language>
+    </versionInfo>
+
+    <!--
+    <messages>
+        <startupErr>text</startupErr>
+        <jreNotFoundErr>text</jreNotFoundErr>
+        <jreVersionErr>text</jreVersionErr>
+        <launcherErr>text</launcherErr>
+        <instanceAlreadyExistsMsg>text</instanceAlreadyExistsMsg>
+    </messages>
+    -->
 </launch4jConfig>
