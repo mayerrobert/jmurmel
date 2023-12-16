@@ -9338,17 +9338,33 @@ public class LambdaJ {
             env = extenvIntern(symbol, javasym + ".get()", env);
 
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
-                      + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
-                      + "    private Object define_").append(javasym).append("() {\n"
-                      + "        values = null;\n"
-                      + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                      + "        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
-                      + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
-                      + "        catch (Exception e) { rterror(e); }\n"
-                      + "        finally { values = null; }\n"
-                      + "        return intern(\"").append(symbol).append("\");\n"
-                      + "    }\n\n");
+                    + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
+                    + "    private Object define_").append(javasym).append("() {\n");
+            emitClearValues(sb, form, 40);
+            sb.append("        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
+                    + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
+                    + "        catch (Exception e) { rterror(e); }\n"
+                    + "        finally {\n");
+            emitClearValues(sb);
+            sb.append("        }\n      return intern(\"").append(symbol).append("\");\n"
+                    + "    }\n\n");
             return env;
+        }
+
+        private static void emitClearValues(WrappingWriter sb, ConsCell form, int maxlen) {
+            emitClearValues(sb);
+            emitLoc(sb, form, maxlen);
+        }
+
+        private static void emitClearValues(WrappingWriter sb) {
+            sb.append("        values = null;\n");
+        }
+
+        private static void emitLoc(WrappingWriter sb, ConsCell form, int maxlen) {
+            sb.append("        loc = \"");
+            stringToJava(sb, form.lineInfo(), -1);
+            stringToJava(sb, printSEx(form), maxlen);
+            sb.append("\";\n");
         }
 
         /** @param form a list (defun symbol ((symbol...) forms...)) */
@@ -9365,18 +9381,17 @@ public class LambdaJ {
             sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
                       + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
-            sb.append("    private LambdaJSymbol defun_").append(javasym).append("() {\n"
-                      + "        values = null;\n"
-                      + "        loc = \"");  stringToJava(sb, form.lineInfo(), -1);  stringToJava(sb, printSEx(form), 40);  sb.append("\";\n"
-                      + "        final MurmelFunction func = new MurmelFunction() {\n"
-                      + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
-                      + "        public Object apply(Object... args0) {\n");
+            sb.append("    private LambdaJSymbol defun_").append(javasym).append("() {\n");
+            emitClearValues(sb, form, 40);
+            sb.append("        final MurmelFunction func = new MurmelFunction() {\n"
+                    + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
+                    + "        public Object apply(Object... args0) {\n");
             final ConsCell extenv = params(DEFUN, sb, params, localEnv, 0, symbol.toString(), true);
             emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false);
             sb.append("        }};\n"
-                      + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
-                      + "        return intern(\"").append(symbol).append("\");\n"
-                      + "    }\n\n");
+                    + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
+                    + "        return intern(\"").append(symbol).append("\");\n"
+                    + "    }\n\n");
 
             return extenvIntern(symbol, javasym + ".get()", env);
         }
@@ -9390,7 +9405,8 @@ public class LambdaJ {
             final Iterator<Object> it;
             if (forms == null || !(it = forms.iterator()).hasNext()) {
                 // e.g. the body of an empty lambda or function
-                sb.append("        return values = null;\n");
+                emitClearValues(sb);
+                sb.append("        return null;\n");
                 return;
             }
 
@@ -9417,7 +9433,7 @@ public class LambdaJ {
             }
 
             if (atom(form)) {
-                if (clearValues) sb.append("        values = null;\n");
+                if (clearValues) emitClearValues(sb);
             }
             else {
                 final ConsCell ccForm = (ConsCell)form;
@@ -9431,11 +9447,11 @@ public class LambdaJ {
                         // omit setting values to null
                     }
                     else {
-                        sb.append("        values = null;\n");
+                        emitClearValues(sb);
                     }
 
                     if (op != intern(DEFINE) && op != intern(DEFUN) && op != intern(DEFMACRO) && op != intern(LET) && op != intern(LETSTAR)) {
-                        sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
+                        emitLoc(sb, ccForm, 100);
                     }
                 }
 
@@ -9538,8 +9554,7 @@ public class LambdaJ {
                         final Object bindings = cadr(ccForm);
                         if (bindings instanceof LambdaJSymbol) {
                             if (clearValues) {
-                                sb.append("        values = null;\n");
-                                sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
+                                emitClearValues(sb, ccForm, 100);
                             }
                             break;
                         }
@@ -9557,8 +9572,7 @@ public class LambdaJ {
                         else sb.append("        {\n");
 
                         if (clearValues) {
-                            sb.append("        values = null;\n");
-                            sb.append("        loc = \""); stringToJava(sb, ccForm.lineInfo(), -1); stringToJava(sb, printSEx(ccForm), 100); sb.append("\";\n");
+                            emitClearValues(sb, ccForm, 100);
                         }
                         ConsCell letStarEnv = env;
                         final String vName = "v" + rsfx;
