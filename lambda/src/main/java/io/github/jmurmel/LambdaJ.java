@@ -9224,7 +9224,7 @@ public class LambdaJ {
             /// second pass: emit toplevel forms that are not define or defun as well as the actual assignments for define/ defun
             intp.speed = prevSpeed;
             passTwo = true;
-            emitForms(ret, bodyForms, globalEnv, globalEnv, 0, true);
+            emitForms(ret, bodyForms, globalEnv, globalEnv, 0, true, false);
 
             ret.append("    }\n");
 
@@ -9388,7 +9388,7 @@ public class LambdaJ {
                     + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
                     + "        public Object apply(Object... args0) {\n");
             final ConsCell extenv = params(DEFUN, sb, params, localEnv, 0, symbol.toString(), true);
-            emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false);
+            emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false, false);
             sb.append("        }};\n"
                     + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
                     + "        return intern(\"").append(symbol).append("\");\n"
@@ -9402,12 +9402,13 @@ public class LambdaJ {
         /// emitForms - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms. Each form but the last will be emitted as an assignment
          *  to the local variable "ignoredN" because some forms are emitted as ?: expressions which is not a valid statement by itself. */
-        private void emitForms(WrappingWriter sb, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel) {
+        private void emitForms(WrappingWriter sb, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel, boolean useYield) {
             final Iterator<Object> it;
             if (forms == null || !(it = forms.iterator()).hasNext()) {
                 // e.g. the body of an empty lambda or function
                 emitClearValues(sb);
-                sb.append("        return null;\n");
+                if (useYield ) sb.append("        yield null;\n");
+                else sb.append("        return null;\n");
                 return;
             }
 
@@ -9422,7 +9423,7 @@ public class LambdaJ {
                     next = it.next();
                 } while (it.hasNext()); 
             }
-            emitStmt(sb, next, env, topEnv, rsfx, "        return ", topLevel, false, true);
+            emitStmt(sb, next, env, topEnv, rsfx, useYield ? "        yield " : "        return ", topLevel, false, true);
         }
 
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
@@ -10020,7 +10021,7 @@ public class LambdaJ {
             final Object params = car(paramsAndForms);
             final String expr = "(lambda " + printSEx(params) + " ...)";
             env = params(LAMBDA, sb, params, env, rsfx, expr, argCheck);
-            emitForms(sb, (ConsCell)cdr(paramsAndForms), env, topEnv, rsfx, false);
+            emitForms(sb, (ConsCell)cdr(paramsAndForms), env, topEnv, rsfx, false, false);
             sb.append("        })");
         }
 
@@ -10031,9 +10032,14 @@ public class LambdaJ {
             if (!listp(forms)) errorMalformed(PROGN, "a list of forms", forms);
             final ConsCell ccForms = (ConsCell)forms;
             if (cdr(ccForms) == null) emitForm(sb, car(ccForms), env, topEnv, rsfx, isLast);
+            else if (JavaUtil.jvmVersion() >= 14) {
+                sb.append("switch (0) {\n        default: {\n");
+                emitForms(sb, ccForms, env, topEnv, rsfx, !isLast, true);
+                sb.append("        } }");
+            }
             else {
                 sb.append(isLast ? "tailcall(" : "funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
-                emitForms(sb, ccForms, env, topEnv, rsfx, false);
+                emitForms(sb, ccForms, env, topEnv, rsfx, false, false);
                 sb.append("        }, (Object[])null)");
             }
         }
@@ -10069,7 +10075,7 @@ public class LambdaJ {
                 emitForm(sb, protectedForm, env, topEnv, rsfx, false);
                 sb.append("; },\n"
                         + "        (MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
-                emitForms(sb, cleanupForms, env, topEnv, rsfx, false);
+                emitForms(sb, cleanupForms, env, topEnv, rsfx, false, false);
                 sb.append("        },\n"
                         + "        (Object[])null)");
             }
@@ -10123,7 +10129,7 @@ public class LambdaJ {
                     + "        private final MurmelFunction ").append(javasym(symbol, env, symbolParamsAndForms)).append(" = this;\n" // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"
                     + "        public Object apply(Object... args").append(rsfx).append(") {\n");
             env = params(func, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
-            emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false);
+            emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false, false);
             sb.append("        } }");
         }
 
@@ -10134,7 +10140,7 @@ public class LambdaJ {
             sb.append("new MurmelFunction() {\n"
                       + "        public Object apply(Object... args").append(rsfx).append(") {\n");
             env = params(LABELS, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
-            emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false);
+            emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false, false);
             sb.append("        } }");
         }
 
@@ -10167,7 +10173,7 @@ public class LambdaJ {
             }
 
             sb.append("        @Override public Object apply(Object... ignored) {\n");
-            emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false); // todo isLast statt false? oder .apply() statt tailcall/funcall?
+            emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false, false); // todo isLast statt false? oder .apply() statt tailcall/funcall?
             sb.append("        } }, NOARGS)");
         }
 
@@ -10251,7 +10257,7 @@ public class LambdaJ {
                 sb.append("        }\n");
                 sb.append("        else argCheck(loc, ").append(argCount).append(", args").append(rsfx).append(".length);\n");
             }
-            emitForms(sb, (ConsCell)body, env, topEnv, rsfx, isLast);
+            emitForms(sb, (ConsCell)body, env, topEnv, rsfx, isLast, false);
             sb.append("        } }, unassigned(").append(argCount).append("))");
         }
 
@@ -10322,7 +10328,7 @@ public class LambdaJ {
             }
 
             if (isLast) {
-                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, false);
+                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, false, false);
                 sb.append("        })\n");
                 if (globals.isEmpty()) {
                     sb.append("        , null");
@@ -10337,7 +10343,7 @@ public class LambdaJ {
                 if (!globals.isEmpty()) sb.append("        try {\n");
 
                 // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
-                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, bindings != null);
+                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, bindings != null, false);
 
                 if (!globals.isEmpty()) {
                     sb.append("        }\n        finally {\n");
@@ -11201,6 +11207,22 @@ final class JavaUtil {
     static String readString(Path p, Charset cs) throws IOException {
         // Java11+ has Files.readString() which does one less copying than this
         return new String(Files.readAllBytes(p), cs);
+    }
+
+    private static int jvmVersion = -1;
+    static int jvmVersion() {
+        if (jvmVersion == -1) {
+            String version = System.getProperty("java.version");
+            if (version.startsWith("1.")) {
+                version = version.substring(2, 3);
+            }
+            else {
+                final int dot = version.indexOf('.');
+                if (dot != -1) version = version.substring(0, dot);
+            }
+            return jvmVersion = Integer.parseInt(version);
+        }
+        return jvmVersion;
     }
 }
 
