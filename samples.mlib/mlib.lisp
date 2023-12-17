@@ -894,9 +894,9 @@
         (resultform (cddr loop-def)))
     (if (integerp countform)
 
-          (if (<= countform 0) `(progn ,@resultform)
-            `(let ((,var 0))
-               (let ,loop ()
+          `(let ((,var 0))
+             ,(if (<= countform 0) `(progn ,@resultform)
+               `(let ,loop ()
                  ,@body
                  (if (>= (incf ,var) ,countform) (progn ,@resultform)
                    (,loop)))))

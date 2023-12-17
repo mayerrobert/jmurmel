@@ -537,6 +537,8 @@
   temp-two => 10
   (let ((loop "loop") (result nil)) (dotimes (i 3 result) (setq result (cons loop result))))
     => ("loop" "loop" "loop")
+  
+  (dotimes (i 0 i)) => 0
 )
 
 #+murmel
