@@ -1,3 +1,5 @@
+dovector macht in jedem schleifendurchlauf ein "let"
+
 Clojure hat counted?, liefert true für ISeq, false für Cons
 Murmel könnte countedp bekommen, true für ArraySlice, und counted (wandelt ConsCell zu ArraySlice)
 

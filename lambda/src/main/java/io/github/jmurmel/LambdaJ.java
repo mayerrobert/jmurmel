@@ -11219,6 +11219,8 @@ final class JavaUtil {
             else {
                 final int dot = version.indexOf('.');
                 if (dot != -1) version = version.substring(0, dot);
+                final int dash = version.indexOf('-');
+                if (dash != -1) version = version.substring(0, dash);
             }
             return jvmVersion = Integer.parseInt(version);
         }
