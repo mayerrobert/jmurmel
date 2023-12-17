@@ -18,7 +18,7 @@ echo.
 %JMURMEL% --version
 %ABCL% --eval "(progn (princ (lisp-implementation-type)) (princ #\ ) (princ (lisp-implementation-version)))"
 
-for %%i in (00*.lisp 3*.lisp a*.lisp q.lisp) do call :all %%i
+for %%i in (00*.lisp 3*.lisp a*.lisp dovector.lisp q.lisp) do call :all %%i
 goto :EOF
 
 :all

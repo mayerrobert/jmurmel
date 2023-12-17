@@ -942,7 +942,7 @@
 (defmacro dovector (loop-def . body)
   (let ((var (car loop-def))
         (vectorform (cadr loop-def))
-        (result (cddr loop-def))
+        (resultforms (cddr loop-def))
         (vec (gensym))
         (acc (gensym))
         (idx (gensym))
@@ -955,13 +955,17 @@
                     ((bit-vector-p ,vec) bvref)
                     ((vectorp ,vec) seqref)
                     (t (error "dovector - not a vector: %s" ,vec))))
-            (,limit (vector-length ,vec)))
-       (let ,loop ((,idx 0))
-         (if (< ,idx ,limit)
-               (let ((,var (,acc ,vec ,idx)))
-                 ,@body
-                 (,loop (1+ ,idx)))
-           ,(if result `(let ((,var nil)) ,@result)))))))
+            (,limit (vector-length ,vec))
+            (,idx 0)
+            ,var)
+       (let ,loop ()
+         (when (< ,idx ,limit)
+           (setq ,var (,acc ,vec ,idx))
+           ,@body
+           (incf ,idx)
+           (,loop)))
+
+       ,(if resultforms `(let ((,var nil)) ,@resultforms)))))
 
 
 ;;; = Macro: doplist
