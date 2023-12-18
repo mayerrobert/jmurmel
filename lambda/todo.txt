@@ -1,4 +1,8 @@
-dovector macht in jedem schleifendurchlauf ein "let"
+define als nicht-toplevel form?
+-> führt eine neue variable ein, scope ist bis zum ende des aktuellen scopes
+-> sollte im interpreter wie compiler gehen
+
+
 
 Clojure hat counted?, liefert true für ISeq, false für Cons
 Murmel könnte countedp bekommen, true für ArraySlice, und counted (wandelt ConsCell zu ArraySlice)

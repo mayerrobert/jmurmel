@@ -28,6 +28,9 @@
         ((eq 'quote (car form))
          form)
 
+        ((eq 'type (car form))
+         form)
+
         ((eq 'define (car form))
          `(define ,(cadr form) ,(expand (caddr form))))
 
