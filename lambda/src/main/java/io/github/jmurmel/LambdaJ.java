@@ -2711,11 +2711,16 @@ public class LambdaJ {
                 }
 
 
-                /// eval - special forms that change the global environment
+                /// eval - special forms that change the global environment (except: non-toplevel define changes the current lexical scope)
 
                 /// eval - (define symbol exp) -> symbol with a side of global environment extension
                 case sDefine: {
-                    result = evalDefine(ccArguments, env, stack, level, traceLvl);  break tailcall;
+                    final Object symbol = car(ccArguments);
+                    final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
+                    if (env == null) extendGlobal(symbol, value);
+                    else env = insertFront(env, cons(symbol, value));
+                    values = NO_VALUES;
+                    result = symbol;  break tailcall;
                 }
 
                 /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
@@ -3383,13 +3388,6 @@ public class LambdaJ {
         }
         values = NO_VALUES;
         return res;
-    }
-
-    private @NotNull Object evalDefine(ConsCell ccArguments, ConsCell env, int stack, int level, int traceLvl) {
-        final Object symbol;
-        extendGlobal(symbol = car(ccArguments), eval(cadr(ccArguments), env, stack, level, traceLvl));
-        values = NO_VALUES;
-        return symbol;
     }
 
     private @NotNull Object evalDefun(ConsCell ccArguments, ConsCell env) {
