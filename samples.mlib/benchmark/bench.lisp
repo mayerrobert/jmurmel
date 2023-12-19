@@ -14,8 +14,8 @@
 ;;; if > 0 then run the form this many seconds before the timed benchmark
 ;;; 0 for sbcl because sbcl doesn't need warmup
 (define *warmup-duration*
-        #-sbcl 5
-        #+sbcl 0)
+        #+jvm 5
+        #-jvm 0)
 
 
 ;;; run the form under test this many times inside a progn to reduce benchmark overhead
@@ -46,7 +46,7 @@
 
 (defmacro unroll (expr)
   `(progn ,@(do-unroll expr (count-per-try))))
-  
+
 (defun do-run (f counter endtime tmp)
   (setq tmp (get-internal-real-time))
   (unroll (#-murmel funcall f))
@@ -70,7 +70,7 @@
       #+murmel (writeln)
       #-murmel (terpri)))
 
-  (let* ((*internal-per-ms* (/ internal-time-units-per-second 1000))
+  (let* ((internal-per-ms (/ internal-time-units-per-second 1000))
          (start (get-internal-real-time))
          (endtime (+ start (* seconds internal-time-units-per-second)))
          (count (do-run f 1 endtime nil))
@@ -82,7 +82,7 @@
     (format t
             #+murmel "%s: did %d iterations in %g seconds walltime, %g iterations/second, avg/min/max %g/%g/%g milliseconds/iteration%n"
             #-murmel "~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, avg/min/max ~F/~F/~F milliseconds/iteration~%"
-            name count elapsed-seconds iterations-per-second (* 1000 seconds-per-iteration) (/ *min* *internal-per-ms* *count-per-try*) (/ *max* *internal-per-ms* *count-per-try*))
+            name count elapsed-seconds iterations-per-second (* 1000 seconds-per-iteration) (/ *min* internal-per-ms *count-per-try*) (/ *max* internal-per-ms *count-per-try*))
     nil))
 
 (provide "bench")
