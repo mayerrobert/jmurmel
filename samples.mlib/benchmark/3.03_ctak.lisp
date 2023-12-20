@@ -2,7 +2,10 @@
 ;;; p 99
 
 #+murmel (require "mlib")
-(require "bench" "bench.lisp")
+#+murmel (require "bench" "bench.lisp")
+#-murmel
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require "bench" "bench.lisp"))
 
 
 (defun ctak (x y z)

@@ -2,7 +2,10 @@
 ;;; p 170
 
 #+murmel (require "mlib")
-(require "bench" "bench.lisp")
+#+murmel (require "bench" "bench.lisp")
+#-murmel
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require "bench" "bench.lisp"))
 
 
 ;;; DERIV -- This is the Common Lisp version of a symbolic
@@ -48,6 +51,5 @@
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))))
 ;;; call:  (run)
-
 
 (bench "deriv (5000x)" (run) *default-duration*)

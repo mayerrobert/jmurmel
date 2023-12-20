@@ -1,10 +1,11 @@
 ;;; Based on https://github.com/ecraven/r7rs-benchmarks/blob/master/src/array1.scm which says it is based on
 ;;; ARRAY1 -- One of the Kernighan and Van Wyk benchmarks.
 
-(require "bench" "bench.lisp")
-
-#+murmel
-(require "mlib")
+#+murmel (require "mlib")
+#+murmel (require "bench" "bench.lisp")
+#-murmel
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (require "bench" "bench.lisp"))
 
 
 (defun create-x (n)
@@ -27,7 +28,5 @@
   (do ((i 0 (1+ i))
        (result nil (my-try n)))
       ((= i m) result)))
-
-
 
 (bench "array1 10 10000" (run 10 10000) *default-duration*) ; ==> 10000
