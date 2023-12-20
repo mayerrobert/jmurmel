@@ -14,8 +14,8 @@
 ;;; if > 0 then run the form this many seconds before the timed benchmark
 ;;; 0 for sbcl because sbcl doesn't need warmup
 (define *warmup-duration*
-        #+jvm 5
-        #-jvm 0)
+        #+(or jvm abcl murmel) 5
+        #-(or jvm abcl murmel) 0)
 
 
 ;;; run the form under test this many times inside a progn to reduce benchmark overhead

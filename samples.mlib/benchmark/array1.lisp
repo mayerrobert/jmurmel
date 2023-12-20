@@ -24,9 +24,9 @@
 (defun my-try (n)
   (length (create-y (create-x n))))
 
-(defun run (m n)
+(defun run-array1 (m n)
   (do ((i 0 (1+ i))
        (result nil (my-try n)))
       ((= i m) result)))
 
-(bench "array1 10 10000" (run 10 10000) *default-duration*) ; ==> 10000
+(bench "array1 10 10000" (run-array1 10 10000) *default-duration*) ; ==> 10000
