@@ -52,4 +52,4 @@
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))))
 ;;; call:  (run)
 
-(bench "deriv (5000x)" (run) *default-duration*)
+(bench "deriv (5000x)" (run) 0.8)

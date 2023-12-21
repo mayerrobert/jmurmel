@@ -33,6 +33,8 @@
 
 (define *min* nil)
 (define *max* nil)
+(define *total* 0.0)
+
 
 (defun adjust-minmax (duration)
   (if (> *min* duration) (setq *min* duration))
@@ -55,7 +57,7 @@
         (do-run f (1+ counter) endtime nil)
     counter))
 
-(defun do-bench (name f seconds)
+(defun do-bench (name f weight)
   (setq *min* 1e30 *max* 0)
 
   (format t
@@ -70,7 +72,8 @@
       #+murmel (writeln)
       #-murmel (terpri)))
 
-  (let* ((internal-per-ms (/ internal-time-units-per-second 1000))
+  (let* ((seconds *default-duration*)
+         (internal-per-ms (/ internal-time-units-per-second 1000))
          (start (get-internal-real-time))
          (endtime (+ start (* seconds internal-time-units-per-second)))
          (count (do-run f 1 endtime nil))
@@ -78,11 +81,15 @@
          (count (truncate (* *count-per-try* count)))
          (elapsed-seconds (/ (- end start) internal-time-units-per-second))
          (iterations-per-second (/ count elapsed-seconds))
-         (seconds-per-iteration (/ elapsed-seconds count)))
+         (seconds-per-iteration (/ elapsed-seconds count))
+         (weighted-avg (* 1000.0 weight seconds-per-iteration)))
     (format t
             #+murmel "%s: did %d iterations in %g seconds walltime, %g iterations/second, avg/min/max %g/%g/%g milliseconds/iteration%n"
             #-murmel "~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, avg/min/max ~F/~F/~F milliseconds/iteration~%"
             name count elapsed-seconds iterations-per-second (* 1000 seconds-per-iteration) (/ *min* internal-per-ms *count-per-try*) (/ *max* internal-per-ms *count-per-try*))
+    (princ "---> weigthed avg: ") (princ weighted-avg)
+    (terpri)
+    (incf *total* weighted-avg)
     nil))
 
 (provide "bench")
