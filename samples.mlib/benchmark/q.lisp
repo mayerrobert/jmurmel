@@ -39,5 +39,3 @@
          (q2* x (- y (q2* x (1- y))))))))
 
 (bench "q2*" (q2* 7 8) 1.49) ; ==> 31
-
-;#+sbcl (disassemble 'q2*)
