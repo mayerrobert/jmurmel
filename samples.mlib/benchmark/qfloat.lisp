@@ -48,17 +48,3 @@
          (q2*-float x (- y (q2*-float x (1- y))))))))
 
 (bench "q2*-float" (q2*-float 7.0 8.0) 0.978) ; ==> 31
-
-
-#+ignore
-(progn
-
-(require :sb-sprof)
-
-(sb-sprof:with-profiling (:mode :cpu :loop t :max-samples 1000 :report :flat :sample-interval 0.1)
-  (loop repeat 10
-        do (q2*-float 7.0 8.0)))
-
-(disassemble 'q2*-float)
-
-)
