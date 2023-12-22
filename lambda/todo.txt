@@ -1,3 +1,8 @@
+gscheite lisp-implementation-type und lisp-implementation-version primitives
+-> oder mlib?
+-> mlib könnte auch was nach *features* pushen
+
+
 define als nicht-toplevel form?
 -> führt eine neue variable ein, neuer scope ist bis zum ende des aktuellen scopes, mehrfach dieselbe variable shadowed die vorige
 -> sollte im interpreter wie compiler gehen

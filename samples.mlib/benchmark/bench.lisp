@@ -87,7 +87,7 @@
             #+murmel "%s: did %d iterations in %g seconds walltime, %g iterations/second, avg/min/max %g/%g/%g milliseconds/iteration%n"
             #-murmel "~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, avg/min/max ~F/~F/~F milliseconds/iteration~%"
             name count elapsed-seconds iterations-per-second (* 1000 seconds-per-iteration) (/ *min* internal-per-ms *count-per-try*) (/ *max* internal-per-ms *count-per-try*))
-    (princ "---> weigthed avg: ") (princ weighted-avg)
+    (princ "---> weighted avg: ") (princ weighted-avg)
     (terpri)
     (incf *total* weighted-avg)
     nil))

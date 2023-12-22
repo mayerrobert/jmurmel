@@ -8,7 +8,7 @@
   `(progn ,@body))
 
 (defun lisp-implementation-type ()
-  ((jmethod "io.github.jmurmel.jsr223.JMurmelScriptEngineFactory" "getEngineName") ((jmethod "io.github.jmurmel.jsr223.JMurmelScriptEngineFactory" "new"))))
+  "JMurmel")
 
 (defun lisp-implementation-version ()
   ((jmethod "io.github.jmurmel.jsr223.JMurmelScriptEngineFactory" "getLanguageVersion") ((jmethod "io.github.jmurmel.jsr223.JMurmelScriptEngineFactory" "new"))))
@@ -35,25 +35,34 @@
   (load "3.08_destru.lisp")
   (load "3.10_deriv.lisp")
   (load "array1.lisp")
+   ;; dovector.lisp uses "dovector" or SBCL's sb-int:dovector, both of which are not Common Lisp.
+   ;; You may want to comment out the following line and decrement *ref* by 1.
   (load "dovector.lisp")
   (load "q.lisp")
+  (load "qfloat.lisp")
 )
 
-
-(princ "Sum of weighted avg: ") (princ *total*) (terpri)
-
 ;; reference sum of weighted avg.
-;; The weights were adjusted so that each benchmark has approx. 1.0 as a weighted result
-;; with SBCL 2.1.8 on my i5-1135G7 @ 2.40GHz with turbo disabled.
+;; The individual weights of each benchmark were adjusted
+;; so that each benchmark has approx. 1.0 as a weighted result
+;; with Windows 10/ SBCL 2.1.8 on my i5-1135G7 @ 2.40GHz with turbo disabled.
 ;;
-;; You may want to run all benchmarks with your "reference system", use the total of that run as *ref*,
+;; You may want to run all benchmarks with your "reference system",
+;; use the total of that run as *ref*,
 ;; and then run the "system under test".
 ;;
-;; Or leave *ref* as is and adjust the individual weights so that each benchmark when run on the "reference system"
+;; Or leave *ref* as is and adjust the individual weights
+;; so that each benchmark when run on the "reference system"
 ;; will give an adjusted weight of approx. 1.0.
-(define *ref* 12.0)
+(define *ref* 15.0)
+
+
+(terpri)
+(princ "Sum of weighted avg: ") (princ *total*) (terpri)
 
 (let* ((change (/ (- *total* *ref*) *ref*)))
-  (princ "Change to reference result of ") (princ *ref*) (princ ": ")
-  (princ (* 100.0 change)) (princ "%") (terpri)
-  (princ "Run took ") (princ (/ *total* *ref*)) (princ "x as long as the reference result") (terpri))
+  (princ "Relative change to reference result of ") (princ *ref*) (princ ": ")
+  (princ (* 100.0 change)) (princ " %")
+  (terpri)
+  (princ "This run took ") (princ (/ *total* *ref*)) (princ " times as long as the reference result")
+  (terpri))
