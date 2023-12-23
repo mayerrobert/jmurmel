@@ -39,4 +39,4 @@
             (stak-aux))))
       (stak-aux))))
 
-(bench "stak" (stak 18 12 6) 1.2)  ; => 7
+(bench "stak" (stak 18 12 6) 0.924)  ; => 7

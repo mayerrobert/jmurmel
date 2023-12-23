@@ -28,4 +28,4 @@
                          x
                          y))))))
 
-(bench "ctak" (ctak 18 12 6) 1.45)  ; => 7
+(bench "ctak" (ctak 18 12 6) 0.668)  ; => 7

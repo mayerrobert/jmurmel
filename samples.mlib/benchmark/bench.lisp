@@ -57,7 +57,7 @@
         (do-run f (1+ counter) endtime nil)
     counter))
 
-(defun do-bench (name f weight)
+(defun do-bench (name f ref)
   (setq *min* 1e30 *max* 0)
 
   (format t
@@ -82,7 +82,7 @@
          (elapsed-seconds (/ (- end start) internal-time-units-per-second))
          (iterations-per-second (/ count elapsed-seconds))
          (seconds-per-iteration (/ elapsed-seconds count))
-         (weighted-avg (* 1000.0 weight seconds-per-iteration)))
+         (weighted-avg (/ seconds-per-iteration ref 0.001)))
     (format t
             #+murmel "%s: did %d iterations in %g seconds walltime, %g iterations/second, avg/min/max %g/%g/%g milliseconds/iteration%n"
             #-murmel "~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, avg/min/max ~F/~F/~F milliseconds/iteration~%"

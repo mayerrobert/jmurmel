@@ -27,19 +27,19 @@
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (load "00_tak_apo.lisp")
-  (load "3.01_tak.lisp")
-  (load "3.02_stak.lisp")
-  (load "3.03_ctak.lisp")
-  (load "3.04_takL.lisp")
-  (load "3.08_destru.lisp")
-  (load "3.10_deriv.lisp")
-  (load "array1.lisp")
+  (sleep 5) (load "00_tak_apo.lisp")
+  (sleep 5) (load "3.01_tak.lisp")
+  (sleep 5) (load "3.02_stak.lisp")
+  (sleep 5) (load "3.03_ctak.lisp")
+  (sleep 5) (load "3.04_takL.lisp")
+  (sleep 5) (load "3.08_destru.lisp")
+  (sleep 5) (load "3.10_deriv.lisp")
+  (sleep 5) (load "array1.lisp")
    ;; dovector.lisp uses "dovector" or SBCL's sb-int:dovector, both of which are not Common Lisp.
    ;; You may want to comment out the following line and decrement *ref* by 1.
-  (load "dovector.lisp")
-  (load "q.lisp")
-  (load "qfloat.lisp")
+  (sleep 5) (load "dovector.lisp")
+  (sleep 5) (load "q.lisp")
+  (sleep 5) (load "qfloat.lisp")
 )
 
 ;; reference sum of weighted avg.

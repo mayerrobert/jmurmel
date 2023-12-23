@@ -16,7 +16,7 @@
      (q (- n (q (- n 1))))
      (q (- n (q (- n 2)))))))
 
-(bench "q" (q 21) 2.15) ; ==> 12
+(bench "q" (q 21) 0.465) ; ==> 12
 
 
 ; Two-dimensional recursive function Q2
@@ -26,7 +26,7 @@
     (+ (q2 (- x (q2 (1- x) y)) y)
        (q2 x (- y (q2 x (1- y)))))))
 
-(bench "q2" (q2 7 8) 1.485) ; ==> 31
+(bench "q2" (q2 7 8) 0.682) ; ==> 31
 
 
 ; Same as Q2 but faster because Mlib's "or" is inefficient because it expands into a let
@@ -38,4 +38,4 @@
       (+ (q2* (- x (q2* (1- x) y)) y)
          (q2* x (- y (q2* x (1- y))))))))
 
-(bench "q2*" (q2* 7 8) 1.49) ; ==> 31
+(bench "q2*" (q2* 7 8) 0.674) ; ==> 31

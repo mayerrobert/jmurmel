@@ -26,4 +26,4 @@
     (sum v)
     (sum v)))
 
-(bench "sum (5x)" (run-sum) 3.15) ; ==> 4999500
+(bench "sum (5x)" (run-sum) 0.319) ; ==> 4999500
