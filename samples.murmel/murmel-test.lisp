@@ -275,6 +275,51 @@ multiline comment
 (define *c* nil)
 
 
+;;; test local define
+#+murmel
+(progn
+
+  (deftest define-local.1
+    (let (x)
+      (define y 1)
+      (define z 2)
+      (list x y z 3))
+
+      '(nil 1 2 3))
+
+  (deftest define-local.2
+    (let (x f1 f2 f3)
+      (setq f1 (lambda () x))
+
+      (define x2 2)
+      (setq f2 (lambda () x2))
+
+      (define x3 3)
+      (setq f3 (lambda () x3))
+
+      (list x (f1) (f2) (f3) 4))
+
+      '(nil nil 2 3 4))
+
+  (deftest define-local.2
+    (let (x f1 f2 f3)
+      (setq f1 (lambda () x))
+
+      (define x2 2)
+      (setq f2 (lambda () x2))
+
+      (define x3 3)
+      (setq f3 (lambda () x3))
+
+      (setq x 11 x2 22 x3 33)
+
+      (list x (f1) (f2) (f3) 4))
+
+      '(11 11 22 33 4))
+
+)
+
+
 ;;; test setq
 (deftest setq.global   (setq *a* 1) 1)
 (deftest setq.global.2 (setq *a* 11 *b* 22 *c* 33) 33)

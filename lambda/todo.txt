@@ -6,7 +6,8 @@ gscheite lisp-implementation-type und lisp-implementation-version primitives
 define als nicht-toplevel form?
 -> führt eine neue variable ein, neuer scope ist bis zum ende des aktuellen scopes, mehrfach dieselbe variable shadowed die vorige
 -> sollte im interpreter wie compiler gehen
-   interpreter erledigt
+   -> erledigt, aber checks fehlen: doppelte symbole erkennen, im interpreter gehen "forward decl in lambdas" wg. insertFront()
+      -> checks sollten in expandForm gemacht werden, expandForm sollte lexical environment und current-lexical-scope mitführen
 -> murmel-langref, README und CHANGES anpassen
 -> evtl mlib tunen? define sollte im interpreter schneller sein als let
 
