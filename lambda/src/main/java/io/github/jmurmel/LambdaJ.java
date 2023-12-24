@@ -8428,8 +8428,8 @@ public class LambdaJ {
 
         public static Object[] unassigned(int length) { final Object[] ret = new Object[length]; Arrays.fill(ret, UNASSIGNED_LOCAL); return ret; }
 
-        public static void argCheck(String expr, int paramCount, int argCount) { if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
-        public static void argCheckVarargs(String expr, int paramCount, int argCount) { if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
+        public static void argCheck(String expr, int paramCount, Object[] args) { final int argCount = args.length; if (paramCount != argCount) errorArgCount(expr, paramCount, paramCount, argCount); }
+        public static void argCheckVarargs(String expr, int paramCount, Object[] args) { final int argCount = args.length; if (argCount < paramCount - 1) errorArgCount(expr, paramCount - 1, Integer.MAX_VALUE, argCount); }
 
         @SuppressWarnings("unchecked")
         public static <T> T[] toVarargs(Object[] args, int paramCount, UnaryOperator<Object> transform, T[] resultArray) {
@@ -10255,7 +10255,7 @@ public class LambdaJ {
                 }
 
                 sb.append("        }\n");
-                sb.append("        else argCheck(loc, ").append(argCount).append(", args").append(rsfx).append(".length);\n");
+                sb.append("        else argCheck(loc, ").append(argCount).append(", args").append(rsfx).append(");\n");
             }
             emitForms(sb, (ConsCell)body, env, topEnv, rsfx, isLast, false);
             sb.append("        } }, unassigned(").append(argCount).append("))");
@@ -10389,7 +10389,7 @@ public class LambdaJ {
          *  and return an environment extended by accesses to the arg array */
         private static ConsCell params(String func, WrappingWriter sb, Object paramList, ConsCell env, int rsfx, String expr, boolean check) {
             if (paramList == null) {
-                if (check) sb.append("        argCheck(\"").append(expr).append("\", 0, args").append(rsfx).append(".length);\n");
+                if (check) sb.append("        argCheck(\"").append(expr).append("\", 0, args").append(rsfx).append(");\n");
                 return env;
             }
 
@@ -10397,9 +10397,9 @@ public class LambdaJ {
                 // (lambda a forms...) - style varargs
             }
             else if (dottedList(paramList)) {
-                if (check) sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(listLength((ConsCell)paramList)).append(", args").append(rsfx).append(".length);\n");
+                if (check) sb.append("        argCheckVarargs(\"").append(expr).append("\", ").append(listLength((ConsCell)paramList)).append(", args").append(rsfx).append(");\n");
             }
-            else if (check) sb.append("        argCheck(\"").append(expr).append("\", ").append(listLength((ConsCell)paramList)).append(", args").append(rsfx).append(".length);\n");
+            else if (check) sb.append("        argCheck(\"").append(expr).append("\", ").append(listLength((ConsCell)paramList)).append(", args").append(rsfx).append(");\n");
 
             final HashSet<Object> seen = new HashSet<>();
             int n = 0;
@@ -10767,8 +10767,8 @@ public class LambdaJ {
             } else {
                 // emit a lambda that contains an argcount check
                 sb.append("((MurmelFunction)(args -> { "); // (MurmelJavaProgram.CompilerPrimitive) works too but is half as fast?!?
-                if (m.isVarArgs()) { sb.append("argCheckVarargs(loc, ").append(paramCount-1).append(", args.length);  ");}
-                else               { sb.append("argCheck(loc, ").append(paramCount).append(", args.length);  "); }
+                if (m.isVarArgs()) { sb.append("argCheckVarargs(loc, ").append(paramCount-1).append(", args);  ");}
+                else               { sb.append("argCheck(loc, ").append(paramCount).append(", args);  "); }
                 if (!voidMethod) sb.append("return ");
 
                 if ("new".equalsIgnoreCase((String) strMethod)) sb.append("new ").append(strClazz);
