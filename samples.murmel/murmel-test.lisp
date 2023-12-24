@@ -317,6 +317,16 @@ multiline comment
 
       '(11 11 22 33 4))
 
+  (define f* (lambda () (define x 1) x))
+  (deftest define-local.3
+    (f*)  1)
+
+  (deftest define-local.4
+    (let ((y 1))
+      (list (f*) y))
+
+    '(1 1))
+
 )
 
 

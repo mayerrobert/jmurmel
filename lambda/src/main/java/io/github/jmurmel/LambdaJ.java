@@ -2717,8 +2717,8 @@ public class LambdaJ {
                 case sDefine: {
                     final Object symbol = car(ccArguments);
                     final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                    if (env == null) extendGlobal(symbol, value);
-                    else env = insertFront(env, cons(symbol, value));
+                    if (level == 1) extendGlobal(symbol, value);
+                    else insertFront(env, cons(symbol, value));
                     values = NO_VALUES;
                     result = symbol;  break tailcall;
                 }
@@ -3064,7 +3064,10 @@ public class LambdaJ {
             ConsCell rest;
             for (rest = (ConsCell)cdr((ConsCell)expansion); cdr(rest) != null; rest = (ConsCell)cdr(rest)) {
                 // must expand a second time in case the progn contained a load/require that contained defmacro
-                expandAndEval(car(rest), env);
+                final ConsCell extenv;
+                if (env == null) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env); // needed for (define f (lambda () (define x 1) x))
+                else extenv = env;
+                expandAndEval(car(rest), extenv);
             }
             values = NO_VALUES;
             return expandAndEval(car(rest), env);

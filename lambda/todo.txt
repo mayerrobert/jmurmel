@@ -8,6 +8,7 @@ define als nicht-toplevel form?
 -> sollte im interpreter wie compiler gehen
    -> erledigt, aber checks fehlen: doppelte symbole erkennen, im interpreter gehen "forward decl in lambdas" wg. insertFront()
       -> checks sollten in expandForm gemacht werden, expandForm sollte lexical environment und current-lexical-scope mitführen
+   -> in scheme ist das verhalten wie letrec
 -> murmel-langref, README und CHANGES anpassen
 -> evtl mlib tunen? define sollte im interpreter schneller sein als let
 
