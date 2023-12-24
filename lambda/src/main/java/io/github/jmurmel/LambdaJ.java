@@ -2711,16 +2711,11 @@ public class LambdaJ {
                 }
 
 
-                /// eval - special forms that change the global environment (except: non-toplevel define changes the current lexical scope)
+                /// eval - special forms that change the global environment
 
                 /// eval - (define symbol exp) -> symbol with a side of global environment extension
                 case sDefine: {
-                    final Object symbol = car(ccArguments);
-                    final Object value = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                    if (level == 1) extendGlobal(symbol, value);
-                    else insertFront(env, cons(symbol, value));
-                    values = NO_VALUES;
-                    result = symbol;  break tailcall;
+                    result = evalDefine(ccArguments, env, stack, level, traceLvl);  break tailcall;
                 }
 
                 /// eval - (defun symbol (params...) forms...) -> symbol with a side of global environment extension
@@ -3064,10 +3059,7 @@ public class LambdaJ {
             ConsCell rest;
             for (rest = (ConsCell)cdr((ConsCell)expansion); cdr(rest) != null; rest = (ConsCell)cdr(rest)) {
                 // must expand a second time in case the progn contained a load/require that contained defmacro
-                final ConsCell extenv;
-                if (env == null) extenv = acons(PSEUDO_SYMBOL, UNASSIGNED, env); // needed for (define f (lambda () (define x 1) x))
-                else extenv = env;
-                expandAndEval(car(rest), extenv);
+                expandAndEval(car(rest), env);
             }
             values = NO_VALUES;
             return expandAndEval(car(rest), env);
@@ -3391,6 +3383,13 @@ public class LambdaJ {
         }
         values = NO_VALUES;
         return res;
+    }
+
+    private @NotNull Object evalDefine(ConsCell ccArguments, ConsCell env, int stack, int level, int traceLvl) {
+        final Object symbol;
+        extendGlobal(symbol = car(ccArguments), eval(cadr(ccArguments), env, stack, level, traceLvl));
+        values = NO_VALUES;
+        return symbol;
     }
 
     private @NotNull Object evalDefun(ConsCell ccArguments, ConsCell env) {
@@ -3947,7 +3946,6 @@ public class LambdaJ {
     static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
 
     static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
-    static Object   caddr(Object c)    { return c == null ? null : car(cddr(c)); }
 
     static Object   cadddr(ConsCell o) { return o == null ? null : car(cdddr(o)); }
 
@@ -9421,19 +9419,18 @@ public class LambdaJ {
                 sb.append("        Object ").append(retVar).append(";\n");
                 do {
                     assert it.hasNext();
-                    env = emitStmt(sb, next, env, topEnv, rsfx, retLhs, topLevel, true, true);
+                    emitStmt(sb, next, env, topEnv, rsfx, retLhs, topLevel, true, true);
                     next = it.next();
                 } while (it.hasNext()); 
             }
             emitStmt(sb, next, env, topEnv, rsfx, useYield ? "        yield " : "        return ", topLevel, false, true);
         }
 
-        private int localCtr = 0;
-        private ConsCell emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
+        private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
             if (hasNext) {
                 if (atom(form)) {
                     if (form != null) noteDead(null, form); // don't note nil as that would generate a lot of notes for e.g. "(if a nil (dosomething))"
-                    return env; // must be dead code
+                    return; // must be dead code
                 }
             }
 
@@ -9468,7 +9465,7 @@ public class LambdaJ {
 
                     ///     - quote
                     case sQuote: {
-                        if (hasNext) { noteDead(ccForm, null); return env; }
+                        if (hasNext) { noteDead(ccForm, null); return; }
                         break;
                     }
 
@@ -9477,7 +9474,7 @@ public class LambdaJ {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
                             final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
                             emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
-                            return env;
+                            return;
                         }
 
                         sb.append("        if (");
@@ -9493,7 +9490,7 @@ public class LambdaJ {
                         else {
                             sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
                         }
-                        return env;
+                        return;
                     }
 
                     case sCond: {
@@ -9510,14 +9507,14 @@ public class LambdaJ {
                                     final String msg = "forms following default 't' form will be ignored";
                                     note(ccForm, msg);
                                 }
-                                return env;
+                                return;
                             } else {
                                 sb.append("if (");  emitTruthiness(sb, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
                                 emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
                             }
                         }
                         sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
-                        return env;
+                        return;
                     }
 
                         // todo ggf. alle 3 catch clauses in eine rt funktion verpacken statt immer alle 3 rausgenerieren?
@@ -9545,13 +9542,13 @@ public class LambdaJ {
                                 sb.append(";\n");
                             }
                         }
-                        return env;
+                        return;
                     }
 
                     case sProgn: {
                         final ConsCell ccBody = listOrMalformed(PROGN, cdr(ccForm));
                         emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, topLevel, hasNext);
-                        return env;
+                        return;
                     }
 
                     case sLetStar:
@@ -9597,38 +9594,21 @@ public class LambdaJ {
                             letStarEnv = extEnv;
                         }
 
-                        emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, false, hasNext);
+                        emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, topLevel, hasNext);
                         if (hasNext) sb.append("        } }.run();\n");
                         else sb.append("        }\n");
-                        return env;
+                        return;
                     }
 
-                    case sDefine: {
-                        if (hasNext) {
-                            sb.append("        ");
-                            if (!topLevel) {
-                                final String lName = "l" + localCtr++;
-                                sb.append("final Object[] ").append(lName).append(" = new Object[1];\n        ").append(lName).append("[0] = ");
-                                emitForm(sb, caddr(form), env, topEnv, rsfx, false);
-                                sb.append(";\n");
-                                return extenvIntern((LambdaJSymbol)cadr(form), lName + "[0]", env);
-                            }
-                            emitForm(sb, form, env, topEnv, rsfx, false);
-                            sb.append(";\n");
-                            return env;
-                        }
-                        break;
-                    }
-
+                    case sDefine:
                     case sDefun:
                     case sDefmacro: {
                         if (hasNext) {
                             sb.append("        ");
                             emitForm(sb, form, env, topEnv, rsfx, false);
                             sb.append(";\n");
-                            return env;
+                            return;
                         }
-                        break;
                     }
 
                     default: break;
@@ -9639,7 +9619,6 @@ public class LambdaJ {
             sb.append(retLhs);
             emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
             sb.append(";\n");
-            return env;
         }
 
         private static void noteDead(ConsCell ccForm, Object form) { note(ccForm, "removing dead code " + (form == null ? "" : form)); }
@@ -9655,7 +9634,7 @@ public class LambdaJ {
                 final String lhs = "        " + ignoredVar + " = ";
                 sb.append("        {\n        Object ").append(ignoredVar).append(";\n");
                 do {
-                    env = emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, topLevel, true, true);
+                    emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, topLevel, true, true);
                     ccBody = (ConsCell)cdr(ccBody);
                 } while (cdr(ccBody) != null);
                 emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);

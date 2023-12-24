@@ -134,3 +134,13 @@ in CL nehmen provide und require stringdesignator (und ausserdem sinds funktione
    -> sollten wsl. special forms bleiben aber stringdesignator akzeptieren, d.h. string + symbol + character
 -> besser so lassen. effektiv nehmen Murmel load und require nur stringliterale (weil load und require special forms sind und das argument nicht evaluieren)
    und bei stringliteralen macht eval oder nicht keinen unterschied, aber z.B. bei symbolen würd quoten oder nicht einen unterschied machen
+
+
+define als nicht-toplevel form?
+-> führt eine neue variable ein, neuer scope ist bis zum ende des aktuellen scopes, mehrfach dieselbe variable shadowed die vorige
+-> sollte im interpreter wie compiler gehen
+   -> erledigt, aber checks fehlen: doppelte symbole erkennen, im interpreter gehen "forward decl in lambdas" wg. insertFront()
+      -> checks sollten in expandForm gemacht werden, expandForm sollte lexical environment und current-lexical-scope mitführen
+   -> in scheme ist das verhalten wie letrec
+-> murmel-langref, README und CHANGES anpassen
+-> evtl mlib tunen? define sollte im interpreter schneller sein als let
