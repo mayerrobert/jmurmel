@@ -114,6 +114,7 @@ public class LambdaJ {
     public static final String LANGUAGE_VERSION = "1.4";
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
     public static final String ENGINE_VERSION;
+    public static final String ENGINE_VERSION_NUM;
 
     static {
         String versionInfo;
@@ -130,6 +131,7 @@ public class LambdaJ {
             }
         }
         ENGINE_VERSION = versionInfo;
+        ENGINE_VERSION_NUM = versionInfo.substring("Version ".length(), versionInfo.indexOf('/'));
     }
 
     /** largest positive long that can be represented as a double w/o any loss */
@@ -2398,12 +2400,14 @@ public class LambdaJ {
         sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(car(args), null), intp.have(Features.HAVE_IO), args); } },
 
         // misc
-        sValues(VALUES, Features.HAVE_XTRA, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
+        sValues(VALUES, Features.HAVE_XTRA, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
         sGensym("gensym", Features.HAVE_XTRA, 0, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
         sTrace("trace", Features.HAVE_XTRA, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
         sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)       { @Override Object apply(LambdaJ intp, ConsCell args) { return macroexpand1(intp, args); } },
         sError("error", Features.HAVE_UTIL, 1, -1)                  { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.getSymbolTable(), car(args), listToArray(cdr(args))); return null; } },
+        sImplType("lisp-implementation-type", Features.HAVE_UTIL, 0) { @Override Object apply(LambdaJ intp, ConsCell args) { return "JMurmel"; } },
+        sImplVersion("lisp-implementation-version", Features.HAVE_UTIL, 0) { @Override Object apply(LambdaJ intp, ConsCell args) { return ENGINE_VERSION_NUM; } },
 
         // time
         sRealtime("get-internal-real-time", Features.HAVE_UTIL, 0)  { @Override Object apply(LambdaJ intp, ConsCell args) { return getInternalRealTime(); } },
@@ -8185,6 +8189,8 @@ public class LambdaJ {
         public final Object _trace     (Object... args) { values = null; return null; }
         public final Object _untrace   (Object... args) { values = null; return null; }
         public final Object _error     (Object... args) { values = null; varargs1("error", args.length); LambdaJ.Subr.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
+        public final Object implType   (Object... args) { values = null; noArgs("lisp-implementation-type", args.length); return "JMurmel"; }
+        public final Object implVersion(Object... args) { values = null; noArgs("lisp-implementation-version", args.length); return LambdaJ.ENGINE_VERSION_NUM; }
 
 
         // time
@@ -8907,6 +8913,8 @@ public class LambdaJ {
             case "trace": return (CompilerPrimitive)this::_trace;
             case "untrace": return (CompilerPrimitive)this::_untrace;
             case "error": return (CompilerPrimitive)this::_error;
+            case "lisp-implementation-type": return (CompilerPrimitive)this::implType;
+            case "lisp-implementation-version": return (CompilerPrimitive)this::implVersion;
 
             // time
             case "get-internal-real-time": return (CompilerPrimitive)this::getInternalRealTime;
@@ -9109,6 +9117,7 @@ public class LambdaJ {
 
         {LISTSTAR, "listStar"},
         //{ "macroexpand-1", "macroexpand1" },
+        {"lisp-implementation-type", "implType"}, {"lisp-implementation-version", "implVersion"},
         {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" },
         {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
 

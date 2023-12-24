@@ -1338,9 +1338,14 @@ pi ; ==> 3.141592653589793
                         (progn (writeln "another error occurred, rethrowing")
                                (error condition)))
                   (writeln "no error")))
-              'outer-err))
-; outer-err
-; => outer-err
+              'outer-err))  ; ==> outer-err
+
+
+; = lisp-implementation-type, lisp-implementation-version
+;
+; Since: 1.4.5
+;
+; Similar to CL's functions of the same name.
 
 
 ;;; == Time

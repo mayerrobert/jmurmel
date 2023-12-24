@@ -1335,9 +1335,14 @@ e.g. to re-raise a condition that is not handled.
                             (progn (writeln "another error occurred, rethrowing")
                                    (error condition)))
                       (writeln "no error")))
-                  'outer-err))
-outer-err
-###> outer-err
+                  'outer-err))  ; ==> outer-err
+
+
+### lisp-implementation-type, lisp-implementation-version
+
+Since: 1.4.5
+
+Similar to CL's functions of the same name.
 
 
 ## Time

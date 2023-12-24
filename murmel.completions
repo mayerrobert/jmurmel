@@ -166,6 +166,8 @@ macroexpand-1
 trace
 untrace
 error
+lisp-implementation-type
+lisp-implementation-version
 
 get-internal-real-time
 get-internal-run-time

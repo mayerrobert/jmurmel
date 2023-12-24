@@ -2593,5 +2593,9 @@ function Pairlis(x, y, a) {
 }
 
 
-
 dovector macht in jedem schleifendurchlauf ein "let"
+
+
+gscheite lisp-implementation-type und lisp-implementation-version primitives
+-> oder mlib?
+-> mlib könnte auch was nach *features* pushen

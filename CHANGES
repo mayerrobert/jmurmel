@@ -5,6 +5,7 @@ Changes in JMurmel-1.4.5 relative to JMurmel-1.4.4
    so that e.g.
      jmurmel --repl --eval (load \"mlib\")
    works as expected
+ * added the primitives lisp-implementation-type and lisp-implementation-version
 
  * mlib: added dotted-nthcdr, ldiff, tailp, butlast, nbutlast, adjoin, pushnew
 

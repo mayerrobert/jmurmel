@@ -1,8 +1,3 @@
-gscheite lisp-implementation-type und lisp-implementation-version primitives
--> oder mlib?
--> mlib könnte auch was nach *features* pushen
-
-
 
 Clojure hat counted?, liefert true für ISeq, false für Cons
 Murmel könnte countedp bekommen, true für ArraySlice, und counted (wandelt ConsCell zu ArraySlice)

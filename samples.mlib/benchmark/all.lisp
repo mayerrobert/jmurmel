@@ -4,14 +4,17 @@
 
 (require "mlib")
 
-(defmacro eval-when (sit . body)
+(defmacro eval-when (situations . body)
   `(progn ,@body))
 
+; enable the two following functions to run all.lisp with JMurmel version < 1.4.5
+#|
 (defun lisp-implementation-type ()
   "JMurmel")
 
 (defun lisp-implementation-version ()
   ((jmethod "io.github.jmurmel.jsr223.JMurmelScriptEngineFactory" "getLanguageVersion") ((jmethod "io.github.jmurmel.jsr223.JMurmelScriptEngineFactory" "new"))))
+|#
 
 )
 
