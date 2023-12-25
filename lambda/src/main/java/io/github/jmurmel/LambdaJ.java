@@ -3951,6 +3951,7 @@ public class LambdaJ {
     static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
 
     static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
+    static Object   caddr(Object c)    { return c == null ? null : car(cddr(c)); }
 
     static Object   cadddr(ConsCell o) { return o == null ? null : car(cdddr(o)); }
 
@@ -9489,7 +9490,7 @@ public class LambdaJ {
                         }
 
                         sb.append("        if (");
-                        emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
+                        emitTruthiness(sb, false, car(ccArguments), env, topEnv, rsfx);
                         sb.append(") {\n");
                         emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
                         sb.append("        }\n");
@@ -9520,7 +9521,7 @@ public class LambdaJ {
                                 }
                                 return;
                             } else {
-                                sb.append("if (");  emitTruthiness(sb, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
+                                sb.append("if (");  emitTruthiness(sb, false, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
                                 emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
                             }
                         }
@@ -9695,7 +9696,7 @@ public class LambdaJ {
                             return;
                         }
                         sb.append('(');
-                        emitTruthiness(sb, car(ccArguments), env, topEnv, rsfx);
+                        emitTruthiness(sb, false, car(ccArguments), env, topEnv, rsfx);
                         sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
                         if (caddr(ccArguments) != null) { sb.append(")\n        : ("); emitForm(sb, caddr(ccArguments), env, topEnv, rsfx, isLast); sb.append("))"); }
                         else sb.append(")\n        : (Object)null)");
@@ -9936,23 +9937,33 @@ public class LambdaJ {
             }
         }
 
-        private void emitTruthiness(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
-            if (form == null || form == sNil) sb.append("false");
-            else if (form == sT) sb.append("true");
-            //else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(EQ)) {} // todo fastpath fuer (eq ...) als boolean expression
+        private void emitTruthiness(WrappingWriter sb, boolean negate, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
+            final String jTrue, jFalse, isNull, isNotNull, maybeBang;
+            if (negate) { jTrue = "false"; jFalse = "true"; isNull = " != null"; isNotNull = " == null"; maybeBang = "!"; }
+            else        { jTrue = "true"; jFalse = "false"; isNull = " == null"; isNotNull = " != null"; maybeBang = "";}
+
+            if (form == null || form == sNil) sb.append(jFalse);
+            else if (form == sT) sb.append(jTrue);
+            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(EQ)) { sb.append(maybeBang);  emitEq(sb, false, cadr(form), caddr(form), env, topEnv, rsfx); }
+            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("/=") && emitBinOp(sb, false, negate ? "==" : "!=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("<")  && emitBinOp(sb, false, negate ? ">=" : "<",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("<=") && emitBinOp(sb, false, negate ? ">"  : "<=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("=")  && emitBinOp(sb, false, negate ? "!=" : "==", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(">=") && emitBinOp(sb, false, negate ? "<"  : ">=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(">")  && emitBinOp(sb, false, negate ? "<=" : ">",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
             else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(NULL)) {
                 // optimize "(null ..."
                 final Object arg = cadr(form);
-                if (arg == null || arg == sNil) sb.append("true");
-                else if (arg == sT) sb.append("false");
-                else if (consp(arg) || symbolp(arg)) { sb.append('('); emitForm(sb, arg, env, topEnv, rsfx, false); sb.append(") == null"); }
-                else if (atom(arg)) sb.append("false");
-                else { sb.append("(!("); emitTruthiness(sb, arg, env, topEnv, rsfx); sb.append("))"); }
+                if (arg == null || arg == sNil) sb.append(jTrue);
+                else if (arg == sT) sb.append(jFalse);
+                else if (symbolp(arg)) { sb.append('('); emitForm(sb, arg, env, topEnv, rsfx, false); sb.append(")").append(isNull); }
+                else if (atom(arg)) sb.append(jFalse);
+                else { emitTruthiness(sb, true, arg, env, topEnv, rsfx); }
             }
             else if (consp(form) || symbolp(form)) {
-                sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(") != null");
+                sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(")").append(isNotNull);
             }
-            else sb.append("true"); // must be an atom other than nil or a symbol -> true
+            else sb.append(jTrue); // must be an atom other than nil or a symbol -> true
         }
 
         /** write atoms that are not symbols (and "nil" is acceptable, too) */
@@ -10017,7 +10028,7 @@ public class LambdaJ {
                         if (iterator.hasNext()) note(condForm, "forms following default 't' form will be ignored");
                         return;
                     } else {
-                        emitTruthiness(sb, condExpr, env, topEnv, rsfx);
+                        emitTruthiness(sb, false, condExpr, env, topEnv, rsfx);
                         sb.append("\n        ? (");
                         emitProgn(sb, condForms, env, topEnv, rsfx, isLast);
                         sb.append(')');
@@ -10527,15 +10538,15 @@ public class LambdaJ {
             if (prim == WellknownSymbol.sFCeiling)  { emitDivision(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
             if (prim == WellknownSymbol.sFTruncate) { emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
-            if (prim == WellknownSymbol.sNeq) { if (emitBinOp(sb, "==", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sNe)  { if (emitBinOp(sb, "!=", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sLt)  { if (emitBinOp(sb, "<", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sLe)  { if (emitBinOp(sb, "<=", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sGe)  { if (emitBinOp(sb, ">=", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sGt)  { if (emitBinOp(sb, ">", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sNeq) { if (emitBinOp(sb, true, "==", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sNe)  { if (emitBinOp(sb, true, "!=", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sLt)  { if (emitBinOp(sb, true, "<", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sLe)  { if (emitBinOp(sb, true, "<=", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sGe)  { if (emitBinOp(sb, true, ">=", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sGt)  { if (emitBinOp(sb, true, ">", args, env, topEnv, rsfx)) return true; }
 
-            if (prim == WellknownSymbol.sEq)   { emitEq(sb, car(args), cadr(args), env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sNull) { emitEq(sb, car(args), null, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sEq)   { emitEq(sb, true, car(args), cadr(args), env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sNull) { emitEq(sb, true, car(args), null, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sAppend) {
                 if (args == null) { // no args
@@ -10616,12 +10627,14 @@ public class LambdaJ {
         }
 
         /** emit "==" operator */
-        private void emitEq(WrappingWriter sb, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append("(((Object)(");
+        private void emitEq(WrappingWriter sb, boolean generalizedBoolean, Object lhs, Object rhs, ConsCell env, ConsCell topEnv, int rsfx) {
+            if (generalizedBoolean) sb.append("(");
+            sb.append("((Object)(");
             emitForm(sb, lhs, env, topEnv, rsfx, false);
             sb.append(") == (Object)(");
             if (rhs == null) sb.append(NULL); else emitForm(sb, rhs, env, topEnv, rsfx, false);
-            sb.append(")) ? _t : null)");
+            sb.append("))");
+            if (generalizedBoolean) sb.append(" ? _t : null)");
         }
 
         /** emit double operator for zero or more number args */
@@ -10666,13 +10679,13 @@ public class LambdaJ {
         }
 
         /** if args has two arguments then emit a binary operator (double, double) -> boolean */
-        private boolean emitBinOp(WrappingWriter sb, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
+        private boolean emitBinOp(WrappingWriter sb, boolean generalizedBoolean, String func, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx) {
             if (cdr(args) == null || cddr(args) != null) return false;
-            sb.append('(');
+            if (generalizedBoolean) sb.append('(');
             emitFormAsDouble(sb, func, car(args), env, topEnv, rsfx);
             sb.append(' ').append(func).append(' ');
             emitFormAsDouble(sb, func, cadr(args), env, topEnv, rsfx);
-            sb.append(" ? _t : null)");
+            if (generalizedBoolean) sb.append(" ? _t : null)");
             return true;
         }
 
