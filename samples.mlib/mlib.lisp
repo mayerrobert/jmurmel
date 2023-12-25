@@ -959,13 +959,14 @@
             (,idx 0)
             ,var)
        (let ,loop ()
-         (when (< ,idx ,limit)
-           (setq ,var (,acc ,vec ,idx))
-           ,@body
-           (incf ,idx)
-           (,loop)))
+         (if (< ,idx ,limit)
+               (progn
+                 (setq ,var (,acc ,vec ,idx))
+                 ,@body
+                 (incf ,idx)
+                 (,loop))
 
-       ,(if resultforms `(let ((,var nil)) ,@resultforms)))))
+           ,(if resultforms `(progn (setq ,var nil) ,@resultforms)))))))
 
 
 ;;; = Macro: doplist

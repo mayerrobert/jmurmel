@@ -9,14 +9,14 @@
 
 (defun mk-vector (n)
   (let ((vec (make-array n)))
-    (dotimes (i (length vec))
-      (setf (svref vec i) i))
-    vec))
+    (dotimes (i (length vec) vec)
+      (setf (svref vec i) i))))
 
 (defun sum (vec)
   (let ((result 0))
-    (#+sbcl sb-int:dovector #+murmel dovector (x vec) (incf result x))
-    result))
+    (#+sbcl sb-int:dovector
+     #+murmel dovector (x vec result)
+       (incf result x))))
 
 (defun run-sum ()
   (let ((v (mk-vector 10000)))
