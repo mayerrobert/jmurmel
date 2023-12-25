@@ -2212,6 +2212,7 @@ public class LambdaJ {
 
         // misc
         public static final String VALUES = "values";
+        public static final String ERROR = "error";
 
         private Names() {}
     }
@@ -2405,7 +2406,7 @@ public class LambdaJ {
         sTrace("trace", Features.HAVE_XTRA, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
         sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)       { @Override Object apply(LambdaJ intp, ConsCell args) { return macroexpand1(intp, args); } },
-        sError("error", Features.HAVE_UTIL, 1, -1)                  { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.getSymbolTable(), car(args), listToArray(cdr(args))); return null; } },
+        sError(ERROR, Features.HAVE_UTIL, 1, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.getSymbolTable(), car(args), listToArray(cdr(args))); return null; } },
         sImplType("lisp-implementation-type", Features.HAVE_UTIL, 0) { @Override Object apply(LambdaJ intp, ConsCell args) { return "JMurmel"; } },
         sImplVersion("lisp-implementation-version", Features.HAVE_UTIL, 0) { @Override Object apply(LambdaJ intp, ConsCell args) { return ENGINE_VERSION_NUM; } },
 
@@ -5874,13 +5875,13 @@ public class LambdaJ {
         static void error(SymbolTable st, Object datum, Object... args) {
             if (datum instanceof Throwable) wrap0((Throwable)datum);
 
-            if (stringp(datum)) { throw new SimpleError(requireString("error", datum), args); }
+            if (stringp(datum)) { throw new SimpleError(requireString(ERROR, datum), args); }
 
             final String msg;
             switch (args.length) {
             case 0:  msg = null;  break;
-            case 1:  msg = String.format(requireString("error", args[0]));  break;
-            default: msg = String.format(requireString("error", args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
+            case 1:  msg = String.format(requireString(ERROR, args[0]));  break;
+            default: msg = String.format(requireString(ERROR, args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
             }
 
             if (datum == st.intern("condition")) wrap0(new Throwable(msg));
@@ -8188,7 +8189,7 @@ public class LambdaJ {
         public final Object _gensym    (Object... args) { values = null; varargs0_1("gensym", args.length); return LambdaJ.Subr.gensym(args.length == 0 ? null : args[0]); }
         public final Object _trace     (Object... args) { values = null; return null; }
         public final Object _untrace   (Object... args) { values = null; return null; }
-        public final Object _error     (Object... args) { values = null; varargs1("error", args.length); LambdaJ.Subr.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
+        public final Object _error     (Object... args) { values = null; varargs1(ERROR, args.length); LambdaJ.Subr.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
         public final Object implType   (Object... args) { values = null; noArgs("lisp-implementation-type", args.length); return "JMurmel"; }
         public final Object implVersion(Object... args) { values = null; noArgs("lisp-implementation-version", args.length); return LambdaJ.ENGINE_VERSION_NUM; }
 
