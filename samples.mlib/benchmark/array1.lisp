@@ -29,4 +29,4 @@
        (result nil (my-try n)))
       ((= i m) result)))
 
-(bench "array1 10 10000" (run-array1 10 10000) 0.652) ; ==> 10000
+(bench "array1 10 10000" (run-array1 10 10000) 0.556) ; ==> 10000

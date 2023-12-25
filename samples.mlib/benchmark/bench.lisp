@@ -17,6 +17,10 @@
         #+(or jvm abcl murmel) 5
         #-(or jvm abcl murmel) 0)
 
+;;; if non-nil then sleep this many seconds before each timed run
+;;; in order to let the CPU cool down
+(define *cooldown-duration* nil)
+
 
 ;;; run the form under test this many times inside a progn to reduce benchmark overhead
 (defmacro count-per-try () 10)
@@ -71,6 +75,9 @@
       (format t "warmup done.")
       #+murmel (writeln)
       #-murmel (terpri)))
+
+  #+sbcl (gc :full t)
+  (if *cooldown-duration* (sleep *cooldown-duration*))
 
   (let* ((seconds *default-duration*)
          (internal-per-ms (/ internal-time-units-per-second 1000))

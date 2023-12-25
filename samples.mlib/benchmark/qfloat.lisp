@@ -25,7 +25,7 @@
      (q-float (- n (q-float (- n 1.0))))
      (q-float (- n (q-float (- n 2.0)))))))
 
-(bench "q-float" (q-float 21.0) 1.079) ; ==> 12
+(bench "q-float" (q-float 21.0) 0.836) ; ==> 12
 
 
 ; Two-dimensional recursive function Q2
@@ -35,7 +35,7 @@
     (+ (q2-float (- x (q2-float (1- x) y)) y)
        (q2-float x (- y (q2-float x (1- y)))))))
 
-(bench "q2-float" (q2-float 7.0 8.0) 1.423) ; ==> 31
+(bench "q2-float" (q2-float 7.0 8.0) 1.086) ; ==> 31
 
 
 ; Same as Q2 but faster because Mlib's "or" is inefficient because it expands into a let
@@ -47,4 +47,4 @@
       (+ (q2*-float (- x (q2*-float (1- x) y)) y)
          (q2*-float x (- y (q2*-float x (1- y))))))))
 
-(bench "q2*-float" (q2*-float 7.0 8.0) 1.426) ; ==> 31
+(bench "q2*-float" (q2*-float 7.0 8.0) 1.098) ; ==> 31

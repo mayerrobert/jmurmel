@@ -45,4 +45,4 @@
                                   (rplaca a i))))))))))))
 ;;; call:  (destructive 600. 50.)
 
-(bench "destru" (destructive 600 50) 1.022)
+(bench "destru" (destructive 600 50) 0.895)
