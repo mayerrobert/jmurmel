@@ -9404,7 +9404,7 @@ public class LambdaJ {
                     + "        public Object apply(Object... args0) {\n");
             final ConsCell extenv = params(DEFUN, sb, params, localEnv, 0, symbol.toString(), true);
             emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false, false);
-            sb.append("        }};\n"
+            sb.append("        } };\n"
                     + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
                     + "        return intern(\"").append(symbol).append("\");\n"
                     + "    }\n\n");
@@ -9455,194 +9455,196 @@ public class LambdaJ {
 
             if (atom(form)) {
                 if (clearValues) emitClearValues(sb);
+                sb.append(retLhs);
+                emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
+                sb.append(";\n");
+                return;
             }
-            else {
-                final ConsCell ccForm = (ConsCell)form;
-                final Object op = car(ccForm);      // first element of the of the form should be a symbol or a form that computes a symbol
-                assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
-                final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
 
-                if (clearValues) {
-                    final WellknownSymbol ws = symbolp(op) ? ((LambdaJSymbol)op).wellknownSymbol : null;
-                    final boolean isDefOrLet = ws == WellknownSymbol.sDefine || ws == WellknownSymbol.sDefun || ws == WellknownSymbol.sDefmacro || ws == WellknownSymbol.sLet || ws == WellknownSymbol.sLetStar;
-                    if (intp.speed == 0 && symbolp(op) && ((LambdaJSymbol)op).primitive()
-                        || isDefOrLet) {
-                        // omit setting values to null
-                    }
-                    else {
-                        emitClearValues(sb);
-                    }
+            final ConsCell ccForm = (ConsCell)form;
+            final Object op = car(ccForm);      // first element of the of the form should be a symbol or a form that computes a symbol
+            assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
+            final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
 
-                    if (!isDefOrLet) {
-                        emitLoc(sb, ccForm, 100);
-                    }
+            if (clearValues) {
+                final WellknownSymbol ws = symbolp(op) ? ((LambdaJSymbol)op).wellknownSymbol : null;
+                final boolean isDefOrLet = ws == WellknownSymbol.sDefine || ws == WellknownSymbol.sDefun || ws == WellknownSymbol.sDefmacro || ws == WellknownSymbol.sLet || ws == WellknownSymbol.sLetStar;
+                if (intp.speed == 0 && symbolp(op) && ((LambdaJSymbol)op).primitive()
+                    || isDefOrLet) {
+                    // omit setting values to null
+                }
+                else {
+                    emitClearValues(sb);
                 }
 
-                if (symbolp(op)) {
-                    final LambdaJSymbol symop = (LambdaJSymbol)op;
-                    switch (symop.wellknownSymbol) {
+                if (!isDefOrLet) {
+                    emitLoc(sb, ccForm, 100);
+                }
+            }
 
-                    /// * special forms:
+            if (symbolp(op)) {
+                final LambdaJSymbol symop = (LambdaJSymbol)op;
+                switch (symop.wellknownSymbol) {
 
-                    ///     - quote
-                    case sQuote: {
-                        if (hasNext) { noteDead(ccForm, null); return; }
-                        break;
+                /// * special forms:
+
+                ///     - quote
+                case sQuote: {
+                    if (hasNext) { noteDead(ccForm, null); return; }
+                    break;
+                }
+
+                case sIf: {
+                    if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
+                        // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
+                        final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
+                        emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
+                        return;
                     }
 
-                    case sIf: {
-                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
-                            // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                            final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
-                            emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
-                            return;
-                        }
-
-                        sb.append("        if (");
-                        emitTruthiness(sb, false, car(ccArguments), env, topEnv, rsfx);
-                        sb.append(") {\n");
-                        emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
+                    sb.append("        if (");
+                    emitTruthiness(sb, false, car(ccArguments), env, topEnv, rsfx);
+                    sb.append(") {\n");
+                    emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
+                    sb.append("        }\n");
+                    if (caddr(ccArguments) != null) {
+                        sb.append("        else {\n");
+                        emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
                         sb.append("        }\n");
-                        if (caddr(ccArguments) != null) {
-                            sb.append("        else {\n");
-                            emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
-                            sb.append("        }\n");
-                        }
-                        else {
-                            sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
-                        }
-                        return;
                     }
-
-                    case sCond: {
-                        boolean first = true;
-                        for (final Iterator<Object> iterator = ccArguments.iterator(); iterator.hasNext(); ) {
-                            final Object clause = iterator.next();
-                            sb.append("        ");
-                            if (first) first = false;
-                            else sb.append("else ");
-                            final Object condExpr = car(clause), condForms = cdr(clause);
-                            if (condExpr == sT) {
-                                sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
-                                if (iterator.hasNext()) {
-                                    final String msg = "forms following default 't' form will be ignored";
-                                    note(ccForm, msg);
-                                }
-                                return;
-                            } else {
-                                sb.append("if (");  emitTruthiness(sb, false, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
-                                emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
-                            }
-                        }
+                    else {
                         sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
-                        return;
                     }
+                    return;
+                }
 
-                        // todo ggf. alle 3 catch clauses in eine rt funktion verpacken statt immer alle 3 rausgenerieren?
-                    /*case sCatch:
-                        sb.append("        try {\n");
-                        emitStmts(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext || !topLevel);
-                        sb.append("        }\n"
-                                + "        catch (ReturnException re) {\n"
-                                + "            if ((Object)"); emitForm(sb, car(ccArguments), env, topEnv, rsfx, false); sb.append(" == re.tag) { values = re.values; return re.result; }\n"
-                                + "            throw re;\n"
-                                + "        }\n"
-                                + "        catch (LambdaJError le) { throw le; }\n"
-                                + "        catch (Exception e) { return rterror(e); }\n");
-                        return;*/
-
-                    case sSetQ: {
-                        if (ccArguments == null) {
-                            if (!hasNext) sb.append(retLhs).append("null;\n");
-                        }
-                        else {
-                            for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
-                                if (hasNext || cddr(pairs) != null) sb.append("        ");
-                                else sb.append(retLhs);
-                                emitSetq(sb, pairs, env, topEnv, rsfx);
-                                sb.append(";\n");
+                case sCond: {
+                    boolean first = true;
+                    for (final Iterator<Object> iterator = ccArguments.iterator(); iterator.hasNext(); ) {
+                        final Object clause = iterator.next();
+                        sb.append("        ");
+                        if (first) first = false;
+                        else sb.append("else ");
+                        final Object condExpr = car(clause), condForms = cdr(clause);
+                        if (condExpr == sT) {
+                            sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
+                            if (iterator.hasNext()) {
+                                final String msg = "forms following default 't' form will be ignored";
+                                note(ccForm, msg);
                             }
+                            return;
+                        } else {
+                            sb.append("if (");  emitTruthiness(sb, false, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
+                            emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
                         }
-                        return;
                     }
+                    sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
+                    return;
+                }
 
-                    case sProgn: {
-                        final ConsCell ccBody = listOrMalformed(PROGN, cdr(ccForm));
-                        emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, topLevel, hasNext);
-                        return;
+                // todo ggf. alle 3 catch clauses in eine rt funktion verpacken statt immer alle 3 rausgenerieren?
+                /*case sCatch:
+                    sb.append("        try {\n");
+                    emitStmts(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext || !topLevel);
+                    sb.append("        }\n"
+                            + "        catch (ReturnException re) {\n"
+                            + "            if ((Object)"); emitForm(sb, car(ccArguments), env, topEnv, rsfx, false); sb.append(" == re.tag) { values = re.values; return re.result; }\n"
+                            + "            throw re;\n"
+                            + "        }\n"
+                            + "        catch (LambdaJError le) { throw le; }\n"
+                            + "        catch (Exception e) { return rterror(e); }\n");
+                    return;*/
+
+                case sSetQ: {
+                    if (ccArguments == null) {
+                        if (!hasNext) sb.append(retLhs).append("null;\n");
                     }
-
-                    case sLetStar:
-                    case sLet: {
-                        final Object bindings = cadr(ccForm);
-                        if (bindings instanceof LambdaJSymbol) {
-                            if (clearValues) {
-                                emitClearValues(sb, ccForm, 100);
-                            }
-                            break;
+                    else {
+                        for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
+                            if (hasNext || cddr(pairs) != null) sb.append("        ");
+                            else sb.append(retLhs);
+                            emitSetq(sb, pairs, env, topEnv, rsfx);
+                            sb.append(";\n");
                         }
-                        assert bindings != null : "let w/o bindings should have been replaced in expandForm";
-                        rsfx++;
-                        final ConsCell ccBindings = requireList(LET, bindings);
-                        final ConsCell ccBody = requireList(LET, cddr(ccForm));
-                        ConsCell extEnv = env;
+                    }
+                    return;
+                }
 
-                        if (hasNext) {
-                            sb.append("        new Runnable() { public void run() {\n" 
-                                    + "        Object tmp = null;\n");
-                            retLhs  = "        tmp = ";
-                        }
-                        else sb.append("        {\n");
+                case sProgn: {
+                    final ConsCell ccBody = listOrMalformed(PROGN, cdr(ccForm));
+                    emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, topLevel, hasNext);
+                    return;
+                }
 
+                case sLetStar:
+                case sLet: {
+                    final Object bindings = cadr(ccForm);
+                    if (bindings instanceof LambdaJSymbol) {
                         if (clearValues) {
                             emitClearValues(sb, ccForm, 100);
                         }
-                        ConsCell letStarEnv = env;
-                        final String vName = "v" + rsfx;
-                        final int nVars = listLength(ccBindings);
-                        sb.append("        final Object[] ").append(vName).append(" = new Object[").append(nVars).append("];\n");
-                        int localCtr = 0;
-                        final ArrayList<Object> varNames = new ArrayList<>(nVars);
-                        for (Object binding : ccBindings) {
-                            final ConsCell ccBinding = (ConsCell)binding;
-                            final Object sym = car(ccBinding);
-                            if (!varNames.contains(sym)) {
-                                varNames.add(sym);
-                                final String name = vName + '[' + localCtr++ + ']';
-                                extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
-                            }
-                            emitStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, "        " + javasym(sym, extEnv, ccBinding) + " = ", true, false, true);
-                            letStarEnv = extEnv;
-                        }
+                        break;
+                    }
+                    assert bindings != null : "let w/o bindings should have been replaced in expandForm";
+                    rsfx++;
+                    final ConsCell ccBindings = requireList(LET, bindings);
+                    final ConsCell ccBody = requireList(LET, cddr(ccForm));
+                    ConsCell extEnv = env;
 
-                        emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, topLevel, hasNext);
-                        if (hasNext) sb.append("        } }.run();\n");
-                        else sb.append("        }\n");
+                    if (hasNext && topLevel) {
+                        sb.append("        new Runnable() { public void run() {\n" 
+                                + "        Object tmp = null;\n");
+                        retLhs  = "        tmp = ";
+                    }
+                    else sb.append("        {\n");
+
+                    if (clearValues) {
+                        emitClearValues(sb, ccForm, 100);
+                    }
+                    ConsCell letStarEnv = env;
+                    final String vName = "v" + rsfx;
+                    final int nVars = listLength(ccBindings);
+                    sb.append("        final Object[] ").append(vName).append(" = new Object[").append(nVars).append("];\n");
+                    int localCtr = 0;
+                    final ArrayList<Object> varNames = new ArrayList<>(nVars);
+                    for (Object binding : ccBindings) {
+                        final ConsCell ccBinding = (ConsCell)binding;
+                        final Object sym = car(ccBinding);
+                        if (!varNames.contains(sym)) {
+                            varNames.add(sym);
+                            final String name = vName + '[' + localCtr++ + ']';
+                            extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
+                        }
+                        emitStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, "        " + javasym(sym, extEnv, ccBinding) + " = ", true, false, true);
+                        letStarEnv = extEnv;
+                    }
+
+                    emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, topLevel, hasNext);
+                    if (hasNext && topLevel) sb.append("        } }.run();\n");
+                    else sb.append("        }\n");
+                    return;
+                }
+
+                case sDefine:
+                case sDefun:
+                case sDefmacro: {
+                    if (hasNext) {
+                        sb.append("        ");
+                        emitForm(sb, form, env, topEnv, rsfx, false);
+                        sb.append(";\n");
                         return;
                     }
+                }
 
-                    case sDefine:
-                    case sDefun:
-                    case sDefmacro: {
-                        if (hasNext) {
-                            sb.append("        ");
-                            emitForm(sb, form, env, topEnv, rsfx, false);
-                            sb.append(";\n");
-                            return;
-                        }
-                    }
-
-                    default: break;
-                    }
+                default: break;
                 }
             }
-
             sb.append(retLhs);
             emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
             sb.append(";\n");
         }
 
-        private static void noteDead(ConsCell ccForm, Object form) { note(ccForm, "removing dead code " + (form == null ? "" : form)); }
+        private static void noteDead(ConsCell ccForm, Object form) { note(ccForm, "removing dead code " + (form == null ? "" : printSEx(form, true))); }
         private static void note(ConsCell ccForm, String msg) { System.err.println("; Note - " + (ccForm == null ? "" : ccForm.lineInfo()) + msg); }
 
         private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext) {
