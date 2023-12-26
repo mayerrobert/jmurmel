@@ -117,21 +117,22 @@ public class LambdaJ {
     public static final String ENGINE_VERSION_NUM;
 
     static {
-        String versionInfo;
+        String versionInfo, versionNum;
         final ClassLoader cl = LambdaJ.class.getClassLoader();
         final URL url = cl.getResource("META-INF/jmurmelversioninfo.properties");
-        if (url == null) versionInfo = "unknown";
+        if (url == null) versionInfo = versionNum = "unknown";
         else {
             try (InputStream is = url.openStream()) {
                 final Properties manifest = new Properties();
                 manifest.load(is);
                 versionInfo = manifest.getProperty("Engine-Version", "unknown");
-            } catch (IOException e) {
-                versionInfo = "error";
+                versionNum = versionInfo.substring("Version ".length(), versionInfo.indexOf('/'));
+            } catch (Exception e) {
+                versionInfo = versionNum = "error";
             }
         }
         ENGINE_VERSION = versionInfo;
-        ENGINE_VERSION_NUM = versionInfo.substring("Version ".length(), versionInfo.indexOf('/'));
+        ENGINE_VERSION_NUM = versionNum;
     }
 
     /** largest positive long that can be represented as a double w/o any loss */
