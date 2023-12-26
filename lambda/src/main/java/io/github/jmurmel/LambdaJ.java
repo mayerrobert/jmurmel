@@ -2819,6 +2819,7 @@ public class LambdaJ {
                     } else {
                         form = caddr(ccArguments);
                     }
+                    values = NO_VALUES;
                     if (form == null) { result = null;  break tailcall; }
                     isTc = true; continue tailcall;
                 }
@@ -8282,6 +8283,7 @@ public class LambdaJ {
 
         private Object ret(Object[] _values) { values = _values; if (_values.length == 0) return null; return _values[0]; }
 
+        public final boolean clrValues(boolean b) { values = null; return b; }
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
         public final LambdaJSymbol intern(String symName) { values = null; return symtab.intern(symName); }
@@ -9440,7 +9442,7 @@ public class LambdaJ {
 
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
             if (hasNext) {
-                if (atom(form)) {
+                if (atom(form) || consp(form) && car(form) == intern(QUOTE)) {
                     if (form != null) noteDead(null, form); // don't note nil as that would generate a lot of notes for e.g. "(if a nil (dosomething))"
                     return; // must be dead code
                 }
@@ -9942,6 +9944,8 @@ public class LambdaJ {
             if (negate) { jTrue = "false"; jFalse = "true"; isNull = " != null"; isNotNull = " == null"; maybeBang = "!"; }
             else        { jTrue = "true"; jFalse = "false"; isNull = " == null"; isNotNull = " != null"; maybeBang = "";}
 
+            if (!negate) sb.append("clrValues(");
+
             if (form == null || form == sNil) sb.append(jFalse);
             else if (form == sT) sb.append(jTrue);
             else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(EQ)) { sb.append(maybeBang);  emitEq(sb, false, cadr(form), caddr(form), env, topEnv, rsfx); }
@@ -9964,6 +9968,8 @@ public class LambdaJ {
                 sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(")").append(isNotNull);
             }
             else sb.append(jTrue); // must be an atom other than nil or a symbol -> true
+
+            if (!negate) sb.append(")");
         }
 
         /** write atoms that are not symbols (and "nil" is acceptable, too) */

@@ -554,6 +554,12 @@ multiline comment
 (deftest values.2 (values 1 2 3) 1)               ; secondary values are discarded
 (deftest values.3 (values (values 1 2 3) 4 5) 1)  ; secondary values are discarded
 
+(deftest values.4 (multiple-value-bind (a b c) (cond ((values 1 2 3) 'yes)) (list a b c))         '(yes nil nil))
+(deftest values.5 (multiple-value-bind (a b c) (cond ((null (values 1 2 3)) 'yes)) (list a b c))  '(nil nil nil))
+
+(deftest values.6 (multiple-value-bind (a b c) (if (values 1 2 3) 'yes) (list a b c))             '(yes nil nil))
+(deftest values.7 (multiple-value-bind (a b c) (if (null (values 1 2 3)) 'yes) (list a b c))      '(nil nil nil))
+
 
 ;;; multiple-value-bind
 (deftest mvb.1  (multiple-value-bind nil nil) nil)

@@ -1,14 +1,3 @@
-JMurmel> (if (values 1 2 3) 'ja)
- -> 1
- -> 2
- -> 3
--> sollte JA liefern
--> weder interpreter noch compiler putzen values nach der if bedingung
-
-weitere tests:
-(cond ((values 1 2 3) 'ja))        -> geht
-(cond ((null (values 1 2 3)) 'ja)) -> geht nur im interpreter
-
 
 der compiler opencoded nur numeric compare operator mit 2 args
 -> (= 1) wird ein call

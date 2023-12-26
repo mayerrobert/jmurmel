@@ -2599,3 +2599,15 @@ dovector macht in jedem schleifendurchlauf ein "let"
 gscheite lisp-implementation-type und lisp-implementation-version primitives
 -> oder mlib?
 -> mlib könnte auch was nach *features* pushen
+
+
+JMurmel> (if (values 1 2 3) 'ja)
+ -> 1
+ -> 2
+ -> 3
+-> sollte JA liefern
+-> weder interpreter noch compiler putzen values nach der if bedingung
+
+weitere tests:
+(cond ((values 1 2 3) 'ja))        -> geht
+(cond ((null (values 1 2 3)) 'ja)) -> geht nur im interpreter
