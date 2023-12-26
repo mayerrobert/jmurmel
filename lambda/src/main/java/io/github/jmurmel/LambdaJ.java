@@ -9443,8 +9443,12 @@ public class LambdaJ {
 
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
             if (hasNext) {
-                if (atom(form) || consp(form) && car(form) == intern(QUOTE)) {
+                if (atom(form)) {
                     if (form != null) noteDead(null, form); // don't note nil as that would generate a lot of notes for e.g. "(if a nil (dosomething))"
+                    return; // must be dead code
+                }
+                if (consp(form) && symbolEq(car(form), QUOTE)) {
+                    noteDead((ConsCell)form, form);
                     return; // must be dead code
                 }
             }
@@ -9459,15 +9463,17 @@ public class LambdaJ {
                 final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
 
                 if (clearValues) {
+                    final WellknownSymbol ws = symbolp(op) ? ((LambdaJSymbol)op).wellknownSymbol : null;
+                    final boolean isDefOrLet = ws == WellknownSymbol.sDefine || ws == WellknownSymbol.sDefun || ws == WellknownSymbol.sDefmacro || ws == WellknownSymbol.sLet || ws == WellknownSymbol.sLetStar;
                     if (intp.speed == 0 && symbolp(op) && ((LambdaJSymbol)op).primitive()
-                        || op == intern(DEFINE) || op == intern(DEFUN) || op == intern(DEFMACRO) || op == intern(LET) || op == intern(LETSTAR)) {
+                        || isDefOrLet) {
                         // omit setting values to null
                     }
                     else {
                         emitClearValues(sb);
                     }
 
-                    if (op != intern(DEFINE) && op != intern(DEFUN) && op != intern(DEFMACRO) && op != intern(LET) && op != intern(LETSTAR)) {
+                    if (!isDefOrLet) {
                         emitLoc(sb, ccForm, 100);
                     }
                 }
