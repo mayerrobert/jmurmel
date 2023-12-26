@@ -9362,7 +9362,7 @@ public class LambdaJ {
                     + "        catch (Exception e) { rterror(e); }\n"
                     + "        finally {\n");
             emitClearValues(sb);
-            sb.append("        }\n      return intern(\"").append(symbol).append("\");\n"
+            sb.append("        }\n        return intern(\"").append(symbol).append("\");\n"
                     + "    }\n\n");
             return env;
         }
