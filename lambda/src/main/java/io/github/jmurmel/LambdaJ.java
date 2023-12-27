@@ -8187,7 +8187,7 @@ public class LambdaJ {
 
 
         // misc
-        protected Object[] values;
+        public Object[] values;
         public final Object _values    (Object... args) { return ret(args); }
         public final Object _gensym    (Object... args) { values = null; varargs0_1("gensym", args); return LambdaJ.Subr.gensym(args.length == 0 ? null : args[0]); }
         public final Object _trace     (Object... args) { values = null; return null; }
@@ -9354,7 +9354,7 @@ public class LambdaJ {
             env = extenvIntern(symbol, javasym + ".get()", env);
 
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
-                    + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
+                    + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
                     + "    private Object define_").append(javasym).append("() {\n");
             emitClearValues(sb, form, 40);
             sb.append("        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
@@ -9395,7 +9395,7 @@ public class LambdaJ {
             final ConsCell localEnv = extenvIntern(symbol, javasym, env);
 
             sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
-                      + "    private CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
+                      + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    private LambdaJSymbol defun_").append(javasym).append("() {\n");
             emitClearValues(sb, form, 40);
@@ -9466,9 +9466,19 @@ public class LambdaJ {
             assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
             final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
 
+            final LambdaJSymbol symop;
+            final WellknownSymbol ws;
+            final boolean isDefOrLet;
+            if (symbolp(op)) {
+                symop = (LambdaJSymbol)op;
+                ws = symop.wellknownSymbol;
+                isDefOrLet = ws == WellknownSymbol.sDefine || ws == WellknownSymbol.sDefun || ws == WellknownSymbol.sDefmacro || ws == WellknownSymbol.sLet || ws == WellknownSymbol.sLetStar;
+            }
+            else {
+                symop = null; ws = null; isDefOrLet = false;
+            }
+
             if (clearValues) {
-                final WellknownSymbol ws = symbolp(op) ? ((LambdaJSymbol)op).wellknownSymbol : null;
-                final boolean isDefOrLet = ws == WellknownSymbol.sDefine || ws == WellknownSymbol.sDefun || ws == WellknownSymbol.sDefmacro || ws == WellknownSymbol.sLet || ws == WellknownSymbol.sLetStar;
                 if (intp.speed == 0 && symbolp(op) && ((LambdaJSymbol)op).primitive()
                     || isDefOrLet) {
                     // omit setting values to null
@@ -9482,9 +9492,8 @@ public class LambdaJ {
                 }
             }
 
-            if (symbolp(op)) {
-                final LambdaJSymbol symop = (LambdaJSymbol)op;
-                switch (symop.wellknownSymbol) {
+            if (symop != null) {
+                switch (ws) {
 
                 /// * special forms:
 
@@ -9512,7 +9521,7 @@ public class LambdaJ {
                         emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
                         sb.append("        }\n");
                     }
-                    else {
+                    else if (!hasNext) {
                         sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
                     }
                     return;
@@ -9538,7 +9547,7 @@ public class LambdaJ {
                             emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
                         }
                     }
-                    sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
+                    if (!hasNext) sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
                     return;
                 }
 
@@ -9591,7 +9600,8 @@ public class LambdaJ {
                     final ConsCell ccBody = requireList(LET, cddr(ccForm));
                     ConsCell extEnv = env;
 
-                    if (hasNext && topLevel) {
+                    final boolean asRunnable = hasNext && topLevel;
+                    if (asRunnable) {
                         sb.append("        new Runnable() { public void run() {\n" 
                                 + "        Object tmp = null;\n");
                         retLhs  = "        tmp = ";
@@ -9620,7 +9630,7 @@ public class LambdaJ {
                     }
 
                     emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, topLevel, hasNext);
-                    if (hasNext && topLevel) sb.append("        } }.run();\n");
+                    if (asRunnable) sb.append("        } }.run();\n");
                     else sb.append("        }\n");
                     return;
                 }
@@ -9639,7 +9649,13 @@ public class LambdaJ {
                 default: break;
                 }
             }
-            sb.append(retLhs);
+
+            if (hasNext
+                && (isDefOrLet || ws == WellknownSymbol.interned || ws == WellknownSymbol.notInterned))
+                sb.append("        ");
+            else
+                sb.append(retLhs);
+
             emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
             sb.append(";\n");
         }
@@ -11023,7 +11039,7 @@ public class LambdaJ {
         private void emitConstantPool(WrappingWriter ret) {
             int ctr = 0;
             for (String quotedForm: quotedForms) {
-                ret.append("    private final Object q").append(ctr).append(" = ").append(quotedForm).append(";\n");
+                ret.append("    public final Object q").append(ctr).append(" = ").append(quotedForm).append(";\n");
                 ctr++;
             }
         }
