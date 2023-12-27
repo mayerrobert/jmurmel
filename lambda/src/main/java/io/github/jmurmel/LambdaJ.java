@@ -1218,20 +1218,6 @@ public class LambdaJ {
 
     static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
-    /*static boolean isSExSyntax2(int x) { return (x >= '\'' && x <= ')') || x == ',' || x == '`'; }
-
-    static boolean isSExSyntax3(int x) {
-        switch (x) {
-        case '\'':
-        case '(':
-        case ')':
-        case ',': // fallthrough
-        case '`':
-            return true;
-        default:
-            return false;
-        }
-    }*/
 
     /** is {@code s} an optional sign followed by one or more digits? */
     static boolean isLong(@NotNull String s) {
@@ -8285,6 +8271,7 @@ public class LambdaJ {
         private Object ret(Object[] _values) { values = _values; if (_values.length == 0) return null; return _values[0]; }
 
         public final boolean clrValues(boolean b) { values = null; return b; }
+        public final Object clrValues(Object o) { values = null; return o; }
 
         /// Helpers that the Java code compiled from Murmel will use, i.e. compiler intrinsics
         public final LambdaJSymbol intern(String symName) { values = null; return symtab.intern(symName); }
@@ -9398,12 +9385,12 @@ public class LambdaJ {
                       + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
             sb.append("    private LambdaJSymbol defun_").append(javasym).append("() {\n");
-            emitClearValues(sb, form, 40);
+            emitLoc(sb, form, 40);
             sb.append("        final MurmelFunction func = new MurmelFunction() {\n"
                     + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
                     + "        public Object apply(Object... args0) {\n");
             final ConsCell extenv = params(DEFUN, sb, params, localEnv, 0, symbol.toString(), true);
-            emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false, false);
+            emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false, false); // todo emitStmts? was ist der unterschied zw. emitForms und emitStmts?
             sb.append("        } };\n"
                     + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
                     + "        return intern(\"").append(symbol).append("\");\n"
@@ -9468,28 +9455,35 @@ public class LambdaJ {
 
             final LambdaJSymbol symop;
             final WellknownSymbol ws;
-            final boolean isDefOrLet;
+            final boolean isDefOrLet, isStmtExpr;
             if (symbolp(op)) {
                 symop = (LambdaJSymbol)op;
                 ws = symop.wellknownSymbol;
                 isDefOrLet = ws == WellknownSymbol.sDefine || ws == WellknownSymbol.sDefun || ws == WellknownSymbol.sDefmacro || ws == WellknownSymbol.sLet || ws == WellknownSymbol.sLetStar;
+
+                // todo eigentlich brauchts "values = null;" nur bei einigen SF (?) und bei primitives die opencoded werden wie z.b. +
+                isStmtExpr = intp.speed == 0 && ws.kind == WellknownSymbolKind.PRIM
+                             || ws == WellknownSymbol.interned || ws == WellknownSymbol.notInterned // userdefined functions set values correctly
+                             || ws == WellknownSymbol.sIf
+                             || ws == WellknownSymbol.sCond
+                             || ws == WellknownSymbol.sSetQ
+                             || ws == WellknownSymbol.sProgn
+
+                             || ws == WellknownSymbol.sCons
+                             || ws == WellknownSymbol.sCar
+                             || ws == WellknownSymbol.sCdr
+                             || ws == WellknownSymbol.sRplaca
+                             || ws == WellknownSymbol.sRplacd
+                             || isDefOrLet;
             }
             else {
-                symop = null; ws = null; isDefOrLet = false;
+                symop = null; ws = null; isDefOrLet = isStmtExpr = false;
             }
 
             if (clearValues) {
-                if (intp.speed == 0 && symbolp(op) && ((LambdaJSymbol)op).primitive()
-                    || isDefOrLet) {
-                    // omit setting values to null
-                }
-                else {
-                    emitClearValues(sb);
-                }
+                if (!isStmtExpr) emitClearValues(sb);
 
-                if (!isDefOrLet) {
-                    emitLoc(sb, ccForm, 100);
-                }
+                if (!isDefOrLet) emitLoc(sb, ccForm, 100);
             }
 
             if (symop != null) {
@@ -9499,7 +9493,6 @@ public class LambdaJ {
 
                 ///     - quote
                 case sQuote: {
-                    if (hasNext) { noteDead(ccForm, null); return; }
                     break;
                 }
 
@@ -9590,7 +9583,8 @@ public class LambdaJ {
                     final Object bindings = cadr(ccForm);
                     if (bindings instanceof LambdaJSymbol) {
                         if (clearValues) {
-                            emitClearValues(sb, ccForm, 100);
+                            //emitClearValues(sb, ccForm, 100);
+                            emitLoc(sb, ccForm, 100);
                         }
                         break;
                     }
@@ -9609,7 +9603,8 @@ public class LambdaJ {
                     else sb.append("        {\n");
 
                     if (clearValues) {
-                        emitClearValues(sb, ccForm, 100);
+                        //emitClearValues(sb, ccForm, 100);
+                        emitLoc(sb, ccForm, 100);
                     }
                     ConsCell letStarEnv = env;
                     final String vName = "v" + rsfx;
@@ -9650,11 +9645,8 @@ public class LambdaJ {
                 }
             }
 
-            if (hasNext
-                && (isDefOrLet || ws == WellknownSymbol.interned || ws == WellknownSymbol.notInterned))
-                sb.append("        ");
-            else
-                sb.append(retLhs);
+            if (hasNext && isStmtExpr) sb.append("        ");
+            else                       sb.append(retLhs);
 
             emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
             sb.append(";\n");
@@ -10162,14 +10154,14 @@ public class LambdaJ {
                 if (javaName.endsWith(".get()")) {
                     // either a userdefined global or a
                     final String symName = javaName.substring(0, javaName.length()-6);
-                    sb.append(symName).append(".set("); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
+                    sb.append(symName).append(".set(clrValues("); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append("))");
                 }
                 else {
                     // immutable runtime globals such as pi are implemented as regular Java class members (and not as objects of class CompilerGlobal)
                     errorMalformed(SETQ, "can't modify constant " + symbol);
                 }
             } else {
-                sb.append(javaName).append(" = ");  emitForm(sb, valueForm, env, topEnv, rsfx, false);
+                sb.append(javaName).append(" = clrValues(");  emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
             }
             return javaName;
         }

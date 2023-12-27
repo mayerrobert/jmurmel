@@ -570,6 +570,8 @@ multiline comment
 (deftest values.6 (multiple-value-bind (a b c) (if (values 1 2 3) 'yes) (list a b c))             '(yes nil nil))
 (deftest values.7 (multiple-value-bind (a b c) (if (null (values 1 2 3)) 'yes) (list a b c))      '(nil nil nil))
 
+(deftest values.8 (multiple-value-bind (a b c) (let (x) (setq x (values 1 2 3))) (list a b c))    '(1 nil nil))
+
 
 ;;; multiple-value-bind
 (deftest mvb.1  (multiple-value-bind nil nil) nil)
