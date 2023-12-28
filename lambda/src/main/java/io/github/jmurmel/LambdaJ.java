@@ -7841,70 +7841,70 @@ public class LambdaJ {
         public final Object _eq        (Object... args) { twoArgs(EQ, args);     return bool(args[0] == args[1]); }
 
         public final Object _eql       (Object... args) { twoArgs(EQL, args);    return bool(LambdaJ.Subr.eql(args[0], args[1])); }
-        public final Object _eql(Object o1, Object o2)  {                               return bool(LambdaJ.Subr.eql(o1, o2)); }
+        public final Object _eql(Object o1, Object o2)  {                        return bool(LambdaJ.Subr.eql(o1, o2)); }
 
         public final Object _equal     (Object... args) { twoArgs(EQUAL, args);  return bool(LambdaJ.Subr.equal(args[0], args[1])); }
-        public final Object _equal(Object o1, Object o2) {                              return bool(LambdaJ.Subr.equal(o1, o2)); }
+        public final Object _equal(Object o1, Object o2) {                       return bool(LambdaJ.Subr.equal(o1, o2)); }
 
         public final Object _consp     (Object... args) { oneArg(CONSP, args);                 return bool(consp(args[0])); }
-        public final Object _consp     (Object    arg)  {                                             return bool(consp(arg)); }
+        public final Object _consp     (Object    arg)  {                                      return bool(consp(arg)); }
         public final Object _atom      (Object... args) { oneArg(ATOM, args);                  return bool(atom(args[0])); }
-        public final Object _atom      (Object    arg)  {                                             return bool(atom(arg)); }
+        public final Object _atom      (Object    arg)  {                                      return bool(atom(arg)); }
         public final Object _symbolp   (Object... args) { oneArg(SYMBOLP, args);               return bool(symbolp(args[0])); }
-        public final Object _symbolp   (Object    arg)  {                                             return bool(symbolp(arg)); }
+        public final Object _symbolp   (Object    arg)  {                                      return bool(symbolp(arg)); }
         public final Object _null      (Object... args) { oneArg(NULL, args);                  return bool(args[0] == null); }
         public final Object _numberp   (Object... args) { oneArg(NUMBERP, args);               return bool(numberp(args[0])); }
-        public final Object _numberp   (Object    arg)  {                                             return bool(numberp(arg)); }
+        public final Object _numberp   (Object    arg)  {                                      return bool(numberp(arg)); }
         public final Object _floatp    (Object... args) { oneArg(FLOATP, args);                return bool(floatp(args[0])); }
-        public final Object _floatp    (Object    arg)  {                                             return bool(floatp(arg)); }
+        public final Object _floatp    (Object    arg)  {                                      return bool(floatp(arg)); }
         public final Object _integerp  (Object... args) { oneArg(INTEGERP, args);              return bool(integerp(args[0])); }
-        public final Object _integerp  (Object    arg)  {                                             return bool(integerp(arg)); }
+        public final Object _integerp  (Object    arg)  {                                      return bool(integerp(arg)); }
         public final Object _characterp(Object... args) { oneArg(CHARACTERP, args);            return bool(characterp(args[0])); }
         public final Object _randomstatep(Object... args){oneArg(RANDOM_STATE_P, args);        return bool(randomstatep(args[0])); }
 
         public final Object _vectorp   (Object... args) { oneArg(VECTORP, args);               return bool(vectorp(args[0])); }
-        public final Object _vectorp   (Object    arg)  {                                             return bool(vectorp(arg)); }
+        public final Object _vectorp   (Object    arg)  {                                      return bool(vectorp(arg)); }
         public final Object svectorp   (Object... args) { oneArg(SIMPLE_VECTOR_P, args);       return bool(LambdaJ.svectorp(args[0])); }
-        public final Object svectorp   (Object    arg)  {                                             return bool(LambdaJ.svectorp(arg)); }
+        public final Object svectorp   (Object    arg)  {                                      return bool(LambdaJ.svectorp(arg)); }
         public final Object _stringp   (Object... args) { oneArg(STRINGP, args);               return bool(stringp(args[0])); }
-        public final Object _stringp   (Object    arg)  {                                             return bool(stringp(arg)); }
+        public final Object _stringp   (Object    arg)  {                                      return bool(stringp(arg)); }
         public final Object sstringp   (Object... args) { oneArg(SIMPLE_STRING_P, args);       return bool(LambdaJ.sstringp(args[0])); }
-        public final Object sstringp   (Object    arg)  {                                             return bool(LambdaJ.sstringp(arg)); }
+        public final Object sstringp   (Object    arg)  {                                      return bool(LambdaJ.sstringp(arg)); }
         public final Object bitvectorp (Object... args) { oneArg(BIT_VECTOR_P, args);          return bool(LambdaJ.bitvectorp(args[0])); }
-        public final Object bitvectorp (Object    arg)  {                                             return bool(LambdaJ.bitvectorp(arg)); }
+        public final Object bitvectorp (Object    arg)  {                                      return bool(LambdaJ.bitvectorp(arg)); }
         public final Object sbitvectorp(Object... args) { oneArg(SIMPLE_BIT_VECTOR_P, args);   return bool(LambdaJ.sbitvectorp(args[0])); }
-        public final Object sbitvectorp(Object    arg)  {                                             return bool(LambdaJ.sbitvectorp(arg)); }
+        public final Object sbitvectorp(Object    arg)  {                                      return bool(LambdaJ.sbitvectorp(arg)); }
         public final Object hashtablep (Object... args) { oneArg(HASH_TABLE_P, args);          return bool(LambdaJ.hashtablep(args[0])); }
-        public final Object hashtablep (Object    arg)  {                                             return bool(LambdaJ.hashtablep(arg)); }
+        public final Object hashtablep (Object    arg)  {                                      return bool(LambdaJ.hashtablep(arg)); }
 
         public final Object _functionp (Object... args) { oneArg(FUNCTIONP, args);             return bool(LambdaJ.functionp0(args[0])); }
 
         public final Object _listp     (Object... args) { oneArg(LISTP, args);                 return bool(listp(args[0])); }
-        public final Object _listp     (Object    arg)  {                                             return bool(listp(arg)); }
+        public final Object _listp     (Object    arg)  {                                      return bool(listp(arg)); }
         public final Object _typep     (Object... args) { twoArgs(TYPEP, args);                return bool(typep(symtab, null, args[0], args[1])); }
-        public final Object _typep     (Object o, Object t) {                                         return bool(typep(symtab, null, o, t)); }
+        public final Object _typep     (Object o, Object t) {                                  return bool(typep(symtab, null, o, t)); }
 
         public final Object adjustableArrayP(Object... args) { oneArg(ADJUSTABLE_ARRAY_P, args); return bool(LambdaJ.Subr.adjustableArrayP(args[0])); }
 
 
         // conses and lists
         public final Object _car       (Object... args) { oneArg(CAR,       args); return _car(args[0]); }
-        public final Object  _car      (Object l)       { values = null; return LambdaJ.car(l); } // also used by generated code
-        public final Object  _car      (ConsCell l)     { values = null; return LambdaJ.car(l); }
+        public final Object _car       (Object l)       { values = null; return LambdaJ.car(l); } // also used by generated code
+        public final Object _car       (ConsCell l)     { values = null; return LambdaJ.car(l); }
 
         public final Object _cdr       (Object... args) { oneArg(CDR,       args); return _cdr(args[0]); }
-        public final Object  _cdr      (Object l)       { values = null; return LambdaJ.cdr(l); } // also used by generated code
-        public final Object  _cdr      (ConsCell l)     { values = null; return LambdaJ.cdr(l); }
+        public final Object _cdr       (Object l)       { values = null; return LambdaJ.cdr(l); } // also used by generated code
+        public final Object _cdr       (ConsCell l)     { values = null; return LambdaJ.cdr(l); }
 
         public final ConsCell _cons   (Object... args)      { twoArgs(CONS,     args); return _cons(args[0], args[1]); }
         public final ConsCell _cons(Object car, Object cdr) { values = null; return ConsCell.cons(car, cdr); } // also used by generated code
 
         public final ConsCell _rplaca (Object... args)           { twoArgs(RPLACA, args);  return _rplaca(args[0], args[1]); }
-        public final ConsCell _rplaca(Object l, Object newCar)   { values = null; return LambdaJ.requireList(RPLACA, l).rplaca(newCar); }
+        public final ConsCell _rplaca(Object l, Object newCar)   { values = null; return requireCons(RPLACA, l).rplaca(newCar); }
         public final ConsCell _rplaca(ConsCell l, Object newCar) { values = null; return l.rplaca(newCar); }
 
         public final ConsCell _rplacd (Object... args)           { twoArgs(RPLACD, args);  return _rplacd(args[0], args[1]); }
-        public final ConsCell _rplacd(Object l, Object newCdr)   { values = null; return LambdaJ.requireList(RPLACD, l).rplacd(newCdr); }
+        public final ConsCell _rplacd(Object l, Object newCdr)   { values = null; return requireCons(RPLACD, l).rplacd(newCdr); }
         public final ConsCell _rplacd(ConsCell l, Object newCdr) { values = null; return l.rplacd(newCdr); }
 
         public final ConsCell _list    (Object... args) { values = null; return ConsCell.list(args); }
