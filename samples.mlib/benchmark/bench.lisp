@@ -23,7 +23,7 @@
 
 
 ;;; run the form under test this many times inside a progn to reduce benchmark overhead
-(defmacro count-per-try () 10)
+(defmacro count-per-try () #+sbcl 300 #-sbcl 30)
 
 
 ;;; Macro: bench

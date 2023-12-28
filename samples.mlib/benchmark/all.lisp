@@ -41,7 +41,7 @@
   (load "3.10_deriv.lisp")
   (load "array1.lisp")
    ;; dovector.lisp uses "dovector" or SBCL's sb-int:dovector, both of which are not Common Lisp.
-   ;; You may want to comment out the following line and decrement *ref* by 1.
+  #+(or sbcl murmel)
   (load "dovector.lisp")
   (load "q.lisp")
   (load "qfloat.lisp")
@@ -59,7 +59,8 @@
 ;; Or leave *ref* as is and adjust the individual weights
 ;; so that each benchmark when run on the "reference system"
 ;; will give an adjusted weight of approx. 1.0.
-(define *ref* 15.0)
+(define *ref* #+(or sbcl murmel) 15.0
+              #-(or sbcl murmel) 14.0)
 
 
 (terpri)
