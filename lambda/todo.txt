@@ -1,3 +1,7 @@
+operator: inverten, umstellen auf stmtExpression (nur true bei primitives die in eine Java stmt expression konvertiert werden)
+
+apply als wellknown symbol, dann fallen einige intern(apply") im compiler weg
+
 
 der compiler opencoded nur numeric compare operator mit 2 args
 -> (= 1) wird ein call

@@ -498,6 +498,10 @@ multiline comment
                      (catch 'c (c1) (write 'unreachable))
                      2))  2)
 
+(deftest catch.5
+  (multiple-value-bind (a b c d) (catch 'tag (throw 'tag (values 1 2))) (list a b c d))
+  '(1 2 nil nil))
+
 
 ;;; unwind-protect
 (setq *a* 0)

@@ -2233,19 +2233,19 @@ public class LambdaJ {
         sNil(NIL, WellknownSymbolKind.SYMBOL), sT(T, WellknownSymbolKind.SYMBOL),
 
         // logic, predicates
-        sEq(EQ, Features.HAVE_EQ, 2)                                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
+        sEq(EQ, Features.HAVE_EQ, true, 2)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == cadr(args)); } },
         sEql(EQL, Features.HAVE_UTIL, 2)                                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(eql(car(args), cadr(args))); } },
         sEqual(EQUAL, Features.HAVE_UTIL, 2)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(equal(car(args), cadr(args))); } },
 
         sConsp(CONSP, Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(consp(car(args))); } },
         sAtom(ATOM, Features.HAVE_ATOM, 1)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(atom(car(args))); } },
         sSymbolp(SYMBOLP, Features.HAVE_UTIL, 1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(symbolp(car(args))); } },
-        sNull(NULL, Features.HAVE_UTIL, 1)                              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == null); } },
-        sNumberp(NUMBERP, Features.HAVE_NUMBERS, 1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(numberp(car(args))); } },
-        sFloatp(FLOATP, Features.HAVE_NUMBERS, 1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
-        sIntegerp(INTEGERP, Features.HAVE_NUMBERS, 1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
+        sNull(NULL, Features.HAVE_UTIL, true, 1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(car(args) == null); } },
+        sNumberp(NUMBERP, Features.HAVE_NUMBERS, false, 1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(numberp(car(args))); } },
+        sFloatp(FLOATP, Features.HAVE_NUMBERS, false, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(floatp(car(args))); } },
+        sIntegerp(INTEGERP, Features.HAVE_NUMBERS, false, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(integerp(car(args))); } },
         sCharacterp(CHARACTERP, Features.HAVE_STRING, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(characterp(car(args))); } },
-        sRandomstatep(RANDOM_STATE_P, Features.HAVE_NUMBERS, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(randomstatep(car(args))); } },
+        sRandomstatep(RANDOM_STATE_P, Features.HAVE_NUMBERS, false, 1)  { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(randomstatep(car(args))); } },
 
         sVectorp(VECTORP, Features.HAVE_VECTOR, 1)                      { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(vectorp(car(args))); } },
         sSimpleVectorP(SIMPLE_VECTOR_P, Features.HAVE_VECTOR, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(svectorp(car(args))); } },
@@ -2271,9 +2271,9 @@ public class LambdaJ {
         sRplaca(RPLACA, Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons(RPLACA, car(args)).rplaca(cadr(args)); } },
         sRplacd(RPLACD, Features.HAVE_XTRA, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons(RPLACD, car(args)).rplacd(cadr(args)); } },
 
-        sList(LIST, Features.HAVE_UTIL, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return args; } },
-        sListStar(LISTSTAR, Features.HAVE_UTIL, 1, -1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listStar(intp, args); } },
-        sAppend(APPEND, Features.HAVE_UTIL, -1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return append(intp, args); } },
+        sList(LIST, Features.HAVE_UTIL, true, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return args; } },
+        sListStar(LISTSTAR, Features.HAVE_UTIL, true, 1, -1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listStar(intp, args); } },
+        sAppend(APPEND, Features.HAVE_UTIL, true, -1)     { @Override Object apply(LambdaJ intp, ConsCell args) { return append(intp, args); } },
         sAssq(ASSQ, Features.HAVE_UTIL, 2)          { @Override Object apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
         sAssoc(ASSOC, Features.HAVE_UTIL, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return assoc(car(args), cadr(args)); } },
 
@@ -2290,10 +2290,10 @@ public class LambdaJ {
         sGe(">=", Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(LambdaJ.Subr.compare(args, ">=", (d1, d2) -> d1 >= d2)); } },
         sGt(">",  Features.HAVE_NUMBERS, 1, -1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(LambdaJ.Subr.compare(args, ">",  (d1, d2) -> d1 >  d2)); } },
 
-        sInc("1+", Features.HAVE_NUMBERS, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
-        sDec("1-", Features.HAVE_NUMBERS, 1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
+        sInc("1+", Features.HAVE_NUMBERS, false, 1)          { @Override Object apply(LambdaJ intp, ConsCell args) { return inc(car(args)); } },
+        sDec("1-", Features.HAVE_NUMBERS, false, 1)          { @Override Object apply(LambdaJ intp, ConsCell args) { return dec(car(args)); } },
 
-        sSignum("signum", Features.HAVE_NUMBERS, 1)          { @Override Object apply(LambdaJ intp, ConsCell args) { return cl_signum(car(args));} },
+        sSignum("signum", Features.HAVE_NUMBERS, false, 1)   { @Override Object apply(LambdaJ intp, ConsCell args) { return cl_signum(car(args));} },
 
         sRound("round", Features.HAVE_NUMBERS, 1, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.rint  (quot12("round", args))); } },
         sFloor("floor", Features.HAVE_NUMBERS, 1, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return toFixnum(Math.floor (quot12("floor", args))); } },
@@ -2305,11 +2305,11 @@ public class LambdaJ {
         sFCeiling("fceiling", Features.HAVE_NUMBERS, 1, 2)   { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.ceil  (quot12("ceiling", args)); } },
         sFTruncate("ftruncate", Features.HAVE_NUMBERS, 1, 2) { @Override Object apply(LambdaJ intp, ConsCell args) { return cl_truncate(quot12("truncate", args)); } },
 
-        sSqrt("sqrt", Features.HAVE_NUMBERS, 1)              { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
-        sLog("log", Features.HAVE_NUMBERS, 1, 2)             { @Override Object apply(LambdaJ intp, ConsCell args) { return (cdr(args) == null) ? Math.log(toDouble("log", car(args))) : Math.log(toDouble("log", car(args))) / Math.log(toDouble("log", cadr(args))); } },
-        sLog10("log10", Features.HAVE_NUMBERS, 1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
-        sExp("exp", Features.HAVE_NUMBERS, 1)                { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
-        sExpt("expt", Features.HAVE_NUMBERS, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
+        sSqrt("sqrt", Features.HAVE_NUMBERS, true, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.sqrt (toDouble("sqrt",  car(args))); } },
+        sLog("log", Features.HAVE_NUMBERS, true, 1, 2)       { @Override Object apply(LambdaJ intp, ConsCell args) { return (cdr(args) == null) ? Math.log(toDouble("log", car(args))) : Math.log(toDouble("log", car(args))) / Math.log(toDouble("log", cadr(args))); } },
+        sLog10("log10", Features.HAVE_NUMBERS, true, 1)      { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.log10(toDouble("log10", car(args))); } },
+        sExp("exp", Features.HAVE_NUMBERS, true, 1)          { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.exp  (toDouble("exp",   car(args))); } },
+        sExpt("expt", Features.HAVE_NUMBERS, true, 2)        { @Override Object apply(LambdaJ intp, ConsCell args) { return Math.pow  (toDouble("expt",  car(args)), toDouble("expt", cadr(args))); } },
 
         sMod("mod", Features.HAVE_NUMBERS, 2)                { @Override Object apply(LambdaJ intp, ConsCell args) { return cl_mod(toDouble("mod", car(args)), toDouble("mod", cadr(args))); } },
         sRem("rem", Features.HAVE_NUMBERS, 2)                { @Override Object apply(LambdaJ intp, ConsCell args) { return toDouble("rem", car(args)) % toDouble("rem", cadr(args)); } },
@@ -2405,7 +2405,7 @@ public class LambdaJ {
         sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { @Override Object apply(LambdaJ intp, ConsCell args) { return getDecodedTime(intp.new CountingListBuilder(), intp::boolResult); } },
 
         // Java FFI
-        sJmethod("jmethod", Features.HAVE_FFI, 2, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
+        sJmethod("jmethod", Features.HAVE_FFI, true, 2, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
         sJproxy("jproxy",   Features.HAVE_FFI, 3, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.makeProxy(intp, intp.compiledProgram, args); } },
 
         // Turtle graphics
@@ -2464,23 +2464,35 @@ public class LambdaJ {
 
         private final int min, max;
         private final Features feature;
+        public final boolean operator;
 
         WellknownSymbol(String sym, WellknownSymbolKind kind) {
             assert kind != WellknownSymbolKind.PRIM;
             this.sym = sym; this.kind = kind; min = max = -2;
             feature = null;
+            operator = false;
         }
 
         WellknownSymbol(String sym, Features feature, int nArgs) {
+            this(sym, feature, feature == Features.HAVE_NUMBERS, nArgs);
+        }
+
+        WellknownSymbol(String sym, Features feature, boolean operator, int nArgs) {
             assert nArgs >= -1 && nArgs <= 3;
             this.sym = sym; this.kind = WellknownSymbolKind.PRIM; min = max = nArgs;
             this.feature = feature;
+            this.operator = operator;
         }
 
         WellknownSymbol(String sym, Features feature, int minArgs, int maxArgs) {
+            this(sym, feature, feature == Features.HAVE_NUMBERS, minArgs, maxArgs);
+        }
+
+        WellknownSymbol(String sym, Features feature, boolean operator, int minArgs, int maxArgs) {
             assert minArgs >= 0;
             this.sym = sym; this.kind = WellknownSymbolKind.PRIM; min = minArgs; max = maxArgs;
             this.feature = feature;
+            this.operator = operator;
         }
 
         Object apply(LambdaJ intp, ConsCell args) { throw errorInternal("apply is not implemented for %s", sym); }
@@ -7758,6 +7770,7 @@ public class LambdaJ {
         }
 
         public final Object rterror(Exception e) {
+            values = null;
             throw new LambdaJError(e, e.getMessage() + "\nError occured in " + loc);
         }
 
@@ -7981,6 +7994,7 @@ public class LambdaJ {
         public final double   _log10   (Object... args) { oneArg("log10",         args); values = null; return Math.log10(toDouble(args[0])); }
         public final double   _exp     (Object... args) { oneArg("exp",           args); values = null; return Math.exp  (toDouble(args[0])); }
         public final double   _expt    (Object... args) { twoArgs("expt",         args); values = null; return Math.pow  (toDouble(args[0]), toDouble(args[1])); }
+
         public final double   _mod     (Object... args) { twoArgs("mod",          args); return cl_mod(toDouble(args[0]), toDouble(args[1])); }
         public final double cl_mod(double lhs, double rhs) { values = null; return LambdaJ.Subr.cl_mod(lhs, rhs); }
         public final double   _rem     (Object... args) { twoArgs("rem",          args); values = null; return toDouble(args[0]) % toDouble(args[1]); }
@@ -9346,10 +9360,8 @@ public class LambdaJ {
             emitClearValues(sb, form, 40);
             sb.append("        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                     + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
-                    + "        catch (Exception e) { rterror(e); }\n"
-                    + "        finally {\n");
-            emitClearValues(sb);
-            sb.append("        }\n        return intern(\"").append(symbol).append("\");\n"
+                    + "        catch (Exception e) { rterror(e); }\n");
+            sb.append("        return intern(\"").append(symbol).append("\");\n"
                     + "    }\n\n");
             return env;
         }
@@ -9461,20 +9473,17 @@ public class LambdaJ {
                 ws = symop.wellknownSymbol;
                 isDefOrLet = ws == WellknownSymbol.sDefine || ws == WellknownSymbol.sDefun || ws == WellknownSymbol.sDefmacro || ws == WellknownSymbol.sLet || ws == WellknownSymbol.sLetStar;
 
-                // todo eigentlich brauchts "values = null;" nur bei einigen SF (?) und bei primitives die opencoded werden wie z.b. +
-                isStmtExpr = intp.speed == 0 && ws.kind == WellknownSymbolKind.PRIM
-                             || ws == WellknownSymbol.interned || ws == WellknownSymbol.notInterned // userdefined functions set values correctly
+                // whether a form needs to be preceeded by "values = null;" and "... = ".
+                // This is needed before some special forms (?) and before some primitives that will be opencoded in a special way
+                isStmtExpr = ws == WellknownSymbol.interned || ws == WellknownSymbol.notInterned // userdefined functions set values correctly
+
+                             || isDefOrLet
                              || ws == WellknownSymbol.sIf
                              || ws == WellknownSymbol.sCond
                              || ws == WellknownSymbol.sSetQ
                              || ws == WellknownSymbol.sProgn
 
-                             || ws == WellknownSymbol.sCons
-                             || ws == WellknownSymbol.sCar
-                             || ws == WellknownSymbol.sCdr
-                             || ws == WellknownSymbol.sRplaca
-                             || ws == WellknownSymbol.sRplacd
-                             || isDefOrLet;
+                             || ws.kind == WellknownSymbolKind.PRIM && !ws.operator;
             }
             else {
                 symop = null; ws = null; isDefOrLet = isStmtExpr = false;
@@ -10533,45 +10542,48 @@ public class LambdaJ {
 
             final WellknownSymbol prim = op.wellknownSymbol;
 
-            if (prim == WellknownSymbol.sAdd) { emitAddDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sMul) { emitAddDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sSub) { emitSubDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sDiv) { emitSubDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sAdd) { assert prim.operator;  emitAddDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sMul) { assert prim.operator;  emitAddDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sSub) { assert prim.operator;  emitSubDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sDiv) { assert prim.operator;  emitSubDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sMod) {
+                assert prim.operator;
                 sb.append("cl_mod(");
                 emitFormAsDouble(sb, "mod", car(args), env, topEnv, rsfx);  sb.append(", ");  emitFormAsDouble(sb, "mod", cadr(args), env, topEnv, rsfx);
                 sb.append(')');
                 return true;
             }
             if (prim == WellknownSymbol.sRem) {
+                assert prim.operator;
                 sb.append('(');
                 emitFormAsDouble(sb, "rem", car(args), env, topEnv, rsfx);  sb.append(" % ");  emitFormAsDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
                 sb.append(')');
                 return true;
             }
 
-            if (prim == WellknownSymbol.sRound)     { emitDivision(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
-            if (prim == WellknownSymbol.sFloor)     { emitDivision(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
-            if (prim == WellknownSymbol.sCeiling)   { emitDivision(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
-            if (prim == WellknownSymbol.sTruncate)  { emitDivision(sb, args, env, topEnv, rsfx, "truncate",  "cl_truncate", true);  return true; }
+            if (prim == WellknownSymbol.sRound)     { assert prim.operator;  emitDivision(sb, args, env, topEnv, rsfx, "round",     "cl_round",    true);  return true; }
+            if (prim == WellknownSymbol.sFloor)     { assert prim.operator;  emitDivision(sb, args, env, topEnv, rsfx, "floor",     "Math.floor",  true);  return true; }
+            if (prim == WellknownSymbol.sCeiling)   { assert prim.operator;  emitDivision(sb, args, env, topEnv, rsfx, "ceiling",   "Math.ceil",   true);  return true; }
+            if (prim == WellknownSymbol.sTruncate)  { assert prim.operator;  emitDivision(sb, args, env, topEnv, rsfx, "truncate",  "cl_truncate", true);  return true; }
 
-            if (prim == WellknownSymbol.sFRound)    { emitDivision(sb, args, env, topEnv, rsfx, "fround",    "cl_round",    false); return true; }
-            if (prim == WellknownSymbol.sFFloor)    { emitDivision(sb, args, env, topEnv, rsfx, "ffloor",    "Math.floor",  false); return true; }
-            if (prim == WellknownSymbol.sFCeiling)  { emitDivision(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
-            if (prim == WellknownSymbol.sFTruncate) { emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
+            if (prim == WellknownSymbol.sFRound)    { assert prim.operator;  emitDivision(sb, args, env, topEnv, rsfx, "fround",    "cl_round",    false); return true; }
+            if (prim == WellknownSymbol.sFFloor)    { assert prim.operator;  emitDivision(sb, args, env, topEnv, rsfx, "ffloor",    "Math.floor",  false); return true; }
+            if (prim == WellknownSymbol.sFCeiling)  { assert prim.operator;  emitDivision(sb, args, env, topEnv, rsfx, "fceiling",  "Math.ceil",   false); return true; }
+            if (prim == WellknownSymbol.sFTruncate) { assert prim.operator;  emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
 
-            if (prim == WellknownSymbol.sNeq) { if (emitBinOp(sb, true, "==", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sNe)  { if (emitBinOp(sb, true, "!=", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sLt)  { if (emitBinOp(sb, true, "<", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sLe)  { if (emitBinOp(sb, true, "<=", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sGe)  { if (emitBinOp(sb, true, ">=", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sGt)  { if (emitBinOp(sb, true, ">", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sNeq) { assert prim.operator;  if (emitBinOp(sb, true, "==", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sNe)  { assert prim.operator;  if (emitBinOp(sb, true, "!=", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sLt)  { assert prim.operator;  if (emitBinOp(sb, true, "<", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sLe)  { assert prim.operator;  if (emitBinOp(sb, true, "<=", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sGe)  { assert prim.operator;  if (emitBinOp(sb, true, ">=", args, env, topEnv, rsfx)) return true; }
+            if (prim == WellknownSymbol.sGt)  { assert prim.operator;  if (emitBinOp(sb, true, ">", args, env, topEnv, rsfx)) return true; }
 
-            if (prim == WellknownSymbol.sEq)   { emitEq(sb, true, car(args), cadr(args), env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sNull) { emitEq(sb, true, car(args), null, env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sEq)   { assert prim.operator;  emitEq(sb, true, car(args), cadr(args), env, topEnv, rsfx); return true; }
+            if (prim == WellknownSymbol.sNull) { assert prim.operator;  emitEq(sb, true, car(args), null, env, topEnv, rsfx); return true; }
 
             if (prim == WellknownSymbol.sAppend) {
+                assert prim.operator;
                 if (args == null) { // no args
                     sb.append("(Object)null");  return true;
                 }
@@ -10579,6 +10591,7 @@ public class LambdaJ {
             }
 
             if (prim == WellknownSymbol.sList) {
+                assert prim.operator;
                 if (args == null) { sb.append("(Object)null");  return true; }
                 if (cdr(args) == null) { // one arg
                     sb.append("_cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
@@ -10595,6 +10608,7 @@ public class LambdaJ {
             }
 
             if (prim == WellknownSymbol.sListStar) {
+                assert prim.operator;
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 if (cddr(args) == null) {
                     sb.append("_cons("); emitForm(sb, car(args), env, topEnv, rsfx, false); sb.append(", "); emitForm(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return true;
@@ -10610,7 +10624,9 @@ public class LambdaJ {
                 return true;
             }
 
-            if (symbolEq(op, "jmethod")) {
+            //if (symbolEq(op, "jmethod")) {
+            if (prim == WellknownSymbol.sJmethod) {
+                assert prim.operator;
                 if (emitJmethod(sb, args, null, null, -1, false, null)) return true;
                 emitCallPrimitive(sb, "findMethod", args, env, topEnv, rsfx);
                 return true;
