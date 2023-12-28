@@ -2200,6 +2200,7 @@ public class LambdaJ {
         // misc
         public static final String VALUES = "values";
         public static final String ERROR = "error";
+        public static final String JMETHOD = "jmethod";
 
         private Names() {}
     }
@@ -2405,7 +2406,7 @@ public class LambdaJ {
         sDecodedTime("get-decoded-time", Features.HAVE_UTIL, 0)     { @Override Object apply(LambdaJ intp, ConsCell args) { return getDecodedTime(intp.new CountingListBuilder(), intp::boolResult); } },
 
         // Java FFI
-        sJmethod("jmethod", Features.HAVE_FFI, true, 2, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.findMethod(requireString("jmethod", car(args)), requireString("jmethod", cadr(args)), requireList("jmethod", cddr(args))); } },
+        sJmethod(JMETHOD,   Features.HAVE_FFI, true, 2, -1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.findMethod(requireString(JMETHOD, car(args)), requireString(JMETHOD, cadr(args)), requireList(JMETHOD, cddr(args))); } },
         sJproxy("jproxy",   Features.HAVE_FFI, 3, -1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return JFFI.makeProxy(intp, intp.compiledProgram, args); } },
 
         // Turtle graphics
@@ -6005,7 +6006,7 @@ public class LambdaJ {
                 javaCallArgCheck(method.getName(), method, argConv, args);
 
                 if (!Modifier.isStatic(method.getModifiers()) && !method.getDeclaringClass().isInstance(args[0]))
-                    throw new SimpleTypeError("jmethod: %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
+                    throw new SimpleTypeError(JMETHOD + ": %s is not an instance of class %s", args[0], method.getDeclaringClass().getName());
 
                 try { return invoke.invoke(args); }
                 catch (ArithmeticException | ClassCastException | IndexOutOfBoundsException e) { throw new LambdaJError(e); }
@@ -6035,7 +6036,7 @@ public class LambdaJ {
             if (paramClassNames != null) for (Object paramClassName: paramClassNames) {
                 final String strParamClassName = (String)paramClassName;
                 try { paramClasses.add(findClass(strParamClassName)); }
-                catch (ClassNotFoundException e) { throw new LambdaJError(true, "jmethod: exception finding parameter class %s: %s", strParamClassName, e.toString()); }
+                catch (ClassNotFoundException e) { throw new LambdaJError(true, JMETHOD + ": exception finding parameter class %s: %s", strParamClassName, e.toString()); }
             }
             final Class<?>[] params = paramClasses.isEmpty() ? null : paramClasses.toArray(EMPTY_CLASS_ARRAY);
             try {
@@ -6045,7 +6046,7 @@ public class LambdaJ {
                        : new JavaMethod(clazz.getMethod(methodName, params), paramClassNames);
             }
             catch (LambdaJError le) { throw le; }
-            catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method %s.%s: %s", className, methodName, e.getMessage()); }
+            catch (Exception e) { throw new LambdaJError(true, JMETHOD + ": exception finding method %s.%s: %s", className, methodName, e.getMessage()); }
         }
 
         static final Map<String, Object[]> classByName = JavaUtil.newHashMap(50);
@@ -7967,12 +7968,12 @@ public class LambdaJ {
             return _t;
         }
 
-        public final Number   inc      (Object... args) { values = null; oneArg("1+",         args); return LambdaJ.Subr.inc(args[0]); }
-        public final Number   inc      (Object arg)     { values = null; return LambdaJ.Subr.inc(arg); }
-        public final Number   dec      (Object... args) { values = null; oneArg("1-",         args); return LambdaJ.Subr.dec(args[0]); }
-        public final Number   dec      (Object arg)     { values = null; return LambdaJ.Subr.dec(arg); }
+        public final Number   inc      (Object... args) { values = null; oneArg("1+", args); return LambdaJ.Subr.inc(args[0]); }
+        public final Number   inc      (Object arg)     { values = null;                     return LambdaJ.Subr.inc(arg); }
+        public final Number   dec      (Object... args) { values = null; oneArg("1-", args); return LambdaJ.Subr.dec(args[0]); }
+        public final Number   dec      (Object arg)     { values = null;                     return LambdaJ.Subr.dec(arg); }
 
-        public final Number   _signum  (Object... args) { values = null; oneArg("signum",        args); return cl_signum (args[0]); }
+        public final Number   _signum  (Object... args) { values = null; oneArg("signum", args); return cl_signum (args[0]); }
 
         public final long     _round   (Object... args) { varargs1_2("round",     args); return toFixnum(cl_round   (quot12(args))); }
         public final long     _floor   (Object... args) { varargs1_2("floor",     args); return toFixnum(Math.floor (quot12(args))); }
@@ -7989,25 +7990,25 @@ public class LambdaJ {
         public static long   toFixnum(double d)    { return LambdaJ.Chk.toFixnum(d); }
         private double quot12(Object[] args) { values = null; return args.length == 2 ? toDouble(args[0]) / toDouble(args[1]) : toDouble(args[0]); }
 
-        public final double   _sqrt    (Object... args) { oneArg("sqrt",          args); values = null; return Math.sqrt (toDouble(args[0])); }
-        public final double   _log     (Object... args) { varargs1_2("log",       args); values = null; return args.length == 1 ? Math.log(toDouble(args[0])) : Math.log(toDouble(args[0])) / Math.log(toDouble(args[1])); }
-        public final double   _log10   (Object... args) { oneArg("log10",         args); values = null; return Math.log10(toDouble(args[0])); }
-        public final double   _exp     (Object... args) { oneArg("exp",           args); values = null; return Math.exp  (toDouble(args[0])); }
-        public final double   _expt    (Object... args) { twoArgs("expt",         args); values = null; return Math.pow  (toDouble(args[0]), toDouble(args[1])); }
+        public final double   _sqrt    (Object... args) { values = null; oneArg("sqrt",          args); return Math.sqrt (toDouble(args[0])); }
+        public final double   _log     (Object... args) { values = null; varargs1_2("log",       args); return args.length == 1 ? Math.log(toDouble(args[0])) : Math.log(toDouble(args[0])) / Math.log(toDouble(args[1])); }
+        public final double   _log10   (Object... args) { values = null; oneArg("log10",         args); return Math.log10(toDouble(args[0])); }
+        public final double   _exp     (Object... args) { values = null; oneArg("exp",           args); return Math.exp  (toDouble(args[0])); }
+        public final double   _expt    (Object... args) { values = null; twoArgs("expt",         args); return Math.pow  (toDouble(args[0]), toDouble(args[1])); }
 
         public final double   _mod     (Object... args) { twoArgs("mod",          args); return cl_mod(toDouble(args[0]), toDouble(args[1])); }
         public final double cl_mod(double lhs, double rhs) { values = null; return LambdaJ.Subr.cl_mod(lhs, rhs); }
-        public final double   _rem     (Object... args) { twoArgs("rem",          args); values = null; return toDouble(args[0]) % toDouble(args[1]); }
+        public final double   _rem     (Object... args) { values = null; twoArgs("rem",          args); return toDouble(args[0]) % toDouble(args[1]); }
 
         public final Number _random(Object... args) {
-            varargs1_2("random", args); values = null;
+            values = null; varargs1_2("random", args);
             final Object state;
             if (args.length == 2) state = args[1];
             else state = getRandom();
             return random(args[0], state);
         }
         public final Random makeRandomState(Object... args) {
-            varargs0_1("make-random-state", args); values = null;
+            values = null; varargs0_1("make-random-state", args);
             final Object state;
             final Random current;
             if (args.length == 1 && args[0] != null) { state = args[0]; current = null; }
@@ -8168,22 +8169,22 @@ public class LambdaJ {
 
 
         // I/O
-        public final Object _read             (Object... args)  { varargs0_1("read",                    args);       values = null; return LambdaJ.Subr.read(lispReader, arraySlice(args)); }
+        public final Object _read             (Object... args)  { values = null; varargs0_1("read",                    args);       return LambdaJ.Subr.read(lispReader, arraySlice(args)); }
         public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args, 1, 4);
                                                                   featuresEnvEntry.rplacd(features.get());
                                                                   return ret(LambdaJ.Subr.readFromString(symtab, featuresEnvEntry, arraySlice(args))); }
-        public final Object readTextfileLines (Object... args)  { varargs1_2("read-textfile-lines",     args);       values = null; return LambdaJ.Subr.readTextfileLines(arraySlice(args)); }
-        public final Object readTextfile      (Object... args)  { varargs1_2("read-textfile",           args);       values = null; return LambdaJ.Subr.readTextfile(arraySlice(args)); }
-        public final Object writeTextfileLines(Object... args)  { varargsMinMax("write-textfile-lines", args, 2, 4); values = null; return LambdaJ.Subr.writeTextfileLines(arraySlice(args)); }
-        public final Object writeTextfile     (Object... args)  { varargsMinMax("write-textfile",       args, 2, 4); values = null; return LambdaJ.Subr.writeTextfile(arraySlice(args)); }
-        public final Object writeToString     (Object... args)  { varargs1_2("write-to-string",         args);       values = null; return LambdaJ.Subr.writeToString(args[0], noSecondArgOrNotNull(args)); }
-        public final Object _write            (Object... args)  { varargsMinMax("write",                args, 1, 3); values = null; return LambdaJ.Subr.write  (getLispPrinter(args, 2, lispPrinter), args[0], noSecondArgOrNotNull(args)); }
+        public final Object readTextfileLines (Object... args)  { values = null; varargs1_2("read-textfile-lines",     args);       return LambdaJ.Subr.readTextfileLines(arraySlice(args)); }
+        public final Object readTextfile      (Object... args)  { values = null; varargs1_2("read-textfile",           args);       return LambdaJ.Subr.readTextfile(arraySlice(args)); }
+        public final Object writeTextfileLines(Object... args)  { values = null; varargsMinMax("write-textfile-lines", args, 2, 4); return LambdaJ.Subr.writeTextfileLines(arraySlice(args)); }
+        public final Object writeTextfile     (Object... args)  { values = null; varargsMinMax("write-textfile",       args, 2, 4); return LambdaJ.Subr.writeTextfile(arraySlice(args)); }
+        public final Object writeToString     (Object... args)  { values = null; varargs1_2("write-to-string",         args);       return LambdaJ.Subr.writeToString(args[0], noSecondArgOrNotNull(args)); }
+        public final Object _write            (Object... args)  { values = null; varargsMinMax("write",                args, 1, 3); return LambdaJ.Subr.write  (getLispPrinter(args, 2, lispPrinter), args[0], noSecondArgOrNotNull(args)); }
 
-        public final Object _writeln          (Object... args)  { varargsMinMax("writeln",              args, 0, 3); values = null; return LambdaJ.Subr.writeln(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
-        public final Object _lnwrite          (Object... args)  { varargsMinMax("lnwrite",              args, 0, 3); values = null; return LambdaJ.Subr.lnwrite(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
+        public final Object _writeln          (Object... args)  { values = null; varargsMinMax("writeln",              args, 0, 3); return LambdaJ.Subr.writeln(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
+        public final Object _lnwrite          (Object... args)  { values = null; varargsMinMax("lnwrite",              args, 0, 3); return LambdaJ.Subr.lnwrite(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
 
-        public final Object format            (Object... args)  { varargs2("format",                    args);       values = null; return LambdaJ.Subr.format(getLispPrinter(args, 0, null), true, arraySlice(args)); }
-        public final Object formatLocale      (Object... args)  { varargs3("format-locale",             args);       values = null; return LambdaJ.Subr.formatLocale(getLispPrinter(args, 0, null), true, arraySlice(args)); }
+        public final Object format            (Object... args)  { values = null; varargs2("format",                    args);       return LambdaJ.Subr.format(getLispPrinter(args, 0, null), true, arraySlice(args)); }
+        public final Object formatLocale      (Object... args)  { values = null; varargs3("format-locale",             args);       return LambdaJ.Subr.formatLocale(getLispPrinter(args, 0, null), true, arraySlice(args)); }
 
 
         // misc
@@ -8207,12 +8208,12 @@ public class LambdaJ {
 
         // Java FFI
         public final Object _jmethod   (Object... args) {
-            values = null; varargs2("jmethod", args);
-            return JFFI.findMethod(LambdaJ.requireString("jmethod", args[0]), LambdaJ.requireString("jmethod", args[1]), arraySlice(args, 2));
+            values = null; varargs2(JMETHOD, args);
+            return JFFI.findMethod(LambdaJ.requireString(JMETHOD, args[0]), LambdaJ.requireString(JMETHOD, args[1]), arraySlice(args, 2));
         }
         public final Primitive findMethod(Object className, Object methodName, Object... paramClasses) {
             values = null;
-            return JFFI.findMethod(LambdaJ.requireString("jmethod", className), LambdaJ.requireString("jmethod", methodName), arraySlice(paramClasses));
+            return JFFI.findMethod(LambdaJ.requireString(JMETHOD, className), LambdaJ.requireString(JMETHOD, methodName), arraySlice(paramClasses));
         }
 
         // makeProxy kann auch interpretierte funktionen. wenn intp==null ist, kanns aber keine geben
@@ -8919,7 +8920,7 @@ public class LambdaJ {
             case "gensym": return (CompilerPrimitive)this::_gensym;
             case "trace": return (CompilerPrimitive)this::_trace;
             case "untrace": return (CompilerPrimitive)this::_untrace;
-            case "error": return (CompilerPrimitive)this::_error;
+            case ERROR: return (CompilerPrimitive)this::_error;
             case "lisp-implementation-type": return (CompilerPrimitive)this::implType;
             case "lisp-implementation-version": return (CompilerPrimitive)this::implVersion;
 
@@ -8931,7 +8932,7 @@ public class LambdaJ {
             case "get-decoded-time": return (CompilerPrimitive)this::getDecodedTime;
 
             // Java FFI
-            case "jmethod": return (CompilerPrimitive)this::_jmethod;
+            case JMETHOD: return (CompilerPrimitive)this::_jmethod;
             case "jproxy": return (CompilerPrimitive)this::_jproxy;
 
             // graphics
@@ -9104,7 +9105,7 @@ public class LambdaJ {
         "fround", "ffloor", "fceiling", "ftruncate",
         "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum", "random",
         "gensym", "trace", "untrace",
-        "error", "jmethod", "jproxy",
+        ERROR, JMETHOD, "jproxy",
         };
         private static final String[][] aliasedPrimitives = {
         {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
@@ -9446,8 +9447,11 @@ public class LambdaJ {
                     if (form != null) noteDead(null, form); // don't note nil as that would generate a lot of notes for e.g. "(if a nil (dosomething))"
                     return; // must be dead code
                 }
-                if (consp(form) && symbolEq(car(form), QUOTE)) {
+                if (symbolEq(car(form), QUOTE)) {
                     noteDead((ConsCell)form, form);
+                    return; // must be dead code
+                }
+                if (symbolEq(car(form), DECLAIM)) {
                     return; // must be dead code
                 }
             }
@@ -9939,8 +9943,8 @@ public class LambdaJ {
                     }
                 }
 
-                if (intp.speed >= 1 && consp(op) && symbolEq(car(op), "jmethod")
-                    && emitJmethod(sb, listOrMalformed("jmethod application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
+                if (intp.speed >= 1 && consp(op) && symbolEq(car(op), JMETHOD)
+                    && emitJmethod(sb, listOrMalformed(JMETHOD + " application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
                     return;
                 }
 
@@ -10743,7 +10747,7 @@ public class LambdaJ {
 
         /** argCount is number of arguments at compiletime if known or -1 for check at runtime */
         private boolean emitJmethod(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean emitCall, ConsCell ccArguments) {
-            varargsMin("jmethod", args, 2);
+            varargsMin(JMETHOD, args, 2);
             final Object strClazz = car(args), strMethod = cadr(args);
             // if class and method are stringliterals (i.e. java.lang.String objects) then we can do this at compiletime.
             // else jmethod() will check the runtime type at runtime
@@ -10789,7 +10793,7 @@ public class LambdaJ {
                 if ("new".equals(strMethod)) { m = clazz.getDeclaredConstructor(params);  startArg = 0; voidMethod = false; }
                 else                         { m = clazz.getMethod((String)strMethod, params);  startArg = Modifier.isStatic(m.getModifiers()) ? 0 : 1; voidMethod = ((Method)m).getReturnType() == void.class; }
             }
-            catch (Exception e) { throw new LambdaJError(true, "jmethod: exception finding method: %s", e.getMessage()); }
+            catch (Exception e) { throw new LambdaJError(true, JMETHOD + ": exception finding method: %s", e.getMessage()); }
 
             final int paramCount = paramTypes.size() + startArg;
             if (emitCall) {
