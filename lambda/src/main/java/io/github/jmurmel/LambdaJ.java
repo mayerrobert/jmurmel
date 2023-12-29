@@ -8527,24 +8527,24 @@ public class LambdaJ {
         /** TCO trampoline, used for function calls, and also for let, labels, progn */
         public final Object funcall(@NotNull MurmelFunction fn, Object... args) {
             ConsCell cleanups = null;
-            Object r;
             try {
-                values = null;
-                r = fn.apply(args);
-                while (r instanceof Tailcall) {
-                    final Tailcall functionCall = (Tailcall) r;
-                    if (functionCall.cleanup != null) cleanups = ConsCell.cons(functionCall.cleanup, cleanups);
-                    values = null;
-                    r = functionCall.fn.apply(functionCall.args);
-                    if (Thread.interrupted()) throw new InterruptedException("got interrupted");
+                while (true) {
+                    //values = null;
+                    final Object r = fn.apply(args);
+                    if (r instanceof Tailcall) {
+                        final Tailcall functionCall = (Tailcall)r;
+                        if (Thread.interrupted()) throw new InterruptedException("got interrupted");
+                        if (functionCall.cleanup != null) cleanups = ConsCell.cons(functionCall.cleanup, cleanups);
+                        fn = functionCall.fn;
+                        args = functionCall.args;
+                        continue;
+                    }
+                    return r;
                 }
             }
             catch (ReturnException re) { throw re; }
             catch (Exception e) { fling(e); /*notreached*/ throw null; }
-            finally {
-                if (cleanups != null) runCleanups(cleanups);
-            }
-            return r;
+            finally { if (cleanups != null) runCleanups(cleanups); }
         }
 
         private static void runCleanups(@NotNull ConsCell cleanups) {
