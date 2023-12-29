@@ -8540,7 +8540,7 @@ public class LambdaJ {
                 }
             }
             catch (ReturnException re) { throw re; }
-            catch (Exception e) { fling(e); throw new LambdaJError(e, e.getMessage()); }
+            catch (Exception e) { fling(e); assert false: "notreached"; return null; }
             finally {
                 LambdaJError ex = null;
                 if (cleanups != null) for (Object cl: cleanups) {
@@ -8624,6 +8624,19 @@ public class LambdaJ {
             }
             catch (LambdaJError le) { throw le; }
             catch (Exception e) { return rterror(e); }
+        }
+
+        public final Object catchHelper(Object tag, Exception e) {
+            if (e instanceof ReturnException) {
+                final ReturnException re = (ReturnException)e;
+                if (tag == re.tag) { values = re.values; return re.result; }
+                throw re;
+            }
+            try {
+                fling(e);
+            }
+            catch (Exception e2) { return catchHelper(tag, e2); }
+            assert false: "notreached"; return null;
         }
 
         public final Object doThrow(Object tag, Object primaryResult) {
@@ -9358,7 +9371,7 @@ public class LambdaJ {
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
                     + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
                     + "    private Object define_").append(javasym).append("() {\n");
-            emitClearValues(sb, form, 40);
+            emitClearValues(sb, form);
             sb.append("        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                     + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
                     + "        catch (Exception e) { rterror(e); }\n");
@@ -9367,9 +9380,9 @@ public class LambdaJ {
             return env;
         }
 
-        private static void emitClearValues(WrappingWriter sb, ConsCell form, int maxlen) {
+        private static void emitClearValues(WrappingWriter sb, ConsCell form) {
             emitClearValues(sb);
-            emitLoc(sb, form, maxlen);
+            emitLoc(sb, form, 40);
         }
 
         private static void emitClearValues(WrappingWriter sb) {
@@ -9486,6 +9499,7 @@ public class LambdaJ {
                              || ws == WellknownSymbol.sCond
                              || ws == WellknownSymbol.sSetQ
                              || ws == WellknownSymbol.sProgn
+                             || ws == WellknownSymbol.sCatch
 
                              || ws.stmtExpr;
             }
@@ -9505,9 +9519,7 @@ public class LambdaJ {
                 /// * special forms:
 
                 ///     - quote
-                case sQuote: {
-                    break;
-                }
+                case sQuote: break;
 
                 case sIf: {
                     if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
@@ -9557,18 +9569,15 @@ public class LambdaJ {
                     return;
                 }
 
-                // todo ggf. alle 3 catch clauses in eine rt funktion verpacken statt immer alle 3 rausgenerieren?
-                /*case sCatch:
+                case sCatch:
                     sb.append("        try {\n");
-                    emitStmts(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext || !topLevel);
+                    emitStmts(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, retLhs, true, hasNext);
                     sb.append("        }\n"
-                            + "        catch (ReturnException re) {\n"
-                            + "            if ((Object)"); emitForm(sb, car(ccArguments), env, topEnv, rsfx, false); sb.append(" == re.tag) { values = re.values; return re.result; }\n"
-                            + "            throw re;\n"
-                            + "        }\n"
-                            + "        catch (LambdaJError le) { throw le; }\n"
-                            + "        catch (Exception e) { return rterror(e); }\n");
-                    return;*/
+                            + "        catch (Exception e) {\n");
+                    if (hasNext) sb.append("        ");
+                    else sb.append(retLhs);
+                    sb.append("catchHelper("); emitForm(sb, car(ccArguments), env, topEnv, rsfx, false); sb.append(", e);\n        }\n");
+                    return;
 
                 case sSetQ: {
                     if (ccArguments == null) {
@@ -9596,7 +9605,6 @@ public class LambdaJ {
                     final Object bindings = cadr(ccForm);
                     if (bindings instanceof LambdaJSymbol) {
                         if (clearValues) {
-                            //emitClearValues(sb, ccForm, 100);
                             emitLoc(sb, ccForm, 100);
                         }
                         break;
@@ -9616,7 +9624,6 @@ public class LambdaJ {
                     else sb.append("        {\n");
 
                     if (clearValues) {
-                        //emitClearValues(sb, ccForm, 100);
                         emitLoc(sb, ccForm, 100);
                     }
                     ConsCell letStarEnv = env;
