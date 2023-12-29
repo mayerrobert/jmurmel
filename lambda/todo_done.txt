@@ -2611,3 +2611,6 @@ JMurmel> (if (values 1 2 3) 'ja)
 weitere tests:
 (cond ((values 1 2 3) 'ja))        -> geht
 (cond ((null (values 1 2 3)) 'ja)) -> geht nur im interpreter
+
+
+operator: inverten, umstellen auf stmtExpression (nur true bei primitives die in eine Java stmt expression konvertiert werden)

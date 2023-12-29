@@ -10111,9 +10111,20 @@ public class LambdaJ {
         }
 
         private void emitCatch(WrappingWriter sb, ConsCell tagAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
-            final ConsCell body = cons(intern(LAMBDA), cons(null, cdr(tagAndForms)));
-            final ConsCell args = cons(car(tagAndForms), cons(body, null));
-            emitCallPrimitive(sb, "doCatch", args, env, topEnv, rsfx);
+            final Object tag = car(tagAndForms);
+            final ConsCell bodyForms = (ConsCell)cdr(tagAndForms);
+            if (JavaUtil.jvmVersion() >= 14) {
+                sb.append("switch (0) {\n        default: {\n        try {\n");
+                emitForms(sb, bodyForms, env, topEnv, rsfx, true, true);
+                sb.append("        }\n        catch (Exception e) {\n        yield catchHelper(");
+                emitForm(sb, tag, env, topEnv, rsfx, false);
+                sb.append(", e);\n        } } }");
+            }
+            else {
+                final ConsCell body = cons(intern(LAMBDA), cons(null, bodyForms));
+                final ConsCell args = cons(tag, cons(body, null));
+                emitCallPrimitive(sb, "doCatch", args, env, topEnv, rsfx);
+            }
         }
 
         private void emitThrow(WrappingWriter sb, ConsCell tagAndResultForm, ConsCell env, ConsCell topEnv, int rsfx) {
