@@ -2614,3 +2614,5 @@ weitere tests:
 
 
 operator: inverten, umstellen auf stmtExpression (nur true bei primitives die in eine Java stmt expression konvertiert werden)
+
+funcall hat finally und viele exits -> 306 bytes

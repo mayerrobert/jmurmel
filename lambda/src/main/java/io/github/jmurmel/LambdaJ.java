@@ -8525,7 +8525,7 @@ public class LambdaJ {
 
 
         /** TCO trampoline, used for function calls, and also for let, labels, progn */
-        public final Object funcall(MurmelFunction fn, Object... args) {
+        public final Object funcall(@NotNull MurmelFunction fn, Object... args) {
             ConsCell cleanups = null;
             Object r;
             try {
@@ -8540,19 +8540,23 @@ public class LambdaJ {
                 }
             }
             catch (ReturnException re) { throw re; }
-            catch (Exception e) { fling(e); assert false: "notreached"; return null; }
+            catch (Exception e) { fling(e); /*notreached*/ throw null; }
             finally {
-                LambdaJError ex = null;
-                if (cleanups != null) for (Object cl: cleanups) {
-                    try { ((MurmelFunction)cl).apply((Object[])null); }
-                    //catch (LambdaJError e) { if (ex == null) ex = e; else ex.addSuppressed(e); }
-                    //catch (Exception e)    { if (ex == null) ex = new LambdaJError(e, e.getMessage()); else ex.addSuppressed(e); }
-                    catch (LambdaJError e) { ex = e; }
-                    catch (Exception e)    { ex = new LambdaJError(e, e.getMessage()); }
-                }
-                if (ex != null) throw ex;
+                if (cleanups != null) runCleanups(cleanups);
             }
             return r;
+        }
+
+        private static void runCleanups(@NotNull ConsCell cleanups) {
+            LambdaJError ex = null;
+            for (Object cl: cleanups) {
+                try { ((MurmelFunction)cl).apply((Object[])null); }
+                //catch (LambdaJError e) { if (ex == null) ex = e; else ex.addSuppressed(e); }
+                //catch (Exception e)    { if (ex == null) ex = new LambdaJError(e, e.getMessage()); else ex.addSuppressed(e); }
+                catch (LambdaJError e) { ex = e; }
+                catch (Exception e)    { ex = new LambdaJError(e, e.getMessage()); }
+            }
+            if (ex != null) throw ex;
         }
 
         public final Object funcall(Object fn, Object... args) {
