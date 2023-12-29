@@ -2160,7 +2160,7 @@ public class LambdaJ {
 
         public static final String DECLAIM = "declaim";
         // parameters to declaim
-        public static final String OPTIMIZE = "optimize", SPEED = "speed";
+        public static final String OPTIMIZE = "optimize", SPEED = "speed", DEBUG = "debug";
 
         // predefined global variables
         public static final String T = "t", NIL = "nil";
@@ -2609,7 +2609,7 @@ public class LambdaJ {
     }
 
     ObjectReader init(ObjectReader inReader, ObjectWriter outWriter, ConsCell customEnv) {
-        speed = 1;
+        speed = 1;  debug = 3;
         resetCounters();
         clearMacros();
         modules.clear();
@@ -2640,7 +2640,7 @@ public class LambdaJ {
 
     final Set<Object> modules = new HashSet<>();
     /** will be set to 1 by {@link #init}, changed by (declaim (optimize (speed... */
-    short speed = -1;
+    short speed = -1, debug = -1;
 
 
     /// ###  eval - the heart of most if not all Lisp interpreters
@@ -3434,6 +3434,13 @@ public class LambdaJ {
                 final Object speed = cadr(speedCons);
                 if (!numberp(speed)) throw new ProgramError(DECLAIM + ": argument to " + SPEED + " must be a number, found %s", speed);
                 this.speed = ((Number)speed).shortValue();
+            }
+
+            final Object debugCons = assq(intern(DEBUG), rest);
+            if (debugCons != null) {
+                final Object debug = cadr(debugCons);
+                if (!numberp(debug)) throw new ProgramError(DECLAIM + ": argument to " + DEBUG + " must be a number, found %s", debug);
+                this.debug = ((Number)debug).shortValue();
             }
         }
     }
@@ -9212,7 +9219,7 @@ public class LambdaJ {
             final StringBuilder globals = new StringBuilder();
 
             /// first pass: emit toplevel define/ defun forms
-            final short prevSpeed = intp.speed;
+            final short prevSpeed = intp.speed, prevDebug = intp.debug;
             passTwo = false;
             implicitDecl = new HashSet<>();
             globalDecl = new HashSet<>();
@@ -9256,7 +9263,7 @@ public class LambdaJ {
                        + "    protected Object runbody() throws Exception {\n");
 
             /// second pass: emit toplevel forms that are not define or defun as well as the actual assignments for define/ defun
-            intp.speed = prevSpeed;
+            intp.speed = prevSpeed;  intp.debug = prevDebug;
             passTwo = true;
             emitForms(ret, bodyForms, globalEnv, globalEnv, 0, true, false);
 
@@ -9384,7 +9391,7 @@ public class LambdaJ {
             return env;
         }
 
-        private static void emitClearValues(WrappingWriter sb, ConsCell form) {
+        private void emitClearValues(WrappingWriter sb, ConsCell form) {
             emitClearValues(sb);
             emitLoc(sb, form, 40);
         }
@@ -9393,8 +9400,9 @@ public class LambdaJ {
             sb.append("        values = null;\n");
         }
 
-        private static void emitLoc(WrappingWriter sb, ConsCell form, int maxlen) {
-            sb.append("        loc = \"");
+        private void emitLoc(WrappingWriter sb, ConsCell form, int maxlen) {
+            if (intp.debug == 0) sb.append("        // loc = \"");
+            else sb.append("        loc = \"");
             stringToJava(sb, form.lineInfo(), -1);
             stringToJava(sb, printSEx(form), maxlen);
             sb.append("\";\n");
@@ -9469,7 +9477,8 @@ public class LambdaJ {
                     return; // must be dead code
                 }
                 if (symbolEq(car(form), DECLAIM)) {
-                    return; // must be dead code
+                    intp.evalDeclaim(1, (ConsCell)cdr(form)); // cast is safe because expandForm will fail on dotted forms
+                    return; // ignore return value, must be dead code
                 }
             }
 

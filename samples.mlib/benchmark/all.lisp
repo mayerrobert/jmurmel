@@ -1,5 +1,8 @@
 ;;; Run all benchmarks from a single lisp file
 
+(declaim (optimize (debug 0)))
+
+
 #+murmel (progn
 
 (require "mlib")
