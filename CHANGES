@@ -11,6 +11,7 @@ Changes in JMurmel-1.4.5 relative to JMurmel-1.4.4
 
  * fixed interpreted "(let () (values 1 2 3) 10)"
  * fixed control flow & multiple values, e.g. "(if (values 1 2 3) 'yes) ; ==> yes"
+ * fixed symbol names that contain a ';' such as |;abc|
  * fixed mlib: in "dotimes" the loopvariable now is bound in the resultform
    even if the countform was an int literal <= 0
 

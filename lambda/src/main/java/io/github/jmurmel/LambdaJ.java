@@ -1709,7 +1709,7 @@ public class LambdaJ {
         private String readBarSymbol() {
             assert isBar(look);
             int index = 0;
-            look = getchar();
+            look = getchar(false);
             while (look != LambdaJ.EOF && !isBar(look)) {
                 if (index < SYMBOL_MAX) token[index++] = (char) look;
                 look = getchar(false);

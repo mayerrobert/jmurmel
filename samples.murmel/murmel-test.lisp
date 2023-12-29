@@ -203,6 +203,8 @@ multiline comment
 (deftest reader.8 'APL\\360               '|APL\\360|)
 (deftest reader.9 '|APL\360|              'APL360)
 (deftest reader.10 '\(\b^2\)\ -\ 4*\a*\c  '|(b^2) - 4*a*c|)
+(deftest reader.11 '|;aaa|                '|;aaa|)            ; don't process ';' as a comment char
+(deftest reader.12 '|#|                   '|#|)
 
 (deftest readermacro.1 #\a #\a)
 (deftest readermacro.2 (char-code #\Nul) 0)
