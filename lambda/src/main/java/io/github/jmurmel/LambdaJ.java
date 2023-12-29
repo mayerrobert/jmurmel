@@ -1317,8 +1317,14 @@ public class LambdaJ {
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
     static class SExpressionReader implements ObjectReader {
-        private final int features;
-        private final @NotNull TraceLevel trace;
+        private final boolean haveNil;
+        private final boolean haveString;
+        private final boolean haveDouble;
+        private final boolean haveLong;
+
+        private final boolean traceLex;
+        private final boolean traceTok;
+        private final boolean traceParse;
         private final TraceConsumer tracer;
 
         private final @NotNull SymbolTable st;
@@ -1354,9 +1360,17 @@ public class LambdaJ {
          *
          */
         SExpressionReader(int features, @NotNull TraceLevel trace, TraceConsumer tracer, @NotNull SymbolTable st, ConsCell featuresEnvEntry, @NotNull ReadSupplier in, Path filePath) {
-            this.features = features;
+            haveNil = have(features, Features.HAVE_NIL);
+            haveString = have(features, Features.HAVE_STRING);
+            haveDouble = have(features, Features.HAVE_DOUBLE);
+            haveLong = have(features, Features.HAVE_LONG);
+
             assert trace == TraceLevel.TRC_NONE || tracer != null;
-            this.trace = trace; this.tracer = tracer;
+            traceLex = trace.ge(TraceLevel.TRC_LEX);
+            traceTok = trace.ge(TraceLevel.TRC_TOK);
+            traceParse = trace.ge(TraceLevel.TRC_PARSE);
+            this.tracer = tracer;
+
             this.st = st;
             this.in = in;
             this.filePath = filePath;
@@ -1382,7 +1396,7 @@ public class LambdaJ {
         // this is really only useful for the repl. If parser.charNo != 0 the next thing the parser reads is the lineseparator following the previous sexp that was not consumed.
         void resetPos() { lineNo = charNo == 0 ? 1 : 0;  charNo = 0; }
 
-        private boolean have(Features features) { return (this.features & features.bits()) != 0; }
+        private static boolean have(int features, Features feature) { return (features & feature.bits()) != 0; }
 
         @Override public void setInput(@NotNull ReadSupplier input, Path filePath) { in = input; this.filePath = filePath; lineNo = 1; charNo = 0; }
 
@@ -1403,13 +1417,13 @@ public class LambdaJ {
                 charNo = 0;
                 return '\n';
             }
-            if (c == '\n' && prevWasCR) {
-                // current char is a \n, previous char was a \r which was returned as a \n.
-                // Therefore the current \n is silently dropped, return the next char.
-                prevWasCR = false;
-                return readchar();
-            }
             if (c == '\n') {
+                if (prevWasCR) {
+                    // current char is a \n, previous char was a \r which was returned as a \n.
+                    // Therefore the current \n is silently dropped, return the next char.
+                    prevWasCR = false;
+                    return readchar();
+                }
                 lineNo++;
                 charNo = 0;
                 return '\n';
@@ -1419,9 +1433,7 @@ public class LambdaJ {
             return c;
         }
 
-        private int getchar() {
-            return getchar(true);
-        }
+        private int getchar() { return getchar(true); }
 
         private int getchar(boolean handleComment) {
             try {
@@ -1569,7 +1581,7 @@ public class LambdaJ {
                 if (index < TOKEN_MAX) token[index++] = (char)look;
                 look = getchar(false);
             }
-            return tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
+            return tokenToString(0, Math.min(index, SYMBOL_MAX));
         }
 
         private final Object sNot, sAnd, sOr;
@@ -1624,7 +1636,7 @@ public class LambdaJ {
                 skipWs();
                 tok = null;
                 if (look == eof) {
-                    if (trace.ge(TraceLevel.TRC_LEX)) tracer.println("*** scan  EOF");
+                    if (traceLex) tracer.println("*** scan  EOF");
                     return;
                 }
 
@@ -1639,7 +1651,7 @@ public class LambdaJ {
                     case ',':  { tok = Token.COMMA; look = getchar(); break; }
 
                     case '"':
-                        if (have(Features.HAVE_STRING)) {
+                        if (haveString) {
                             int index = 0;
                             do {
                                 if (index < TOKEN_MAX) token[index++] = (char) look;
@@ -1648,11 +1660,11 @@ public class LambdaJ {
                             if (look == eof)
                                 throw new EOFException("string literal is missing closing \"");
                             look = getchar(); // consume trailing "
-                            tok = tokenToString(token, 1, index).intern();
+                            tok = tokenToString(1, index).intern();
                         }
                         break;
 
-                    case '#':
+                    case '#': // todo readermacros ggf. per feature/ commandlineflag abdrehen? und/ oder processReaderMacros dem konstruktor geben?
                         look = getchar(false);
                         int arg = -1, digit;
                         final int subChar;
@@ -1680,17 +1692,17 @@ public class LambdaJ {
                         if (index < TOKEN_MAX) token[index++] = (char) look;
                         look = getchar();
                     }
-                    @NotNull String s = tokenToString(token, 0, index);
+                    @NotNull String s = tokenToString(0, index);
                     //noinspection ConstantConditions
                     if (!tokEscape && ".".equals(s)) {
                         tok = Token.DOT;
-                    } else if (!escapeSeen && have(Features.HAVE_DOUBLE) && isDouble(s)) {
+                    } else if (!escapeSeen && haveDouble && isDouble(s)) {
                         tok = parseDouble(s);
-                    } else if (!escapeSeen && have(Features.HAVE_LONG) && isLong(s)) {
+                    } else if (!escapeSeen && haveLong && isLong(s)) {
                         tok = parseLong(s, 10);
-                    } else if (!escapeSeen && have(Features.HAVE_DOUBLE) && isLong(s)) {
+                    } else if (!escapeSeen && haveDouble && isLong(s)) {
                         tok = parseDouble(s);
-                    } else if (!escapeSeen && (have(Features.HAVE_DOUBLE) || have(Features.HAVE_LONG)) && isCLDecimalLong(s)) {
+                    } else if (!escapeSeen && (haveDouble || haveLong) && isCLDecimalLong(s)) {
                         // reject CL-style 123. for "123 in radix 10" - Murmel doesn't support changing reader radix,
                         // and non-lispers may think digits followed by a dot are floating point numbers (as is the case in most programming languages)
                         throw new ParseError("digits followed by '.' to indicate 'integer in radix' 10 is not supported. Digits followed by '.' without decimal numbers to indicate 'floating point' also is not supported.");
@@ -1700,23 +1712,23 @@ public class LambdaJ {
                     }
                 }
 
-                if (trace.ge(TraceLevel.TRC_LEX)) tracer.println("*** scan  token  |" + tok + '|');
-
-                if (tok != CONTINUE) return;
+                if (tok != CONTINUE) {
+                    if (traceLex) tracer.println("*** scan  token  |" + tok + '|');
+                    return;
+                }
             }
         }
 
         private String readBarSymbol() {
-            assert isBar(look);
             int index = 0;
-            look = getchar(false);
-            while (look != LambdaJ.EOF && !isBar(look)) {
-                if (index < SYMBOL_MAX) token[index++] = (char) look;
+            while (true) {
                 look = getchar(false);
+                if (look == LambdaJ.EOF) wrap0(new EOFException("|-quoted symbol is missing closing |")); // wrap0() doesn't return
+                if (isBar(look)) break;
+                if (index < SYMBOL_MAX) token[index++] = (char) look;
             }
-            if (look == LambdaJ.EOF) wrap0(new EOFException("|-quoted symbol is missing closing |"));
             look = getchar(); // consume trailing |
-            return tokenToString(token, 0, Math.min(index, SYMBOL_MAX));
+            return tokenToString(0, Math.min(index, SYMBOL_MAX));
         }
 
         private static Number parseLong(String s, int radix) {
@@ -1737,9 +1749,7 @@ public class LambdaJ {
             }
         }
 
-        private static @NotNull String tokenToString(char[] b, int first, int end) {
-            return new String(b, first, end - first);
-        }
+        private @NotNull String tokenToString(int first, int end) { return new String(token, first, end - first); }
 
 
         /// S-expression parser
@@ -1776,16 +1786,16 @@ public class LambdaJ {
 
         private Object readObject(int startLine, int startChar, Object eof) throws IOException {
             if (tok == null) {
-                if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   ()");
+                if (traceParse) tracer.println("*** parse list   ()");
                 return eof;
             }
             if (tok == sNil) {
-                if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + NIL);
-                if (have(Features.HAVE_NIL)) return null;
+                if (traceTok) tracer.println("*** parse symbol " + NIL);
+                if (haveNil) return null;
                 else return tok;
             }
             if (symbolp(tok)) {
-                if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse symbol " + tok);
+                if (traceTok) tracer.println("*** parse symbol " + tok);
                 return tok;
             }
             if (!tokEscape) {
@@ -1799,10 +1809,10 @@ public class LambdaJ {
                             if (cdr == null) throw new ParseError("illegal end of dotted list: nothing appears after . in list");
                             if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
                             final Object cons = combine(startLine, startChar, list, car(cdr));
-                            if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse cons   " + printSEx(cons));
+                            if (traceParse) tracer.println("*** parse cons   " + printSEx(cons));
                             return cons;
                         }
-                        if (trace.ge(TraceLevel.TRC_PARSE)) tracer.println("*** parse list   " + printSEx(list));
+                        if (traceParse) tracer.println("*** parse list   " + printSEx(list));
                         return list;
                     }
                     catch (LambdaJError | IOException e) {
@@ -1847,7 +1857,7 @@ public class LambdaJ {
                     return o;
                 }
             }
-            if (trace.ge(TraceLevel.TRC_TOK)) tracer.println("*** parse value  " + tok);
+            if (traceTok) tracer.println("*** parse value  " + tok);
             return tok;
         }
 
