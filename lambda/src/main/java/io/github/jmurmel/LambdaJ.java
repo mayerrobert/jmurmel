@@ -9434,9 +9434,9 @@ public class LambdaJ {
 
             sb.append("    private LambdaJSymbol defun_").append(javasym).append("() {\n");
             emitLoc(sb, form, 40);
-            sb.append("        final MurmelFunction func = new MurmelFunction() {\n"
-                    + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
-                    + "        public Object apply(Object... args0) {\n");
+            sb.append("        final MurmelFunction func = ");
+            functionHdr(sb, javasym, 0);
+
             final ConsCell extenv = params(DEFUN, sb, params, localEnv, 0, symbol.toString(), true);
             emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false, false); // todo emitStmts? was ist der unterschied zw. emitForms und emitStmts?
             sb.append("        } };\n"
@@ -9447,6 +9447,13 @@ public class LambdaJ {
             return extenvIntern(symbol, javasym + ".get()", env);
         }
 
+        private static void functionHdr(WrappingWriter sb, String javasym, int rsfx) {
+            sb.append("new MurmelFunction() {\n"
+                    + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
+                    + "        public final Object apply(Object... args").append(rsfx).append(") {\n"
+                    + "        return ").append(javasym).append("(args").append(rsfx).append(");\n        }\n" 
+                    + "        private Object ").append(javasym).append("(Object[] args").append(rsfx).append(") {\n");
+        }
 
 
         /// emitForms - compile a list of Murmel forms to Java source
@@ -10225,20 +10232,20 @@ public class LambdaJ {
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(func, car(symbolParamsAndForms));
             env = extenv(func, symbol, rsfx, env);
 
-            sb.append("new MurmelFunction() {\n"
-                    + "        private final MurmelFunction ").append(javasym(symbol, env, symbolParamsAndForms)).append(" = this;\n" // "Object o = (MurmelFunction)this::apply" is the same as "final Object x = this"
-                    + "        public Object apply(Object... args").append(rsfx).append(") {\n");
+            final String javasym = javasym(symbol, env, symbolParamsAndForms);
+            functionHdr(sb, javasym, rsfx);
             env = params(func, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
             emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false, false);
             sb.append("        } }");
         }
 
         /** args = (formsym (sym...) form...) */
+        // todo unterschied zu emitNamedLetBody: hier gibts kein "... = this;"
         private void emitLocalFunc(WrappingWriter sb, ConsCell symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(Names.LABELS, car(symbolParamsAndForms));
 
             sb.append("new MurmelFunction() {\n"
-                      + "        public Object apply(Object... args").append(rsfx).append(") {\n");
+                      + "        public final Object apply(Object... args").append(rsfx).append(") {\n");
             env = params(LABELS, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
             emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false, false);
             sb.append("        } }");
@@ -10272,7 +10279,7 @@ public class LambdaJ {
                 sb.append(";\n");
             }
 
-            sb.append("        @Override public Object apply(Object... ignored) {\n");
+            sb.append("        public final Object apply(Object... ignored) {\n");
             emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false, false); // todo isLast statt false? oder .apply() statt tailcall/funcall?
             sb.append("        } }, NOARGS)");
         }
@@ -10327,7 +10334,7 @@ public class LambdaJ {
                 env = extenv(op, loopLabel, rsfx, env);
                 sb.append("        private final Object ").append(javasym(loopLabel, env, null)).append(" = this;\n");
             }
-            sb.append("        @Override public Object apply(Object... args").append(rsfx).append(") {\n");
+            sb.append("        public final Object apply(Object... args").append(rsfx).append(") {\n");
             if (!listp(bindings)) errorMalformed(op, "a list of bindings", bindings);
             final ConsCell ccBindings = (ConsCell)bindings;
             final int argCount = listLength(ccBindings);
