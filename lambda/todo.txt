@@ -1,3 +1,9 @@
+compiler require könnte intelligenter sein:
+-> erst nur das file in den interpreter stecken und filename merken
+-> in einem zweiten durchgang jene defines/ defuns rausgenerieren die bisher undefined waren
+-> aufpassen bei required files die andere files requiren
+
+
 "        private final MurmelFunction " gibts 3x: in defunToJava, emitNamedLetBody und emitLocalFunc
 -> methode für den kopf rausziehen (parameter: name, rsfx und ggf emitThis)
 -> "        public final Object apply(Object..." gibts überhaupt 5x
