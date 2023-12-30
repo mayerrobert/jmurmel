@@ -9419,17 +9419,17 @@ public class LambdaJ {
         }
 
         /** @param form a list (defun symbol ((symbol...) forms...)) */
-        private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
+        private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell topEnv) {
             final ConsCell symbolParamsAndForms = (ConsCell)cdr(form);
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(DEFUN, car(symbolParamsAndForms));
-            notDefined(DEFUN, symbol, env);
+            notDefined(DEFUN, symbol, topEnv);
             globalDecl.add(symbol);
 
             final Object params = cadr(symbolParamsAndForms);
             final ConsCell body = (ConsCell)cddr(symbolParamsAndForms);
 
             final String javasym = mangle(symbol.toString(), 0);
-            final ConsCell localEnv = extenvIntern(symbol, javasym, env);
+            final ConsCell localEnv = extenvIntern(symbol, javasym, topEnv);
 
             sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
                       + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
@@ -9438,24 +9438,25 @@ public class LambdaJ {
             emitLoc(sb, form, 40);
             sb.append("        final MurmelFunction func = ");
 
-            functionHdr(sb, javasym, true, 0);
-            final ConsCell extenv = params(DEFUN, sb, params, localEnv, 0, symbol.toString(), true);
-            emitForms(sb, body, extenv, localEnv, 0, false, false); // todo emitStmts? was ist der unterschied zw. emitForms und emitStmts?
-            sb.append("        } };\n");
+            emitNamedLambda(DEFUN, sb, symbol, params, body, localEnv, topEnv, 0, true);
 
-            sb.append("        ").append(javasym).append(" = new CompilerGlobal(func);\n"
+            sb.append(";\n        ").append(javasym).append(" = new CompilerGlobal(func);\n"
                     + "        return intern(\"").append(symbol).append("\");\n"
                     + "    }\n\n");
 
-            return extenvIntern(symbol, javasym + ".get()", env);
+            return extenvIntern(symbol, javasym + ".get()", topEnv);
         }
 
-        private static void functionHdr(WrappingWriter sb, String javasym, boolean self, int rsfx) {
+        private void emitNamedLambda(String func, WrappingWriter sb, LambdaJSymbol symbol, Object params, ConsCell body, ConsCell env, ConsCell topEnv, int rsfx, boolean emitSelf) {
+            final String javasym = mangle(symbol.toString(), rsfx);
             sb.append("new MurmelFunction() {\n");
-            if (self) sb.append("        private final MurmelFunction ").append(javasym).append(" = this;\n");
+            if (emitSelf) sb.append("        private final MurmelFunction ").append(javasym).append(" = this;\n");
             sb.append("        public final Object apply(Object... args").append(rsfx).append(") {\n"
                     + "        return ").append(javasym).append("(args").append(rsfx).append(");\n        }\n" 
                     + "        private Object ").append(javasym).append("(Object[] args").append(rsfx).append(") {\n");
+            final ConsCell extenv = params(func, sb, params, env, rsfx, symbol.toString(), true);
+            emitForms(sb, body, extenv, topEnv, rsfx, false, false); // todo emitStmts? was ist der unterschied zw. emitForms und emitStmts?
+            sb.append("        } }");
         }
 
 
@@ -10014,11 +10015,13 @@ public class LambdaJ {
             if (negate) { jTrue = "false"; jFalse = "true"; isNull = " != null"; isNotNull = " == null"; maybeBang = "!"; }
             else        { jTrue = "true"; jFalse = "false"; isNull = " == null"; isNotNull = " != null"; maybeBang = "";}
 
+            if (form == null || form == sNil) { sb.append(jFalse); return; }
+            if (form == sT) { sb.append(jTrue); return; }
+
             if (!negate) sb.append("clrValues(");
 
-            if (form == null || form == sNil) sb.append(jFalse);
-            else if (form == sT) sb.append(jTrue);
-            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(EQ)) { sb.append(maybeBang);  emitEq(sb, false, cadr(form), caddr(form), env, topEnv, rsfx); }
+            // todo rausziehen: intp.speed >= 1, consp(form), car(form), statt "car(form) == intp.intern(..." -> ... == WellknownSymbol...
+            if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(EQ)) { sb.append(maybeBang);  emitEq(sb, false, cadr(form), caddr(form), env, topEnv, rsfx); }
             else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("/=") && emitBinOp(sb, false, negate ? "==" : "!=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
             else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("<")  && emitBinOp(sb, false, negate ? ">=" : "<",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
             else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("<=") && emitBinOp(sb, false, negate ? ">"  : "<=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
@@ -10230,33 +10233,6 @@ public class LambdaJ {
             return javaName;
         }
 
-        /** args = (formsym (sym...) form...) */
-        private void emitNamedLetBody(String func, WrappingWriter sb, ConsCell symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
-            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(func, car(symbolParamsAndForms));
-            final Object params = cadr(symbolParamsAndForms);
-            final ConsCell body = (ConsCell)cddr(symbolParamsAndForms);
-            env = extenv(func, symbol, rsfx, env);
-            final String javasym = javasym(symbol, env, symbolParamsAndForms);
-
-            functionHdr(sb, javasym, true, rsfx);
-            final ConsCell extenv = params(func, sb, params, env, rsfx, symbol.toString(), true);
-            emitForms(sb, body, extenv, topEnv, rsfx, false, false);
-            sb.append("        } }");
-        }
-
-        /** args = (formsym (sym...) form...) */
-        private void emitLocalFunc(WrappingWriter sb, ConsCell symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
-            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(Names.LABELS, car(symbolParamsAndForms));
-            final Object params = cadr(symbolParamsAndForms);
-            final ConsCell body = (ConsCell)cddr(symbolParamsAndForms);
-            final String javasym = javasym(symbol, env, symbolParamsAndForms);
-
-            functionHdr(sb, javasym, false, rsfx);
-            final ConsCell extenv = params(LABELS, sb, params, env, rsfx, symbol.toString(), true);
-            emitForms(sb, body, extenv, topEnv, rsfx, false, false);
-            sb.append("        } }");
-        }
-
         /** args = (((symbol (sym...) form...)...) form...) */
         private void emitLabels(WrappingWriter sb, final ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             if (args == null) errorMalformed(LABELS, "expected at least one argument");
@@ -10280,8 +10256,9 @@ public class LambdaJ {
 
             for (Object symbolParamsAndBody: (ConsCell) localFuncs) {
                 final ConsCell ccSymbolParamsAndBody = (ConsCell)symbolParamsAndBody;
-                sb.append("        private final MurmelFunction ").append(javasym(car(ccSymbolParamsAndBody), env, ccSymbolParamsAndBody)).append(" = ");
-                emitLocalFunc(sb, ccSymbolParamsAndBody, env, topEnv, rsfx+1);
+                final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(Names.LABELS, car(ccSymbolParamsAndBody));
+                sb.append("        private final MurmelFunction ").append(javasym(symbol, env, ccSymbolParamsAndBody)).append(" = ");
+                emitNamedLambda(LABELS, sb, symbol, cadr(ccSymbolParamsAndBody), (ConsCell)cddr(ccSymbolParamsAndBody), env, topEnv, rsfx+1, false);
                 sb.append(";\n");
             }
 
@@ -10293,31 +10270,31 @@ public class LambdaJ {
         /** let and named let */
         private void emitLet(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             final boolean named = car(args) instanceof LambdaJSymbol;
-            final Object loopLabel, bindings, body;
-            if (named) { loopLabel = car(args); args = (ConsCell)cdr(args); }
+            final LambdaJSymbol loopLabel;
+            final Object bindings;
+            final ConsCell body;
+            if (named) { loopLabel = (LambdaJSymbol)car(args); args = (ConsCell)cdr(args); }
             else       { loopLabel = null; }
-            bindings = car(args);  body = cdr(args);
+            bindings = car(args);  body = (ConsCell)cdr(args);
             assert named || bindings != null : "let w/o bindings should have been replaced in expandForm";
             if (bindings == null && body == null) { sb.append("(Object)null"); return; }
 
             sb.append(isLast ? "tailcall(" : "funcall(");
 
-            final String op = named ? "named let" : LET;
+            final String op = named ? "named " + LET : LET;
             final ConsCell ccBindings = (ConsCell)bindings;
             final ConsCell params = paramList(op, ccBindings, false);
-            if (named) {
-                // named let
-                emitNamedLetBody(op, sb, cons(loopLabel, cons(params, body)), env, topEnv, rsfx+1);
-            } else {
-                // regular let
-                emitLambda(sb, cons(params, body), env, topEnv, rsfx+1, false);
-            }
+
+            if (named) emitNamedLambda(op, sb, loopLabel, params, body, extenv(op, loopLabel, rsfx + 1, env), topEnv, rsfx + 1, true);
+            else emitLambda(sb, cons(params, body), env, topEnv, rsfx + 1, false);
+
             if (ccBindings != null) {
                 for (Object binding : ccBindings) {
                     sb.append("\n        , ");
                     emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
-            } else sb.append(", NOARGS");
+            }
+            else sb.append(", NOARGS");
             sb.append(')');
         }
 

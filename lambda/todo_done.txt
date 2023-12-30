@@ -2616,3 +2616,8 @@ weitere tests:
 operator: inverten, umstellen auf stmtExpression (nur true bei primitives die in eine Java stmt expression konvertiert werden)
 
 funcall hat finally und viele exits -> 306 bytes
+
+
+"        private final MurmelFunction " gibts 3x: in defunToJava, emitNamedLetBody und emitLocalFunc
+-> methode für den kopf rausziehen (parameter: name, rsfx und ggf emitThis)
+-> "        public final Object apply(Object..." gibts überhaupt 5x
