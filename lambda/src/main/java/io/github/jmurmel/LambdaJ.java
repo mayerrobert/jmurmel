@@ -10020,15 +10020,16 @@ public class LambdaJ {
 
             if (!negate) sb.append("clrValues(");
 
-            // todo rausziehen: intp.speed >= 1, consp(form), car(form), statt "car(form) == intp.intern(..." -> ... == WellknownSymbol...
-            if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(EQ)) { sb.append(maybeBang);  emitEq(sb, false, cadr(form), caddr(form), env, topEnv, rsfx); }
-            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("/=") && emitBinOp(sb, false, negate ? "==" : "!=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("<")  && emitBinOp(sb, false, negate ? ">=" : "<",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("<=") && emitBinOp(sb, false, negate ? ">"  : "<=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern("=")  && emitBinOp(sb, false, negate ? "!=" : "==", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(">=") && emitBinOp(sb, false, negate ? "<"  : ">=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(">")  && emitBinOp(sb, false, negate ? "<=" : ">",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (intp.speed >= 1 && consp(form) && car(form) == intp.intern(NULL)) {
+            final WellknownSymbol ws = intp.speed >= 1 && consp(form) && symbolp(car(form)) ? ((LambdaJSymbol)car(form)).wellknownSymbol : null;
+
+            if (ws == WellknownSymbol.sEq) { sb.append(maybeBang);  emitEq(sb, false, cadr(form), caddr(form), env, topEnv, rsfx); }
+            else if (ws == WellknownSymbol.sLt  && emitBinOp(sb, false, negate ? ">=" : "<",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sNe  && emitBinOp(sb, false, negate ? "==" : "!=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sLe  && emitBinOp(sb, false, negate ? ">"  : "<=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sNeq && emitBinOp(sb, false, negate ? "!=" : "==", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sGe  && emitBinOp(sb, false, negate ? "<"  : ">=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sGt  && emitBinOp(sb, false, negate ? "<=" : ">",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sNull) {
                 // optimize "(null ..."
                 final Object arg = cadr(form);
                 if (arg == null || arg == sNil) sb.append(jTrue);
