@@ -9420,11 +9420,13 @@ public class LambdaJ {
 
         /** @param form a list (defun symbol ((symbol...) forms...)) */
         private ConsCell defunToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
-            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(DEFUN, cadr(form));
-            final Object params = caddr(form);
-            final Object body = cdddr(form);
+            final ConsCell symbolParamsAndForms = (ConsCell)cdr(form);
+            final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(DEFUN, car(symbolParamsAndForms));
             notDefined(DEFUN, symbol, env);
             globalDecl.add(symbol);
+
+            final Object params = cadr(symbolParamsAndForms);
+            final ConsCell body = (ConsCell)cddr(symbolParamsAndForms);
 
             final String javasym = mangle(symbol.toString(), 0);
             final ConsCell localEnv = extenvIntern(symbol, javasym, env);
@@ -9435,22 +9437,23 @@ public class LambdaJ {
             sb.append("    private LambdaJSymbol defun_").append(javasym).append("() {\n");
             emitLoc(sb, form, 40);
             sb.append("        final MurmelFunction func = ");
-            functionHdr(sb, javasym, 0);
 
+            functionHdr(sb, javasym, true, 0);
             final ConsCell extenv = params(DEFUN, sb, params, localEnv, 0, symbol.toString(), true);
-            emitForms(sb, (ConsCell)body, extenv, localEnv, 0, false, false); // todo emitStmts? was ist der unterschied zw. emitForms und emitStmts?
-            sb.append("        } };\n"
-                    + "        ").append(javasym).append(" = new CompilerGlobal(func);\n"
+            emitForms(sb, body, extenv, localEnv, 0, false, false); // todo emitStmts? was ist der unterschied zw. emitForms und emitStmts?
+            sb.append("        } };\n");
+
+            sb.append("        ").append(javasym).append(" = new CompilerGlobal(func);\n"
                     + "        return intern(\"").append(symbol).append("\");\n"
                     + "    }\n\n");
 
             return extenvIntern(symbol, javasym + ".get()", env);
         }
 
-        private static void functionHdr(WrappingWriter sb, String javasym, int rsfx) {
-            sb.append("new MurmelFunction() {\n"
-                    + "        private final MurmelFunction ").append(javasym).append(" = this;\n"
-                    + "        public final Object apply(Object... args").append(rsfx).append(") {\n"
+        private static void functionHdr(WrappingWriter sb, String javasym, boolean self, int rsfx) {
+            sb.append("new MurmelFunction() {\n");
+            if (self) sb.append("        private final MurmelFunction ").append(javasym).append(" = this;\n");
+            sb.append("        public final Object apply(Object... args").append(rsfx).append(") {\n"
                     + "        return ").append(javasym).append("(args").append(rsfx).append(");\n        }\n" 
                     + "        private Object ").append(javasym).append("(Object[] args").append(rsfx).append(") {\n");
         }
@@ -10230,24 +10233,27 @@ public class LambdaJ {
         /** args = (formsym (sym...) form...) */
         private void emitNamedLetBody(String func, WrappingWriter sb, ConsCell symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(func, car(symbolParamsAndForms));
+            final Object params = cadr(symbolParamsAndForms);
+            final ConsCell body = (ConsCell)cddr(symbolParamsAndForms);
             env = extenv(func, symbol, rsfx, env);
-
             final String javasym = javasym(symbol, env, symbolParamsAndForms);
-            functionHdr(sb, javasym, rsfx);
-            env = params(func, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
-            emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false, false);
+
+            functionHdr(sb, javasym, true, rsfx);
+            final ConsCell extenv = params(func, sb, params, env, rsfx, symbol.toString(), true);
+            emitForms(sb, body, extenv, topEnv, rsfx, false, false);
             sb.append("        } }");
         }
 
         /** args = (formsym (sym...) form...) */
-        // todo unterschied zu emitNamedLetBody: hier gibts kein "... = this;"
         private void emitLocalFunc(WrappingWriter sb, ConsCell symbolParamsAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(Names.LABELS, car(symbolParamsAndForms));
+            final Object params = cadr(symbolParamsAndForms);
+            final ConsCell body = (ConsCell)cddr(symbolParamsAndForms);
+            final String javasym = javasym(symbol, env, symbolParamsAndForms);
 
-            sb.append("new MurmelFunction() {\n"
-                      + "        public final Object apply(Object... args").append(rsfx).append(") {\n");
-            env = params(LABELS, sb, cadr(symbolParamsAndForms), env, rsfx, symbol.toString(), true);
-            emitForms(sb, (ConsCell)cddr(symbolParamsAndForms), env, topEnv, rsfx, false, false);
+            functionHdr(sb, javasym, false, rsfx);
+            final ConsCell extenv = params(LABELS, sb, params, env, rsfx, symbol.toString(), true);
+            emitForms(sb, body, extenv, topEnv, rsfx, false, false);
             sb.append("        } }");
         }
 
