@@ -9468,7 +9468,7 @@ public class LambdaJ {
             if (forms == null || !(it = forms.iterator()).hasNext()) {
                 // e.g. the body of an empty lambda or function
                 emitClearValues(sb);
-                if (useYield ) sb.append("        yield null;\n");
+                if (useYield) sb.append("        yield null;\n");
                 else sb.append("        return null;\n");
                 return;
             }
@@ -9712,19 +9712,19 @@ public class LambdaJ {
         private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext) {
             if (cdr(ccBody) == null) {
                 emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
+                return;
             }
-            else {
-                rsfx++;
-                final String ignoredVar = "ignored" + rsfx;
-                final String lhs = "        " + ignoredVar + " = ";
-                sb.append("        {\n        Object ").append(ignoredVar).append(";\n");
-                do {
-                    emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, topLevel, true, true);
-                    ccBody = (ConsCell)cdr(ccBody);
-                } while (cdr(ccBody) != null);
-                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
-                sb.append("        }\n");
-            }
+
+            rsfx++;
+            final String ignoredVar = "ignored" + rsfx;
+            final String lhs = "        " + ignoredVar + " = ";
+            sb.append("        {\n        Object ").append(ignoredVar).append(";\n");
+            do {
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, topLevel, true, true);
+                ccBody = (ConsCell)cdr(ccBody);
+            } while (cdr(ccBody) != null);
+            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
+            sb.append("        }\n");
         }
 
         /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
@@ -10011,16 +10011,24 @@ public class LambdaJ {
         }
 
         private void emitTruthiness(WrappingWriter sb, boolean negate, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
-            final String jTrue, jFalse, isNull, isNotNull, maybeBang;
-            if (negate) { jTrue = "false"; jFalse = "true"; isNull = " != null"; isNotNull = " == null"; maybeBang = "!"; }
-            else        { jTrue = "true"; jFalse = "false"; isNull = " == null"; isNotNull = " != null"; maybeBang = "";}
+            final String jTrue, jFalse, isNotNull, maybeBang;
+            if (negate) { jTrue = "false"; jFalse = "true"; isNotNull = " == null"; maybeBang = "!"; }
+            else        { jTrue = "true"; jFalse = "false"; isNotNull = " != null"; maybeBang = "";}
 
             if (form == null || form == sNil) { sb.append(jFalse); return; }
-            if (form == sT) { sb.append(jTrue); return; }
-
-            if (!negate) sb.append("clrValues(");
+            if (form == sT)                   { sb.append(jTrue); return; }
+            if (symbolp(form))                { emitForm(sb, form, env, topEnv, rsfx, false); sb.append(isNotNull); return; }
+            if (atom(form))                   { sb.append(jTrue); return; } // must be an atom other than nil, t or a symbol -> true. Todo note wg. constant condition?
 
             final WellknownSymbol ws = intp.speed >= 1 && consp(form) && symbolp(car(form)) ? ((LambdaJSymbol)car(form)).wellknownSymbol : null;
+
+            if (ws == WellknownSymbol.sNull) {
+                // optimize "(null ..."
+                emitTruthiness(sb, !negate, cadr(form), env, topEnv, rsfx);
+                return;
+            }
+
+            sb.append("clrValues(");
 
             if (ws == WellknownSymbol.sEq) { sb.append(maybeBang);  emitEq(sb, false, cadr(form), caddr(form), env, topEnv, rsfx); }
             else if (ws == WellknownSymbol.sLt  && emitBinOp(sb, false, negate ? ">=" : "<",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
@@ -10029,21 +10037,10 @@ public class LambdaJ {
             else if (ws == WellknownSymbol.sNeq && emitBinOp(sb, false, negate ? "!=" : "==", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
             else if (ws == WellknownSymbol.sGe  && emitBinOp(sb, false, negate ? "<"  : ">=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
             else if (ws == WellknownSymbol.sGt  && emitBinOp(sb, false, negate ? "<=" : ">",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (ws == WellknownSymbol.sNull) {
-                // optimize "(null ..."
-                final Object arg = cadr(form);
-                if (arg == null || arg == sNil) sb.append(jTrue);
-                else if (arg == sT) sb.append(jFalse);
-                else if (symbolp(arg)) { sb.append('('); emitForm(sb, arg, env, topEnv, rsfx, false); sb.append(")").append(isNull); }
-                else if (atom(arg)) sb.append(jFalse);
-                else { emitTruthiness(sb, true, arg, env, topEnv, rsfx); }
-            }
-            else if (consp(form) || symbolp(form)) {
-                sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(")").append(isNotNull);
-            }
-            else sb.append(jTrue); // must be an atom other than nil or a symbol -> true
+            else if (consp(form)) { sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(")").append(isNotNull); }
+            else assert false: "form not implemented: " + printSEx(form);
 
-            if (!negate) sb.append(")");
+            sb.append(")");
         }
 
         /** write atoms that are not symbols (and "nil" is acceptable, too) */
@@ -10660,7 +10657,6 @@ public class LambdaJ {
                 return true;
             }
 
-            //if (symbolEq(op, "jmethod")) {
             if (prim == WellknownSymbol.sJmethod) {
                 assert !prim.stmtExpr;
                 if (emitJmethod(sb, args, null, null, -1, false, null)) return true;
