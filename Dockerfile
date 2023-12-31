@@ -28,11 +28,15 @@
 # The above command will make the current working directory available as "/work"
 # inside the container and cd to it before launching JMurmel.
 #
-# For graphics to work you will probably need to set the environment variable DISPLAY inside
+# For graphics to work with X11 you will probably need to set the environment variable DISPLAY inside
 # the container like so (replacing 12.34.56.78 by an appropriate IP-address, of course):
 #
 #    $ podman run -it --rm --env DISPLAY=12.34.56.78:0.0 jmurmel
 #
+# For graphics to work with Wayland (e.g. on Windows WSL2) you need to mount the X11 socket inside
+# the container and clear the DISPLAY environment variable like so:
+#
+#    $ podman run -it --rm --env DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix jmurmel
 #
 #
 # Optional: after the build command some docker images could be deleted

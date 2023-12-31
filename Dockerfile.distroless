@@ -29,6 +29,16 @@
 # The above command will make the current working directory available as "/work"
 # inside the container and cd to it before launching JMurmel.
 #
+# For graphics to work with X11 you will probably need to set the environment variable DISPLAY inside
+# the container like so (replacing 12.34.56.78 by an appropriate IP-address, of course):
+#
+#    $ podman run -it --rm --env DISPLAY=12.34.56.78:0.0 jmurmel
+#
+# For graphics to work with Wayland (e.g. on Windows WSL2) you need to mount the X11 socket inside
+# the container and clear the DISPLAY environment variable like so:
+#
+#    $ podman run -it --rm --env DISPLAY -v /tmp/.X11-unix:/tmp/.X11-unix jmurmel
+#
 #
 # Optional: after the build command some docker images could be deleted
 # unless you want to keep them around to rebuild again and/ or use them for other purposes:
@@ -66,7 +76,7 @@ FROM gcr.io/distroless/base-debian12
 ARG CHIPSET_ARCH=x86_64-linux-gnu
 
 COPY --from=builder /lib/${CHIPSET_ARCH}/libz.so.1 /lib/${CHIPSET_ARCH}/
-COPY --from=builder /jmurmel/jdkbuild /jmurmel/lambda/target/jmurmel.jar /jmurmel/samples.mlib/mlib.lisp /jmurmel
+COPY --from=builder /jmurmel/jdkbuild /jmurmel/lambda/target/jmurmel.jar /jmurmel/samples.mlib/mlib.lisp /jmurmel/
 
 WORKDIR /jmurmel
 
