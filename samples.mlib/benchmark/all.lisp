@@ -37,7 +37,7 @@
 (eval-when (:compile-toplevel :load-toplevel :execute)
   (load "00_tak_apo.lisp")
   (load "3.01_tak.lisp")
-  (load "3.02_stak.lisp")
+  #-clasp (load "3.02_stak.lisp")  ; clasp 2.3.0 segfaults
   (load "3.03_ctak.lisp")
   (load "3.04_takL.lisp")
   (load "3.08_destru.lisp")
@@ -63,7 +63,8 @@
 ;; so that each benchmark when run on the "reference system"
 ;; will give an adjusted weight of approx. 1.0.
 (define *ref* #+(or sbcl murmel) 15.0
-              #-(or sbcl murmel) 14.0)
+              #-(or sbcl murmel clasp) 14.0
+              #+clasp 13.0)
 
 
 (terpri)
