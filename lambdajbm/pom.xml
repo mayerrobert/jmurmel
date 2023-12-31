@@ -5,7 +5,7 @@
         <groupId>io.github.jmurmel</groupId>
         <artifactId>jmurmel-all</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>1.5-SNAPSHOT</version>
+        <version>1.4.5</version>
     </parent>
 
     <artifactId>jmurmelbm</artifactId>
@@ -35,7 +35,7 @@
         <dependency>
             <groupId>io.github.jmurmel</groupId>
             <artifactId>jmurmel</artifactId>
-            <version>1.5-SNAPSHOT</version>
+            <version>1.4.5</version>
             <scope>compile</scope>
         </dependency>
 
