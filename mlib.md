@@ -108,12 +108,13 @@ Since: 1.1
 Logical not.
 
 ### Macro: and
-    (and forms*) -> boolean
+    (and forms*) -> result
 
 Since: 1.1
 
 Short-circuiting logical and.
-Return `t` unless any of the `forms` evaluate to `nil`,
+Return `t` if no forms were given,
+otherwise return the values resulting from the evaluation of the last form unless any of the `forms` evaluate to `nil`,
 `nil` otherwise.
 
 ### Macro: or
@@ -311,7 +312,8 @@ Example usage:
         ; => (2 3)
     (member 'e '(a b c d))
         ; => NIL
-    (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3)) equal)
+    (member '(1 . 1) '((a . a) (b . b) (c . c) (1 . 1) (2 . 2) (3 . 3))
+            equal)
         ; => ((1 . 1) (2 . 2) (3 . 3))
     (member 'c '(a b c 1 2 3) eq)
         ; => (c 1 2 3)
@@ -403,8 +405,13 @@ Since: 1.4
 Since: 1.4
 
 ### Macro: do, do*
-    (do ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
-    (do* ({var | (var [init-form [step-form]])}*) (end-test-form result-form*) statement*) -> result
+    (do ({var | (var [init-form [step-form]])}*)
+        (end-test-form result-form*)
+        statement*) -> result
+    
+    (do* ({var | (var [init-form [step-form]])}*)
+         (end-test-form result-form*)
+         statement*) -> result
 
 Since: 1.1
 
@@ -442,7 +449,8 @@ Since: 1.3
 Just like `dolist`, but with vectors.
 
 ### Macro: doplist
-    (doplist (key-var value-var plist-form result-form*) statement*) -> result
+    (doplist (key-var value-var plist-form result-form*)
+      statement*) -> result
 
 Since: 1.2
 
@@ -1129,7 +1137,8 @@ Example usage:
 Since: 1.4
 
 ### Macro: with-accumulator
-    (with-accumulator accumulator-name accumulator start-value-form forms*) -> result
+    (with-accumulator accumulator-name accumulator start-value-form
+      forms*) -> result
 
 Since: 1.2
 

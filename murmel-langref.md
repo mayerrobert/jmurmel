@@ -989,9 +989,12 @@ or `nil` if no such cons was found. `nil`-elements in `alist` are ignored.
 
 Examples:
 
-    (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4))) ; ==> (a-key 3)
-    (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4)))) ; ==> 3
-    (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4))) ; ==> (nil 2)
+    (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
+      ; ==> (a-key 3)
+    (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
+      ; ==> 3
+    (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))
+      ; ==> (nil 2)
 
 
 ## Vectors, Sequences
@@ -1001,7 +1004,7 @@ Examples:
 
 Since: 1.3
 
-Only one-dimensional arrays of element-type t, 'bit or 'character are supported.
+Only one-dimensional arrays of element-type `t`, `'bit` or `'character` are supported.
 
 ### vector-length, vector-copy, vector-fill, vector-add, vector->list, list->vector
     (vector-length v) -> length
@@ -1039,12 +1042,12 @@ Since: 1.3
 
 Since: 1.4.1
 
-`string` coerces X into a mutable string.
-If X is a mutable string, X is returned.
-If X is an immutable string, a fresh mutable simple string is returned.
-If X is a symbol, its name is returned.
-If X is a character then a one element string containing that character is returned.
-If X cannot be coerced into a string, an error occurs.
+`string` coerces `X` into a mutable string.
+If `X` is a mutable string, `X` is returned.
+If `X` is an immutable string, a fresh mutable simple string is returned.
+If `X` is a symbol, its name is returned.
+If `X` is a character then a one element string containing that character is returned.
+If `X` cannot be coerced into a string, an error occurs.
 
 ### slength, sref, sset
     (slength str) -> length
@@ -1325,16 +1328,18 @@ Similar to CL's `error`.
 e.g. to re-raise a condition that is not handled.
 
     (try (error 'simple-error "an error occurred") 'err)
--> err
--> simple-error - an error occurred
+      ; -> err
+      ; -> simple-error - an error occurred
 
-    (writeln (try (multiple-value-bind (result condition) (try (error 'simple-error "an error occurred") 'err)
+    (writeln (try (multiple-value-bind (result condition)
+                                       (try (error 'simple-error "an error occurred") 'err)
                     (if (eq result 'err)
-                          (if (typep condition 'arithmetic-error)
-                                (writeln "an arithmetic error occurred")
+                        (if (typep condition 'arithmetic-error)
+                            (writeln "an arithmetic error occurred")
                             (progn (writeln "another error occurred, rethrowing")
                                    (error condition)))
-                      (writeln "no error")))
+                        (writeln "no error")))
+
                   'outer-err))  ; ==> outer-err
 
 
@@ -1536,18 +1541,18 @@ Set new current frame, returns previous current frame.
 
 ### More frame-functions
 
-open-frame ... make frame visible  
-close-frame ... hide frame  
-reset-frame ... reset pen to "down", turtle position and angle, color and bgcolor    
-clear-frame ... reset frame and discard frame contents  
-repaint-frame ... force full repaint  
-flush-frame ... paint operations won't take immediate effect, flush-frame makes them visible  
-pen-up ... subsequent line operations will only move the position  
-pen-down ... subsequent line operations will have visible effect  
-push-pos ... save current position and angle  
-pop-pos ... restore previous position and angle
+`open-frame` ... make frame visible  
+`close-frame` ... hide frame  
+`reset-frame` ... reset pen to "down", turtle position and angle, color and bgcolor    
+`clear-frame` ... reset frame and discard frame contents  
+`repaint-frame` ... force full repaint  
+`flush-frame` ... paint operations won't take immediate effect, flush-frame makes them visible  
+`pen-up` ... subsequent line operations will only move the position  
+`pen-down` ... subsequent line operations will have visible effect  
+`push-pos` ... save current position and angle  
+`pop-pos` ... restore previous position and angle
 
-The above functions all take one optional frame parameter. If omitted or nil
+The above functions all take one optional frame parameter. If omitted or `nil`
 then the current frame will be used.
 
 ### (color color optional-frame) -> frame
@@ -1675,18 +1680,20 @@ Parameters to `jmethod` must be strings.
 When invoking primitives created by `jmethod` the first argument must be
 a Java object of the primitive's method's class. This is not the case
 for static methods.
-Invoke static method:
+
+Invoke a static method:
 
     (define ctm (jmethod "java.lang.System" "currentTimeMillis"))  
-    (ctm)
+    (ctm) ; ==> 1704017140837 (actual result will vary)
 
-invoke method on an object
+Invoke an instance method on an object:
 
     (define make-hash (jmethod "java.util.HashMap" "new"))
-    (define put-hash (jmethod "java.util.Map" "put" "java.lang.Object" "java.lang.Object"))
+    (define put-hash (jmethod "java.util.Map" "put"
+                              "java.lang.Object" "java.lang.Object"))
     (define my-hash (make-hash))
     (put-hash my-hash "key-1" "value-1")
-    (write my-hash)
+    (write my-hash)  ; ==> #H(t "key-1" "value-1")
 
 
 ### (jproxy interfacename [javamethodname symbol-or-lambda]\*) -> Java-object
@@ -1708,13 +1715,13 @@ Murmel language:
 
 Compiler issues:
 
-- define/ defun/ defmacro only work as top level forms or within a `progn` form,
+- `define`/ `defun`/ `defmacro` only work as top level forms or within a `progn` form,
   other use as non-toplevel form will throw a "not-yet-implemented" compiler error.
-- define-ing an already define-d symbol is not supported
-- macroexpand-1 is limited to quoted forms
-- macro expansion is only done at compiletime, e.g. (defmacro m() 1) (eval '(m))
+- `define`-ing an already `define`-d symbol is not supported
+- `macroexpand-1` is limited to quoted forms
+- macro expansion is only done at compiletime, e.g. `(defmacro m() 1) (eval '(m))`
   won't work
-- reassigning predefined primitives with setq is not supported, e.g.
+- reassigning predefined primitives with `setq` is not supported, e.g.
   `(setq trunc (lambda (p) (1+ p)))` is an error (and wouldn't make much sense)
 
 
@@ -1724,5 +1731,3 @@ Murmel and JMurmel are Copyright (C) 2020-2023 Robert Mayer.
 
 This work is licensed under the terms of the MIT license.
 For a copy, see https://opensource.org/licenses/MIT.
-
-At the end of the input file JMurmel will print "bye." and exit.
