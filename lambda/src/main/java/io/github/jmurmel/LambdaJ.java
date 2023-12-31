@@ -281,7 +281,7 @@ public class LambdaJ {
             for (int i = 0; i < s.length(); i++) {
                 final char c;
                 if (isSExSyntax(c = s.charAt(i))) return true;
-                if (isWhiteSpace(c)) return true;
+                if (isWhitespace(c)) return true;
                 if ('\\' == c) return true;
                 if (!(c >= 32 && c <= 126 || Character.isAlphabetic(c))) return true;
             }
@@ -1216,7 +1216,11 @@ public class LambdaJ {
         //return isDigit(c) ? c - '0' : -1;
     }
 
-    static boolean isWhiteSpace(int x) { return x == ' ' || x == '\t' || x == '\n' || x == '\r'; }
+    static boolean isWhitespace(int x) {
+        return Character.isWhitespace(x);
+        //return Character.isSpace((char)x); // ignores non-ASCII whitspace characters
+    }
+
     static boolean isSExSyntax(int x) { return x == '(' || x == ')' /*|| x == '.'*/ || x == '\'' || x == '`' || x == ','; }
 
     /** is {@code s} an optional sign followed by one or more digits? */
@@ -1401,12 +1405,12 @@ public class LambdaJ {
         @Override public void setInput(@NotNull ReadSupplier input, Path filePath) { in = input; this.filePath = filePath; lineNo = 1; charNo = 0; }
 
         /// Scanner
-        private boolean isSpace(int x)  { return !escape && isWhiteSpace(x); }
+        private boolean isSpace(int x)  { return !escape && isWhitespace(x); }
         private boolean isDQuote(int x) { return !escape && x == '"'; }
         private boolean isBar(int x)    { return !escape && x == '|'; }
 
         @SuppressWarnings("BooleanMethodIsAlwaysInverted")
-        private boolean isSpaceOrSyntaxOrEof(int x) { return !escape && (isWhiteSpace(x) || isSExSyntax(x)) || x == EOF; }
+        private boolean isSpaceOrSyntaxOrEof(int x) { return !escape && (isWhitespace(x) || isSExSyntax(x)) || x == EOF; }
 
         private boolean prevWasCR;
         private int readchar() throws IOException {
@@ -10013,7 +10017,7 @@ public class LambdaJ {
         private void emitTruthiness(WrappingWriter sb, boolean negate, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             final String jTrue, jFalse, isNotNull, maybeBang;
             if (negate) { jTrue = "false"; jFalse = "true"; isNotNull = " == null"; maybeBang = "!"; }
-            else        { jTrue = "true"; jFalse = "false"; isNotNull = " != null"; maybeBang = "";}
+            else        { jTrue = "true"; jFalse = "false"; isNotNull = " != null"; maybeBang = ""; }
 
             if (form == null || form == sNil) { sb.append(jFalse); return; }
             if (form == sT)                   { sb.append(jTrue); return; }
