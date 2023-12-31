@@ -1,5 +1,6 @@
 
 Changes in JMurmel-1.4.5 relative to JMurmel-1.4.4
+released: 2023-12-31
 
  * changed (fixed?) the commandline parameter --eval: environment is no longer reset before REPL
    so that e.g.
