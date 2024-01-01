@@ -1465,6 +1465,8 @@ public class LambdaJ {
 
         private static final Object CONTINUE = new Object();
 
+        private Map<Integer, Object> labelledObjects;
+
         /** if we get here then we have already read '#' and look contains the character after #subchar */
         private Object readerMacro(int sub_char, int arg) throws IOException {
             switch (sub_char) {
@@ -1509,8 +1511,8 @@ public class LambdaJ {
             // #+... , #-... feature expressions
             case '+':
             case '-':
-                final boolean hasFeature = featurep(readObj(null));
-                final Object next = readObj(null);
+                final boolean hasFeature = featurep(readObjRec(null));
+                final Object next = readObjRec(null);
                 if (sub_char == '+') return hasFeature ? next : CONTINUE;
                 else return hasFeature ? CONTINUE : next;
 
@@ -1550,6 +1552,17 @@ public class LambdaJ {
                 final ConsCell testAndPairs = readList(lineNo, charNo);
                 if (backquote > 0) return ConsCell.cons(sBqHash, testAndPairs);
                 return hash(st, testAndPairs);
+
+            case '=':
+                final Object obj = readObjRec(null);
+                if (labelledObjects == null) labelledObjects = JavaUtil.newHashMap(10);
+                if (labelledObjects.putIfAbsent(arg, obj) != null) errorReaderError("label #%d= was already defined", arg);
+                return obj;
+
+            case '#':
+                final Object ref;
+                if (labelledObjects != null && (ref = labelledObjects.get(arg)) != null) return ref;
+                errorReaderError("reference to undefined label #%d#", arg);
 
             default:
                 look = getchar();
@@ -1735,6 +1748,7 @@ public class LambdaJ {
             return tokenToString(0, Math.min(index, SYMBOL_MAX));
         }
 
+        // todo sollte wsl parseFixnum() solangs keine bignums gibt, sein sonst wird was gelesen was eig. ungueltig ist?!
         private static Number parseLong(String s, int radix) {
             try {
                 return Long.valueOf(s, radix);
@@ -1772,7 +1786,12 @@ public class LambdaJ {
                 look = getchar();
                 init = true;
             }
-            skipWs();
+            try { return readObjRec(eof); }
+            finally { if (labelledObjects != null) labelledObjects.clear(); }
+        }
+
+        private Object readObjRec(Object eof) {
+            skipWs(); // das brauchts damit die zeilennummern stimmen. Dass readToken() mit skipWs() beginnt, nuetzt uns nix.
             final int startLine = lineNo, startChar = charNo;
             try {
                 readToken();
@@ -1806,15 +1825,16 @@ public class LambdaJ {
                 if (tok == Token.RP) errorReaderError("unexpected ')'");
                 if (tok == Token.LP) {
                     try {
-                        final Object list = readList(startLine, startChar);
+                        final ConsCell list = readList(startLine, startChar);
                         if (!tokEscape && tok == Token.DOT) {
+                            if (list == null) errorReaderError("nothing appears before . in list");
                             skipWs();
-                            final Object cdr = readList(lineNo, charNo);
+                            final ConsCell cdr = readList(lineNo, charNo);
                             if (cdr == null) throw new ParseError("illegal end of dotted list: nothing appears after . in list");
                             if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
-                            final Object cons = combine(startLine, startChar, list, car(cdr));
-                            if (traceParse) tracer.println("*** parse cons   " + printSEx(cons));
-                            return cons;
+                            nconc2(list, car(cdr));
+                            if (traceParse) tracer.println("*** parse list   " + printSEx(list));
+                            return list;
                         }
                         if (traceParse) tracer.println("*** parse list   " + printSEx(list));
                         return list;
@@ -1907,20 +1927,14 @@ public class LambdaJ {
             return pos ? new SExpConsCell(filePath, startLine, startChar, lineNo, charNo, null, null) : new ListConsCell(null, null);
         }
 
-        /** Append rest at the end of first. If first is a list it will be modified. */
-        private ConsCell combine(int startLine, int startChar, Object first, Object rest) {
-            if (consp(first)) return nconc2((ConsCell)first, rest);
-            else return cons(startLine, startChar, first, rest);
-        }
-
         /** Append rest at the end of first, modifying first in the process.
          *  Returns a dotted list unless rest is a proper list. This works like a two arg nconc. */
-        private static ConsCell nconc2(ConsCell first, Object rest) {
+        private static void nconc2(@NotNull ConsCell first, Object rest) {
             for (ConsCell last = first; ; last = (ConsCell) cdr(last)) {
                 if (cdr(last) == first) errorReaderError("%s: first argument is a circular list", "appendToList");
                 if (cdr(last) == null) {
                     last.rplacd(rest);
-                    return first;
+                    return;
                 }
             }
         }

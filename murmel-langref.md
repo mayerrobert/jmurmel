@@ -145,6 +145,13 @@ Shorthand for a proper list
 
     '(a b c)              ; ==> (a b c)
 
+Labelled subobjects
+
+    '(a #1=b #1# c)       ; ==> (a b b c)
+
+Note that a label can only be used after it's value was completely read,
+i.e. `'#1=(a b . #1#) is an error in Murmel (while valid in CL).
+
 
 ### Hashtables
 
