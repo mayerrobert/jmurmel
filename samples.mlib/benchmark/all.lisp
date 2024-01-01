@@ -29,12 +29,12 @@
 
 
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (require "bench" "bench.lisp"))
+  (require "bench" "bench"))
 
 (setq *cooldown-duration* 5)
 
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
+(eval-when (:load-toplevel :execute)
   (load "00_tak_apo.lisp")
   (load "3.01_tak.lisp")
   #-clasp (load "3.02_stak.lisp")  ; clasp 2.3.0 segfaults
@@ -43,7 +43,7 @@
   (load "3.08_destru.lisp")
   (load "3.10_deriv.lisp")
   (load "array1.lisp")
-   ;; dovector.lisp uses "dovector" or SBCL's sb-int:dovector, both of which are not Common Lisp.
+  ;; dovector.lisp uses "dovector" or SBCL's sb-int:dovector, both of which are not Common Lisp.
   #+(or sbcl murmel)
   (load "dovector.lisp")
   (load "q.lisp")

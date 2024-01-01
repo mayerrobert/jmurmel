@@ -2,10 +2,10 @@
 ;;; ARRAY1 -- One of the Kernighan and Van Wyk benchmarks.
 
 #+murmel (require "mlib")
-#+murmel (require "bench" "bench.lisp")
+#+murmel (require "bench" "bench")
 #-murmel
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (require "bench" "bench.lisp"))
+  (require "bench" "bench"))
 
 
 (defun create-x (n)

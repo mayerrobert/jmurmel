@@ -10,10 +10,10 @@
 
 
 #+murmel (require "mlib")
-#+murmel (require "bench" "bench.lisp")
+#+murmel (require "bench" "bench")
 #-murmel
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (require "bench" "bench.lisp"))
+  (require "bench" "bench"))
 
 
 ; Hofstadter Q sequence

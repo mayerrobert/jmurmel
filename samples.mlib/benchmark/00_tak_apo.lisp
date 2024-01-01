@@ -2,10 +2,10 @@
 ;;; p 24
 
 #+murmel (require "mlib")
-#+murmel (require "bench" "bench.lisp")
+#+murmel (require "bench" "bench")
 #-murmel
 (eval-when (:compile-toplevel :load-toplevel :execute)
-  (require "bench" "bench.lisp"))
+  (require "bench" "bench"))
 
 
 (defun  tak´  (x  y  z)
