@@ -35,19 +35,32 @@
 
 
 (eval-when (:load-toplevel :execute)
-  (load "00_tak_apo.lisp")
-  (load "3.01_tak.lisp")
-  #-clasp (load "3.02_stak.lisp")  ; clasp 2.3.0 segfaults
-  (load "3.03_ctak.lisp")
-  (load "3.04_takL.lisp")
-  (load "3.08_destru.lisp")
-  (load "3.10_deriv.lisp")
-  (load "array1.lisp")
+#+murmel (defmacro bload (fname) `(load fname))
+
+#-murmel
+(defmacro bload (fname)
+  "Load a file assuming it was compiled with compile-file."
+  `(load (make-pathname :name ,fname
+                        :type
+                        #+abcl "abcl"
+                        #+clasp "fasp"
+                        #+ecl "fas"
+                        #+sbcl "lisp")))
+
+ 
+  (bload "00_tak_apo")
+  (bload "3.01_tak")
+  #-clasp (bload "3.02_stak")  ; clasp 2.3.0 segfaults
+  (bload "3.03_ctak")
+  (bload "3.04_takL")
+  (bload "3.08_destru")
+  (bload "3.10_deriv")
+  (bload "array1")
   ;; dovector.lisp uses "dovector" or SBCL's sb-int:dovector, both of which are not Common Lisp.
   #+(or sbcl murmel)
-  (load "dovector.lisp")
-  (load "q.lisp")
-  (load "qfloat.lisp")
+  (bload "dovector")
+  (bload "q")
+  (bload "qfloat")
 )
 
 ;; reference sum of weighted avg.
