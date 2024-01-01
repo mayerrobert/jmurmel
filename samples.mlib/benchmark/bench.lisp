@@ -8,8 +8,18 @@
 
 #-murmel (defmacro define (n v) `(defparameter ,n ,v))
 
+#+murmel
+(defmacro compiletime-too forms
+  `(progn ,@forms))
+
+#-murmel
+(eval-when (:compile-toplevel :load-toplevel :execute)
+  (defmacro compiletime-too (&body forms)
+    `(eval-when (:compile-toplevel :load-toplevel :execute) ,@forms)))
+
+
 ;;; run benchmark for this many seconds
-(define *default-duration* 5)
+(compiletime-too (define *default-duration* 5))
 
 ;;; if > 0 then run the form this many seconds before the timed benchmark
 ;;; 0 for sbcl because sbcl doesn't need warmup
@@ -46,12 +56,14 @@
 
 (define *count-per-try* (count-per-try))
 
+(compiletime-too
 (defun do-unroll (expr times)
   (if (<= times 0) nil
     (cons expr (do-unroll expr (1- times)))))
 
 (defmacro unroll (expr)
   `(progn ,@(do-unroll expr (count-per-try))))
+)
 
 (defun do-run (f counter endtime tmp)
   (setq tmp (get-internal-real-time))
