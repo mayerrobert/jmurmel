@@ -145,7 +145,10 @@
 
 '(a b c)              ; ==> (a b c)
 
-; Labelled subobjects
+
+; = Labeled subobjects
+
+; Since: 1.5
 
 '(a #1=b #1# c)       ; ==> (a b b c)
 
@@ -154,6 +157,8 @@
 
 
 ; = Hashtables
+
+; Since: 1.3.1
 
 #H(eql k1 v1 k2 v2 k3 v3)
 
@@ -386,7 +391,6 @@ pi ; ==> 3.141592653589793
 ;                   parse-error                 SExpressionReader.ParseError extends LambdaJError
 ;
 ;
-;                                               ;;; extends java.lang.RuntimeException
 ;                   arithmetic-error            java.lang.ArithmeticException extends RuntimeException
 ;                       (overflow, underflow)
 ;       
@@ -394,20 +398,21 @@ pi ; ==> 3.141592653589793
 ;                       simple-type-error       SimpleTypeError extends ClassCastException
 ;                       invalid-index-error     InvalidIndexError extends IndexOutOfBoundsException
 ;       
-;                   file-error                  java.nio.file.InvalidPathException extends IllegalArgumentException extends RuntimeException
+;                   file-error                  java.nio.file.InvalidPathException
+;                                               extends IllegalArgumentException extends RuntimeException
 ;
 ;
-;                                               ;;; extends java.io.IOException
 ;                   stream-error                java.io.IOException
 ;                       end-of-file             java.io.EOFException extends IOException
 ;                       reader-error            ReaderError extends IOException
-;                                               NOTE: CL's reader-error has two superclasses: stream-error and parse-error
-;                                                     if c was a reader-error then both
-;                                                     (typep c 'stream-error) and (typep c 'parse-error) are true
+;                                               NOTE:
+;                                               CL's reader-error has two superclasses: stream-error and parse-error
+;                                               if c was a reader-error then both
+;                                               (typep c 'stream-error) and (typep c 'parse-error) are true
 
 ; The above is a subset of CLtL2's predefined data types,
-; see "CLtL2 2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html,
-; the condition hierarchy is a subset of CLtL2 predefined condition types,
+; see "CLtL2 2. Data Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node15.html
+; Murmel's condition hierarchy is a subset of CLtL2 predefined condition types,
 ; see "CLtL2 29.5. Predefined Condition Types" https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node346.html
 ; and "CLHS 9.1.1 Condition Types" http://clhs.lisp.se/Body/09_aa.htm
 

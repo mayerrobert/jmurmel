@@ -12,9 +12,8 @@
 (declaim (ftype (function (fixnum) fixnum) q))  ; ignored by JMurmel but helps sbcl
 (defun q (n)
   (if (<= n 2) 1
-    (+
-     (q (- n (q (- n 1))))
-     (q (- n (q (- n 2)))))))
+    (+ (q (- n (q (- n 1))))
+       (q (- n (q (- n 2)))))))
 
 (bench "q" (q 21) 0.465) ; ==> 12
 

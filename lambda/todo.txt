@@ -1,3 +1,10 @@
+emitForms sollte ggf. nur für toplevel forms verwendet werden (ggf. umbenamsen auf emitToplevelForms)
+-> überall sonst auf emitStmts umstellen
+   -> emitStmt könnte statt void ein allfälliges looplabel liefern, oder tupel looplabel/nargs, emitStmts merktsich das und übergibt das beim nächsten schleifendurchlauf wieder an emitStmt
+   -> auch in defunToJava das funktions symbol durchreichen für selbstrekursive tailcalls (ist wsl einfacher als loops!)
+      und labels, ggf. auch für die bindingforms falls eine lambdaform letbound ist
+
+
 compiler require könnte intelligenter sein:
 -> erst nur das file in den interpreter stecken und filename merken
 -> in einem zweiten durchgang jene defines/ defuns rausgenerieren die bisher undefined waren
