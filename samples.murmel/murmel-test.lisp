@@ -524,6 +524,26 @@ multiline comment
                              (unwind-protect (throw nil 1)
                                (throw nil 2)))  2)
 
+(deftest unwind-protect.6  (let (result)
+                             (catch 'test
+                               (unwind-protect (throw 'test "ignored")
+                                 (setq result 5)))
+                             result)
+
+                           5)
+
+(deftest unwind-protect.7  (let (result)
+                             (catch 'test
+                               (unwind-protect (throw 'test "ignored")
+                                 (labels ((len (l accum)
+                                            (if l (len (cdr l) (1+ accum))
+                                                accum)))
+                                   (let ((l (list (random 5) (random 5))))
+                                     (setq result (len l 0))))))
+                             result)
+
+                           2)
+
 
 ;;; try
 (defun fail #+murmel datum #-murmel (&rest datum) (apply #'error datum))

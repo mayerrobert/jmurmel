@@ -10190,9 +10190,7 @@ public class LambdaJ {
             sb.append(')');
         }
 
-        private void emitUnwindProtect(WrappingWriter sb, Object forms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
-            if (!listp(forms)) errorMalformed(UNWIND_PROTECT, "a list of forms", forms);
-            final ConsCell ccForms = (ConsCell)forms;
+        private void emitUnwindProtect(WrappingWriter sb, ConsCell ccForms, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             final Object protectedForm = car(ccForms);
             final ConsCell cleanupForms = listOrMalformed(UNWIND_PROTECT, cdr(ccForms));
             if (isLast) {
@@ -10205,19 +10203,19 @@ public class LambdaJ {
                         + "        (Object[])null)");
             }
             else {
-                sb.append("funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n        try { return ");
+                if (JavaUtil.jvmVersion() >= 14) sb.append("switch (0) {\n        default: {\n        try { yield ");
+                else sb.append("funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n        try { return ");
+
                 emitForm(sb, protectedForm, env, topEnv, rsfx, true);
                 sb.append("; }\n"
                         + "        finally {\n");
                 final String tmp = "tmp" + rsfx;
                 sb.append("        Object ").append(tmp).append(";\n");
-                for (Object cleanup: cleanupForms) {
-                    sb.append("        ").append(tmp).append(" = ");
-                    emitForm(sb, cleanup, env, topEnv, rsfx, false);
-                    sb.append(";\n");
-                }
-                sb.append("        } },\n"
-                        + "        (Object[])null)");
+                emitStmts(sb, cleanupForms, env, topEnv, rsfx, "        " + tmp + " = ", false, true);
+                sb.append("        }\n");
+
+                if (JavaUtil.jvmVersion() >= 14) sb.append("        } }");
+                else sb.append("        }, (Object[])null)");
             }
         }
 
