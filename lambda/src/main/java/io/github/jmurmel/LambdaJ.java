@@ -9294,7 +9294,7 @@ public class LambdaJ {
             /// second pass: emit toplevel forms that are not define or defun as well as the actual assignments for define/ defun
             intp.speed = prevSpeed;  intp.debug = prevDebug;
             passTwo = true;
-            emitForms(ret, bodyForms, globalEnv, globalEnv, 0, true, false);
+            emitToplevelForms(ret, bodyForms, globalEnv, globalEnv);
 
             ret.append("    }\n");
 
@@ -9479,38 +9479,35 @@ public class LambdaJ {
         }
 
 
-        /// emitForms - compile a list of Murmel forms to Java source
+        /// emitToplevelForms - compile a list of Murmel forms to Java source
         /** generate Java code for a list of forms. Each form but the last will be emitted as an assignment
          *  to the local variable "ignoredN" because some forms are emitted as ?: expressions which is not a valid statement by itself. */
-        private void emitForms(WrappingWriter sb, Iterable<Object> forms, ConsCell env, ConsCell topEnv, int rsfx, boolean topLevel, boolean useYield) {
-            final Iterator<Object> it;
-            if (forms == null || !(it = forms.iterator()).hasNext()) {
-                // e.g. the body of an empty lambda or function
+        private void emitToplevelForms(WrappingWriter sb, @NotNull Iterable<Object> forms, ConsCell env, ConsCell topEnv) {
+            final Iterator<Object> it = forms.iterator();
+            if (!it.hasNext()) {
                 emitClearValues(sb);
-                if (useYield) sb.append("        yield null;\n");
-                else sb.append("        return null;\n");
+                sb.append("        return null;\n");
                 return;
             }
 
             Object next = it.next();
             if (it.hasNext()) {
-                final String retVar = "ignored" + rsfx;
+                final String retVar = "ignored" + 0;
                 final String retLhs = "        " + retVar + " = ";
                 sb.append("        Object ").append(retVar).append(";\n");
                 do {
-                    assert it.hasNext();
-                    emitStmt(sb, next, env, topEnv, rsfx, retLhs, topLevel, true, true);
+                    emitStmt(sb, next, env, topEnv, 0, retLhs, true, true, true);
                     next = it.next();
                 } while (it.hasNext()); 
             }
-            emitStmt(sb, next, env, topEnv, rsfx, useYield ? "        yield " : "        return ", topLevel, false, true);
+            emitStmt(sb, next, env, topEnv, 0, "        return ", true, false, true);
         }
 
-        private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext) {
+        private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean toplevel, boolean hasNext) {
             rsfx++;
 
             if (cdr(ccBody) == null) {
-                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, toplevel, hasNext, true);
                 return;
             }
 
@@ -9518,14 +9515,14 @@ public class LambdaJ {
             final String lhs = "        " + ignoredVar + " = ";
             sb.append("        {\n        Object ").append(ignoredVar).append(";\n");
             do {
-                emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, topLevel, true, true);
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, toplevel, true, true);
                 ccBody = (ConsCell)cdr(ccBody);
             } while (cdr(ccBody) != null);
-            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
+            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, toplevel, hasNext, true);
             sb.append("        }\n");
         }
 
-        private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
+        private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean toplevel, boolean hasNext, boolean clearValues) {
             if (hasNext) {
                 if (atom(form)) {
                     if (form != null) noteDead(null, form); // don't note nil as that would generate a lot of notes for e.g. "(if a nil (dosomething))"
@@ -9544,7 +9541,7 @@ public class LambdaJ {
             if (atom(form)) {
                 if (clearValues) emitClearValues(sb);
                 sb.append(retLhs);
-                emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
+                emitForm(sb, form, env, topEnv, rsfx, !toplevel && !hasNext);
                 sb.append(";\n");
                 return;
             }
@@ -9597,18 +9594,18 @@ public class LambdaJ {
                     if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
                         // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
                         final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
-                        emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
+                        emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, toplevel, hasNext, false);
                         return;
                     }
 
                     sb.append("        if (");
                     emitTruthiness(sb, false, car(ccArguments), env, topEnv, rsfx);
                     sb.append(") {\n");
-                    emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
+                    emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retLhs, toplevel, hasNext, false);
                     sb.append("        }\n");
                     if (caddr(ccArguments) != null) {
                         sb.append("        else {\n");
-                        emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retLhs, topLevel, hasNext, false);
+                        emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retLhs, toplevel, hasNext, false);
                         sb.append("        }\n");
                     }
                     else if (!hasNext) {
@@ -9626,7 +9623,7 @@ public class LambdaJ {
                         else sb.append("else ");
                         final Object condExpr = car(clause), condForms = cdr(clause);
                         if (condExpr == sT) {
-                            sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
+                            sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, toplevel, hasNext);  sb.append("        }\n");
                             if (iterator.hasNext()) {
                                 final String msg = "forms following default 't' form will be ignored";
                                 note(ccForm, msg);
@@ -9634,7 +9631,7 @@ public class LambdaJ {
                             return;
                         } else {
                             sb.append("if (");  emitTruthiness(sb, false, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
-                            emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, topLevel, hasNext);  sb.append("        }\n");
+                            emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, toplevel, hasNext);  sb.append("        }\n");
                         }
                     }
                     if (!hasNext) sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
@@ -9668,7 +9665,7 @@ public class LambdaJ {
 
                 case sProgn: {
                     final ConsCell ccBody = listOrMalformed(PROGN, cdr(ccForm));
-                    emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, topLevel, hasNext);
+                    emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, toplevel, hasNext);
                     return;
                 }
 
@@ -9687,7 +9684,7 @@ public class LambdaJ {
                     final ConsCell ccBody = requireList(LET, cddr(ccForm));
                     ConsCell extEnv = env;
 
-                    final boolean asRunnable = hasNext && topLevel;
+                    final boolean asRunnable = hasNext && toplevel;
                     if (asRunnable) {
                         sb.append("        new Runnable() { public void run() {\n" 
                                 + "        Object tmp = null;\n");
@@ -9716,7 +9713,7 @@ public class LambdaJ {
                         letStarEnv = extEnv;
                     }
 
-                    emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, topLevel, hasNext);
+                    emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, toplevel, hasNext);
                     if (asRunnable) sb.append("        } }.run();\n");
                     else sb.append("        }\n");
                     return;
@@ -9740,7 +9737,7 @@ public class LambdaJ {
             if (hasNext && isStmtExpr) sb.append("        ");
             else                       sb.append(retLhs);
 
-            emitForm(sb, form, env, topEnv, rsfx, !topLevel && !hasNext);
+            emitForm(sb, form, env, topEnv, rsfx, !toplevel && !hasNext);
             sb.append(";\n");
         }
 
@@ -10151,7 +10148,7 @@ public class LambdaJ {
             if (cdr(ccForms) == null) emitForm(sb, car(ccForms), env, topEnv, rsfx, isLast);
             else if (JavaUtil.jvmVersion() >= 14) {
                 sb.append("switch (0) {\n        default: {\n");
-                emitForms(sb, ccForms, env, topEnv, rsfx, !isLast, true);
+                emitStmts(sb, ccForms, env, topEnv, rsfx, "        yield ", !isLast, false);
                 sb.append("        } }");
             }
             else {
@@ -10166,7 +10163,7 @@ public class LambdaJ {
             final ConsCell bodyForms = (ConsCell)cdr(tagAndForms);
             if (JavaUtil.jvmVersion() >= 14) {
                 sb.append("switch (0) {\n        default: {\n        try {\n");
-                emitForms(sb, bodyForms, env, topEnv, rsfx, true, true);
+                emitStmts(sb, bodyForms, env, topEnv, rsfx, "        yield ", true, false);
                 sb.append("        }\n        catch (Exception e) {\n        yield catchHelper(");
                 emitForm(sb, tag, env, topEnv, rsfx, false);
                 sb.append(", e);\n        } } }");
@@ -10447,7 +10444,7 @@ public class LambdaJ {
             else {
                 if (!globals.isEmpty()) sb.append("        try {\n");
 
-                // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
+                // set parameter "toplevel" to true to avoid TCO. TCO would effectively disable the finally clause
                 emitStmts(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, "        return ", bindings != null, false);
 
                 if (!globals.isEmpty()) {
