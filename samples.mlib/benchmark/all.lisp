@@ -35,7 +35,7 @@
 
 
 (eval-when (:load-toplevel :execute)
-#+murmel (defmacro bload (fname) `(load fname))
+#+murmel (defmacro bload (fname) `(load ,fname))
 
 #-murmel
 (defmacro bload (fname)
