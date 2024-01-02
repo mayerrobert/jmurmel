@@ -9046,6 +9046,9 @@ public class LambdaJ {
 
         public SymbolTable getSymbolTable() { return intp.getSymbolTable(); }
 
+        private static void note(ConsCell ccForm, String msg) { System.err.println("; Note - " + (ccForm == null ? "" : ccForm.lineInfo()) + msg); }
+        private static void noteDead(ConsCell ccForm, Object form) { note(ccForm, "removing dead code " + (form == null ? "" : printSEx(form, true))); }
+
 
         /// symbols and name mangling
         private LambdaJSymbol intern(String symname) {
@@ -9130,8 +9133,6 @@ public class LambdaJ {
             final ConsCell symentry = fastassq(sym, env);
             if (symentry == null) errorMalformedFmt(func, "undefined symbol %s", sym.toString());
         }
-
-
 
         private static void notAPrimitive(String func, Object symbol, String javaName) {
             if (javaName.startsWith("((CompilerPrimitive")) errorNotImplemented("%s: assigning primitives is not implemented: %s", func, symbol.toString());
@@ -9473,7 +9474,7 @@ public class LambdaJ {
                     + "        return ").append(javasym).append("(args").append(rsfx).append(");\n        }\n" 
                     + "        private Object ").append(javasym).append("(Object[] args").append(rsfx).append(") {\n");
             final ConsCell extenv = params(func, sb, params, env, rsfx, symbol.toString(), true);
-            emitForms(sb, body, extenv, topEnv, rsfx, false, false); // todo emitStmts? was ist der unterschied zw. emitForms und emitStmts?
+            emitStmts(sb, body, extenv, topEnv, rsfx, "        return ", false, false);
             sb.append("        } }");
         }
 
@@ -9503,6 +9504,25 @@ public class LambdaJ {
                 } while (it.hasNext()); 
             }
             emitStmt(sb, next, env, topEnv, rsfx, useYield ? "        yield " : "        return ", topLevel, false, true);
+        }
+
+        private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext) {
+            rsfx++;
+
+            if (cdr(ccBody) == null) {
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
+                return;
+            }
+
+            final String ignoredVar = "ignored" + rsfx;
+            final String lhs = "        " + ignoredVar + " = ";
+            sb.append("        {\n        Object ").append(ignoredVar).append(";\n");
+            do {
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, topLevel, true, true);
+                ccBody = (ConsCell)cdr(ccBody);
+            } while (cdr(ccBody) != null);
+            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
+            sb.append("        }\n");
         }
 
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext, boolean clearValues) {
@@ -9724,28 +9744,7 @@ public class LambdaJ {
             sb.append(";\n");
         }
 
-        private static void noteDead(ConsCell ccForm, Object form) { note(ccForm, "removing dead code " + (form == null ? "" : printSEx(form, true))); }
-        private static void note(ConsCell ccForm, String msg) { System.err.println("; Note - " + (ccForm == null ? "" : ccForm.lineInfo()) + msg); }
-
-        private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean topLevel, boolean hasNext) {
-            if (cdr(ccBody) == null) {
-                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
-                return;
-            }
-
-            rsfx++;
-            final String ignoredVar = "ignored" + rsfx;
-            final String lhs = "        " + ignoredVar + " = ";
-            sb.append("        {\n        Object ").append(ignoredVar).append(";\n");
-            do {
-                emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, topLevel, true, true);
-                ccBody = (ConsCell)cdr(ccBody);
-            } while (cdr(ccBody) != null);
-            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, topLevel, hasNext, true);
-            sb.append("        }\n");
-        }
-
-        /// formToJava - compile a Murmel form to Java source. Note how this is somehow similar to eval:
+        /// emitForm - compile a Murmel form to Java source. Note how this is somehow similar to eval:
         private void emitForm(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             final LambdaJ intp = this.intp;
             rsfx++;
@@ -10139,7 +10138,7 @@ public class LambdaJ {
             final Object params = car(paramsAndForms);
             final String expr = "(lambda " + printSEx(params) + " ...)";
             env = params(LAMBDA, sb, params, env, rsfx, expr, argCheck);
-            emitForms(sb, (ConsCell)cdr(paramsAndForms), env, topEnv, rsfx, false, false);
+            emitStmts(sb, (ConsCell)cdr(paramsAndForms), env, topEnv, rsfx, "        return ", false, false);
             sb.append("        })");
         }
 
@@ -10157,7 +10156,7 @@ public class LambdaJ {
             }
             else {
                 sb.append(isLast ? "tailcall(" : "funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
-                emitForms(sb, ccForms, env, topEnv, rsfx, false, false);
+                emitStmts(sb, ccForms, env, topEnv, rsfx, "        return ", false, false);
                 sb.append("        }, (Object[])null)");
             }
         }
@@ -10204,7 +10203,7 @@ public class LambdaJ {
                 emitForm(sb, protectedForm, env, topEnv, rsfx, false);
                 sb.append("; },\n"
                         + "        (MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
-                emitForms(sb, cleanupForms, env, topEnv, rsfx, false, false);
+                emitStmts(sb, cleanupForms, env, topEnv, rsfx, "        return ", false, false);
                 sb.append("        },\n"
                         + "        (Object[])null)");
             }
@@ -10279,7 +10278,7 @@ public class LambdaJ {
             }
 
             sb.append("        public final Object apply(Object... ignored) {\n");
-            emitForms(sb, (ConsCell)cdr(args), env, topEnv, rsfx, false, false); // todo isLast statt false? oder .apply() statt tailcall/funcall?
+            emitStmts(sb, (ConsCell)cdr(args), env, topEnv, rsfx, "        return ", false, false);
             sb.append("        } }, NOARGS)");
         }
 
@@ -10363,7 +10362,7 @@ public class LambdaJ {
                 sb.append("        }\n");
                 sb.append("        else argCheck(loc, ").append(argCount).append(", args").append(rsfx).append(");\n");
             }
-            emitForms(sb, (ConsCell)body, env, topEnv, rsfx, isLast, false);
+            emitStmts(sb, (ConsCell)body, env, topEnv, rsfx, "        return ", false, false);
             sb.append("        } }, unassigned(").append(argCount).append("))");
         }
 
@@ -10434,7 +10433,7 @@ public class LambdaJ {
             }
 
             if (isLast) {
-                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, false, false);
+                emitStmts(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, "        return ", false, false);
                 sb.append("        })\n");
                 if (globals.isEmpty()) {
                     sb.append("        , null");
@@ -10449,7 +10448,7 @@ public class LambdaJ {
                 if (!globals.isEmpty()) sb.append("        try {\n");
 
                 // set parameter "topLevel" to true to avoid TCO. TCO would effectively disable the finally clause
-                emitForms(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, bindings != null, false);
+                emitStmts(sb, (ConsCell)cdr(bindingsAndForms), _env, topEnv, rsfx, "        return ", bindings != null, false);
 
                 if (!globals.isEmpty()) {
                     sb.append("        }\n        finally {\n");
