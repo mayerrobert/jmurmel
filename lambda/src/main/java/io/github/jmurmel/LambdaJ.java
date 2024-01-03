@@ -9593,12 +9593,12 @@ public class LambdaJ {
                 case sQuote: break;
 
                 case sIf: {
-                    if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
+                    /*if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
                         // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
                         final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
                         emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, toplevel, hasNext, false);
                         return;
-                    }
+                    }*/
 
                     sb.append("        if (");
                     emitTruthiness(sb, false, car(ccArguments), env, topEnv, rsfx);
@@ -9778,12 +9778,12 @@ public class LambdaJ {
 
                     ///     - if
                     case sIf: {
-                        if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
+                        /*if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
                             // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
                             final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
                             emitForm(sb, transformed, env, topEnv, rsfx, isLast);
                             return;
-                        }
+                        }*/
                         sb.append('(');
                         emitTruthiness(sb, false, car(ccArguments), env, topEnv, rsfx);
                         sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
