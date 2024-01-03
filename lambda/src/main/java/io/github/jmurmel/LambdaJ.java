@@ -9033,6 +9033,8 @@ public class LambdaJ {
     /// class MurmelJavaCompiler - compile Murmel to Java or to a in-memory Class-object and optionally to a .jar file
     ///
     public static class MurmelJavaCompiler {
+        private static final boolean USE_SWITCH_EXPR = JavaUtil.jvmVersion() >= 14;
+
         private final JavaCompilerHelper javaCompiler;
         final @NotNull LambdaJ intp;
 
@@ -10146,7 +10148,7 @@ public class LambdaJ {
             if (!listp(forms)) errorMalformed(PROGN, "a list of forms", forms);
             final ConsCell ccForms = (ConsCell)forms;
             if (cdr(ccForms) == null) emitForm(sb, car(ccForms), env, topEnv, rsfx, isLast);
-            else if (JavaUtil.jvmVersion() >= 14) {
+            else if (USE_SWITCH_EXPR) {
                 sb.append("switch (0) {\n        default: {\n");
                 emitStmts(sb, ccForms, env, topEnv, rsfx, "        yield ", !isLast, false);
                 sb.append("        } }");
@@ -10161,7 +10163,7 @@ public class LambdaJ {
         private void emitCatch(WrappingWriter sb, ConsCell tagAndForms, ConsCell env, ConsCell topEnv, int rsfx) {
             final Object tag = car(tagAndForms);
             final ConsCell bodyForms = (ConsCell)cdr(tagAndForms);
-            if (JavaUtil.jvmVersion() >= 14) {
+            if (USE_SWITCH_EXPR) {
                 sb.append("switch (0) {\n        default: {\n        try {\n");
                 emitStmts(sb, bodyForms, env, topEnv, rsfx, "        yield ", true, false);
                 sb.append("        }\n        catch (Exception e) {\n        yield catchHelper(");
@@ -10203,7 +10205,7 @@ public class LambdaJ {
                         + "        (Object[])null)");
             }
             else {
-                if (JavaUtil.jvmVersion() >= 14) sb.append("switch (0) {\n        default: {\n        try { yield ");
+                if (USE_SWITCH_EXPR) sb.append("switch (0) {\n        default: {\n        try { yield ");
                 else sb.append("funcall(").append("(MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n        try { return ");
 
                 emitForm(sb, protectedForm, env, topEnv, rsfx, true);
@@ -10214,7 +10216,7 @@ public class LambdaJ {
                 emitStmts(sb, cleanupForms, env, topEnv, rsfx, "        " + tmp + " = ", false, true);
                 sb.append("        }\n");
 
-                if (JavaUtil.jvmVersion() >= 14) sb.append("        } }");
+                if (USE_SWITCH_EXPR) sb.append("        } }");
                 else sb.append("        }, (Object[])null)");
             }
         }
@@ -10318,17 +10320,21 @@ public class LambdaJ {
             bindings = car(args);  body = cdr(args);
             if (bindings == null && body == null) { sb.append("(Object)null"); return; }
 
+            final String sfName = (named ? "named " : "") + (letrec ? LETREC : LETSTAR);
+
             sb.append(isLast ? "tailcall(" : "funcall(");
-            sb.append("new MurmelFunction() {\n");
 
-            final String op = (named ? "named " : "") + (letrec ? LETREC : LETSTAR);
-
-            if (loopLabel != null) {
-                env = extenv(op, loopLabel, rsfx, env);
+            if (named) {
+                env = extenv(sfName, loopLabel, rsfx, env);
+                sb.append("new MurmelFunction() {\n");
                 sb.append("        private final Object ").append(javasym(loopLabel, env, null)).append(" = this;\n");
+                sb.append("        public final Object apply(Object... args").append(rsfx).append(") {\n");
             }
-            sb.append("        public final Object apply(Object... args").append(rsfx).append(") {\n");
-            if (!listp(bindings)) errorMalformed(op, "a list of bindings", bindings);
+            else {
+                sb.append("(MurmelFunction)(args").append(rsfx).append(") -> { {\n");
+            }
+
+            if (!listp(bindings)) errorMalformed(sfName, "a list of bindings", bindings);
             final ConsCell ccBindings = (ConsCell)bindings;
             final int argCount = listLength(ccBindings);
             if (argCount != 0) {
@@ -10337,7 +10343,7 @@ public class LambdaJ {
                 // letrec: ALL let-bindings are in the environment during binding of the initial values todo value should be undefined
                 int current = 0;
                 if (letrec) for (Object binding: ccBindings) {
-                    final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(op, car(binding));
+                    final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(sfName, car(binding));
                     final String symName = "args" + rsfx + '[' + current++ + ']';
                     env = extenvIntern(sym, symName, env);
                 }
@@ -10345,7 +10351,7 @@ public class LambdaJ {
                 // initial assignments. let*: after the assignment add the let-symbol to the environment so that subsequent bindings will see it
                 current = 0;
                 for (Object binding: ccBindings) {
-                    final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(op, car(binding));
+                    final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(sfName, car(binding));
                     final Object form = cadr(binding);
                     final String symName = "args" + rsfx + '[' + current++ + ']';
                     sb.append("        { ").append(symName).append(" = ");
