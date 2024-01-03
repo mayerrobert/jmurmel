@@ -10038,27 +10038,19 @@ public class LambdaJ {
 
             final ConsCell ccForm = (ConsCell)form;
             final ConsCell ccArgs = (ConsCell)cdr(ccForm);
-            final Object lhs = car(ccArgs), rhs = cadr(ccArgs);
             final WellknownSymbol ws = intp.speed >= 1 && symbolp(car(ccForm)) ? ((LambdaJSymbol)car(ccForm)).wellknownSymbol : null;
 
             if (ws == WellknownSymbol.sNull) {
                 // optimize "(null ..."
-                emitTruthiness(sb, !negate, lhs, env, topEnv, rsfx);
+                emitTruthiness(sb, !negate, car(ccArgs), env, topEnv, rsfx);
                 return;
             }
 
-            boolean clr = true;
-            if (ws == WellknownSymbol.sCar || ws == WellknownSymbol.sCdr || ws == WellknownSymbol.sAtom || ws == WellknownSymbol.sConsp || ws == WellknownSymbol.sEql) clr = false; // todo this should be all non-multiple-value primitives that are not opencoded
-            else if (cdr(ccArgs) != null && cddr(ccArgs) == null && (atom(lhs) || symbolEq(car(lhs), "quote")) && (atom(rhs) || symbolEq(car(rhs), "quote"))) {
-                // exactly two args that are both atoms or quoted forms
-                if (ws == WellknownSymbol.sEq || ws == WellknownSymbol.sLt || ws == WellknownSymbol.sNe || ws == WellknownSymbol.sLe || ws == WellknownSymbol.sNeq || ws == WellknownSymbol.sGe || ws == WellknownSymbol.sGt) {
-                    clr = false;
-                }
-            }
+            final boolean clr = !singleValueForm(form);
 
             if (clr) sb.append("clrValues(");
 
-            if (ws == WellknownSymbol.sEq) { sb.append(maybeBang);  emitEq(sb, false, lhs, rhs, env, topEnv, rsfx); }
+            if (ws == WellknownSymbol.sEq) { sb.append(maybeBang);  emitEq(sb, false, car(ccArgs), cadr(ccArgs), env, topEnv, rsfx); }
             else if (ws == WellknownSymbol.sLt  && emitBinOp(sb, false, negate ? ">=" : "<",  ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
             else if (ws == WellknownSymbol.sNe  && emitBinOp(sb, false, negate ? "==" : "!=", ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
             else if (ws == WellknownSymbol.sLe  && emitBinOp(sb, false, negate ? ">"  : "<=", ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
@@ -10068,6 +10060,28 @@ public class LambdaJ {
             else { sb.append('('); emitForm(sb, ccForm, env, topEnv, rsfx, false); sb.append(")").append(isNotNull); }
 
             if (clr) sb.append(")");
+        }
+
+        /** return true if form won't set multiple values, false if form may set multiple values */
+        private boolean singleValueForm(Object form) {
+            if (atom(form)) return true;
+            final ConsCell ccForm = (ConsCell)form;
+            if (symbolEq(car(ccForm), "quote")) return true;
+            final ConsCell ccArgs = (ConsCell)cdr(ccForm);
+
+            final Object lhs = car(ccArgs), rhs = cadr(ccArgs);
+            final WellknownSymbol ws = intp.speed >= 1 && symbolp(car(ccForm)) ? ((LambdaJSymbol)car(ccForm)).wellknownSymbol : null;
+
+            if (ws == WellknownSymbol.sCar || ws == WellknownSymbol.sCdr || ws == WellknownSymbol.sAtom || ws == WellknownSymbol.sConsp || ws == WellknownSymbol.sEql)
+                return true; // todo this should be all non-multiple-value primitives that are not opencoded
+            if (cdr(ccArgs) != null && cddr(ccArgs) == null && singleValueForm(lhs) && singleValueForm(rhs)) {
+                // exactly two args that are both atoms or quoted forms
+                if (ws == WellknownSymbol.sEq || ws == WellknownSymbol.sLt || ws == WellknownSymbol.sNe || ws == WellknownSymbol.sLe || ws == WellknownSymbol.sNeq || ws == WellknownSymbol.sGe || ws == WellknownSymbol.sGt) {
+                    return true;
+                }
+            }
+            if (ws == WellknownSymbol.sIf && singleValueForm(rhs) && singleValueForm(caddr(ccArgs))) return true;
+            return false;
         }
 
         /** write atoms that are not symbols (and "nil" is acceptable, too) */
