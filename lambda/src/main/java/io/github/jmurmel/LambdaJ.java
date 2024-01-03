@@ -10028,35 +10028,46 @@ public class LambdaJ {
 
         private void emitTruthiness(WrappingWriter sb, boolean negate, Object form, ConsCell env, ConsCell topEnv, int rsfx) {
             final String jTrue, jFalse, isNotNull, maybeBang;
-            if (negate) { jTrue = "false"; jFalse = "true"; isNotNull = " == null"; maybeBang = "!"; }
-            else        { jTrue = "true"; jFalse = "false"; isNotNull = " != null"; maybeBang = ""; }
+            if (negate) { jTrue = "false";  jFalse = "true";   isNotNull = " == null";  maybeBang = "!"; }
+            else        { jTrue = "true";   jFalse = "false";  isNotNull = " != null";  maybeBang = ""; }
 
             if (form == null || form == sNil) { sb.append(jFalse); return; }
             if (form == sT)                   { sb.append(jTrue); return; }
             if (symbolp(form))                { emitForm(sb, form, env, topEnv, rsfx, false); sb.append(isNotNull); return; }
             if (atom(form))                   { sb.append(jTrue); return; } // must be an atom other than nil, t or a symbol -> true. Todo note wg. constant condition?
 
-            final WellknownSymbol ws = intp.speed >= 1 && consp(form) && symbolp(car(form)) ? ((LambdaJSymbol)car(form)).wellknownSymbol : null;
+            final ConsCell ccForm = (ConsCell)form;
+            final ConsCell ccArgs = (ConsCell)cdr(ccForm);
+            final Object lhs = car(ccArgs), rhs = cadr(ccArgs);
+            final WellknownSymbol ws = intp.speed >= 1 && symbolp(car(ccForm)) ? ((LambdaJSymbol)car(ccForm)).wellknownSymbol : null;
 
             if (ws == WellknownSymbol.sNull) {
                 // optimize "(null ..."
-                emitTruthiness(sb, !negate, cadr(form), env, topEnv, rsfx);
+                emitTruthiness(sb, !negate, lhs, env, topEnv, rsfx);
                 return;
             }
 
-            sb.append("clrValues(");
+            boolean clr = true;
+            if (ws == WellknownSymbol.sCar || ws == WellknownSymbol.sCdr || ws == WellknownSymbol.sAtom || ws == WellknownSymbol.sConsp || ws == WellknownSymbol.sEql) clr = false; // todo this should be all non-multiple-value primitives that are not opencoded
+            else if (cdr(ccArgs) != null && cddr(ccArgs) == null && (atom(lhs) || symbolEq(car(lhs), "quote")) && (atom(rhs) || symbolEq(car(rhs), "quote"))) {
+                // exactly two args that are both atoms or quoted forms
+                if (ws == WellknownSymbol.sEq || ws == WellknownSymbol.sLt || ws == WellknownSymbol.sNe || ws == WellknownSymbol.sLe || ws == WellknownSymbol.sNeq || ws == WellknownSymbol.sGe || ws == WellknownSymbol.sGt) {
+                    clr = false;
+                }
+            }
 
-            if (ws == WellknownSymbol.sEq) { sb.append(maybeBang);  emitEq(sb, false, cadr(form), caddr(form), env, topEnv, rsfx); }
-            else if (ws == WellknownSymbol.sLt  && emitBinOp(sb, false, negate ? ">=" : "<",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (ws == WellknownSymbol.sNe  && emitBinOp(sb, false, negate ? "==" : "!=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (ws == WellknownSymbol.sLe  && emitBinOp(sb, false, negate ? ">"  : "<=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (ws == WellknownSymbol.sNeq && emitBinOp(sb, false, negate ? "!=" : "==", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (ws == WellknownSymbol.sGe  && emitBinOp(sb, false, negate ? "<"  : ">=", (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (ws == WellknownSymbol.sGt  && emitBinOp(sb, false, negate ? "<=" : ">",  (ConsCell)cdr(form), env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
-            else if (consp(form)) { sb.append('('); emitForm(sb, form, env, topEnv, rsfx, false); sb.append(")").append(isNotNull); }
-            else assert false: "form not implemented: " + printSEx(form);
+            if (clr) sb.append("clrValues(");
 
-            sb.append(")");
+            if (ws == WellknownSymbol.sEq) { sb.append(maybeBang);  emitEq(sb, false, lhs, rhs, env, topEnv, rsfx); }
+            else if (ws == WellknownSymbol.sLt  && emitBinOp(sb, false, negate ? ">=" : "<",  ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sNe  && emitBinOp(sb, false, negate ? "==" : "!=", ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sLe  && emitBinOp(sb, false, negate ? ">"  : "<=", ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sNeq && emitBinOp(sb, false, negate ? "!=" : "==", ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sGe  && emitBinOp(sb, false, negate ? "<"  : ">=", ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sGt  && emitBinOp(sb, false, negate ? "<=" : ">",  ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else { sb.append('('); emitForm(sb, ccForm, env, topEnv, rsfx, false); sb.append(")").append(isNotNull); }
+
+            if (clr) sb.append(")");
         }
 
         /** write atoms that are not symbols (and "nil" is acceptable, too) */
