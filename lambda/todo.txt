@@ -1,3 +1,25 @@
+values sollte auch ein place für setf sein: (setf (values <place1> .... <placen>) <value-producing-form>), siehe http://clhs.lisp.se/Issues/iss311_w.htm
+-> (setf (values g1 g2 g3) (values 1 2 3))
+
+* (macroexpand '(setf (values g1 g2) (values 1 2)))
+(MULTIPLE-VALUE-CALL
+    #'(LAMBDA (&OPTIONAL #:NEW1 #:NEW1 &REST #:IGNORE)
+        (DECLARE (IGNORE #:IGNORE))
+        (VALUES (SETQ G1 #:NEW1) (SETQ G2 #:NEW1)))
+  (VALUES 1 2))
+
+
+setf-functions: ggf. würds reichen in expandForm (setf func) in define/ defun/ im car einer form auf das symbol |(setf func)| umzubiegen?
+-> zumindest noch apply, multiple-value-call
+
+
+butlast-iterator wär einfach
+
+
+vielleicht doch (simple) loop + return + psetq
+-> let loop kann man durch let+loop+psetq ersetzen, let* loop durch let*+loop+setq
+-> problem wenn das return in einem Java lambda generiert werden soll. kann das sein?
+
 emitForms sollte ggf. nur für toplevel forms verwendet werden (ggf. umbenamsen auf emitToplevelForms)
 -> überall sonst auf emitStmts umstellen
    -> emitStmt könnte statt void ein allfälliges looplabel liefern, oder tupel looplabel/nargs, emitStmts merktsich das und übergibt das beim nächsten schleifendurchlauf wieder an emitStmt
