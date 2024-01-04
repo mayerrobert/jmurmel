@@ -30,6 +30,8 @@
   (when o (funcall (if escape #'print #'princ) o))
   (terpri)
   o)
+#-murmel (defmacro sref (str idx) `(aref ,str ,idx))
+
 
 (define *success-count* 0)
 (define *error-count* 0)
@@ -499,6 +501,7 @@
 
   ; not sure if the function returning an atom is valid
   ; but SBCL and ABCL accept this, too
+  ; SBCL 2.4.0 gives an error
   (mapcan (lambda (x) x) '(1 2 3 4 5))
    => 5
 )
@@ -599,6 +602,19 @@
   (setf (nth 2 (place x)) 222) => 222
   x => (0 1 222 3)
   ctr => 1
+
+
+  (let ((v (vector 0 1 2)))
+    (list (setf (svref v 1) 11) (svref v 1)))
+  => (11 11)
+
+  (let ((bv (make-array 3 #-murmel :element-type 'bit)))
+    (list (setf (bit bv 1) 1) (bit bv 1)))
+  => (1 1)
+
+  (let ((str (#+murmel string #-murmel copy-seq "abc")))
+    (list (setf (sref str 1) #\X) (sref str 1)))
+  => (#\X #\X)
 )
 
 
@@ -623,6 +639,15 @@
   (setq ctr 0) => 0
   (incf (car (place x)) 2.0) => 3.0
   ctr => 1
+
+
+  (let ((v (vector 0 1 2)))
+    (list (incf (svref v 1)) (svref v 1)))
+  => (2 2)
+
+  (let ((bv (make-array 3 #-murmel :element-type 'bit)))
+    (list (incf (bit bv 1)) (bit bv 1)))
+  => (1 1)
 )
 
 

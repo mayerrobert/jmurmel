@@ -1141,6 +1141,13 @@
 ;;;
 ;;; Since: 1.1
 (defun get-setf-expansion (place)
+  (labels ((setf-helper (args tmp1 tmp2 store-var reffer setter)
+             `((,tmp1 ,tmp2)
+               (,(car args) ,(cadr args))
+               (,store-var)
+               (,setter ,tmp1 ,tmp2 ,store-var)
+               (,reffer ,tmp1 ,tmp2))))
+
   (let ((read-var (gensym "read-var"))
         (tmp1 (gensym "tmp1"))
         (tmp2 (gensym "tmp2"))
@@ -1166,53 +1173,26 @@
 
               ((eq 'nth op)    `((,read-var) ((nthcdr ,@args)) #0#             #1#                                #11#               ))
 
-              ((eq 'svref op)
-               `((,tmp1 ,tmp2 ,read-var)
-                 (,(car args) ,(cadr args))
-                 (,store-var)
-                 (svset ,tmp1 ,tmp2 ,store-var)
-                 (svref ,tmp1 ,tmp2)))
+              ((eq 'svref op)                        (setf-helper args tmp1 tmp2 store-var 'svref 'svset))
+              ((or (eq 'bvref op) (eq 'bit op))      (setf-helper args tmp1 tmp2 store-var 'bvref 'bvset))
+              ((or (eq 'sref op) (eq 'char op))      (setf-helper args tmp1 tmp2 store-var 'sref 'sset))
 
-              ((or (eq 'bvref op) (eq 'bit op))
-               `((,tmp1 ,tmp2)
-                 (,(car args) ,(cadr args))
-                 (,store-var)
-                 (bvset ,tmp1 ,tmp2 ,store-var)
-                 (bvref ,tmp1 ,tmp2)))
-
-              ((or (eq 'sref op) (eq 'char op))
-               `((,tmp1 ,tmp2)
-                 (,(car args) ,(cadr args))
-                 (,store-var)
-                 (sset ,tmp1 ,tmp2 ,store-var)
-                 (sref ,tmp1 ,tmp2)))
-
-              ((or (eq 'seqref op) (eq 'elt op))
-               `((,tmp1 ,tmp2)
-                 (,(car args) ,(cadr args))
-                 (,store-var)
-                 (seqset ,tmp1 ,tmp2 ,store-var)
-                 (seqref ,tmp1 ,tmp2)))
+              ((or (eq 'seqref op) (eq 'elt op))     (setf-helper args tmp1 tmp2 store-var 'seqref 'seqset))
 
               ;; hashref with default value: setf (hashref h k def) - eval and ignore default value form
               ((and (eq 'hashref op) (cddr args))
-               `((,tmp1 ,tmp2 ,read-var)
+               `((,tmp1 ,tmp2)
                  (,(car args) ,(cadr args) ,(caddr args))
                  (,store-var)
                  (hashset ,tmp1 ,tmp2 ,store-var)
                  (hashref ,tmp1 ,tmp2)))
 
               ;; hashref w/o default value
-              ((eq 'hashref op)
-               `((,tmp1 ,tmp2)
-                 (,(car args) ,(cadr args))
-                 (,store-var)
-                 (hashset ,tmp1 ,tmp2 ,store-var)
-                 (hashref ,tmp1 ,tmp2)))
+              ((eq 'hashref op)                      (setf-helper args tmp1 tmp2 store-var 'hashref 'hashset))
 
               ;; gethash with default value: setf (gethash k hash def) - eval and ignore default value form
               ((and (eq 'gethash op) (cddr args))
-               `((,tmp1 ,tmp2 ,read-var)
+               `((,tmp1 ,tmp2)
                  (,(cadr args) ,(car args) ,(caddr args))
                  (,store-var)
                  (hashset ,tmp1 ,tmp2 ,store-var)
@@ -1225,7 +1205,7 @@
                  (hashset ,tmp1 ,tmp2 ,store-var)
                  (hashref ,tmp1 ,tmp2)))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, hashref, gethash, svref, bvref, bit, sref and char are supported for 'place', got %s" place)))))))
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, hashref, gethash, svref, bvref, bit, sref and char are supported for 'place', got %s" place))))))))
 
 
 ;;; = Macro: setf
@@ -1253,7 +1233,7 @@
                               (cons `(setf ,(car args) ,(cadr args))
                                     (if (cddr args)
                                           (loop (cddr args))))
-                          (error "odd number of arguments to setf"))))
+                          #1=(error "odd number of arguments to setf"))))
 
                 (cond ((symbolp (car args))
                        `(setq   ,(car args)  ,@(cdr args)))
@@ -1291,7 +1271,7 @@
                                    (,(car store-vars) ,@(cdr args)))
                               ,writer-form)))))
 
-          (error "odd number of arguments to setf"))))
+          #1#)))
 
 
 ; Helper macro to generate defmacro's for inplace modification macros.
