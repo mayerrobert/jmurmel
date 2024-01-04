@@ -837,17 +837,14 @@ public class LambdaJ {
     private static final class ArraySlice extends ConsCell {
         private static final class ArraySliceIterator implements ConsIterator {
             private final Object @NotNull [] arry;
-            private final int len;
             private int cursor;
 
-            ArraySliceIterator(Object @NotNull [] arry, int offset) { this.arry = arry; this.len = arry.length; this.cursor = offset; }
-            @Override public boolean hasNext() { return cursor != -1; }
+            ArraySliceIterator(Object @NotNull [] arry, int offset) { this.arry = arry; this.cursor = offset; }
+            @Override public boolean hasNext() { return cursor < arry.length; }
 
             @Override public Object next() {
-                if (cursor == -1) throw new NoSuchElementException();
-                final Object ret = arry[cursor++];
-                if (cursor == len)  cursor = -1;
-                return ret;
+                if (cursor >= arry.length) throw new NoSuchElementException();
+                return arry[cursor++];
             }
 
             @Override public boolean wasDotted() { return false; }
@@ -2417,7 +2414,7 @@ public class LambdaJ {
         sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(car(args), null), intp.have(Features.HAVE_IO), args); } },
 
         // misc
-        sValues(VALUES, Features.HAVE_XTRA, -1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { intp.values = args; return car(args); } },
+        sValues(VALUES, Features.HAVE_XTRA, -1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { if (args != null && cdr(args) == null) intp.values = NO_VALUES; else intp.values = args; return car(args); } },
         sGensym("gensym", Features.HAVE_XTRA, 0, 1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return gensym(car(args)); } },
         sTrace("trace", Features.HAVE_XTRA, -1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
@@ -8207,7 +8204,7 @@ public class LambdaJ {
         public final Object _read             (Object... args)  { values = null; varargs0_1("read",                    args);       return LambdaJ.Subr.read(lispReader, arraySlice(args)); }
         public final Object readFromStr       (Object... args)  { varargsMinMax("read-from-string",     args, 1, 4);
                                                                   featuresEnvEntry.rplacd(features.get());
-                                                                  return ret(LambdaJ.Subr.readFromString(symtab, featuresEnvEntry, arraySlice(args))); }
+                                                                  return retn(LambdaJ.Subr.readFromString(symtab, featuresEnvEntry, arraySlice(args))); }
         public final Object readTextfileLines (Object... args)  { values = null; varargs1_2("read-textfile-lines",     args);       return LambdaJ.Subr.readTextfileLines(arraySlice(args)); }
         public final Object readTextfile      (Object... args)  { values = null; varargs1_2("read-textfile",           args);       return LambdaJ.Subr.readTextfile(arraySlice(args)); }
         public final Object writeTextfileLines(Object... args)  { values = null; varargsMinMax("write-textfile-lines", args, 2, 4); return LambdaJ.Subr.writeTextfileLines(arraySlice(args)); }
@@ -8224,7 +8221,7 @@ public class LambdaJ {
 
         // misc
         public Object[] values;
-        public final Object _values    (Object... args) { return ret(args); }
+        public final Object _values    (Object... args) { if (args.length == 1) values = null; else values = args; if (args.length == 0) return null; return args[0]; }
         public final Object _gensym    (Object... args) { values = null; varargs0_1("gensym", args); return LambdaJ.Subr.gensym(args.length == 0 ? null : args[0]); }
         public final Object _trace     (Object... args) { values = null; return null; }
         public final Object _untrace   (Object... args) { values = null; return null; }
@@ -8318,7 +8315,7 @@ public class LambdaJ {
         private static boolean noSecondArgOrNotNull(Object[] args) { return args.length < 2 || args[1] != null; }
 
 
-        private Object ret(Object[] _values) { values = _values; if (_values.length == 0) return null; return _values[0]; }
+        private Object retn(Object[] _values) { assert _values.length > 1; values = _values; return _values[0]; }
 
         public final boolean clrValues(boolean b) { values = null; return b; }
         public final Object clrValues(Object o) { values = null; return o; }
