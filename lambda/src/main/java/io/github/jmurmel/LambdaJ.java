@@ -484,7 +484,7 @@ public class LambdaJ {
 
     /** same as {@link #wrap} but returns void so that callsites won't need a bytecode to pop the returnvalue */
     static void wrap0(@NotNull Throwable t) {
-        throw wrap(t);
+        wrap(t);
     }
 
 
@@ -8543,7 +8543,7 @@ public class LambdaJ {
                 try { funcall(handler, e); }
                 finally { conditionHandler.push(handler); /* restore current handler */ }
             }
-            throw wrap(e);
+            wrap0(e);
         }
 
         public static Object tailcall(CompilerPrimitive fn, Object... args) { return funcall(fn, args); }
@@ -8561,12 +8561,11 @@ public class LambdaJ {
             ConsCell cleanups = null;
             try {
                 while (true) {
-                    //values = null;
                     final Object r = fn.apply(args);
                     if (r instanceof Tailcall) {
                         final Tailcall functionCall = (Tailcall)r;
-                        if (Thread.interrupted()) throw new InterruptedException("got interrupted");
                         if (functionCall.cleanup != null) cleanups = ConsCell.cons(functionCall.cleanup, cleanups);
+                        if (Thread.interrupted()) throw new InterruptedException("got interrupted");
                         fn = functionCall.fn;
                         args = functionCall.args;
                         continue;
@@ -8594,6 +8593,10 @@ public class LambdaJ {
         public final Object funcall(Object fn, Object... args) {
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
+            return funcallIntp(fn, args);
+        }
+
+        private Object funcallIntp(Object fn, Object[] args) {
             if (fn instanceof Primitive)         { final Object ret = ((Primitive)fn).applyPrimitive(arraySlice(args));  afterEval();  return ret; }
             if (fn instanceof Closure)           return interpret(fn, args);
 
