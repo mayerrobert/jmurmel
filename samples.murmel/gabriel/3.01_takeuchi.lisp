@@ -9,4 +9,4 @@
                   (takeuchi (1- z) x y) ))
        (t y)))
 
-(write (takeuchi 18 12 6))  ; => 18
+(takeuchi 18 12 6)  ; => 18

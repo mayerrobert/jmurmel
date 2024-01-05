@@ -1,3 +1,5 @@
+LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe GabrielBenchmark
+
 values sollte auch ein place für setf sein: (setf (values <place1> .... <placen>) <value-producing-form>), siehe http://clhs.lisp.se/Issues/iss311_w.htm
 -> (setf (values g1 g2 g3) (values 1 2 3))
 

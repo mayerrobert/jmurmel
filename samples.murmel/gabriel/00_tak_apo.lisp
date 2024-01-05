@@ -8,4 +8,4 @@
                     (tak´  (1-  y)  z  x)
                     (tak´  (1-  z)  x  y)))))
 
-(write (tak´ 18 12 6))
+(tak´ 18 12 6)

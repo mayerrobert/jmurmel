@@ -43,4 +43,5 @@
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))))
+
 ;;; call:  (run)

@@ -25,4 +25,4 @@
           (shorterp (cdr x)
                     (cdr y)))))
 
-(write (mas 18l 12l 6l))  ; => (7 6 5 4 3 2 1)
+(mas 18l 12l 6l)  ; => (7 6 5 4 3 2 1)

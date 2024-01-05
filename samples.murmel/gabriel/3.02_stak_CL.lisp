@@ -27,4 +27,4 @@
             (stak-aux))))
       (stak-aux))))
 
-(write (stak 18 12 6)) ; ==> 7
+(stak 18 12 6) ; ==> 7
