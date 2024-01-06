@@ -1829,6 +1829,7 @@ public class LambdaJ {
                             final ConsCell cdr = readList(lineNo, charNo);
                             if (cdr == null) throw new ParseError("illegal end of dotted list: nothing appears after . in list");
                             if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
+                            assert list != null;
                             nconc2(list, car(cdr));
                             if (traceParse) tracer.println("*** parse list   " + printSEx(list));
                             return list;
@@ -3981,10 +3982,10 @@ public class LambdaJ {
     static Object   cadr(ConsCell c)   { return c == null ? null : car(cdr(c)); }
     static Object   cadr(Object o)     { return o == null ? null : car(cdr(o)); }
 
-    static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
+    //static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
 
     static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
-    static Object   caddr(Object c)    { return c == null ? null : car(cddr(c)); }
+    //static Object   caddr(Object c)    { return c == null ? null : car(cddr(c)); }
 
     static Object   cadddr(ConsCell o) { return o == null ? null : car(cdddr(o)); }
 
@@ -9476,7 +9477,24 @@ public class LambdaJ {
                     + "        return ").append(javasym).append("(args").append(rsfx).append(");\n        }\n" 
                     + "        private Object ").append(javasym).append("(Object[] args").append(rsfx).append(") {\n");
             final ConsCell extenv = params(func, sb, params, env, rsfx, symbol.toString(), true);
-            emitStmts(sb, body, extenv, topEnv, rsfx, "        return ", false, false);
+            final String ret = "ret" + rsfx;
+            sb.append("        Object ").append(ret).append(" = null;\n        ").append(javasym).append(": while (true) {\n");
+            final int minParams, maxParams;
+            if (params == null) {
+                minParams = maxParams = 0;
+            }
+            else if (symbolp(params)) {
+                minParams = 0; maxParams = -1;
+            }
+            else if (dottedList(params)) {
+                minParams = listLength((ConsCell)params) - 1;
+                maxParams = -1;
+            }
+            else {
+                minParams = maxParams = listLength((ConsCell)params);
+            }
+            emitStmts(sb, body, extenv, topEnv, rsfx, "        " + ret + " = ", symbol, minParams, maxParams, false, false);
+            sb.append("        break;\n        }\n        return ").append(ret).append(";\n");
             sb.append("        } }");
         }
 
@@ -9506,10 +9524,14 @@ public class LambdaJ {
         }
 
         private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean toplevel, boolean hasNext) {
+            emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, null, -1, -1, toplevel, hasNext);
+        }
+
+        private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, LambdaJSymbol recur, int minParams, int maxParams, boolean toplevel, boolean hasNext) {
             rsfx++;
 
             if (cdr(ccBody) == null) {
-                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, toplevel, hasNext, true);
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, recur, minParams, maxParams, toplevel, hasNext, true);
                 return;
             }
 
@@ -9517,14 +9539,18 @@ public class LambdaJ {
             final String lhs = "        " + ignoredVar + " = ";
             sb.append("        {\n        Object ").append(ignoredVar).append(";\n");
             do {
-                emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, toplevel, true, true);
+                emitStmt(sb, car(ccBody), env, topEnv, rsfx, lhs, recur, minParams, maxParams, toplevel, true, true);
                 ccBody = (ConsCell)cdr(ccBody);
             } while (cdr(ccBody) != null);
-            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, toplevel, hasNext, true);
+            emitStmt(sb, car(ccBody), env, topEnv, rsfx, retLhs, recur, minParams, maxParams, toplevel, hasNext, true);
             sb.append("        }\n");
         }
 
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean toplevel, boolean hasNext, boolean clearValues) {
+            emitStmt(sb, form, env, topEnv, rsfx, retLhs, null, -1, -1, toplevel, hasNext, clearValues);
+        }
+
+        private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, LambdaJSymbol recur, int minParams, int maxParams, boolean toplevel, boolean hasNext, boolean clearValues) {
             if (hasNext) {
                 if (atom(form)) {
                     if (form != null) noteDead(null, form); // don't note nil as that would generate a lot of notes for e.g. "(if a nil (dosomething))"
@@ -9593,21 +9619,14 @@ public class LambdaJ {
                 case sQuote: break;
 
                 case sIf: {
-                    /*if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
-                        // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                        final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
-                        emitStmt(sb, transformed, env, topEnv, rsfx, retLhs, toplevel, hasNext, false);
-                        return;
-                    }*/
-
                     sb.append("        if (");
                     emitTruthiness(sb, false, car(ccArguments), env, topEnv, rsfx);
                     sb.append(") {\n");
-                    emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retLhs, toplevel, hasNext, false);
+                    emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx, retLhs, recur, minParams, maxParams, toplevel, hasNext, false);
                     sb.append("        }\n");
                     if (caddr(ccArguments) != null) {
                         sb.append("        else {\n");
-                        emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retLhs, toplevel, hasNext, false);
+                        emitStmt(sb, caddr(ccArguments), env, topEnv, rsfx, retLhs, recur, minParams, maxParams, toplevel, hasNext, false);
                         sb.append("        }\n");
                     }
                     else if (!hasNext) {
@@ -9625,7 +9644,7 @@ public class LambdaJ {
                         else sb.append("else ");
                         final Object condExpr = car(clause), condForms = cdr(clause);
                         if (condExpr == sT) {
-                            sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, toplevel, hasNext);  sb.append("        }\n");
+                            sb.append("{\n");  emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, recur, minParams, maxParams, toplevel, hasNext);  sb.append("        }\n");
                             if (iterator.hasNext()) {
                                 final String msg = "forms following default 't' form will be ignored";
                                 note(ccForm, msg);
@@ -9633,7 +9652,7 @@ public class LambdaJ {
                             return;
                         } else {
                             sb.append("if (");  emitTruthiness(sb, false, condExpr, env, topEnv, rsfx);  sb.append(") {\n");
-                            emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, toplevel, hasNext);  sb.append("        }\n");
+                            emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, recur, minParams, maxParams, toplevel, hasNext);  sb.append("        }\n");
                         }
                     }
                     if (!hasNext) sb.append("        else {\n").append(retLhs).append("null;\n        }\n");
@@ -9642,7 +9661,7 @@ public class LambdaJ {
 
                 case sCatch:
                     sb.append("        try {\n");
-                    emitStmts(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, retLhs, true, hasNext);
+                    emitStmts(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, retLhs, recur, minParams, maxParams, true, hasNext);
                     sb.append("        }\n"
                             + "        catch (Exception e) {\n");
                     if (hasNext) sb.append("        ");
@@ -9667,7 +9686,7 @@ public class LambdaJ {
 
                 case sProgn: {
                     final ConsCell ccBody = listOrMalformed(PROGN, cdr(ccForm));
-                    emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, toplevel, hasNext);
+                    emitStmts(sb, ccBody, env, topEnv, rsfx, retLhs, recur, minParams, maxParams, toplevel, hasNext);
                     return;
                 }
 
@@ -9715,9 +9734,14 @@ public class LambdaJ {
                         letStarEnv = extEnv;
                     }
 
-                    emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, toplevel, hasNext);
-                    if (asRunnable) sb.append("        } }.run();\n");
-                    else sb.append("        }\n");
+                    if (asRunnable) {
+                        emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, toplevel, hasNext);
+                        sb.append("        } }.run();\n");
+                    }
+                    else {
+                        emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, recur, minParams, maxParams, toplevel, hasNext);
+                        sb.append("        }\n");
+                    }
                     return;
                 }
 
@@ -9734,6 +9758,13 @@ public class LambdaJ {
 
                 default: break;
                 }
+            }
+
+            if (!hasNext && minParams == 0 && maxParams == 0 && recur != null && recur == symop) {
+                try { noArgs(printSEx(recur).toString(), ccArguments); }
+                catch (Exception e) { throw new LambdaJError(e, form); }
+                sb.append("        continue;\n");
+                return;
             }
 
             if (hasNext && isStmtExpr) sb.append("        ");
@@ -10080,8 +10111,7 @@ public class LambdaJ {
                     return true;
                 }
             }
-            if (ws == WellknownSymbol.sIf && singleValueForm(rhs) && singleValueForm(caddr(ccArgs))) return true;
-            return false;
+            return ws == WellknownSymbol.sIf && singleValueForm(rhs) && singleValueForm(caddr(ccArgs));
         }
 
         /** write atoms that are not symbols (and "nil" is acceptable, too) */
