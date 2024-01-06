@@ -9516,11 +9516,11 @@ public class LambdaJ {
                 final String retLhs = "        " + retVar + " = ";
                 sb.append("        Object ").append(retVar).append(";\n");
                 do {
-                    emitStmt(sb, next, env, topEnv, 0, retLhs, true, true, true);
+                    emitToplevelStmt(sb, next, env, topEnv, 0, retLhs, true);
                     next = it.next();
                 } while (it.hasNext()); 
             }
-            emitStmt(sb, next, env, topEnv, 0, "        return ", true, false, true);
+            emitToplevelStmt(sb, next, env, topEnv, 0, "        return ", false);
         }
 
         private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean toplevel, boolean hasNext) {
@@ -9546,8 +9546,8 @@ public class LambdaJ {
             sb.append("        }\n");
         }
 
-        private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean toplevel, boolean hasNext, boolean clearValues) {
-            emitStmt(sb, form, env, topEnv, rsfx, retLhs, null, null, -1, -1, toplevel, hasNext, clearValues);
+        private void emitToplevelStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean hasNext) {
+            emitStmt(sb, form, env, topEnv, rsfx, retLhs, null, null, -1, -1, true, hasNext, true);
         }
 
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, LambdaJSymbol recur, String recurArgs, int minParams, int maxParams, boolean toplevel, boolean hasNext, boolean clearValues) {
@@ -9730,7 +9730,8 @@ public class LambdaJ {
                             final String name = vName + '[' + localCtr++ + ']';
                             extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
                         }
-                        emitStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, "        " + javasym(sym, extEnv, ccBinding) + " = ", true, false, true);
+                        // tood wieso steht hier emitToplevelStmt?!
+                        emitToplevelStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, "        " + javasym(sym, extEnv, ccBinding) + " = ", false);
                         letStarEnv = extEnv;
                     }
 
@@ -10384,8 +10385,9 @@ public class LambdaJ {
          *  args = ([name] ((symbol form)...) forms...) */
         private void emitLetStarLetrec(WrappingWriter sb, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean letrec, boolean isLast) {
             final boolean named = car(args) instanceof LambdaJSymbol;
-            final Object loopLabel, bindings, body;
-            if (named) { loopLabel = car(args); args = (ConsCell)cdr(args); }
+            final LambdaJSymbol loopLabel;
+            final Object bindings, body;
+            if (named) { loopLabel = (LambdaJSymbol)car(args); args = (ConsCell)cdr(args); }
             else       { loopLabel = null; }
             bindings = car(args);  body = cdr(args);
             if (bindings == null && body == null) { sb.append("(Object)null"); return; }
@@ -10433,7 +10435,9 @@ public class LambdaJ {
                 sb.append("        }\n");
                 sb.append("        else argCheck(loc, ").append(argCount).append(", args").append(rsfx).append(");\n");
             }
-            emitStmts(sb, (ConsCell)body, env, topEnv, rsfx, "        return ", false, false);
+            if (named) sb.append("        ").append(javasym(loopLabel, env, null)).append(": while (true) {\n");
+            emitStmts(sb, (ConsCell)body, env, topEnv, rsfx, "        return ", loopLabel, "args" + rsfx, argCount, argCount, false, false);
+            if (named) sb.append("        }\n");
             sb.append("        } }, unassigned(").append(argCount).append("))");
         }
 
