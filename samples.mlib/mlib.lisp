@@ -1205,7 +1205,24 @@
                  (hashset ,tmp1 ,tmp2 ,store-var)
                  (hashref ,tmp1 ,tmp2)))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, hashref, gethash, svref, bvref, bit, sref and char are supported for 'place', got %s" place))))))))
+              ((eq 'values op)
+               (write "args: " nil) (writeln args)
+               (let* ((vars (mapcar (lambda (x) (gensym)) args)))
+                 `(nil
+                   nil
+                   ,vars
+                   (values ,@(let* loop ((ret (cons () ()))
+                                         (append-to ret)
+                                         (vals args)
+                                         (vars vars))
+                                (if vals
+                                      (progn
+                                        (rplacd append-to (cons (list 'setq (car vals) (car vars)) ()))
+                                        (loop ret (cdr append-to) (cdr vals) (cdr vars)))
+                                  (cdr ret))))
+                   ,place)))
+
+              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, hashref, gethash, svref, bvref, bit, sref char and values are supported for 'place', got %s" place))))))))
 
 
 ;;; = Macro: setf
@@ -1284,10 +1301,11 @@
                                              (cdr ret)))))
                             ,value-form)))
 
+                      ;; see https://stackoverflow.com/questions/44698426/how-do-setf-works-under-the-hood
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
-                           `(let* (,@(mapcar list vars vals)
-                                   (,(car store-vars) ,@(cdr args)))
-                              ,writer-form)))))
+                           `(let* ,(mapcar list vars vals)
+                              (multiple-value-bind ,store-vars ,@(cdr args)
+                              ,writer-form))))))
 
           #1#)))
 

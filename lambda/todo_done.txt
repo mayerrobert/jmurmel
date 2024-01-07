@@ -2631,3 +2631,14 @@ emitForms sollte ggf. nur für toplevel forms verwendet werden (ggf. umbenamsen 
 
 
 mlib: last0, last1, lastn umbenamsen nach "m%...", macros und funktionen
+
+
+values sollte auch ein place für setf sein: (setf (values <place1> .... <placen>) <value-producing-form>), siehe http://clhs.lisp.se/Issues/iss311_w.htm
+-> (setf (values g1 g2 g3) (values 1 2 3))
+
+* (macroexpand '(setf (values g1 g2) (values 1 2)))
+(MULTIPLE-VALUE-CALL
+    #'(LAMBDA (&OPTIONAL #:NEW1 #:NEW1 &REST #:IGNORE)
+        (DECLARE (IGNORE #:IGNORE))
+        (VALUES (SETQ G1 #:NEW1) (SETQ G2 #:NEW1)))
+  (VALUES 1 2))
