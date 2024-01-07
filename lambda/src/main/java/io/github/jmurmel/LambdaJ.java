@@ -9730,7 +9730,7 @@ public class LambdaJ {
                             final String name = vName + '[' + localCtr++ + ']';
                             extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
                         }
-                        // tood wieso steht hier emitToplevelStmt?!
+                        // todo wieso steht hier emitToplevelStmt?!
                         emitToplevelStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, "        " + javasym(sym, extEnv, ccBinding) + " = ", false);
                         letStarEnv = extEnv;
                     }

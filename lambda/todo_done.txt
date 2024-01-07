@@ -2621,3 +2621,13 @@ funcall hat finally und viele exits -> 306 bytes
 "        private final MurmelFunction " gibts 3x: in defunToJava, emitNamedLetBody und emitLocalFunc
 -> methode für den kopf rausziehen (parameter: name, rsfx und ggf emitThis)
 -> "        public final Object apply(Object..." gibts überhaupt 5x
+
+
+emitForms sollte ggf. nur für toplevel forms verwendet werden (ggf. umbenamsen auf emitToplevelForms)
+-> überall sonst auf emitStmts umstellen
+   -> emitStmt könnte statt void ein allfälliges looplabel liefern, oder tupel looplabel/nargs, emitStmts merkt sich das und übergibt das beim nächsten schleifendurchlauf wieder an emitStmt
+   -> auch in defunToJava das funktions symbol durchreichen für selbstrekursive tailcalls (ist wsl einfacher als loops!)
+      und labels, ggf. auch für die bindingforms falls eine lambdaform letbound ist
+
+
+mlib: last0, last1, lastn umbenamsen nach "m%...", macros und funktionen

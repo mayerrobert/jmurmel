@@ -1,4 +1,13 @@
 
+Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
+
+ * changed mlib: renamed the functions last0, last1, lastn to m%last0, m%last1, m%lastn
+
+ * added #1= style labelled forms to the reader
+
+ * transform the innermost tail recursion/ named let/ let* /letrec into a loop
+
+
 Changes in JMurmel-1.4.5 relative to JMurmel-1.4.4
 released: 2023-12-31
 

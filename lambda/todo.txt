@@ -1,5 +1,3 @@
-mlib: last0, last1, lastn umbenamsen nach "m%...", macros und funktionen
-
 
 LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe GabrielBenchmark
 
@@ -24,12 +22,6 @@ butlast-iterator wär einfach
 vielleicht doch (simple) loop + return + psetq
 -> let loop kann man durch let+loop+psetq ersetzen, let* loop durch let*+loop+psetq
 -> problem wenn das return in einem Java lambda generiert werden soll. kann das sein?
-
-emitForms sollte ggf. nur für toplevel forms verwendet werden (ggf. umbenamsen auf emitToplevelForms)
--> überall sonst auf emitStmts umstellen
-   -> emitStmt könnte statt void ein allfälliges looplabel liefern, oder tupel looplabel/nargs, emitStmts merkt sich das und übergibt das beim nächsten schleifendurchlauf wieder an emitStmt
-   -> auch in defunToJava das funktions symbol durchreichen für selbstrekursive tailcalls (ist wsl einfacher als loops!)
-      und labels, ggf. auch für die bindingforms falls eine lambdaform letbound ist
 
 
 compiler require könnte intelligenter sein:

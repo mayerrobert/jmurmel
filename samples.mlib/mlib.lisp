@@ -490,28 +490,28 @@
 ;;; If `n` is zero, the atom that terminates list is returned.
 ;;; If `n` is greater than or equal to the number of cons cells in list,
 ;;; the result is `lst`.
-(defmacro last0-macro ()
+(defmacro m%last0-macro ()
   `(let loop ((rest lst))
      (if (consp rest)
        (loop (cdr rest))
        rest)))
 
-(defun last0 (lst)
-  (last0-macro))
+(defun m%last0 (lst)
+  (m%last0-macro))
 
-(defmacro last1-macro ()
+(defmacro m%last1-macro ()
   `(let loop ((rest lst))
      (if (consp (cdr rest))
        (loop (cdr rest))
        rest)))
 
-(defun last1 (lst)
-  (last1-macro))
+(defun m%last1 (lst)
+  (m%last1-macro))
 
-; lastn-macro won't work for n <= 0.
+; m%lastn-macro won't work for n <= 0.
 ; This causes no ill effect because the code below avoids this,
-; and then lastn-macro is undefined so that user code doesn't see it.
-(defmacro lastn-macro ()
+; and then m%lastn-macro is undefined so that user code doesn't see it.
+(defmacro m%lastn-macro ()
   (let ((scan (gensym "scan"))
         (pop (gensym "pop")))
     `(let ((returned-lst lst)
@@ -532,31 +532,31 @@
                              (,pop)))
                     (,scan)))))))
 
-(defun lastn (lst n)
+(defun m%lastn (lst n)
   (cond
-    ((= n 1) (last1-macro))
-    ((> n 1) (lastn-macro))
-    ((= n 0) (last0-macro))
+    ((= n 1) (m%last1-macro))
+    ((> n 1) (m%lastn-macro))
+    ((= n 0) (m%last0-macro))
     (t (error 'type-error "last: n must be >= 0"))))
 
 (defun last (lst . n)
   (if n
-      (lastn lst (car n))
-      (last1-macro)))
+      (m%lastn lst (car n))
+      (m%last1-macro)))
 
 (defmacro last (lst . n)
   (if n
       (if (integerp (setq n (car n)))
           (cond
-            ((= n 1) `(last1 ,lst))
-            ((= 0 1) `(last0 ,lst))
-            (t `(lastn ,lst ,n)))
-          `(lastn ,lst ,n))
-      `(last1 ,lst)))
+            ((= n 1) `(m%last1 ,lst))
+            ((= 0 1) `(m%last0 ,lst))
+            (t `(m%lastn ,lst ,n)))
+          `(m%lastn ,lst ,n))
+      `(m%last1 ,lst)))
 
-(defmacro last0-macro)
-(defmacro last1-macro)
-(defmacro lastn-macro)
+(defmacro m%last0-macro)
+(defmacro m%last1-macro)
+(defmacro m%lastn-macro)
 
 
 ;;; = Function: nconc
