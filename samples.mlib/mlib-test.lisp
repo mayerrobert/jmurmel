@@ -615,6 +615,11 @@
   (let ((str (#+murmel string #-murmel copy-seq "abc")))
     (list (setf (sref str 1) #\X) (sref str 1)))
   => (#\X #\X)
+
+  (let (a b)
+    (setf (values a b) (values 1 2 3 4))
+    (list a b))
+  => (1 2)
 )
 
 

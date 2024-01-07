@@ -1266,6 +1266,24 @@
                       ((eq 'gethash (caar args))
                        `(hashset ,(car (cddar args)) ,(cadar args) ,(cadr args)))
 
+                      ((eq 'values (caar args))
+                       (let* ((places (cdar args))
+                              (value-form (cadr args))
+                              (value-form-args (cdr value-form))
+                              (args (mapcar (lambda (x) (gensym)) value-form-args)))
+                         `(multiple-value-call
+                            (lambda ,args
+                              (values ,@(let* loop ((ret (cons () ()))
+                                                    (append-to ret)
+                                                    (places places)
+                                                    (args args))
+                                           (if places
+                                                 (progn
+                                                   (rplacd append-to (cons (list 'setq (car places) (car args)) ()))
+                                                   (loop ret (cdr append-to) (cdr places) (cdr args)))
+                                             (cdr ret)))))
+                            ,value-form)))
+
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
                            `(let* (,@(mapcar list vars vals)
                                    (,(car store-vars) ,@(cdr args)))
