@@ -1217,7 +1217,7 @@
                                          (vars vars))
                                 (if vals
                                       (progn
-                                        (rplacd append-to (cons (list 'setq (car vals) (car vars)) ()))
+                                        (rplacd append-to (cons (macroexpand-1 (list 'setf (car vals) (car vars))) ()))
                                         (loop ret (cdr append-to) (cdr vals) (cdr vars)))
                                   (cdr ret))))
                    ,place)))
@@ -1284,20 +1284,18 @@
                        `(hashset ,(car (cddar args)) ,(cadar args) ,(cadr args)))
 
                       ((eq 'values (caar args))
-                       (let* ((places (cdar args))
-                              (value-form (cadr args))
-                              (value-form-args (cdr value-form))
-                              (args (mapcar (lambda (x) (gensym)) value-form-args)))
+                       (let* ((value-form (cadr args))
+                              (vars (mapcar (lambda (x) (gensym)) (cdr value-form))))
                          `(multiple-value-call
-                            (lambda ,args
+                            (lambda ,vars
                               (values ,@(let* loop ((ret (cons () ()))
                                                     (append-to ret)
-                                                    (places places)
-                                                    (args args))
+                                                    (places (cdar args))
+                                                    (vars vars))
                                            (if places
                                                  (progn
-                                                   (rplacd append-to (cons (list 'setq (car places) (car args)) ()))
-                                                   (loop ret (cdr append-to) (cdr places) (cdr args)))
+                                                   (rplacd append-to (cons (macroexpand-1 (list 'setf (car places) (car vars))) ()))
+                                                   (loop ret (cdr append-to) (cdr places) (cdr vars)))
                                              (cdr ret)))))
                             ,value-form)))
 

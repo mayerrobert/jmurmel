@@ -1,3 +1,28 @@
+setf (car x) usw. sollten in setf behandelt werden, nicht an get-setf-expansion delegiert, weil das sollte ohne let-forms gehen:
+
+JMurmel> (pprint (macroexpand-1 '(setf (values (cadr a) (cadr b) (cadr c)) (values 1 2 3))))
+
+(multiple-value-call
+   (lambda (#:gensym #:gensym #:gensym)
+      (values
+         (let* ((#:read-var (cdr a)))
+            (multiple-value-bind
+               (#:store-var)
+               #:gensym
+               (m%rplaca #:read-var #:store-var)))
+         (let* ((#:read-var (cdr b)))
+            (multiple-value-bind
+               (#:store-var)
+               #:gensym
+               (m%rplaca #:read-var #:store-var)))
+         (let* ((#:read-var (cdr c)))
+            (multiple-value-bind
+               (#:store-var)
+               #:gensym
+               (m%rplaca #:read-var #:store-var)))))
+   (values 1 2 3))
+==> t
+
 
 LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe GabrielBenchmark
 
