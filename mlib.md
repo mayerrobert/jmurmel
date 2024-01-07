@@ -521,8 +521,10 @@ knows a corresponding setting form, which currently are:
 - symbols
 - car..cdddr
 - nth
-- elt seqref
+- elt, seqref
+- hashref, gethash
 - svref, bvref, bit, sref, char
+- values
 
 ### Macro: incf, decf
     (incf place delta-form*) -> new-value
