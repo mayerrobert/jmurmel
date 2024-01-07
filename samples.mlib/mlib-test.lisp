@@ -620,6 +620,11 @@
     (setf (values a b) (values 1 2 3 4))
     (list a b))
   => (1 2)
+
+  (let (a b (lst (list 11 22 33)))
+    (setf (values a (car lst) b (caddr lst)) (values 1 2 3 4 5))
+    (list a b lst))
+  => (1 3 (2 22 4))
 )
 
 

@@ -1217,7 +1217,7 @@
                                          (vars vars))
                                 (if vals
                                       (progn
-                                        (rplacd append-to (cons (macroexpand-1 (list 'setf (car vals) (car vars))) ()))
+                                        (rplacd append-to (cons (list 'setf (car vals) (car vars)) ()))
                                         (loop ret (cdr append-to) (cdr vals) (cdr vars)))
                                   (cdr ret))))
                    ,place)))
@@ -1252,38 +1252,51 @@
                                           (loop (cddr args))))
                           #1=(error "odd number of arguments to setf"))))
 
-                (cond ((symbolp (car args))
-                       `(setq   ,(car args)  ,@(cdr args)))
+                (if (symbolp (car args))
+                      `(setq   ,(car args)  ,@(cdr args))
 
-                      ((eq 'svref (caar args))
-                       `(svset  ,@(cdar args) ,(cadr args)))
+                  (let ((op (caar args)))
+                    (cond
+                      ((eq   'car op) `(m%rplaca         ,@(cdar args)   ,(cadr args)))
+                      ((eq  'caar op) `(m%rplaca ( car   ,@(cdar args))  ,(cadr args)))
+                      ((eq  'cadr op) `(m%rplaca ( cdr   ,@(cdar args))  ,(cadr args)))
+                      ((eq 'caaar op) `(m%rplaca (caar   ,@(cdar args))  ,(cadr args)))
+                      ((eq 'caadr op) `(m%rplaca (cadr   ,@(cdar args))  ,(cadr args)))
+                      ((eq 'cadar op) `(m%rplaca (cdar   ,@(cdar args))  ,(cadr args)))
+                      ((eq 'caddr op) `(m%rplaca (cddr   ,@(cdar args))  ,(cadr args)))
 
-                      ((or (eq 'bvref (caar args)) (eq 'bit (caar args)))
-                       `(bvset ,@(cdar args) ,(cadr args)))
+                      ((eq   'cdr op) `(m%rplacd         ,@(cdar args)   ,(cadr args)))
+                      ((eq  'cdar op) `(m%rplacd ( car   ,@(cdar args))  ,(cadr args)))
+                      ((eq  'cddr op) `(m%rplacd ( cdr   ,@(cdar args))  ,(cadr args)))
+                      ((eq 'cdaar op) `(m%rplacd (caar   ,@(cdar args))  ,(cadr args)))
+                      ((eq 'cdadr op) `(m%rplacd (cadr   ,@(cdar args))  ,(cadr args)))
+                      ((eq 'cddar op) `(m%rplacd (cdar   ,@(cdar args))  ,(cadr args)))
+                      ((eq 'cdddr op) `(m%rplacd (cddr   ,@(cdar args))  ,(cadr args)))
 
-                      ((or (eq 'sref (caar args)) (eq 'char (caar args)))
-                       `(sset ,@(cdar args) ,(cadr args)))
+                      ((eq 'nth op)   `(m%rplaca (nthcdr ,@(cdar args))  ,(cadr args)))
 
-                      ((or (eq 'seqref (caar args)) (eq 'elt (caar args)))
-                       `(seqset ,@(cdar args) ,(cadr args)))
+                      ((eq 'svref op)                    `(svset  ,@(cdar args) ,(cadr args)))
+                      ((or (eq 'bvref op) (eq 'bit op))  `(bvset ,@(cdar args) ,(cadr args)))
+                      ((or (eq 'sref op) (eq 'char op))  `(sset ,@(cdar args) ,(cadr args)))
+                      ((or (eq 'seqref op) (eq 'elt op)) `(seqset ,@(cdar args) ,(cadr args)))
 
                       ;; hashref with default value: setf (hashref h k def) - eval and ignore default value form
-                      ((and (eq 'hashref (caar args)) (cdr (cddar args)))
+                      ((and (eq 'hashref op) (cdr (cddar args)))
                        `(prog1 (hashset ,(cadar args) ,(car (cddar args)) ,(cadr args)) ,(cadr (cddar args))))
 
                       ;; hashref w/o default value: setf (hashref h k)
-                      ((eq 'hashref (caar args))
+                      ((eq 'hashref op)
                        `(hashset ,@(cdar args) ,(cadr args)))
 
                       ;; gethash with default value: setf (gethash key hash def) - eval and ignore default value form
-                      ((and (eq 'gethash (caar args)) (cdr (cddar args)))
+                      ((and (eq 'gethash op) (cdr (cddar args)))
                        `(prog1 (hashset ,(car (cddar args)) ,(cadar args) ,(cadr args)) ,(cadr (cddar args))))
 
                       ;; gethash w/o default value: setf (gethash key hash)
-                      ((eq 'gethash (caar args))
+                      ((eq 'gethash op)
                        `(hashset ,(car (cddar args)) ,(cadar args) ,(cadr args)))
 
-                      ((eq 'values (caar args))
+                      ((eq 'values op)
                        (let* ((value-form (cadr args))
                               (vars (mapcar (lambda (x) (gensym)) (cdr value-form))))
                          `(multiple-value-call
@@ -1303,7 +1316,7 @@
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
                            `(let* ,(mapcar list vars vals)
                               (multiple-value-bind ,store-vars ,@(cdr args)
-                              ,writer-form))))))
+                              ,writer-form))))))))
 
           #1#)))
 
