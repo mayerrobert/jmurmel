@@ -41,7 +41,11 @@ der compiler opencoded nur numeric compare operator mit 2 args
 
 
 Clojure hat counted?, liefert true für ISeq, false für Cons
-Murmel könnte countedp bekommen, true für ArraySlice, und counted (wandelt ConsCell zu ArraySlice)
+Murmel könnte countedp bekommen, true für ArraySlice (und j.u.RandomAccess?, (mutable?) String/Vector/Bitvector?), und counted (wandelt ConsCell zu ArraySlice)
+-> oder statt countedp: random-access-p
+-> conj dazu? rplaca würd gehen, rplacd nicht
+kann man das ins Murmel typsystem einhängen?
+
 
 https://github.com/OpenHFT/Java-Runtime-Compiler hat einen in-memory filemanager zum kompilieren
 
