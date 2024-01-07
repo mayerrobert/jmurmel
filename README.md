@@ -4,11 +4,11 @@
 [![CodeQL](https://github.com/mayerrobert/jmurmel/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/mayerrobert/jmurmel/actions/workflows/codeql-analysis.yml)
 
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
-interpreter/ compiler written in Java8 that can be used standalone as well as embedded.**
+interpreter/ compiler compatible with Java8..22 that can be used standalone as well as embedded.**
 
 Currently weighing in at ~430kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
-or one single Java source file, compatible with Java 8 through Java 22-ea.
+or one single Java source file.
 
 Murmel is the name of the programming language (which is a Lisp dialect),
 JMurmel is the name of the interpreter/ compiler that implements Murmel.
@@ -18,13 +18,13 @@ and [mlib.md](mlib.md) for Murmel's default library.
 The interpreter, REPL, compiler as well as Jars with compiled Murmel all run on top of the JVM.
 Compilation is done as Murmel to Java source
 which is then compiled to .class files using the JDK compiler.
-JMurmel as well as compiled Murmel programs should run on all platforms supported by Java8+.
+JMurmel as well as compiled Murmel programs should run on all platforms that support Java8+.
 
 **Key features**
 
 JMurmel features an interpreter and a compiler,
 a REPL with a trace facility (trace and untrace function calls),
-tail call optimization,
+full tail call optimization,
 lexical environments,
 a macro facility,
 backquote expansion including nested backquotes,
@@ -51,7 +51,7 @@ See also "Known Issues" in [murmel-langref.md](murmel-langref.md).
 
 **Copyright**
 
-Murmel and JMurmel are Copyright (C) 2020-2023 Robert Mayer.
+Murmel and JMurmel are Copyright (C) 2020-2024 Robert Mayer.
 
 This work is licensed under the terms of the MIT license.
 For a copy, see [LICENSE](LICENSE).

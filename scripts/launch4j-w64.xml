@@ -47,14 +47,14 @@ jmurmel.exe will end up in scripts/target
     </jre>
     <versionInfo>
         <fileDescription>Murmel interpreter/ compiler https://jmurmel.github.io</fileDescription>
-        <fileVersion>1.4.5.0</fileVersion>
-        <txtFileVersion>1.4.5</txtFileVersion>
+        <fileVersion>1.4.6.0</fileVersion>
+        <txtFileVersion>1.4.6</txtFileVersion>
 
         <productName>JMurmel</productName>
-        <productVersion>1.4.5.0</productVersion>
-        <txtProductVersion>1.4.5</txtProductVersion>
+        <productVersion>1.4.6.0</productVersion>
+        <txtProductVersion>1.4.6</txtProductVersion>
 
-        <copyright>Copyright (C) 2020-2023 by Robert Mayer</copyright>
+        <copyright>Copyright (C) 2020-2024 by Robert Mayer</copyright>
 
         <internalName>jmurmel.jar</internalName>
         <originalFilename>jmurmel.exe</originalFilename>

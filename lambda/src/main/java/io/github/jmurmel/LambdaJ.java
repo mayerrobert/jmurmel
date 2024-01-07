@@ -1,4 +1,4 @@
-/* LambdaJ is Copyright (C) 2020-2023 Robert Mayer.
+/* LambdaJ is Copyright (C) 2020-2024 Robert Mayer.
 
 This work is licensed under the terms of the MIT license.
 For a copy, see https://opensource.org/licenses/MIT. */
@@ -111,7 +111,7 @@ public class LambdaJ {
 
     /// ## Public Java constants, interfaces and an exception class to use the interpreter from Java
 
-    public static final String LANGUAGE_VERSION = "1.5";
+    public static final String LANGUAGE_VERSION = "1.4";
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
     public static final String ENGINE_VERSION;
     public static final String ENGINE_VERSION_NUM;
