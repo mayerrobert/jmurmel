@@ -7849,10 +7849,7 @@ public class LambdaJ {
         // basic primitives
         public final Object _apply (Object... args) {
             twoArgs(APPLY, args);
-            Object fn = args[0];
-            if (fn == null) errorNotAFunction(sNil);
-            if (symbolp(fn)) fn = getValue(fn.toString());
-            return tailcall(fn, listToArray(args[1]));
+            return apply(args);
         }
         public final Object apply(Object... args) {
             Object fn = args[0];
@@ -10443,14 +10440,13 @@ public class LambdaJ {
 
         /** let dynamic and let* dynamic */
         private void emitLetLetStarDynamic(WrappingWriter sb, final ConsCell bindingsAndForms, ConsCell env, ConsCell topEnv, int rsfx, boolean letStar, boolean isLast) {
-            if (car(bindingsAndForms) == null && cdr(bindingsAndForms) == null) { sb.append("(Object)null"); return; }
+            final Object bindings = car(bindingsAndForms);
+            if (bindings == null && cdr(bindingsAndForms) == null) { sb.append("(Object)null"); return; }
 
-            sb.append(isLast ? "tailcallWithCleanup(" : "funcall(")
-              .append("(MurmelFunction)(args").append(rsfx).append(" -> {\n");
+            sb.append(isLast ? "tailcallWithCleanup(" : "funcall(").append("(MurmelFunction)(args").append(rsfx).append(" -> {\n");
 
             final ArrayList<String> globals = new ArrayList<>();
 
-            final Object bindings = car(bindingsAndForms);
             ConsCell _env = env;
             if (bindings != null) {
                 final ConsCell params = paramList(letStar ? ("let* " + DYNAMIC) : ("let " + DYNAMIC), bindings, false);
