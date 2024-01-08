@@ -7940,6 +7940,7 @@ public class LambdaJ {
 
         public final ConsCell _list    (Object... args) { values = null; return ConsCell.list(args); }
         public final Object   listStar (Object... args) { values = null; varargs1(LISTSTAR, args); return ConsCell.listStar(args); }
+        public final Object   listStar0(Object... args) { values = null;                           return ConsCell.listStar(args); }
         public final Object   _append  (Object... args) {
             values = null;
             int nArgs;
@@ -10717,15 +10718,6 @@ public class LambdaJ {
                 if (cdr(args) == null) { // one arg
                     sb.append("_cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
                 }
-                sb.append("ConsCell.list(");
-                boolean first = true;
-                for (; args != null; args = (ConsCell)cdr(args)) {
-                    if (first) first = false;
-                    else sb.append("\n        , ");
-                    emitForm(sb, car(args), env, topEnv, rsfx, false);
-                }
-                sb.append(')');
-                return true;
             }
 
             if (prim == WellknownSymbol.sListStar) {
@@ -10734,14 +10726,7 @@ public class LambdaJ {
                 if (cddr(args) == null) {
                     sb.append("_cons("); emitForm(sb, car(args), env, topEnv, rsfx, false); sb.append(", "); emitForm(sb, cadr(args), env, topEnv, rsfx, false); sb.append(')'); return true;
                 }
-                sb.append("ConsCell.listStar(");
-                boolean first = true;
-                for (; args != null; args = (ConsCell)cdr(args)) {
-                    if (first) first = false;
-                    else sb.append("\n        , ");
-                    emitForm(sb, car(args), env, topEnv, rsfx, false);
-                }
-                sb.append(')');
+                emitCallPrimitive(sb, "listStar0", args, env, topEnv, rsfx);
                 return true;
             }
 
