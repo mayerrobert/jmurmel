@@ -10667,63 +10667,55 @@ public class LambdaJ {
 
             final WellknownSymbol prim = op.wellknownSymbol;
 
-            if (prim == WellknownSymbol.sAdd) { assert !prim.stmtExpr;  emitAddDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sMul) { assert !prim.stmtExpr;  emitAddDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sSub) { assert !prim.stmtExpr;  emitSubDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sDiv) { assert !prim.stmtExpr;  emitSubDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true; }
-
-            if (prim == WellknownSymbol.sMod) {
-                assert !prim.stmtExpr;
+            switch (prim) {
+            case sAdd: assert !prim.stmtExpr; emitAddDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true;
+            case sMul: assert !prim.stmtExpr; emitAddDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true;
+            case sSub: assert !prim.stmtExpr; emitSubDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true;
+            case sDiv: assert !prim.stmtExpr; emitSubDbl(sb, "/", 1.0, args, env, topEnv, rsfx); return true;
+            case sMod: assert !prim.stmtExpr;
                 sb.append("cl_mod(");
                 emitFormAsDouble(sb, "mod", car(args), env, topEnv, rsfx);  sb.append(", ");  emitFormAsDouble(sb, "mod", cadr(args), env, topEnv, rsfx);
                 sb.append(')');
                 return true;
-            }
-            if (prim == WellknownSymbol.sRem) {
+            case sRem:
                 assert !prim.stmtExpr;
                 sb.append('(');
                 emitFormAsDouble(sb, "rem", car(args), env, topEnv, rsfx);  sb.append(" % ");  emitFormAsDouble(sb, "rem", cadr(args), env, topEnv, rsfx);
                 sb.append(')');
                 return true;
-            }
+            case sRound:     assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "round", "cl_round", true);  return true;
+            case sFloor:     assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "floor", "Math.floor", true);  return true;
+            case sCeiling:   assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "ceiling", "Math.ceil", true);  return true;
+            case sTruncate:  assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "truncate", "cl_truncate", true);  return true;
 
-            if (prim == WellknownSymbol.sRound)     { assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "round", "cl_round", true);  return true; }
-            if (prim == WellknownSymbol.sFloor)     { assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "floor", "Math.floor", true);  return true; }
-            if (prim == WellknownSymbol.sCeiling)   { assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "ceiling", "Math.ceil", true);  return true; }
-            if (prim == WellknownSymbol.sTruncate)  { assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "truncate", "cl_truncate", true);  return true; }
+            case sFRound:    assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "fround", "cl_round", false); return true;
+            case sFFloor:    assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "ffloor", "Math.floor", false); return true;
+            case sFCeiling:  assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "fceiling", "Math.ceil", false); return true;
+            case sFTruncate: assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true;
 
-            if (prim == WellknownSymbol.sFRound)    { assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "fround", "cl_round", false); return true; }
-            if (prim == WellknownSymbol.sFFloor)    { assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "ffloor", "Math.floor", false); return true; }
-            if (prim == WellknownSymbol.sFCeiling)  { assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "fceiling", "Math.ceil", false); return true; }
-            if (prim == WellknownSymbol.sFTruncate) { assert !prim.stmtExpr;  emitDivision(sb, args, env, topEnv, rsfx, "ftruncate", "cl_truncate", false); return true; }
-
-            if (prim == WellknownSymbol.sNeq) { assert !prim.stmtExpr;  if (emitBinOp(sb, true, "==", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sNe)  { assert !prim.stmtExpr;  if (emitBinOp(sb, true, "!=", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sLt)  { assert !prim.stmtExpr;  if (emitBinOp(sb, true, "<", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sLe)  { assert !prim.stmtExpr;  if (emitBinOp(sb, true, "<=", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sGe)  { assert !prim.stmtExpr;  if (emitBinOp(sb, true, ">=", args, env, topEnv, rsfx)) return true; }
-            if (prim == WellknownSymbol.sGt)  { assert !prim.stmtExpr;  if (emitBinOp(sb, true, ">", args, env, topEnv, rsfx)) return true; }
-
-            if (prim == WellknownSymbol.sEq)   { assert !prim.stmtExpr;  emitEq(sb, true, car(args), cadr(args), env, topEnv, rsfx); return true; }
-            if (prim == WellknownSymbol.sNull) { assert !prim.stmtExpr;  emitEq(sb, true, car(args), null, env, topEnv, rsfx); return true; }
-
-            if (prim == WellknownSymbol.sAppend) {
+            case sNeq:  assert !prim.stmtExpr;  if (emitBinOp(sb, true, "==", args, env, topEnv, rsfx)) return true; break;
+            case sNe:   assert !prim.stmtExpr;  if (emitBinOp(sb, true, "!=", args, env, topEnv, rsfx)) return true; break;
+            case sLt:   assert !prim.stmtExpr;  if (emitBinOp(sb, true, "<", args, env, topEnv, rsfx)) return true; break;
+            case sLe:   assert !prim.stmtExpr;  if (emitBinOp(sb, true, "<=", args, env, topEnv, rsfx)) return true; break;
+            case sGe:   assert !prim.stmtExpr;  if (emitBinOp(sb, true, ">=", args, env, topEnv, rsfx)) return true; break;
+            case sGt:   assert !prim.stmtExpr;  if (emitBinOp(sb, true, ">", args, env, topEnv, rsfx)) return true; break;
+            case sEq:   assert !prim.stmtExpr;  emitEq(sb, true, car(args), cadr(args), env, topEnv, rsfx); return true;
+            case sNull: assert !prim.stmtExpr;  emitEq(sb, true, car(args), null, env, topEnv, rsfx); return true;
+            case sAppend:
                 assert !prim.stmtExpr;
                 if (args == null) { // no args
                     sb.append("(Object)null");  return true;
                 }
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
-            }
-
-            if (prim == WellknownSymbol.sList) {
+                break;
+            case sList:
                 assert !prim.stmtExpr;
                 if (args == null) { sb.append("(Object)null");  return true; }
                 if (cdr(args) == null) { // one arg
                     sb.append("_cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
                 }
-            }
-
-            if (prim == WellknownSymbol.sListStar) {
+                break;
+            case sListStar:
                 assert !prim.stmtExpr;
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 if (cddr(args) == null) {
@@ -10731,17 +10723,16 @@ public class LambdaJ {
                 }
                 emitCallPrimitive(sb, "listStar0", args, env, topEnv, rsfx);
                 return true;
-            }
-
-            if (prim == WellknownSymbol.sJmethod) {
+            case sJmethod:
                 assert !prim.stmtExpr;
                 if (emitJmethod(sb, args, null, null, -1, false, null)) return true;
                 emitCallPrimitive(sb, "findMethod", args, env, topEnv, rsfx);
                 return true;
+            default:
+                for (String primitive: primitives)          if (symbolEq(op, primitive))    { emitCallPrimitive(sb, "_" + primitive, args, env, topEnv, rsfx);  return true; }
+                for (String[] primitive: aliasedPrimitives) if (symbolEq(op, primitive[0])) { emitCallPrimitive(sb, primitive[1], args, env, topEnv, rsfx);  return true; }
+                break;
             }
-
-            for (String primitive: primitives)          if (symbolEq(op, primitive))    { emitCallPrimitive(sb, "_" + primitive, args, env, topEnv, rsfx);  return true; }
-            for (String[] primitive: aliasedPrimitives) if (symbolEq(op, primitive[0])) { emitCallPrimitive(sb, primitive[1], args, env, topEnv, rsfx);  return true; }
 
             return false;
         }
