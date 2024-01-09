@@ -26,9 +26,6 @@ compiler require könnte intelligenter sein:
 defunToJava könnte einen member vom compiler mit funktionsnamen belegen, das könnte für die named-let-lambdas verwendet werden
 
 
-apply als wellknown symbol, dann fallen einige intern("apply") im compiler weg
-
-
 der compiler opencoded nur numeric compare operator mit 2 args
 -> (= 1) wird ein call
 

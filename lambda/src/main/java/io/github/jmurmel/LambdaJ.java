@@ -9037,10 +9037,16 @@ public class LambdaJ {
         private final JavaCompilerHelper javaCompiler;
         final @NotNull LambdaJ intp;
 
+        private final LambdaJSymbol sApply, sLambda, sList;
+
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, null, null, libDir);
             intp.init(NULL_READCHARS, System.out::print);
             this.intp = intp;
+
+            sApply = intern(APPLY);
+            sLambda = intern(LAMBDA);
+            sList = intern(LIST);
 
             this.javaCompiler = outPath == null ? null : new JavaCompilerHelper(outPath);
         }
@@ -9221,7 +9227,7 @@ public class LambdaJ {
             for (String[] alias:  aliasedPrimitives) predefinedEnv = extenvprim(alias[0], alias[1], predefinedEnv);
 
             // _apply needs to be of type MurmelFunction so that it will be processed by the TCO trampoline
-            predefinedEnv = extenvIntern(intp.intern(APPLY), "((MurmelFunction)rt()::_apply)", predefinedEnv);
+            predefinedEnv = extenvIntern(sApply, "((MurmelFunction)rt()::_apply)", predefinedEnv);
 
             final WrappingWriter ret = new WrappingWriter(w);
 
@@ -10240,7 +10246,7 @@ public class LambdaJ {
                 sb.append(", e);\n        } } }");
             }
             else {
-                final ConsCell body = cons(intern(LAMBDA), cons(null, bodyForms));
+                final ConsCell body = cons(sLambda, cons(null, bodyForms));
                 final ConsCell args = cons(tag, cons(body, null));
                 emitCallPrimitive(sb, "doCatch", args, env, topEnv, rsfx);
             }
@@ -10640,15 +10646,12 @@ public class LambdaJ {
         private boolean opencode(WrappingWriter sb, LambdaJSymbol op, ConsCell args, ConsCell env, ConsCell topEnv, int rsfx, boolean isLast) {
             if (op == null) return false;
 
-            final LambdaJ intp = this.intp;
-            final LambdaJSymbol sApply = intp.intern(APPLY);
-
             if (op == sApply) {
                 final Object applyOp = car(args);
                 final Object applyArg = cadr(args);
 
                 if (applyOp == null || applyOp == sNil) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": " + NIL);
-                if (applyOp == intp.intern(LIST)) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(')'); return true; }
+                if (applyOp == sList) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(')'); return true; }
 
                 if (applyOp != sApply) { // apply needs special treatment for TCO
                     for (String prim: primitives)          if (symbolEq(applyOp, prim))    { opencodeApplyHelper(sb, "_" + prim,  applyArg, env, topEnv, rsfx);  return true; }
