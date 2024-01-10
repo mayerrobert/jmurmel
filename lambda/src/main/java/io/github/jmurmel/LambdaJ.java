@@ -9742,8 +9742,8 @@ public class LambdaJ {
                             final String name = vName + '[' + localCtr++ + ']';
                             extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
                         }
-                        // todo wieso steht hier emitToplevelStmt?!
-                        emitToplevelStmt(sb, cadr(ccBinding), symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv, topEnv, rsfx, "        " + javasym(sym, extEnv, ccBinding) + " = ", false);
+                        final ConsCell env1 = symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv;
+                        emitStmt(sb, cadr(ccBinding), env1, topEnv, rsfx, "        " + javasym(sym, extEnv, ccBinding) + " = ", null, null, -1, -1, true, false, false);
                         letStarEnv = extEnv;
                     }
 
@@ -9781,7 +9781,7 @@ public class LambdaJ {
                     sb.append("        {\n");
                     ConsCell args = ccArguments;
                     for (int i = 0; i < nArgs; ++i) {
-                        sb.append("        Object tmp").append(i).append(" = ");
+                        sb.append("        final Object tmp").append(i).append(" = ");
                         emitForm(sb, car(args), env, topEnv, rsfx+1, false);
                         sb.append(";\n");
                         args = (ConsCell)cdr(args);
@@ -10312,18 +10312,20 @@ public class LambdaJ {
             final Object valueForm = cadr(pairs);
 
             notAPrimitive(SETQ, symbol, javaName);
+
+            final String clrValues = cddr(pairs) == null ? "clrValues" : ""; // only clear on the last assignment
             if (fastassq(symbol, env) == fastassq(symbol, topEnv)) {
                 if (javaName.endsWith(".get()")) {
                     // either a userdefined global or a
                     final String symName = javaName.substring(0, javaName.length()-6);
-                    sb.append(symName).append(".set(clrValues("); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append("))");
+                    sb.append(symName).append(".set(").append(clrValues).append('('); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append("))");
                 }
                 else {
                     // immutable runtime globals such as pi are implemented as regular Java class members (and not as objects of class CompilerGlobal)
                     errorMalformed(SETQ, "can't modify constant " + symbol);
                 }
             } else {
-                sb.append(javaName).append(" = clrValues(");  emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
+                sb.append(javaName).append(" = ").append(clrValues).append('(');  emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
             }
             return javaName;
         }
