@@ -2491,13 +2491,15 @@ public class LambdaJ {
 
         private final int min, max;
         private final Features feature;
-        public final boolean stmtExpr; // true for primitives that will be emitted by the compiler as a stmt expression, i.e. preceeding "values = null;" or "result =" is not needed
+        public final boolean stmtExpr;       // true for primitives that will be emitted by the compiler as a stmt expression, i.e. preceeding "values = null;" or "result =" is not needed
+        public final boolean singleValues;   // true for primitives that will be emitted by the compiler to clear multiple values
 
         WellknownSymbol(String sym, WellknownSymbolKind kind) {
             assert kind != WellknownSymbolKind.PRIM;
             this.sym = sym; this.kind = kind; min = max = -2;
             feature = null;
             stmtExpr = false;
+            singleValues = false;
         }
 
         WellknownSymbol(String sym, Features feature, int nArgs) {
@@ -2509,6 +2511,7 @@ public class LambdaJ {
             this.sym = sym; this.kind = WellknownSymbolKind.PRIM; min = max = nArgs;
             this.feature = feature;
             this.stmtExpr = stmtExpr;
+            singleValues = stmtExpr && !isMv(sym);
         }
 
         WellknownSymbol(String sym, Features feature, int minArgs, int maxArgs) {
@@ -2520,6 +2523,11 @@ public class LambdaJ {
             this.sym = sym; this.kind = WellknownSymbolKind.PRIM; min = minArgs; max = maxArgs;
             this.feature = feature;
             this.stmtExpr = stmtExpr;
+            singleValues = stmtExpr && !isMv(sym);
+        }
+
+        private static boolean isMv(String sym) {
+            return "hashref".equals(sym) || "macroexpand-1".equals(sym) || "read-from-string".equals(sym) || "values".equals(sym);
         }
 
         Object apply(LambdaJ intp, ConsCell args) { throw errorInternal("apply is not implemented for %s", sym); }
@@ -10123,8 +10131,8 @@ public class LambdaJ {
             final Object lhs = car(ccArgs), rhs = cadr(ccArgs);
             final WellknownSymbol ws = intp.speed >= 1 && symbolp(car(ccForm)) ? ((LambdaJSymbol)car(ccForm)).wellknownSymbol : null;
 
-            if (ws == WellknownSymbol.sCar || ws == WellknownSymbol.sCdr || ws == WellknownSymbol.sAtom || ws == WellknownSymbol.sConsp || ws == WellknownSymbol.sEql)
-                return true; // todo this should be all non-multiple-value primitives that are not opencoded
+            if (ws != null && ws.singleValues)
+                return true;
             if (cdr(ccArgs) != null && cddr(ccArgs) == null && singleValueForm(lhs) && singleValueForm(rhs)) {
                 // exactly two args that are both atoms or quoted forms
                 if (ws == WellknownSymbol.sEq || ws == WellknownSymbol.sLt || ws == WellknownSymbol.sNe || ws == WellknownSymbol.sLe || ws == WellknownSymbol.sNeq || ws == WellknownSymbol.sGe || ws == WellknownSymbol.sGt) {
