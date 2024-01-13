@@ -55,6 +55,7 @@ cp ../samples.mlib/mlib.lisp    target/jpackage-input/.
 export JLINK="--jlink-options --strip-debug --jlink-options --no-man-pages --jlink-options --no-header-files --jlink-options --compress=2"
 jpackage $JLINK --type app-image -i target/jpackage-input -d $DESTDIR -n jmurmel --main-class io.github.jmurmel.LambdaJ --main-jar jmurmel.jar $MODULES $JOPTIONS
 
+mkdir $DESTDIR/jmurmel
 cp ../LICENSE                $DESTDIR/jmurmel/.
 cp ../murmel-langref.md      $DESTDIR/jmurmel/.
 cp ../mlib.md                $DESTDIR/jmurmel/.
