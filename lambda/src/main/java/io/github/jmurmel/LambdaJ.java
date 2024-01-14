@@ -2298,7 +2298,7 @@ public class LambdaJ {
         sRplaca(RPLACA, Features.HAVE_XTRA, 2)               { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons(RPLACA, car(args)).rplaca(cadr(args)); } },
         sRplacd(RPLACD, Features.HAVE_XTRA, 2)               { @Override Object apply(LambdaJ intp, ConsCell args) { return requireCons(RPLACD, car(args)).rplacd(cadr(args)); } },
 
-        sList(LIST, Features.HAVE_UTIL, false, -1)           { @Override Object apply(LambdaJ intp, ConsCell args) { return args; } },
+        sList(LIST, Features.HAVE_UTIL, true, -1)            { @Override Object apply(LambdaJ intp, ConsCell args) { return args; } },
         sListStar(LISTSTAR, Features.HAVE_UTIL, false, 1,-1) { @Override Object apply(LambdaJ intp, ConsCell args) { return listStar(intp, args); } },
         sAppend(APPEND, Features.HAVE_UTIL, false, -1)       { @Override Object apply(LambdaJ intp, ConsCell args) { return append(intp, args); } },
         sAssq(ASSQ, Features.HAVE_UTIL, 2)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return assq(car(args), cadr(args)); } },
@@ -9528,11 +9528,11 @@ public class LambdaJ {
                 final String retLhs = "        " + retVar + " = ";
                 sb.append("        Object ").append(retVar).append(";\n");
                 do {
-                    emitToplevelStmt(sb, next, env, topEnv, 0, retLhs, true);
+                    emitToplevelStmt(sb, next, env, topEnv, retLhs, true);
                     next = it.next();
                 } while (it.hasNext()); 
             }
-            emitToplevelStmt(sb, next, env, topEnv, 0, "        return ", false);
+            emitToplevelStmt(sb, next, env, topEnv, "        return ", false);
         }
 
         private void emitStmts(WrappingWriter sb, ConsCell ccBody, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean toplevel, boolean hasNext) {
@@ -9558,8 +9558,8 @@ public class LambdaJ {
             sb.append("        }\n");
         }
 
-        private void emitToplevelStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, boolean hasNext) {
-            emitStmt(sb, form, env, topEnv, rsfx, retLhs, null, null, -1, -1, true, hasNext, true);
+        private void emitToplevelStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, String retLhs, boolean hasNext) {
+            emitStmt(sb, form, env, topEnv, 0, retLhs, null, null, -1, -1, true, hasNext, true);
         }
 
         private void emitStmt(WrappingWriter sb, Object form, ConsCell env, ConsCell topEnv, int rsfx, String retLhs, LambdaJSymbol recur, String recurArgs, int minParams, int maxParams, boolean toplevel, boolean hasNext, boolean clearValues) {
@@ -9597,7 +9597,8 @@ public class LambdaJ {
             if (symbolp(op)) {
                 symop = (LambdaJSymbol)op;
                 ws = symop.wellknownSymbol;
-                isDefOrLet = ws == WellknownSymbol.sDefine || ws == WellknownSymbol.sDefun || ws == WellknownSymbol.sDefmacro || ws == WellknownSymbol.sLet || ws == WellknownSymbol.sLetStar;
+                isDefOrLet = ws == WellknownSymbol.sDefine || ws == WellknownSymbol.sDefun || ws == WellknownSymbol.sDefmacro
+                             || ws == WellknownSymbol.sLet || ws == WellknownSymbol.sLetStar || ws == WellknownSymbol.sLetrec;
 
                 // whether a form needs to be preceeded by "values = null;" and "... = ".
                 // This is needed before some special forms (?) and before some primitives that will be opencoded in a special way
@@ -9702,8 +9703,9 @@ public class LambdaJ {
                     return;
                 }
 
+                case sLet:
                 case sLetStar:
-                case sLet: {
+                case sLetrec: {
                     final Object bindings = cadr(ccForm);
                     if (bindings instanceof LambdaJSymbol) {
                         if (clearValues) {
@@ -9713,25 +9715,39 @@ public class LambdaJ {
                     }
                     assert bindings != null : "let w/o bindings should have been replaced in expandForm";
                     rsfx++;
-                    final ConsCell ccBindings = requireList(LET, bindings);
-                    final ConsCell ccBody = requireList(LET, cddr(ccForm));
-                    ConsCell extEnv = env;
+                    final ConsCell ccBindings = listOrMalformed(symop.name, bindings);
+                    final ConsCell ccBody = listOrMalformed(symop.name, cddr(ccForm));
 
                     final boolean asRunnable = hasNext && toplevel;
                     if (asRunnable) {
-                        sb.append("        new Runnable() { public void run() {\n" 
-                                + "        Object tmp = null;\n");
-                        retLhs  = "        tmp = ";
+                        sb.append("        new Runnable() { public void run() {\n"
+                                  + "        Object tmp = null;\n");
+                        retLhs = "        tmp = ";
                     }
                     else sb.append("        {\n");
 
                     if (clearValues) {
                         emitLoc(sb, ccForm, 100);
                     }
-                    ConsCell letStarEnv = env;
                     final String vName = "v" + rsfx;
                     final int nVars = listLength(ccBindings);
-                    sb.append("        final Object[] ").append(vName).append(" = new Object[").append(nVars).append("];\n");
+                    sb.append("        final Object[] ").append(vName);
+                    if (symop.wellknownSymbol == WellknownSymbol.sLetrec) sb.append(" = unassigned(").append(nVars).append(");\n");
+                    else sb.append(" = new Object[").append(nVars).append("];\n");
+
+                    ConsCell letrecEnv = env;
+                    if (symop.wellknownSymbol == WellknownSymbol.sLetrec) {
+                        int localCtr = 0;
+                        for (Object binding : ccBindings) {
+                            final ConsCell ccBinding = (ConsCell)binding;
+                            final Object sym = car(ccBinding);
+                            final String name = vName + '[' + localCtr++ + ']';
+                            letrecEnv = extenvIntern((LambdaJSymbol)sym, name, letrecEnv);
+                        }
+                    }
+
+                    ConsCell extEnv = env;
+                    ConsCell letStarEnv = env;
                     int localCtr = 0;
                     final ArrayList<Object> varNames = new ArrayList<>(nVars);
                     for (Object binding : ccBindings) {
@@ -9742,7 +9758,7 @@ public class LambdaJ {
                             final String name = vName + '[' + localCtr++ + ']';
                             extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
                         }
-                        final ConsCell env1 = symop.wellknownSymbol == WellknownSymbol.sLet ? env : letStarEnv;
+                        final ConsCell env1 = symop.wellknownSymbol == WellknownSymbol.sLet ? env : symop.wellknownSymbol == WellknownSymbol.sLetStar ? letStarEnv : letrecEnv;
                         emitStmt(sb, cadr(ccBinding), env1, topEnv, rsfx, "        " + javasym(sym, extEnv, ccBinding) + " = ", null, null, -1, -1, true, false, false);
                         letStarEnv = extEnv;
                     }
@@ -9837,12 +9853,6 @@ public class LambdaJ {
 
                     ///     - if
                     case sIf: {
-                        /*if (consp(car(ccArguments)) && caar(ccArguments) == intp.intern(NULL)) {
-                            // optimize "(if (null ...) trueform falseform)" to "(if ... falseform trueform)"
-                            final ConsCell transformed = ConsCell.list(symop, cadar(ccArguments), caddr(ccArguments), cadr(ccArguments));
-                            emitForm(sb, transformed, env, topEnv, rsfx, isLast);
-                            return;
-                        }*/
                         sb.append('(');
                         emitTruthiness(sb, false, car(ccArguments), env, topEnv, rsfx);
                         sb.append("\n        ? ("); emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, isLast);
@@ -10719,8 +10729,7 @@ public class LambdaJ {
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 break;
             case sList:
-                assert !prim.stmtExpr;
-                if (args == null) { sb.append("(Object)null");  return true; }
+                if (args == null) { sb.append("clrValues(values = null)");  return true; }
                 if (cdr(args) == null) { // one arg
                     sb.append("_cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
                 }
@@ -10739,10 +10748,11 @@ public class LambdaJ {
                 emitCallPrimitive(sb, "findMethod", args, env, topEnv, rsfx);
                 return true;
             default:
-                for (String primitive: primitives)          if (symbolEq(op, primitive))    { emitCallPrimitive(sb, "_" + primitive, args, env, topEnv, rsfx);  return true; }
-                for (String[] primitive: aliasedPrimitives) if (symbolEq(op, primitive[0])) { emitCallPrimitive(sb, primitive[1], args, env, topEnv, rsfx);  return true; }
                 break;
             }
+
+            for (String primitive: primitives)          if (symbolEq(op, primitive))    { emitCallPrimitive(sb, "_" + primitive, args, env, topEnv, rsfx);  return true; }
+            for (String[] primitive: aliasedPrimitives) if (symbolEq(op, primitive[0])) { emitCallPrimitive(sb, primitive[1], args, env, topEnv, rsfx);  return true; }
 
             return false;
         }
