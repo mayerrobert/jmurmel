@@ -1,5 +1,4 @@
-"(get-setf-expansion (values..." spuckt derzeit ein unexpandiertes setf aus, k.a. ob das ein problem geben kann
--> wenn get-setf-expansion nur in macros verwendet wird, müsste es egal sein
+psetf: values-places gehen nur bei einem pair weil dann ist psetf==setf
 
 
 LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe GabrielBenchmark

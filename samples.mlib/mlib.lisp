@@ -37,7 +37,7 @@
 ;;; - places
 ;;;     - [destructuring-bind](#macro-destructuring-bind)
 ;;;     - [get-setf-expansion](#function-get-setf-expansion)
-;;;     - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
+;;;     - [setf](#macro-setf), [psetf](#macro-psetf), [incf, decf](#macro-incf-decf)
 ;;;     - [push](#macro-push), [pop](#macro-pop), [pushnew](#macro-pushnew)
 
 ;;; - numbers, characters
@@ -1206,7 +1206,6 @@
                  (hashref ,tmp1 ,tmp2)))
 
               ((eq 'values op)
-               (write "args: " nil) (writeln args)
                (let* ((vars (mapcar (lambda (x) (gensym)) args)))
                  `(nil
                    nil
@@ -1298,20 +1297,17 @@
                        `(hashset ,(car (cddar args)) ,(cadar args) ,#3#))
 
                       ((eq 'values op)
-                       (let* ((value-form #3#)
-                              (vars (mapcar (lambda (x) (gensym)) (cdr value-form))))
-                         `(multiple-value-call
-                            (lambda ,vars
-                              (values ,@(let* loop ((ret (cons () ()))
-                                                    (append-to ret)
-                                                    (places #2#)
-                                                    (vars vars))
-                                           (if places
-                                                 (progn
-                                                   (rplacd append-to (cons (macroexpand-1 (list 'setf (car places) (car vars))) ()))
-                                                   (loop ret (cdr append-to) (cdr places) (cdr vars)))
-                                             (cdr ret)))))
-                            ,value-form)))
+                       (let* ((vars (mapcar (lambda (x) (gensym)) #2#)))
+                         `(multiple-value-bind ,vars ,#3#
+                            (values ,@(let* loop ((ret (cons () ()))
+                                                  (append-to ret)
+                                                  (places #2#)
+                                                  (vars vars))
+                                         (if places
+                                               (progn
+                                                 (rplacd append-to (cons (list 'setf (car places) (car vars)) ()))
+                                                 (loop ret (cdr append-to) (cdr places) (cdr vars)))
+                                           (cdr ret)))))))
 
                       ;; see https://stackoverflow.com/questions/44698426/how-do-setf-works-under-the-hood
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
@@ -1320,6 +1316,42 @@
                               ,writer-form))))))))
 
           #1#)))
+
+
+;;; = Macro: psetf
+;;;     (psetf pair*) -> result
+;;;
+;;; Since: 1.4.6 todo values-places are broken
+;;;
+;;; Takes pairs of arguments like `setf`. The first is a place and the second
+;;; is the value that is supposed to go into that place. Returns the last
+;;; value.
+;;;
+;;; If more than one pair is supplied then the assignments of new values to places are done in parallel.
+;;;
+;;; Similar to CL's `psetf` except: similar to `setf` the return value is the multiple-values
+;;; returned by the storing form for the last place, or nil if there are no pairs. 
+(defmacro psetf pairs
+  (labels ((m%make-bindings (pairs)
+              (if pairs
+                  (if (cdr pairs)
+                      (cons (list (gensym) (car pairs) (cadr pairs)) (m%make-bindings (cddr pairs)))
+                      #1=(error "odd number of arguments to psetf")))))
+    (if pairs
+        (if (cdr pairs)
+            (if (cddr pairs)
+                (let* ((bindings (m%make-bindings pairs)))
+                  `(let ,(mapcar car bindings)
+                    ,@(let loop ((bindings bindings))
+                        (if bindings
+                            (cons `(setf ,(caar bindings) ,(caddr (car bindings)))
+                                  (loop (cdr bindings)))))
+                    ,@(let loop ((bindings bindings))
+                        (if bindings
+                            (cons `(setf ,(cadar bindings) ,(caar bindings))
+                                  (loop (cdr bindings)))))))
+                `(setf ,(car pairs) ,@(cdr pairs)))
+            #1#))))
 
 
 ; Helper macro to generate defmacro's for inplace modification macros.

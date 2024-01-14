@@ -586,7 +586,7 @@
 (define ctr nil)
 (defun place (l) (setq ctr (1+ ctr)) l) ; return arg, incr number of invocations
 
-;; test setf
+;; test setf, psetf
 (tests setf
   (setq x (cons 'a 'b) y (list 1 2 3)) =>  (1 2 3)
   (setf (car x) 'x (cadr y) (car x) (cdr x) y) =>  (1 X 3)
@@ -625,6 +625,63 @@
     (setf (values a (car lst) b (caddr lst)) (values 1 2 3 4 5))
     (list a b lst))
   => (1 3 (2 22 4))
+
+  (let (a b c)
+    (setq a 1)
+    (setf a (1+ a) b a c b)
+    (list a b c))
+  => (2 2 2)
+
+  (let (a b)
+    (setf (values a b) 1)
+    (list a b))
+  => (1 nil)
+
+  (let ((a 11) (b 22))
+    (setf (values a b) 1)
+    (list a b))
+  => (1 nil)
+
+  (labels ((mv () (values 1 2 3)))
+    (let (a b)
+      (setf (values a b) (mv))
+      (list a b)))
+  => (1 2)
+
+  (let (a b)
+    (multiple-value-bind (x y z) (setf (values a b) 1)
+      (list x y z)))
+  => (1 nil nil)
+
+  (labels ((mv () (values 1 2 3)))
+    (let (a b)
+      (multiple-value-bind (x y z) (setf (values a b) (mv))
+        (list x y z))))
+  => (1 2 nil)
+)
+
+
+#+broken
+(tests psetf
+  (let (a b c)
+    (setq a 1)
+    (psetf a (1+ a) b a c b)
+    (list a b c))
+  => (2 1 nil)
+
+  (labels ((mv () (values 1 2 3)))
+    (let ((a 11) (b 22))
+      (multiple-value-bind (x y z) (psetf (values a b) (mv) b a)
+        (list a b x y z))))
+  => #+murmel (1 11 11 nil nil)
+     #-murmel (1 11 nil nil nil)
+
+  (labels ((mv () (values 1 2 3)))
+    (let ((a 11) (b 22))
+      (multiple-value-bind (x y z) (psetf a 111 b 222 (values a b) (mv))
+        (list a b x y z))))
+  => #+murmel (1 2 1   2   nil)
+     #-murmel (1 2 nil nil nil)
 )
 
 

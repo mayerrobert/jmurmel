@@ -35,7 +35,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - places
     - [destructuring-bind](#macro-destructuring-bind)
     - [get-setf-expansion](#function-get-setf-expansion)
-    - [setf](#macro-setf), [incf, decf](#macro-incf-decf)
+    - [setf](#macro-setf), [psetf](#macro-psetf), [incf, decf](#macro-incf-decf)
     - [push](#macro-push), [pop](#macro-pop), [pushnew](#macro-pushnew)
 - numbers, characters
     - [abs](#function-abs), [min](#function-min), [max](#function-max), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
@@ -525,6 +525,20 @@ knows a corresponding setting form, which currently are:
 - hashref, gethash
 - svref, bvref, bit, sref, char
 - values
+
+### Macro: psetf
+    (psetf pair*) -> result
+
+Since: 1.4.6 todo values-places are broken
+
+Takes pairs of arguments like `setf`. The first is a place and the second
+is the value that is supposed to go into that place. Returns the last
+value.
+
+If more than one pair is supplied then the assignments of new values to places are done in parallel.
+
+Similar to CL's `psetf` except: similar to `setf` the return value is the multiple-values
+returned by the storing form for the last place, or nil if there are no pairs. 
 
 ### Macro: incf, decf
     (incf place delta-form*) -> new-value
