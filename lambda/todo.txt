@@ -952,6 +952,8 @@ feature headless und ggf gui
    -> besser: funktion headlessp
 MAVEN_OPTS=-Djava.awt.headless=true und dann turtle-funktionen in murmel-langref wieder aufdrehen?
 
+
+nützliche SRFIs: 1: lists, 2: and-let*, 13: String Libraries, 14: Character-set Library, 19: Time Data Types and Procedures
 SRFI 197 hat chain operator & Co, siehe https://srfi.schemers.org/srfi-197/srfi-197.html
 ähnlich wie ->
 
