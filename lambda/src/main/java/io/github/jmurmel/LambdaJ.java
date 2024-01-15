@@ -1159,7 +1159,7 @@ public class LambdaJ {
     }
 
     /** this class will write objects as S-expressions to the given {@link WriteConsumer} w/o any eol translation */
-    private static class SExpressionWriter implements ObjectWriter {
+    private static final class SExpressionWriter implements ObjectWriter {
         private final @NotNull WriteConsumer out;
 
         SExpressionWriter(@NotNull WriteConsumer out) { //noinspection ConstantConditions
@@ -1317,7 +1317,7 @@ public class LambdaJ {
 
     /** This class will read and parse S-Expressions (while generating symbol table entries)
      *  from the given {@link ReadSupplier} */
-    static class SExpressionReader implements ObjectReader {
+    static final class SExpressionReader implements ObjectReader {
         private final boolean haveNil;
         private final boolean haveString;
         private final boolean haveDouble;
@@ -3684,6 +3684,7 @@ public class LambdaJ {
     }
 
     private ConsCell evalMultipleValueBind(ConsCell varsAndValuesForm, ConsCell env, int stack, int level, int traceLvl) {
+        values = NO_VALUES;
         final Object prim = eval(cadr(varsAndValuesForm), env, stack, level, traceLvl);
         final ConsCell newValues;
         if (values == NO_VALUES) newValues = cons(prim, null);
@@ -5998,7 +5999,7 @@ public class LambdaJ {
             return argConv;
         }
 
-        private static class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
+        private static final class JavaMethod implements Primitive, MurmelJavaProgram.CompilerPrimitive {
             @FunctionalInterface private interface Invoker { Object invoke(Object... args) throws Throwable; }
 
             private final Method method;
