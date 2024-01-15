@@ -8,6 +8,7 @@ Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
    transform the innermost tail recursion/ named let/ let* /letrec into a loop
 
  * mlib: added values as a place for setf
+ * mlib: added psetf
 
  * fixed multiple-value-bind when the values form was a variable
  * fixed compiled (list* 1 2 3 (values 4 5)) and (list 1 2 3 (values 4 5))

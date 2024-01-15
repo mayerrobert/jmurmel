@@ -529,16 +529,16 @@ knows a corresponding setting form, which currently are:
 ### Macro: psetf
     (psetf pair*) -> result
 
-Since: 1.4.6 todo values-places are broken
+Since: 1.4.6
 
 Takes pairs of arguments like `setf`. The first is a place and the second
-is the value that is supposed to go into that place. Returns the last
-value.
+is the value that is supposed to go into that place.
 
 If more than one pair is supplied then the assignments of new values to places are done in parallel.
 
-Similar to CL's `psetf` except: similar to `setf` the return value is the multiple-values
-returned by the storing form for the last place, or nil if there are no pairs. 
+Similar to CL's `psetf` except: Murmel's `psetf`'s return value is the multiple-values
+returned by the storing form for the last place, or nil if there are no pairs,
+similar to `setf`.
 
 ### Macro: incf, decf
     (incf place delta-form*) -> new-value

@@ -661,7 +661,7 @@
 )
 
 
-#+broken
+;#+broken
 (tests psetf
   (let (a b c)
     (setq a 1)

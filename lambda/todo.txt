@@ -1,6 +1,3 @@
-psetf: values-places gehen nur bei einem pair weil dann ist psetf==setf
-
-
 LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe GabrielBenchmark
 
 

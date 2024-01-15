@@ -1321,35 +1321,40 @@
 ;;; = Macro: psetf
 ;;;     (psetf pair*) -> result
 ;;;
-;;; Since: 1.4.6 todo values-places are broken
+;;; Since: 1.4.6
 ;;;
 ;;; Takes pairs of arguments like `setf`. The first is a place and the second
-;;; is the value that is supposed to go into that place. Returns the last
-;;; value.
+;;; is the value that is supposed to go into that place.
 ;;;
 ;;; If more than one pair is supplied then the assignments of new values to places are done in parallel.
 ;;;
-;;; Similar to CL's `psetf` except: similar to `setf` the return value is the multiple-values
-;;; returned by the storing form for the last place, or nil if there are no pairs. 
+;;; Similar to CL's `psetf` except: Murmel's `psetf`'s return value is the multiple-values
+;;; returned by the storing form for the last place, or nil if there are no pairs,
+;;; similar to `setf`.
 (defmacro psetf pairs
   (labels ((m%make-bindings (pairs)
               (if pairs
                   (if (cdr pairs)
-                      (cons (list (gensym) (car pairs) (cadr pairs)) (m%make-bindings (cddr pairs)))
+                      (let ((place (car pairs)) (value-form (cadr pairs)))
+                        (if (and (consp place) (eq 'values (car place)))
+                            (cons (list* place value-form  (mapcar (lambda (x) (gensym)) (cdr place))) (m%make-bindings (cddr pairs))) 
+                            (cons (list place value-form (gensym)) (m%make-bindings (cddr pairs)))))
                       #1=(error "odd number of arguments to psetf")))))
     (if pairs
         (if (cdr pairs)
             (if (cddr pairs)
                 (let* ((bindings (m%make-bindings pairs)))
-                  `(let ,(mapcar car bindings)
+                  `(let ,(apply append (mapcar cddr bindings))
                     ,@(let loop ((bindings bindings))
                         (if bindings
-                            (cons `(setf ,(caar bindings) ,(caddr (car bindings)))
-                                  (loop (cdr bindings)))))
+                            (destructuring-bind (place value-form . vars) (car bindings)
+                              (cons `(setf (values ,@vars) ,value-form)
+                                     (loop (cdr bindings))))))
                     ,@(let loop ((bindings bindings))
                         (if bindings
-                            (cons `(setf ,(cadar bindings) ,(caar bindings))
-                                  (loop (cdr bindings)))))))
+                            (destructuring-bind (place value-form . vars) (car bindings)
+                              (cons `(setf ,place (values ,@vars))
+                                    (loop (cdr bindings))))))))
                 `(setf ,(car pairs) ,@(cdr pairs)))
             #1#))))
 
