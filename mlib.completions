@@ -18,10 +18,13 @@ doplist
 dotimes
 dovector
 incf
+multiple-value-list
+nth-value
 or
 pop
 prog1
 prog2
+psetf
 push
 pushnew
 reverse-collecting
@@ -32,6 +35,7 @@ typecase
 unless
 with-accumulator
 with-gensyms
+with-output-to-string
 
 plist-values
 plist-keys
@@ -94,6 +98,7 @@ copy-list
 last
 nth
 nthcdr
+dotted-nthcdr
 cdddr
 cddar
 cdadr
@@ -121,6 +126,7 @@ string-trim
 string-split
 string-join
 string-replace
+string-subseq
 maphash
 remhash
 gethash
