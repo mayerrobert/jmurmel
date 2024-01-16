@@ -13,6 +13,7 @@ Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
  * fixed multiple-value-bind when the values form was a variable
  * fixed compiled (list* 1 2 3 (values 4 5)) and (list 1 2 3 (values 4 5))
    was: would display multiple values in the REPL
+ * fixed mlib: "last" with any decimal number argument would return the whole list
 
 
 Changes in JMurmel-1.4.5 relative to JMurmel-1.4.4

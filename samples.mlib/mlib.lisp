@@ -533,11 +533,11 @@
                     (,scan)))))))
 
 (defun m%lastn (lst n)
+  (setq n (m%nonneg-integer-number n))
   (cond
     ((= n 1) (m%last1-macro))
     ((> n 1) (m%lastn-macro))
-    ((= n 0) (m%last0-macro))
-    (t (error 'type-error "last: n must be >= 0"))))
+    (t       (m%last0-macro))))
 
 (defun last (lst . n)
   (if n
