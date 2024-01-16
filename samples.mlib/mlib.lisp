@@ -1332,16 +1332,25 @@
 ;;; returned by the storing form for the last place, or nil if there are no pairs,
 ;;; similar to `setf`.
 (defmacro psetf pairs
-  (labels ((make-bindings (pairs)
+  (labels ((%make-bindings (pairs append-to)
               (if pairs
                   (if (cdr pairs)
-                      (let ((place (car pairs)) (value-form (cadr pairs)))
-                        (if (and (consp place) (eq 'values (car place)))
-                              (if (cddr place)
-                                    (cons (list* place value-form  (mapcar (lambda (x) (gensym)) (cdr place))) (make-bindings (cddr pairs)))
-                                 (cons (list (cadr place) value-form (gensym)) (make-bindings (cddr pairs))))
-                            (cons (list place value-form (gensym)) (make-bindings (cddr pairs)))))
-                      #1=(error "odd number of arguments to psetf"))))
+                        (let ((place (car pairs)) (value-form (cadr pairs)))
+                          (if (and (consp place) (eq 'values (car place)))
+                                (progn
+                                  (if (cddr place)
+                                        (rplacd append-to (cons (list* place value-form  (mapcar (lambda (x) (gensym)) (cdr place))) ()))
+                                    (rplacd append-to (cons (list (cadr place) value-form (gensym)) ())))
+                                  (%make-bindings (cddr pairs) (cdr append-to)))
+                            (progn
+                              (rplacd append-to (cons (list place value-form (gensym)) ()))
+                              (%make-bindings (cddr pairs) (cdr append-to)))))
+                    #1=(error "odd number of arguments to psetf"))))
+
+           (make-bindings (pairs)
+             (let ((head (cons () ())))
+               (%make-bindings pairs head)
+               (cdr head)))
 
            (maybe-values (vars)
              (if (cdr vars)
@@ -1350,21 +1359,25 @@
 
     (if pairs
         (if (cdr pairs)
-            (if (cddr pairs)
-                (let* ((bindings (make-bindings pairs)))
-                  `(let ,(apply append (mapcar cddr bindings))
-                    ,@(let loop ((bindings bindings))
-                        (when bindings
-                          (destructuring-bind (place value-form . vars) (car bindings)
-                            (cons `(setf ,(maybe-values vars) ,value-form)
-                                  (loop (cdr bindings))))))
-                    ,@(let loop ((bindings bindings))
-                        (when bindings
-                          (destructuring-bind (place value-form . vars) (car bindings)
-                            (cons `(setf ,place ,(maybe-values vars))
-                                  (loop (cdr bindings))))))))
-                `(setf ,(car pairs) ,@(cdr pairs)))
-            #1#))))
+              (if (cddr pairs)
+                    (let* ((bindings (make-bindings pairs)))
+                      `(let ,(apply append (mapcar cddr bindings))
+                         ,@(let ((head (cons () ())))
+                             (let loop ((bindings bindings) (append-to head))
+                               (when bindings
+                                 (destructuring-bind (place value-form . vars) (car bindings)
+                                   (rplacd append-to (cons `(setf ,(maybe-values vars) ,value-form) ())))
+                                 (loop (cdr bindings) (cdr append-to))))
+                             (cdr head))
+                         ,@(let ((head (cons () ())))
+                             (let loop ((bindings bindings) (append-to head))
+                               (when bindings
+                                 (destructuring-bind (place value-form . vars) (car bindings)
+                                   (rplacd append-to (cons `(setf ,place ,(maybe-values vars)) ())))
+                                 (loop (cdr bindings) (cdr append-to))))
+                             (cdr head))))
+                    `(setf ,(car pairs) ,@(cdr pairs)))
+          #1#))))
 
 
 ; Helper macro to generate defmacro's for inplace modification macros.
