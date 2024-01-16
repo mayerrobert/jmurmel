@@ -480,7 +480,7 @@
 
 
 ;;; = Function: last
-;;;     (last lst n?) -> last-cons-or-nil
+;;;     (last lst n?) -> tail
 ;;;
 ;;; Since: 1.2
 ;;;

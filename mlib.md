@@ -258,7 +258,7 @@ Returns the length of `list-or-string` if it is a string or proper list.
 Returns `nil` if `list-or-string` is a circular list.
 
 ### Function: last
-    (last lst n?) -> last-cons-or-nil
+    (last lst n?) -> tail
 
 Since: 1.2
 
