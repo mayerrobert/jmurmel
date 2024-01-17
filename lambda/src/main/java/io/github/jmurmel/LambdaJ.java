@@ -335,7 +335,8 @@ public class LambdaJ {
 
         /** if {@code recordPos == true} then it would be desirable to record file/line positions inside the objects */
         default Object readObj(boolean recordPos, Object eof) { return readObj(eof); }
-        default void setInput(ReadSupplier input, Path filePath) { throw new UnsupportedOperationException("this ObjectReader does not support changing input"); }
+        default void setInput(@NotNull ReadSupplier input, Path filePath) { throw new UnsupportedOperationException("this ObjectReader does not support changing input"); }
+        default Path getInput() { return null; }
     }
 
     public interface ObjectWriter {
@@ -692,8 +693,6 @@ public class LambdaJ {
         @Override void adjustEnd(int lineNo, int charNo) { this.lineNo = lineNo; this.charNo = charNo; }
         @Override void adjustEnd(SExpConsCell cell) { this.lineNo = cell.lineNo; this.charNo = cell.charNo; }
         @Override @NotNull String lineInfo() { return (path == null ? "line " : path.toString() + ':') + startLineNo + ':' + startCharNo + ".." + lineNo + ':' + charNo + ':' + ' '; }
-
-        Path path() { return path; }
     }
 
     private static class Closure implements Serializable, Writeable {
@@ -965,8 +964,6 @@ public class LambdaJ {
 
     /** additional directory for load and require, default is installation directory, see {@link InstallDir#installDir} */
     final Path libDir;
-
-    Path currentSource;
 
     public enum TraceLevel {
         TRC_NONE, TRC_STATS, TRC_ENVSTATS, TRC_EVAL, TRC_FUNC, TRC_ENV, TRC_PARSE, TRC_TOK, TRC_LEX;
@@ -1399,7 +1396,8 @@ public class LambdaJ {
 
         private static boolean have(int features, Features feature) { return (features & feature.bits()) != 0; }
 
-        @Override public void setInput(@NotNull ReadSupplier input, Path filePath) { in = input; this.filePath = filePath; lineNo = 1; charNo = 0; }
+        @Override public void setInput(@NotNull ReadSupplier input, Path filePath) { assert input != null; in = input; this.filePath = filePath; lineNo = 1; charNo = 0; }
+        @Override public Path getInput() { return filePath; }
 
         /// Scanner
         private boolean isSpace(int x)  { return !escape && isWhitespace(x); }
@@ -3764,9 +3762,7 @@ public class LambdaJ {
 
 
     private Object loadFile(String func, Object argument) {
-        final Path prev = currentSource;
         final Path p = findFile(func, argument);
-        currentSource = p;
         try {
             final SExpressionReader parser = makeReader(ReadSupplier.of(p), p);
             final Object eof = "EOF";
@@ -3785,9 +3781,6 @@ public class LambdaJ {
             errorReaderError("%s: error reading file '%s': %s", func, argument, e.getMessage());
             return null; // notreached
         }
-        finally {
-            currentSource = prev;
-        }
     }
 
     final Path findFile(String func, Object argument) {
@@ -3799,7 +3792,7 @@ public class LambdaJ {
         final Path path = Paths.get(filename);
         if (path.isAbsolute()) return path;
 
-        Path current = currentSource;
+        Path current = lispReader.getInput();
         if (current == null) current = Paths.get("dummy");
         final Path ret = current.resolveSibling(path);
         if (Files.isReadable(ret)) return ret;
@@ -6465,7 +6458,6 @@ public class LambdaJ {
         }
 
         final ObjectReader scriptParser = makeReader(program::read, null);
-        currentSource = null;
         final Object eof = "EOF";
         Object result = null;
         Object exp;
@@ -6661,7 +6653,6 @@ public class LambdaJ {
                     System.err.println();  System.err.println(e);
                     throw EXIT_IO_ERROR;
                 }
-                interpreter.currentSource = null;
 
                 // repl() doesn't return
                 if (files.isEmpty() && immediateForms == null && istty || repl) repl(interpreter, (immediateForms != null || !files.isEmpty()) && action == Action.INTERPRET, istty, echo, history, args);
@@ -6718,11 +6709,9 @@ public class LambdaJ {
 
         /// functions to interpret, compile and/ or run files or input streams
         private static Object interpretStream(final LambdaJ interpreter, ReadSupplier prog, Path fileName, final boolean printResult, List<Object> history) {
-            final Path prev = interpreter.currentSource;
             try {
                 final ObjectReader reader = interpreter.getLispReader();
                 reader.setInput(prog, fileName);
-                interpreter.currentSource = fileName;
                 final ObjectReader inReader = new SExpressionReader(interpreter.features, TraceLevel.TRC_NONE, null, interpreter.getSymbolTable(), interpreter.featuresEnvEntry, System.in::read, null);
                 final ObjectWriter outWriter = makeWriter(System.out::print);
                 interpreter.setReaderPrinter(inReader, outWriter);
@@ -6744,7 +6733,6 @@ public class LambdaJ {
                 return result;
             }
             catch (Exception e) { return errorExit(e); }
-            finally { interpreter.currentSource = prev; }
         }
 
         private static boolean compileFiles(final List<String> files, String forms, boolean toJar, String clsName, Path libPath, String outDir) throws IOException {
@@ -7597,15 +7585,13 @@ public class LambdaJ {
             private final boolean verbose;
             private final Iterator<Path> paths;
             private String forms;
-            private final LambdaJ intp;
             private final ObjectReader delegate;
 
             private Reader reader;
 
-            MultiFileReadSupplier(List<Path> paths, String forms, LambdaJ intp, ObjectReader delegate, boolean verbose) {
+            MultiFileReadSupplier(List<Path> paths, String forms, ObjectReader delegate, boolean verbose) {
                 this.paths = paths.iterator();
                 this.forms = forms;
-                this.intp = intp;
                 this.delegate = delegate;
                 this.verbose = verbose;
             }
@@ -7618,7 +7604,6 @@ public class LambdaJ {
                 if (verbose) System.out.println("parsing " + p + "...");
                 reader = Files.newBufferedReader(p);
                 delegate.setInput(this, p);
-                intp.currentSource = p;
             }
 
             private void forms() throws IOException {
@@ -7629,7 +7614,6 @@ public class LambdaJ {
                 reader = new StringReader(forms);
                 forms = null;
                 delegate.setInput(this, null);
-                intp.currentSource = null;
             }
 
             @Override public int read() throws IOException {
@@ -7663,7 +7647,7 @@ public class LambdaJ {
                 paths.add(Paths.get(fileName));
             }
             final ObjectReader reader = interpreter.makeReader(NULL_READCHARS, null);
-            reader.setInput(new MultiFileReadSupplier(paths, forms, interpreter, reader, verbose), null);
+            reader.setInput(new MultiFileReadSupplier(paths, forms, reader, verbose), null);
             return reader;
         }
     }
@@ -9366,7 +9350,6 @@ public class LambdaJ {
                 case sLoad: {
                     final ConsCell ccArgs = listOrMalformed(LOAD, cdr(ccForm));
                     oneArg(LOAD, ccArgs);
-                    if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack
                     globalEnv = loadFile(LOAD, ret, car(ccArgs), globalEnv, bodyForms, globals);
                     return globalEnv;
                 }
@@ -9379,7 +9362,6 @@ public class LambdaJ {
                     if (!intp.modules.contains(modName)) {
                         Object modFilePath = cadr(ccArgs);
                         if (modFilePath == null) modFilePath = modName;
-                        if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack
                         globalEnv = loadFile(REQUIRE, ret, modFilePath, globalEnv, bodyForms, globals);
                         if (!intp.modules.contains(modName)) errorMalformedFmt(REQUIRE, "require'd file '%s' does not provide '%s'", modFilePath, modName);
                     }
@@ -10633,9 +10615,7 @@ public class LambdaJ {
         private ConsCell loadFile(String func, WrappingWriter sb, Object argument, ConsCell topEnv, List<Object> bodyForms, StringBuilder globals) {
             assert !passTwo;
             final LambdaJ intp = this.intp;
-            final Path prev = intp.currentSource;
             final Path p = intp.findFile(func, argument);
-            intp.currentSource = p;
             try {
                 final SExpressionReader parser = intp.makeReader(ReadSupplier.of(p), p);
                 final Object eof = "EOF";
@@ -10647,9 +10627,6 @@ public class LambdaJ {
             }
             catch (IOException e) {
                 throw wrap(new ReaderError(LOAD + ": error reading file '%s': ", e.getMessage()));
-            }
-            finally {
-                intp.currentSource = prev;
             }
         }
 

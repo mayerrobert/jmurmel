@@ -2671,5 +2671,6 @@ JMurmel> (pprint (macroexpand-1 '(setf (values (cadr a) (cadr b) (cadr c)) (valu
 
 apply als wellknown symbol, dann fallen einige intern("apply") im compiler weg
 
-
 psetf: values-places gehen nur bei einem pair weil dann ist psetf==setf
+
+LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe GabrielBenchmark

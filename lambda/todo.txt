@@ -1,6 +1,3 @@
-LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe GabrielBenchmark
-
-
 setf-functions: ggf. würds reichen in expandForm (setf func) in define/ defun/ im car einer form auf das symbol |(setf func)| umzubiegen?
 -> zumindest noch apply, multiple-value-call
 

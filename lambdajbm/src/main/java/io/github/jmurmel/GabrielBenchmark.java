@@ -59,7 +59,6 @@ public class GabrielBenchmark {
     public Object readAndInterpret() {
         final Reader reader = new StringReader(source);
         final LambdaJ.ObjectReader parser = interpreter.makeReader(reader::read, prog);
-        interpreter.currentSource = prog; // todo das sollte der interpreter selber rausfinden?!
         return interpreter.interpretExpressions(parser, null, null, null);
     }
 
