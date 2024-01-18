@@ -4392,6 +4392,8 @@ public class LambdaJ {
     static RuntimeException errorArgTypeError(String expected, String func, Object actual)      { throw new SimpleTypeError("%s: expected a %s argument but got %s", func, expected, printSEx(actual)); }
     static RuntimeException errorNotANumber      (String func, Object actual)                   { throw errorArgTypeError("number", func, actual); }
     static RuntimeException errorNotAnInteger    (String func, Object actual)                   { throw errorArgTypeError("integral number", func, actual); }
+    static void             errorNotAFixnum      (String msg)                                   { throw new ArithmeticException(msg); }
+
     static RuntimeException errorNotABit         (String func, Object actual)                   { throw errorArgTypeError("bit", func, actual); }
     static RuntimeException errorNotAVector      (String func, Object actual)                   { throw errorArgTypeError(VECTOR, func, actual); }
     static RuntimeException errorNotASimpleVector(String func, Object actual)                   { throw errorArgTypeError("simple " + VECTOR, func, actual); }
@@ -4616,10 +4618,10 @@ public class LambdaJ {
 
         /** return the argument w/o decimal places as a long, exception if conversion is not possible */
         static long toFixnum(double d) {
-            if (Double.isInfinite(d)) throw new ArithmeticException("value is Infinite");
-            if (Double.isNaN(d)) throw new ArithmeticException("value is NaN");
-            if (d < MOST_NEGATIVE_FIXNUM_VAL) throw new ArithmeticException("underflow");
-            if (d > MOST_POSITIVE_FIXNUM_VAL) throw new ArithmeticException("overflow");
+            if (Double.isInfinite(d)) errorNotAFixnum("value is Infinite");
+            if (Double.isNaN(d)) errorNotAFixnum("value is NaN");
+            if (d < MOST_NEGATIVE_FIXNUM_VAL) errorNotAFixnum("underflow");
+            if (d > MOST_POSITIVE_FIXNUM_VAL) errorNotAFixnum("overflow");
             return (long)d;
         }
 
@@ -4898,12 +4900,16 @@ public class LambdaJ {
         }
 
         static Number inc(Object n) {
-            if (n instanceof Double) return ((Double)n) + 1;
             if (n instanceof Long) {
                 final long l;
-                if ((l = (Long) n) == MOST_POSITIVE_FIXNUM_VAL) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
+                if ((l = (Long)n) == MOST_POSITIVE_FIXNUM_VAL) errorNotAFixnum("1+: overflow, integer result does not fit in a fixnum");
                 return l + 1;
             }
+            if (n instanceof Double) return ((Double)n) + 1;
+            return incNumber(n);
+        }
+
+        private static Number incNumber(Object n) {
             if (n instanceof Byte) return ((Byte)n).intValue() + 1;
             if (n instanceof Short) return ((Short)n).intValue() + 1;
             if (n instanceof Integer) return ((Integer)n).longValue() + 1;
@@ -4913,9 +4919,10 @@ public class LambdaJ {
                     l = ((BigInteger)n).longValueExact();
                 }
                 catch (ArithmeticException e) {
-                    throw new ArithmeticException("1+: overflow, BigInteger argument does not fit in a fixnum");
+                    errorNotAFixnum("1+: overflow, BigInteger argument does not fit in a fixnum");
+                    /*notreached*/ throw null;
                 }
-                if (l == MOST_POSITIVE_FIXNUM_VAL) throw new ArithmeticException("1+: overflow, integer result does not fit in a fixnum");
+                if (l == MOST_POSITIVE_FIXNUM_VAL) errorNotAFixnum("1+: overflow, integer result does not fit in a fixnum");
                 return l + 1;
             }
             return toDouble("1+", n) + 1;
@@ -4925,9 +4932,13 @@ public class LambdaJ {
             if (n instanceof Double) return ((Double)n) - 1;
             if (n instanceof Long) {
                 final long l;
-                if ((l = (Long) n) == MOST_NEGATIVE_FIXNUM_VAL) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
+                if ((l = (Long)n) == MOST_NEGATIVE_FIXNUM_VAL) errorNotAFixnum("1-: underflow, integer result does not fit in a fixnum");
                 return l - 1;
             }
+            return decNumber(n);
+        }
+
+        static Number decNumber(Object n) {
             if (n instanceof Byte) return ((Byte)n).intValue() - 1;
             if (n instanceof Short) return ((Short)n).intValue() - 1;
             if (n instanceof Integer) return ((Integer)n).longValue() - 1;
@@ -4937,9 +4948,10 @@ public class LambdaJ {
                     l = ((BigInteger)n).longValueExact();
                 }
                 catch (ArithmeticException e) {
-                    throw new ArithmeticException("1-: underflow, BigInteger argument does not fit in a fixnum");
+                    errorNotAFixnum("1-: underflow, BigInteger argument does not fit in a fixnum");
+                    /*notreached*/ throw null;
                 }
-                if (l == MOST_NEGATIVE_FIXNUM_VAL) throw new ArithmeticException("1-: underflow, integer result does not fit in a fixnum");
+                if (l == MOST_NEGATIVE_FIXNUM_VAL) errorNotAFixnum("1-: underflow, integer result does not fit in a fixnum");
                 return l - 1;
             }
             return toDouble("1-", n) - 1;
