@@ -62,8 +62,6 @@ import static io.github.jmurmel.LambdaJ.Chk.*;
 import static io.github.jmurmel.LambdaJ.Subr.*;
 
 import static java.lang.annotation.ElementType.*;
-import static java.lang.annotation.ElementType.TYPE_USE;
-import static java.lang.annotation.RetentionPolicy.SOURCE;
 
 /// # JMurmel - Murmel interpreter/ compiler
 
@@ -1400,7 +1398,10 @@ public class LambdaJ {
 
         private static boolean have(int features, Features feature) { return (features & feature.bits()) != 0; }
 
-        @Override public void setInput(@NotNull ReadSupplier input, Path filePath) { assert input != null; in = input; this.filePath = filePath; lineNo = 1; charNo = 0; }
+        @Override public void setInput(@NotNull ReadSupplier input, Path filePath) {
+            //noinspection ConstantConditions
+            assert input != null; in = input; this.filePath = filePath; lineNo = 1; charNo = 0;
+        }
         @Override public Path getInput() { return filePath; }
 
         /// Scanner
@@ -8597,7 +8598,11 @@ public class LambdaJ {
                 }
             }
             catch (ReturnException re) { throw re; }
-            catch (Exception e) { fling(e); /*notreached*/ throw null; }
+            catch (Exception e) {
+                fling(e);
+                //noinspection ConstantConditions because fling() doesn't return
+                throw null;
+            }
             finally { if (cleanups != null) runCleanups(cleanups); }
         }
 
@@ -11314,7 +11319,7 @@ public class LambdaJ {
 
     // Null and NotNull are copied from jakarta.validation-api.jar (and somewhat stripped) in order to avoid this dependency so that "java LambdaJ.java" will work
     @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
-    @Retention(SOURCE)
+    @Retention(RetentionPolicy.SOURCE)
     @Repeatable(NotNull.List.class)
     @Documented
     public @interface NotNull {
@@ -11323,7 +11328,7 @@ public class LambdaJ {
          * Defines several {@link NotNull} annotations on the same element.
          */
         @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
-        @Retention(SOURCE)
+        @Retention(RetentionPolicy.SOURCE)
         @Documented
         @interface List {
 
@@ -11332,7 +11337,7 @@ public class LambdaJ {
     }
 
     @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
-    @Retention(SOURCE)
+    @Retention(RetentionPolicy.SOURCE)
     @Repeatable(Null.List.class)
     @Documented
     public @interface Null {
@@ -11341,7 +11346,7 @@ public class LambdaJ {
          * Defines several {@link Null} annotations on the same element.
          */
         @Target({ METHOD, FIELD, ANNOTATION_TYPE, CONSTRUCTOR, PARAMETER, TYPE_USE })
-        @Retention(SOURCE)
+        @Retention(RetentionPolicy.SOURCE)
         @Documented
         @interface List {
 
