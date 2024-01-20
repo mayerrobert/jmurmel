@@ -10155,6 +10155,15 @@ public class LambdaJ {
             else if (ws == WellknownSymbol.sNeq && emitBinOp(sb, false, negate ? "!=" : "==", ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
             else if (ws == WellknownSymbol.sGe  && emitBinOp(sb, false, negate ? "<"  : ">=", ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
             else if (ws == WellknownSymbol.sGt  && emitBinOp(sb, false, negate ? "<=" : ">",  ccArgs, env, topEnv, rsfx)) { /* emitBinOp did all as a sideeffect */ }
+            else if (ws == WellknownSymbol.sIf) {
+                sb.append('(');
+                emitTruthiness(sb, negate, car(ccArgs), env, topEnv, rsfx);
+                sb.append(" ? ");
+                emitTruthiness(sb, negate, cadr(ccArgs), env, topEnv, rsfx);
+                sb.append(" : ");
+                emitTruthiness(sb, negate, caddr(ccArgs), env, topEnv, rsfx);
+                sb.append(')');
+            }
             else { sb.append('('); emitForm(sb, ccForm, env, topEnv, rsfx, false); sb.append(")").append(isNotNull); }
 
             if (clr) sb.append(")");
