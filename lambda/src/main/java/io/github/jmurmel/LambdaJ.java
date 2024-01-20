@@ -8799,6 +8799,30 @@ public class LambdaJ {
             }
         }
 
+        public final Object[] mv(Object prim, int nVars) {
+            final Object[] ret;
+            if (values != null && values.length == nVars) {
+                ret = values;
+                return ret;
+            }
+            ret  = new Object[nVars];
+            if (values != null) {
+                for (int m = 0; m < nVars && m < values.length; ++m) ret[m] = values[m];
+            }
+            else ret[0] = prim;
+            return ret;
+        }
+
+        public final Object[] mvVarargs(Object prim, int nVars) {
+            final Object[] ret = new Object[nVars];
+            if (values != null) {
+                int m = 0;
+                for (; m < nVars-1 && m < values.length; ++m) ret[m] = values[m];
+                if (m < values.length) ret[m] = arraySlice(Arrays.copyOfRange(values, m, values.length));
+            }
+            else ret[0] = prim;
+            return ret;
+        }
 
 
         public String loc;
@@ -9701,7 +9725,7 @@ public class LambdaJ {
                     return;
                 }
 
-                case sCatch:
+                case sCatch: {
                     sb.append("        try {\n");
                     emitStmts(sb, (ConsCell)cdr(ccArguments), env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, true, hasNext);
                     sb.append("        }\n"
@@ -9710,6 +9734,7 @@ public class LambdaJ {
                     else sb.append(retLhs);
                     sb.append("catchHelper("); emitForm(sb, car(ccArguments), env, topEnv, rsfx, false); sb.append(", e);\n        }\n");
                     return;
+                }
 
                 case sSetQ: {
                     if (ccArguments == null) {
@@ -9800,6 +9825,44 @@ public class LambdaJ {
                         emitStmts(sb, ccBody, extEnv, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext);
                         sb.append("        }\n");
                     }
+                    return;
+                }
+
+                case sMultipleValueBind: {
+                    ConsCell extenv = env;
+                    final Object varDef = car(ccArguments);
+                    rsfx++;
+                    if (varDef != null) {
+                        final String prim = "prim" + rsfx;
+                        sb.append("        {\n        Object ").append(prim).append(";\n");
+                        emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx + 1, "        " + prim + " = ", null, null, -1, -1, true, false, false);
+
+                        int n = 0;
+                        if (consp(varDef)) {
+                            final ConsCell varList = (ConsCell)varDef;
+                            for (Object arg : varList) {
+                                extenv = extenvIntern((LambdaJSymbol)arg, "mv" + rsfx + '[' + n++ + ']', extenv);
+                            }
+                            if (dottedList(varList))
+                                sb.append("        Object mv").append(rsfx).append("[] = mvVarargs(").append(prim).append(", ").append(n).append(");\n");
+                            else
+                                sb.append("        Object mv").append(rsfx).append("[] = mv(").append(prim).append(", ").append(n).append(");\n");
+                        }
+                        else if (symbolp(varDef)) {
+                            extenv = extenvIntern((LambdaJSymbol)varDef, "mv" + rsfx + "[0]", extenv);
+                            sb.append("        Object mv").append(rsfx).append("[] = mvVarargs(").append(prim).append(", 1);\n");
+                        }
+                        else throw errorMalformedFmt(MULTIPLE_VALUE_BIND, "expected a list or a symbol but got %s", printSEx(varDef));
+
+                        // emit the body
+                        emitStmts(sb, (ConsCell)cddr(ccArguments), extenv, topEnv, rsfx, retLhs, toplevel, hasNext);
+                        sb.append("        }\n");
+                    }
+                    else {
+                        // no variables. Emit the values form (for any side-effects) and the body 
+                        emitStmts(sb, (ConsCell)cdr(ccArguments), extenv, topEnv, rsfx, retLhs, toplevel, hasNext);
+                    }
+
                     return;
                 }
 

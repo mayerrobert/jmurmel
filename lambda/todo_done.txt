@@ -2676,3 +2676,5 @@ psetf: values-places gehen nur bei einem pair weil dann ist psetf==setf
 LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe GabrielBenchmark
 
 defunToJava könnte einen member vom compiler mit funktionsnamen belegen, das könnte für die named-let-lambdas verwendet werden
+
+emitStmt sollte multiple-value-bind auch behandeln: in mlib scan-multiple gibts "(multiple-value-bind ... (loop (cdr x)" und das wird zu tailcall() statt continue
