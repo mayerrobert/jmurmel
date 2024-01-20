@@ -483,11 +483,28 @@ multiline comment
   (let ((l1 (gensym))
         (l2 (gensym)))
     `(labels ((,l1 () 1)
-              (,l2 () (,l1)))
+              (,l2 () (if nil (,l2) (,l1))))
        (,l2))))
 
 (deftest labels.2
   (m) 1)
+
+(defun x()
+  (labels ((l1 ()
+             (if nil
+                 (multiple-value-bind (a) (values 1)
+                   (l1))
+                 (l2)))
+
+           (l2 ()
+             (if nil
+                 (l2)
+                 123)))
+
+    (l1)))
+
+(deftest labels.3
+  (x) 123)
 
 
 ;;; catch, throw

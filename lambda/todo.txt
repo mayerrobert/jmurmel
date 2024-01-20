@@ -1,3 +1,6 @@
+emitStmt sollte multiple-value-bind auch behandeln: in mlib scan-multiple gibts "(multiple-value-bind ... (loop (cdr x)" und das wird zu tailcall() statt continue
+
+
 setf-functions: ggf. würds reichen in expandForm (setf func) in define/ defun/ im car einer form auf das symbol |(setf func)| umzubiegen?
 -> zumindest noch apply, multiple-value-call
 
@@ -14,9 +17,6 @@ compiler require könnte intelligenter sein:
 -> erst nur das file in den interpreter stecken und filename merken
 -> in einem zweiten durchgang jene defines/ defuns rausgenerieren die bisher undefined waren
 -> aufpassen bei required files die andere files requiren
-
-
-defunToJava könnte einen member vom compiler mit funktionsnamen belegen, das könnte für die named-let-lambdas verwendet werden
 
 
 der compiler opencoded nur numeric compare operator mit 2 args

@@ -9107,10 +9107,13 @@ public class LambdaJ {
                 if (c == '_' || c >= '0' && c <= '9' || c >= 'a' && c <= 'z' || c >= 'A' && c <= 'Z') mangled.append(c);
                 else mangled.append('_').append((int)c).append('_');
             }
-            if (sfx != 0) mangled.append(sfx);
+            if (sfx != 0) mangled.append('_').append(sfx);
             return mangled.toString();
         }
 
+        private String mangleFunctionName(String symname, int sfx) {
+            return mangle(currentFunctionName.substring(1) + symname, sfx);
+        }
 
 
         /// environment
@@ -9446,7 +9449,7 @@ public class LambdaJ {
 
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
                     + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
-                    + "    private Object define_").append(javasym).append("() {\n");
+                    + "    private Object define").append(javasym).append("() {\n");
             emitClearValues(sb, form);
             sb.append("        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                     + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
@@ -9483,17 +9486,16 @@ public class LambdaJ {
             final Object params = cadr(symbolParamsAndForms);
             final ConsCell body = (ConsCell)cddr(symbolParamsAndForms);
 
-            final String javasym = mangle(symbol.toString(), 0);
-            final ConsCell localEnv = extenvIntern(symbol, javasym, topEnv);
+            final String javasym = mangleFunctionName(symbol.toString(), 0);
 
             sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
                       + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
-            sb.append("    private LambdaJSymbol defun_").append(javasym).append("() {\n");
+            sb.append("    private LambdaJSymbol defun").append(javasym).append("() {\n");
             emitLoc(sb, form, 40);
             sb.append("        final MurmelFunction func = ");
 
-            emitNamedLambda(DEFUN, sb, symbol, params, body, localEnv, topEnv, 0, true);
+            emitNamedLambda(DEFUN, sb, symbol, params, body, extenvIntern(symbol, javasym, topEnv), topEnv, 0, true);
 
             sb.append(";\n        ").append(javasym).append(" = new CompilerGlobal(func);\n"
                     + "        return intern(\"").append(symbol).append("\");\n"
@@ -9502,8 +9504,12 @@ public class LambdaJ {
             return extenvIntern(symbol, javasym + ".get()", topEnv);
         }
 
+        private String currentFunctionName = "_";
         private void emitNamedLambda(String func, WrappingWriter sb, LambdaJSymbol symbol, Object params, ConsCell body, ConsCell env, ConsCell topEnv, int rsfx, boolean emitSelf) {
-            final String javasym = mangle(symbol.toString(), rsfx);
+            final String javasym = mangleFunctionName(symbol.toString(), rsfx);
+            final String prevName = currentFunctionName;
+            currentFunctionName = javasym + '_';
+
             sb.append("new MurmelFunction() {\n");
             if (emitSelf) sb.append("        private final MurmelFunction ").append(javasym).append(" = this;\n");
             sb.append("        public final Object apply(Object... args").append(rsfx).append(") {\n"
@@ -9529,6 +9535,8 @@ public class LambdaJ {
             emitStmts(sb, body, extenv, topEnv, rsfx, "        " + ret + " = ", symbol, "args" + rsfx, minParams, maxParams, false, false);
             sb.append("        break;\n        }\n        return ").append(ret).append(";\n");
             sb.append("        } }");
+
+            currentFunctionName = prevName;
         }
 
 
@@ -9939,7 +9947,7 @@ public class LambdaJ {
                         if (rsfx != 1) errorNotImplemented("define as non-toplevel form is not implemented");
                         defined(DEFINE, car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
-                        sb.append("define_").append(javasym).append("()");
+                        sb.append("define").append(javasym).append("()");
                         return;
                     }
 
@@ -9947,7 +9955,7 @@ public class LambdaJ {
                         if (rsfx != 1) errorNotImplemented("defun as non-toplevel form is not implemented");
                         defined(DEFUN, car(ccArguments), env);
                         final String javasym = mangle(car(ccArguments).toString(), 0);
-                        sb.append("defun_").append(javasym).append("()");
+                        sb.append("defun").append(javasym).append("()");
                         return;
                     }
 
@@ -10413,7 +10421,7 @@ public class LambdaJ {
             final ConsCell ccBindings = (ConsCell)bindings;
             final ConsCell params = paramList(op, ccBindings, false);
 
-            if (named) emitNamedLambda(op, sb, loopLabel, params, body, extenv(op, loopLabel, rsfx + 1, env), topEnv, rsfx + 1, true);
+            if (named) emitNamedLambda(op, sb, loopLabel, params, body, extenvIntern(loopLabel, mangleFunctionName(loopLabel.toString(), rsfx + 1), env), topEnv, rsfx + 1, true);
             else emitLambda(sb, cons(params, body), env, topEnv, rsfx + 1, false);
 
             if (ccBindings != null) {

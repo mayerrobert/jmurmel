@@ -2674,3 +2674,5 @@ apply als wellknown symbol, dann fallen einige intern("apply") im compiler weg
 psetf: values-places gehen nur bei einem pair weil dann ist psetf==setf
 
 LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe GabrielBenchmark
+
+defunToJava könnte einen member vom compiler mit funktionsnamen belegen, das könnte für die named-let-lambdas verwendet werden
