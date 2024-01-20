@@ -1,6 +1,7 @@
 package io.github.jmurmel;
 
 import org.openjdk.jmh.annotations.*;
+import org.openjdk.jmh.infra.Blackhole;
 
 import java.io.Reader;
 import java.io.StringReader;
@@ -71,8 +72,13 @@ public class ArmstrongBenchmark {
     }
 
     @Benchmark
+    public Object run(Blackhole bh) {
+        compiled.setReaderPrinter(null, LambdaJ.makeWriter(bh::consume));
+        return compiled.body();
+    }
+
     public Object run() {
-        compiled.setReaderPrinter(null, DEV_NULL);
+        compiled.setReaderPrinter(null, LambdaJ.makeWriter(System.out::append));
         return compiled.body();
     }
 
