@@ -1,3 +1,13 @@
+der interpreter spuckt eine error zeile aus bei "try"
+
+JMurmel> (try (error "oje"))
+
+ -> nil
+ -> simple-error - oje
+error occurred in line 1:6..1:18: (error "oje")
+
+
+
 setf-functions: ggf. würds reichen in expandForm (setf func) in define/ defun/ im car einer form auf das symbol |(setf func)| umzubiegen?
 -> zumindest noch apply, multiple-value-call
 
