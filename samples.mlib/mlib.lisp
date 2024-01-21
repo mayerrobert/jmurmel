@@ -355,15 +355,16 @@
 
 (defun m%nonneg-integer-number (n)
   (cond ((integerp n)
-         (if (< n 0) (error 'simple-type-error "must be an integer >= 0: %s" n))
+         (if (< n 0) #1=(error 'simple-type-error "must be an integer >= 0: %s" n))
          n)
 
         ((numberp n)
-         (if (< n 0) (error 'simple-type-error "must be an integer >= 0: %s" n))
-         (if (/= n (truncate n)) (error 'simple-type-error "must be an integer >= 0: %s" n))
-         (truncate n))
+         (if (< n 0) #1#)
+         (let ((ntrunc (truncate n)))
+           (if (/= n ntrunc) #1#)
+           ntrunc))
 
-        (t (error 'simple-type-error "must be an integer >= 0: %s" n))))
+        (t #1#)))
 
 
 ;;; = Function: nthcdr, dotted-nthcdr, nth
@@ -581,7 +582,7 @@
                    ((consp ele) (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
                    ((null ele) (rplacd (last splice) ())  (inner (cdr inner-lists) (cadr inner-lists)))
                    ((atom ele) (if (cdr inner-lists)
-                                     (error "nconc - not a list: %s" ele)
+                                     (error 'simple-type-error "nconc - not a list: %s" ele)
                                  (rplacd (last splice) ele)))))))
            result)
 
@@ -590,7 +591,7 @@
 
         ((atom result)
          (if (cdr outer-lists)
-               (error "nconc - not a list: %s" result)
+               (error 'simple-type-error "nconc - not a list: %s" result)
            result))))))
 
 
@@ -961,7 +962,7 @@
                     ((stringp ,vec) sref)
                     ((bit-vector-p ,vec) bvref)
                     ((vectorp ,vec) seqref)
-                    (t (error "dovector - not a vector: %s" ,vec))))
+                    (t (error 'simple-type-error "dovector - not a vector: %s" ,vec))))
             (,limit (vector-length ,vec))
             (,idx 0)
             ,var)
@@ -1568,7 +1569,7 @@
 ;;; Is this number even?
 (defun evenp (n)
   (if (integerp n) (= 0.0 (mod n 2))
-    (error "not an integer: %s" n)))
+    (error 'simple-type-error "not an integer: %s" n)))
 
 
 ;;; = Function: oddp
@@ -1579,7 +1580,7 @@
 ;;; Is this number odd?
 (defun oddp (n)
   (if (integerp n) (= 1.0 (mod n 2))
-    (error "not an integer: %s" n)))
+    (error 'simple-type-error "not an integer: %s" n)))
 
 
 ;;; = Function: char=
@@ -1818,7 +1819,7 @@
 ;;; and whose secondary value is nil if any generator returns nil as their secondary value.
 ;;; Once the first generator indicates "at end" for the first time no more generators will be called.
 (defun scan-multiple (generator . more-generators)
-  (if (functionp generator) nil (error "not a generator"))
+  (if (functionp generator) nil (error 'simple-type-error "not a generator"))
   (if more-generators
 
         (let ((generators (cons generator more-generators)) (more-accum t))
@@ -1854,7 +1855,7 @@
 ;;;
 ;;; A single generator would be returned unchanged.
 (defun scan-concat (generator . more-generators)
-  (if (functionp generator) nil (error "not a generator"))
+  (if (functionp generator) nil (error 'simple-type-error "not a generator"))
   (if more-generators
         (let ((more-generators more-generators))
           (lambda ()
@@ -1923,7 +1924,7 @@
     ((null seq))
     ((consp seq)   (copy-list seq))
     ((vectorp seq) (vector-copy seq))
-    (t      (error "copy-seq - %s is not a sequence" seq))))
+    (t      (error 'simple-type-error "copy-seq - %s is not a sequence" seq))))
 
 
 ;;; = Function: length
@@ -1936,7 +1937,7 @@
   (cond ((null seq) 0)
         ((listp seq) (list-length seq))
         ((vectorp seq) (vector-length seq))
-        (t (error "length - %s is not a sequence" seq))))
+        (t (error 'simple-type-error "length - %s is not a sequence" seq))))
 
 
 ;;; = Function: reverse
@@ -1966,7 +1967,7 @@
       ((simple-vector-p seq)    (reverse/vector seq (make-array (vector-length seq)) svref svset))
       ((bit-vector-p seq)       (reverse/vector seq (make-array (vector-length seq) 'bit) bvref bvset))
       ((vectorp seq)            (reverse/vector seq (make-array (vector-length seq)) seqref seqset))
-      (t                        (error "reverse - %s is not a sequence" seq)))))
+      (t                        (error 'simple-type-error "reverse - %s is not a sequence" seq)))))
 
 
 ;;; = Function: nreverse
@@ -2003,7 +2004,7 @@
       ((simple-vector-p seq)    (nreverse/vector seq svref svset))
       ((bit-vector-p seq)       (nreverse/vector seq bvref bvset))
       ((vectorp seq)            (nreverse/vector seq seqref seqset))
-      (t (error "nreverse - %s is not a sequence" seq)))))
+      (t (error 'simple-type-error "nreverse - %s is not a sequence" seq)))))
 
 
 ;;; = Function: remove-if
@@ -2040,7 +2041,7 @@
           ((simple-vector-p seq)     (list->simple-vector     (remove-if/vector seq)))
           ((simple-bit-vector-p seq) (list->bit-vector        (remove-if/vector seq)))
           ((vectorp seq)             (list->simple-vector     (remove-if/vector seq)))
-          (t (error "remove-if - %s is not a sequence" seq)))))
+          (t (error 'simple-type-error "remove-if - %s is not a sequence" seq)))))
 
 
 ;;; = Function: remove
@@ -2057,7 +2058,7 @@
 (defun m%list->sequence (lst result-type)
   (cond ((null result-type)                  )
         ((eq result-type 'list)              lst)
-        ((eq result-type 'cons)              (or lst (error "nil is not a sequence of type cons")))
+        ((eq result-type 'cons)              (or lst (error 'simple-type-error "nil is not a sequence of type cons")))
         ((eq result-type 'vector)            (list->simple-vector lst))
         ((eq result-type 'simple-vector)     (list->simple-vector lst))
         ((eq result-type 'simple-bit-vector) (list->bit-vector lst))
@@ -2129,7 +2130,7 @@
                           (setq set-result (lambda (elem) (seqset result result-cursor elem) (setq result-cursor (1+ result-cursor))))
                           (setq has-next-result (lambda () (< result-cursor result-length)))
                           (setq result-length (vector-length result)))
-        (t (error "map-into: not a sequence: %s" result)))
+        (t (error 'simple-type-error "map-into: not a sequence: %s" result)))
 
       (if (cdr sequences)
             ; 2 or more sequences given
@@ -2153,7 +2154,7 @@
                                  (when (and (has-next-result) (< i len))
                                    (set-result (func (seqref seq i)))
                                    (loop (1+ i)))))
-                (t (error "map-into: not a sequence: %s" seq)))
+                (t (error 'simple-type-error "map-into: not a sequence: %s" seq)))
 
           ; 0 sequences given
           (let loop ()
@@ -2223,7 +2224,7 @@
             ((simple-vector-p seq)     (reduce/vector seq svref))
             ((bit-vector-p seq)        (reduce/vector seq bvref))
             ((vectorp seq)             (reduce/vector seq seqref))
-            (t (error "reduce - %s is not a sequence" seq))))))
+            (t (error 'simple-type-error "reduce - %s is not a sequence" seq))))))
 
 
 ; hash tables *********************************************************
@@ -2382,7 +2383,7 @@
 (defun write-char (c)
   (if (characterp c)
         (write c nil)
-    (error "write-char - %s is not a character" c)))
+    (error 'simple-type-error "write-char - %s is not a character" c)))
 
 
 ;;; = Function: terpri, prin1, princ, print

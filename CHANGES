@@ -5,7 +5,8 @@ Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
 
  * added #1= style labelled forms to the reader
  * added tailrecursion->loop transformation:
-   transform the innermost tail recursion/ named let/ let* /letrec into a loop
+   transform the innermost tail recursion/ named let/ let* /letrec into a loop in compiled code
+   avoiding the TCO trampoline
 
  * mlib: added values as a place for setf
  * mlib: added psetf
@@ -14,6 +15,7 @@ Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
  * fixed compiled (list* 1 2 3 (values 4 5)) and (list 1 2 3 (values 4 5))
    was: would display multiple values in the REPL
  * fixed mlib: "last" with any decimal number argument would return the whole list
+ * fixed mlib: throw simple-type-error when given a wrong type
 
 
 Changes in JMurmel-1.4.5 relative to JMurmel-1.4.4
