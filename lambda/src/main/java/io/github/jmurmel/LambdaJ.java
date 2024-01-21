@@ -8249,7 +8249,22 @@ public class LambdaJ {
         public final Object _gensym    (Object... args) { values = null; varargs0_1("gensym", args); return LambdaJ.Subr.gensym(args.length == 0 ? null : args[0]); }
         public final Object _trace     (Object... args) { values = null; return null; }
         public final Object _untrace   (Object... args) { values = null; return null; }
+
         public final Object _error     (Object... args) { values = null; varargs1(ERROR, args); LambdaJ.Subr.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
+        public final Object error1     (Object a1)     { values = null; LambdaJ.Subr.error(symtab, a1, NOARGS); return null; }
+        public final Object error2     (Object a1, Object a2) { values = null; LambdaJ.Subr.error(symtab, a1, a2); return null; }
+        public final Object error3     (Object a1, Object a2, Object a3) { values = null; LambdaJ.Subr.error(symtab, a1, a2, a3); return null; }
+        public final Object error4     (Object a1, Object a2, Object a3, Object a4) { values = null; LambdaJ.Subr.error(symtab, a1, a2, a3, a4); return null; }
+        public final Object errorN     (Object a1, Object a2, Object a3, Object... args) {
+            values = null;
+            final Object[] newArgs = new Object[args.length + 2];
+            newArgs[0] = a2;
+            newArgs[1] = a3;
+            System.arraycopy(args, 0, newArgs, 2, args.length);
+            LambdaJ.Subr.error(symtab, a1, newArgs);
+            return null;
+        }
+
         public final Object implType   (Object... args) { values = null; noArgs("lisp-implementation-type", args); return "JMurmel"; }
         public final Object implVersion(Object... args) { values = null; noArgs("lisp-implementation-version", args); return LambdaJ.ENGINE_VERSION_NUM; }
 
@@ -10848,6 +10863,14 @@ public class LambdaJ {
                 if (emitJmethod(sb, args, null, null, -1, false, null)) return true;
                 emitCallPrimitive(sb, "findMethod", args, env, topEnv, rsfx);
                 return true;
+            case sError:
+                switch (listLength(args)) {
+                case 1: emitCallPrimitive(sb, "error1", args, env, topEnv, rsfx); return true;
+                case 2: emitCallPrimitive(sb, "error2", args, env, topEnv, rsfx); return true;
+                case 3: emitCallPrimitive(sb, "error3", args, env, topEnv, rsfx); return true;
+                case 4: emitCallPrimitive(sb, "error4", args, env, topEnv, rsfx); return true;
+                default: emitCallPrimitive(sb, "errorN", args, env, topEnv, rsfx); return true;
+                }
             default:
                 break;
             }
