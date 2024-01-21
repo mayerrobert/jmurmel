@@ -1678,7 +1678,7 @@ public class LambdaJ {
                             if (look == eof)
                                 throw new EOFException("string literal is missing closing \"");
                             look = getchar(); // consume trailing "
-                            tok = tokenToString(1, index).intern();
+                            tok = tokenToString(1, index).intern(); // todo das braucht 97% der read zeit im Gabriel Benchmark. Brauchts .intern() ueberhaupt? Bezogen auf eval ist aber wenig.
                         }
                         break;
 
@@ -3047,11 +3047,8 @@ public class LambdaJ {
         finally {
             if (traceOn) dbgEvalDone(isTc ? "eval TC" : EVAL, form, env, stack, level);
             traceLvl = cleanupTrace(traceLvl, func, result, traceStack);
-            final LambdaJError e = cleanup(env, stack, level, traceLvl, restore);
-            if (e != null) {
-                if (e instanceof ReturnException) return nonlocalReturn((ReturnException)e, localCatchTags);
-                throw e;
-            }
+            final ReturnException e = cleanup(env, stack, level, traceLvl, restore);
+            if (e != null) return nonlocalReturn(e, localCatchTags);
         }
     }
 
@@ -3064,7 +3061,7 @@ public class LambdaJ {
         return traceLvl;
     }
 
-    private @Null LambdaJError cleanup(ConsCell env, int stack, int level, int traceLvl, ConsCell restore) {
+    private @Null ReturnException cleanup(ConsCell env, int stack, int level, int traceLvl, ConsCell restore) {
         LambdaJError e = null;
         for (ConsCell c = restore; c != null; c = (ConsCell) cdr(c)) {
             final Object o = car(c);
@@ -3074,7 +3071,9 @@ public class LambdaJ {
                 catch (LambdaJError le) { e = le; }
             }
         }
-        return e;
+        if (e instanceof ReturnException) return (ReturnException)e;
+        if (e != null) throw e;
+        return null;
     }
 
     private @NotNull Object nonlocalReturn(@NotNull ReturnException re, ConsCell localCatchTags) {
