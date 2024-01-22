@@ -1678,7 +1678,7 @@ public class LambdaJ {
                             if (look == eof)
                                 throw new EOFException("string literal is missing closing \"");
                             look = getchar(); // consume trailing "
-                            tok = tokenToString(1, index).intern(); // todo das braucht 97% der read zeit im Gabriel Benchmark. Brauchts .intern() ueberhaupt? Bezogen auf eval ist aber wenig.
+                            tok = tokenToString(1, index); // Strings may or may not be interned in evalForm()
                         }
                         break;
 
@@ -3108,6 +3108,8 @@ public class LambdaJ {
     /** expand all macros within a form and do some syntax checks. Macro-expansion is done in a copy, i.e. form will not be modified. */
     Object expandForm(Object form) {
         try {
+            if (form instanceof String)
+                return ((String)form).intern();
             if (atom(form)) return form;
             final ConsCell ccForm = ((ConsCell)form).copy();
             final Object op = car(ccForm);
