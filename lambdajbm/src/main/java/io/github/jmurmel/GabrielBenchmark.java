@@ -76,7 +76,7 @@ public class GabrielBenchmark {
     }
 
     @Benchmark
-    public void read(Blackhole bh) {
+    public void readOnly(Blackhole bh) {
         final Reader reader = new StringReader(allSourceFiles);
         final LambdaJ.ObjectReader parser = interpreter.makeReader(reader::read, prog);
         final Object eof = new Object();
