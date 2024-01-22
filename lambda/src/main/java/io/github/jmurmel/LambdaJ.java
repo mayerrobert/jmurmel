@@ -400,6 +400,7 @@ public class LambdaJ {
         public LambdaJError(Throwable cause)                                               { super(cause.getMessage(), getMurmelCause(cause)); }
         public LambdaJError(Throwable cause, String msg)                                   { super(msg, getMurmelCause(cause)); }
         public LambdaJError(Throwable cause, Object errorForm)                             { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, boolean fromCompiledCode, String errorLoc)    { super(cause.getMessage() + getErrorExp(errorLoc), getMurmelCause(cause)); }
 
         public String conditionName() {
             final Throwable cause = getCause();
@@ -426,6 +427,12 @@ public class LambdaJ {
             final Object exp;
             if (params != null && params.length > 0 && (exp = params[params.length-1]) instanceof ConsCell)
                 return System.lineSeparator() + "error occurred in " + ((ConsCell) exp).lineInfo() + printSEx(exp);
+            return "";
+        }
+
+        private static String getErrorExp(String errorLoc) {
+            if (errorLoc != null)
+                return System.lineSeparator() + "error occurred in " + errorLoc;
             return "";
         }
 
@@ -8735,7 +8742,7 @@ public class LambdaJ {
             }
             catch (ReturnException e) { throw e; }
             catch (Exception e) {
-                values = new Object[] { errorObj, e };
+                values = new Object[] { errorObj, new LambdaJError(e, true, loc) };
                 return errorObj;
             }
             finally { conditionHandler.setForTry(oldHandler); }
@@ -10399,9 +10406,11 @@ public class LambdaJ {
             final Object protectedForm = car(formAndErrorobj);
             final Object errorObj = cadr(formAndErrorobj);
 
-            sb.append("doTry((MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> { return ");
+            sb.append("doTry((MurmelFunction)(Object... ignoredArg").append(ignoredCounter++).append(") -> {\n");
+            if (consp(protectedForm)) emitLoc(sb, (ConsCell)protectedForm, 100);
+            sb.append("        return ");
             emitForm(sb, protectedForm, env, topEnv, rsfx, false);
-            sb.append("; },\n        ");
+            sb.append(";\n        },\n        ");
             emitForm(sb, errorObj, env, topEnv, rsfx, false);
             sb.append(')');
         }

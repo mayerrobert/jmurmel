@@ -2678,3 +2678,16 @@ LambdaJ.currentSource wird nicht von allen embedded APIs gesetzt/ genutzt, siehe
 defunToJava könnte einen member vom compiler mit funktionsnamen belegen, das könnte für die named-let-lambdas verwendet werden
 
 emitStmt sollte multiple-value-bind auch behandeln: in mlib scan-multiple gibts "(multiple-value-bind ... (loop (cdr x)" und das wird zu tailcall() statt continue
+
+
+
+der interpreter spuckt eine error zeile aus bei "try"
+
+JMurmel> (try (error "oje"))
+
+ -> nil
+ -> simple-error - oje
+error occurred in line 1:6..1:18: (error "oje")
+
+-> schaut blöd aus passt aber: die error zeile ist teil der exception message. der interpreter hat zeileninfo, der compiler nicht.
+-> ggf. sollte der compiler auch zeileninfo liefern

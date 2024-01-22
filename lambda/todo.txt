@@ -1,11 +1,17 @@
-der interpreter spuckt eine error zeile aus bei "try"
+dass die location in der exceptionmessage dranhängt ist ein hack
+-> gesondertes feld
+-> printSex escape=nil sollte nur message liefern, printSex escape=true sollte alles wie gehabt aneinanderhängen
+   -> LambdaJError sollte Writeable implementieren
 
-JMurmel> (try (error "oje"))
 
- -> nil
- -> simple-error - oje
-error occurred in line 1:6..1:18: (error "oje")
+vector (oder nur das was make-array ohne typ ausspuckt? oder sollte make-array "dynamic" als typ akzeptieren?) koennte intelligenter sein:
+derzeit ists ein Object[] bzw. ArrayList<Object>
+-> denkbar waere, dass beim anlegen nix allokiert wird, und wenn z.B. als erstes element ein double daherkommt wird ein double[] allokiert,
+   wenn in weiterer folge ein "nicht passendes" objekt reingesteckt werden soll, müsste in ein Object[] umkopiert werden.
 
+hashtables könnten auch intelligenz bekommen: bis 10 mappings ists kein hash sondern ein array mit linear search
+-> kann halt regressions bringen wenn equals langsam ist
+   -> vielleicht nur bei eq und eql weil das ist schnell
 
 
 setf-functions: ggf. würds reichen in expandForm (setf func) in define/ defun/ im car einer form auf das symbol |(setf func)| umzubiegen?
