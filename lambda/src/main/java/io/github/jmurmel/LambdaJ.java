@@ -391,18 +391,34 @@ public class LambdaJ {
         ConsCell customEnvironment(SymbolTable symtab);
     }
 
-    public static class LambdaJError extends RuntimeException {
+    public static class LambdaJError extends RuntimeException implements Writeable {
         public static final long serialVersionUID = 1L;
+        
+        private final @NotNull String location;
 
-        public LambdaJError(String msg)                                                    { super(msg, null, false, false); }
-        public LambdaJError(boolean format, String msg, Object... params)                  { super((format ? fmt(msg, params) : msg) + getErrorExp(params), null, false, false); }
-        public LambdaJError(Throwable cause, boolean format, String msg, Object... params) { super((format ? fmt(msg, params) : msg) + getErrorExp(params), getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause)                                               { super(cause.getMessage(), getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause, String msg)                                   { super(msg, getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause, Object errorForm)                             { super(cause.getMessage() + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause, boolean fromCompiledCode, String errorLoc)    { super(cause.getMessage() + getErrorExp(errorLoc), getMurmelCause(cause)); }
+        public LambdaJError(String msg)                                                    { super(msg, null, false, false); location = ""; }
+        public LambdaJError(boolean format, String msg, Object... params)                  { super((format ? fmt(msg, params) : msg), null, false, false); location = getErrorExp(params); }
+        public LambdaJError(Throwable cause, boolean format, String msg, Object... params) { this(format ? fmt(msg, params) : msg, getLocation(cause) + getErrorExp(params), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause)                                               { this(cause.getMessage(), getLocation(cause), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, String msg)                                   { this(msg, getLocation(cause), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, Object errorForm)                             { this(cause.getMessage(), getLocation(cause) + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, boolean fromCompiledCode, String errorLoc)    { this(cause.getMessage(), getLocation(cause) + getErrorExp(errorLoc), getMurmelCause(cause)); }
 
-        public String conditionName() {
+        private LambdaJError(String msg, @NotNull String location, Throwable cause) {
+            super(msg, cause);
+            this.location = location;
+        }
+
+        @Override
+        public void printSEx(WriteConsumer out, boolean escapeAtoms) {
+            out.print(getMessage());
+            if (escapeAtoms && !location.isEmpty()) {
+                out.print(System.lineSeparator());
+                out.print(location);
+            }
+        }
+
+        public @NotNull String conditionName() {
             final Throwable cause = getCause();
             if (cause instanceof LambdaJError) return ((LambdaJError)cause).conditionName();
 
@@ -421,18 +437,23 @@ public class LambdaJ {
         }
 
 
-        @Override public String toString() { return conditionName() + " - " + getMessage(); }
+        @Override public @NotNull String toString() { return conditionName() + " - " + getMessage(); }
 
-        private static String getErrorExp(Object[] params) {
+        private static @NotNull String getErrorExp(Object[] params) {
             final Object exp;
             if (params != null && params.length > 0 && (exp = params[params.length-1]) instanceof ConsCell)
-                return System.lineSeparator() + "error occurred in " + ((ConsCell) exp).lineInfo() + printSEx(exp);
+                return "error occurred in " + ((ConsCell) exp).lineInfo() + LambdaJ.printSEx(exp);
             return "";
         }
 
-        private static String getErrorExp(String errorLoc) {
+        private static @NotNull String getErrorExp(String errorLoc) {
             if (errorLoc != null)
-                return System.lineSeparator() + "error occurred in " + errorLoc;
+                return "error occurred in " + errorLoc;
+            return "";
+        }
+
+        private static @NotNull String getLocation(Throwable cause) {
+            if (cause instanceof LambdaJError) return ((LambdaJError)cause).location;
             return "";
         }
 
@@ -444,27 +465,27 @@ public class LambdaJ {
 
     public static class SimpleError extends LambdaJError    { public SimpleError(String msg, Object... params) { super(true, msg, params); }
                                                               public SimpleError(String msg) { super(msg); }
-                                                              @Override public String conditionName() { return "simple-error"; } }
+                                                              @Override public @NotNull String conditionName() { return "simple-error"; } }
 
     public static class CellError extends LambdaJError      { public CellError(String msg, Object... params) { super(true, msg, params); }
                                                               public CellError(String msg) { super(msg); }
-                                                              @Override public String conditionName() { return "cell-error"; } }
+                                                              @Override public @NotNull String conditionName() { return "cell-error"; } }
     public static class UnboundVariable extends CellError   { public UnboundVariable(String msg, Object... params) { super(msg, params); }
                                                               public UnboundVariable(String msg) { super(msg); }
-                                                              @Override public String conditionName() { return "unbound-variable"; } }
+                                                              @Override public @NotNull String conditionName() { return "unbound-variable"; } }
     public static class UndefinedFunction extends CellError { public UndefinedFunction(String msg, Object... params) { super(msg, params); }
                                                               public UndefinedFunction(String msg) { super(msg); }
-                                                              @Override public String conditionName() { return "undefined-function"; } }
+                                                              @Override public @NotNull String conditionName() { return "undefined-function"; } }
 
     public static class ControlError extends LambdaJError   { public ControlError(String msg, Object... params) { super(true, msg, params); }
                                                               public ControlError(String msg) { super(msg); } }
 
     public static class ProgramError extends LambdaJError   { public ProgramError(String msg, Object... params) { super(true, msg, params); }
                                                               public ProgramError(String msg) { super(msg); }
-                                                              @Override public String conditionName() { return "program-error"; } }
+                                                              @Override public @NotNull String conditionName() { return "program-error"; } }
 
     public static class ParseError extends LambdaJError     { public ParseError(String msg, Object... args) { super(true, msg, args); }
-                                                              @Override public String conditionName() { return "parse-error"; } }
+                                                              @Override public @NotNull String conditionName() { return "parse-error"; } }
 
     // artithmetic-error... java.lang.ArithmeticException
     // type-error...        java.lang.ClassCastException
@@ -1807,7 +1828,7 @@ public class LambdaJ {
                 return readObject(startLine, startChar, eof);
             }
             catch (Exception pe) {
-                throw new LambdaJError(pe, pe.getMessage() + posInfo());
+                throw new LambdaJError(pe, pe.getMessage() + posInfo()); // todo posInfo nicht an message dranpicken
             }
         }
 
@@ -7138,13 +7159,13 @@ public class LambdaJ {
 
         private static void errorContinue(Exception e) {
             System.out.println();
-            System.out.println("Error: " + e);
+            System.out.println("Error: " + LambdaJ.printSEx(e, true));
             System.out.println();
         }
 
         private static Object errorExit(Exception e) {
             System.err.println();
-            System.err.println("Error: " + e);
+            System.err.println("Error: " + LambdaJ.printSEx(e, true));
             throw EXIT_RUNTIME_ERROR;
         }
 
@@ -8634,9 +8655,9 @@ public class LambdaJ {
             for (Object cl: cleanups) {
                 try { ((MurmelFunction)cl).apply((Object[])null); }
                 //catch (LambdaJError e) { if (ex == null) ex = e; else ex.addSuppressed(e); }
-                //catch (Exception e)    { if (ex == null) ex = new LambdaJError(e, e.getMessage()); else ex.addSuppressed(e); }
+                //catch (Exception e)    { if (ex == null) ex = new LambdaJError(e); else ex.addSuppressed(e); }
                 catch (LambdaJError e) { ex = e; }
-                catch (Exception e)    { ex = new LambdaJError(e, e.getMessage()); }
+                catch (Exception e)    { ex = new LambdaJError(e); }
             }
             if (ex != null) throw ex;
         }

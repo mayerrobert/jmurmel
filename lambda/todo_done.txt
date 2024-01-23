@@ -2691,3 +2691,9 @@ error occurred in line 1:6..1:18: (error "oje")
 
 -> schaut blöd aus passt aber: die error zeile ist teil der exception message. der interpreter hat zeileninfo, der compiler nicht.
 -> ggf. sollte der compiler auch zeileninfo liefern
+
+
+dass die location in der exceptionmessage dranhängt ist ein hack
+-> gesondertes feld
+-> printSex escape=nil sollte nur message liefern, printSex escape=true sollte alles wie gehabt aneinanderhängen
+   -> LambdaJError sollte Writeable implementieren

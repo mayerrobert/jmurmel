@@ -252,7 +252,7 @@ public class LambdaJTest {
         }
         catch (Exception e) {
             assertTrue("unexpected exception " + e.getClass().getSimpleName() + ": " + e.getMessage(), e instanceof LambdaJ.LambdaJError || e instanceof LambdaJ.ReaderError);
-            final String msg = EolUtil.anyToUnixEol(e.getMessage()).toString();
+            final String msg = EolUtil.anyToUnixEol(LambdaJ.printSEx(e, true)).toString();
             final String expected = EolUtil.anyToUnixEol(expectedExceptionMsgPfx).toString();
             assertTrue("got wrong exception message: " + e.getMessage(), msg.startsWith(expected));
         }
