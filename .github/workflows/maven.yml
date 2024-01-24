@@ -58,14 +58,14 @@ jobs:
       run: mvn -V -B clean install site --file pom.xml -Djdk.console=jdk.jshell -Djavac.target=`echo "${{ matrix.java }}" | sed -e "s/-ea//g"`
 
     - name: Upload Jar
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
       with:
         name: jmurmel-temurin-${{ matrix.java }}
         path: |
           lambda/target/jmurmel.jar
 
     - name: Upload docs
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
       with:
         name: jmurmel-temurin-${{ matrix.java }}
         path: |
@@ -76,7 +76,7 @@ jobs:
           LICENSE
 
     - name: Upload mlib
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
       with:
         name: jmurmel-temurin-${{ matrix.java }}
         path: |
@@ -88,7 +88,7 @@ jobs:
 
     - name: Upload launch4j exe
       if: ${{ matrix.java == '8' }}
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
       with:
         name: jmurmel-w64-slim
         path: |
@@ -96,7 +96,7 @@ jobs:
 
     - name: Upload launch4j mlib
       if: ${{ matrix.java == '8' }}
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
       with:
         name: jmurmel-w64-slim
         path: |
@@ -104,7 +104,7 @@ jobs:
 
     - name: Upload launch4j docs
       if: ${{ matrix.java == '8' }}
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+      uses: actions/upload-artifact@26f96dfa697d77e81fd5907df203aa23a56210a8 # v4.3.0
       with:
         name: jmurmel-w64-slim
         path: |
