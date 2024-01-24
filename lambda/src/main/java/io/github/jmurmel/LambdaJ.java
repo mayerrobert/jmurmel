@@ -9420,80 +9420,98 @@ public class LambdaJ {
 
                 assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
 
-                if (symbolp(op)) switch (((LambdaJSymbol)op).wellknownSymbol) {
+                if (symbolp(op)) {
+                    switch (((LambdaJSymbol)op).wellknownSymbol) {
 
-                case sDefine: {
-                    globalEnv = defineToJava(ret, ccForm, globalEnv);
-                    intp.eval(ccForm, null);
-                    bodyForms.add(ccForm);
-                    globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv, ccForm)).append(";\n");
-                    return globalEnv;
-                }
-
-                case sDefun: {
-                    globalEnv = defunToJava(ret, ccForm, globalEnv);
-                    intp.eval(ccForm, null);
-                    bodyForms.add(ccForm);
-                    globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv, ccForm)).append(";\n");
-                    return globalEnv;
-                }
-
-                case sDefmacro: {
-                    LambdaJ.symbolOrMalformed(DEFMACRO, cadr(ccForm));
-                    intp.eval(ccForm, null);
-                    bodyForms.add(ccForm); // needed if compiled code calls macroexpand-1
-                    return globalEnv;
-                }
-
-                case sProgn: {
-                    // toplevel progn will be replaced by the (macroexpanded) forms it contains.
-                    // Macroexpand is needed in case the progn contained a load or require that contains defmacro forms, seel also LambdaJ#expandAndEval()
-                    final ConsCell body = listOrMalformed(PROGN, cdr(ccForm));
-                    for (Object prognForm : body) {
-                        globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm));
+                    case sDefine: {
+                        globalEnv = defineToJava(ret, ccForm, globalEnv, 0);
+                        intp.eval(ccForm, null);
+                        bodyForms.add(ccForm);
+                        globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv, ccForm)).append(";\n");
+                        return globalEnv;
                     }
-                    return globalEnv;
-                }
 
-                case sLoad: {
-                    final ConsCell ccArgs = listOrMalformed(LOAD, cdr(ccForm));
-                    oneArg(LOAD, ccArgs);
-                    if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack
-                    globalEnv = loadFile(LOAD, ret, car(ccArgs), globalEnv, bodyForms, globals);
-                    return globalEnv;
-                }
-
-                case sRequire: {
-                    final ConsCell ccArgs = listOrMalformed(REQUIRE, cdr(ccForm));
-                    varargs1_2(REQUIRE, ccArgs);
-                    if (!stringp(car(ccArgs))) errorMalformed(REQUIRE, "a string argument", ccArgs);
-                    final Object modName = car(ccArgs);
-                    if (!intp.modules.contains(modName)) {
-                        Object modFilePath = cadr(ccArgs);
-                        if (modFilePath == null) modFilePath = modName;
-                        if (ccForm instanceof SExpConsCell) { final SExpConsCell sExpConsCell = (SExpConsCell)ccForm; intp.currentSource = sExpConsCell.path(); } // todo unschoener hack
-                        globalEnv = loadFile(REQUIRE, ret, modFilePath, globalEnv, bodyForms, globals);
-                        if (!intp.modules.contains(modName)) errorMalformedFmt(REQUIRE, "require'd file '%s' does not provide '%s'", modFilePath, modName);
+                    case sDefun: {
+                        globalEnv = defunToJava(ret, ccForm, globalEnv);
+                        intp.eval(ccForm, null);
+                        bodyForms.add(ccForm);
+                        globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv, ccForm)).append(";\n");
+                        return globalEnv;
                     }
-                    return globalEnv;
-                }
 
-                case sProvide: {
-                    final ConsCell ccArgs = listOrMalformed(PROVIDE, cdr(ccForm));
-                    oneArg(PROVIDE, ccArgs);
-                    if (!stringp(car(ccArgs))) errorMalformed(PROVIDE, "a string argument", ccArgs);
-                    final Object modName = car(ccArgs);
-                    intp.modules.add(modName);
-                    return globalEnv;
-                }
+                    case sDefmacro: {
+                        LambdaJ.symbolOrMalformed(DEFMACRO, cadr(ccForm));
+                        intp.eval(ccForm, null);
+                        bodyForms.add(ccForm); // needed if compiled code calls macroexpand-1
+                        return globalEnv;
+                    }
 
-                case sDeclaim: {
-                    intp.evalDeclaim(1, (ConsCell)cdr(ccForm)); // cast is safe because expandForm will fail on dotted forms
-                    bodyForms.add(ccForm);
-                    return globalEnv;
-                }
+                    case sProgn: {
+                        // toplevel progn will be replaced by the (macroexpanded) forms it contains.
+                        // Macroexpand is needed in case the progn contained a load or require that contains defmacro forms, seel also LambdaJ#expandAndEval()
+                        final ConsCell body = listOrMalformed(PROGN, cdr(ccForm));
+                        for (Object prognForm : body) {
+                            globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm));
+                        }
+                        return globalEnv;
+                    }
 
-                default:
+                    case sLet: {
+                        if (cadr(ccForm) instanceof LambdaJSymbol) break;
+                        final ConsCell ccBodyForms = (ConsCell)cddr(ccForm);
+                        globalEnv = toplevelLetBody(ret, globals, globalEnv, ccBodyForms, 1);
+                        bodyForms.add(ccForm);
+                        return globalEnv;
+                    }
+
+                    case sLoad: {
+                        final ConsCell ccArgs = listOrMalformed(LOAD, cdr(ccForm));
+                        oneArg(LOAD, ccArgs);
+                        if (ccForm instanceof SExpConsCell) {
+                            final SExpConsCell sExpConsCell = (SExpConsCell)ccForm;
+                            intp.currentSource = sExpConsCell.path();
+                        } // todo unschoener hack
+                        globalEnv = loadFile(LOAD, ret, car(ccArgs), globalEnv, bodyForms, globals);
+                        return globalEnv;
+                    }
+
+                    case sRequire: {
+                        final ConsCell ccArgs = listOrMalformed(REQUIRE, cdr(ccForm));
+                        varargs1_2(REQUIRE, ccArgs);
+                        if (!stringp(car(ccArgs))) errorMalformed(REQUIRE, "a string argument", ccArgs);
+                        final Object modName = car(ccArgs);
+                        if (!intp.modules.contains(modName)) {
+                            Object modFilePath = cadr(ccArgs);
+                            if (modFilePath == null) modFilePath = modName;
+                            if (ccForm instanceof SExpConsCell) {
+                                final SExpConsCell sExpConsCell = (SExpConsCell)ccForm;
+                                intp.currentSource = sExpConsCell.path();
+                            } // todo unschoener hack
+                            globalEnv = loadFile(REQUIRE, ret, modFilePath, globalEnv, bodyForms, globals);
+                            if (!intp.modules.contains(modName)) errorMalformedFmt(REQUIRE, "require'd file '%s' does not provide '%s'", modFilePath, modName);
+                        }
+                        return globalEnv;
+                    }
+
+                    case sProvide: {
+                        final ConsCell ccArgs = listOrMalformed(PROVIDE, cdr(ccForm));
+                        oneArg(PROVIDE, ccArgs);
+                        if (!stringp(car(ccArgs))) errorMalformed(PROVIDE, "a string argument", ccArgs);
+                        final Object modName = car(ccArgs);
+                        intp.modules.add(modName);
+                        return globalEnv;
+                    }
+
+                    case sDeclaim: {
+                        intp.evalDeclaim(1, (ConsCell)cdr(ccForm)); // cast is safe because expandForm will fail on dotted forms
+                        bodyForms.add(ccForm);
+                        return globalEnv;
+                    }
+
+                    default:
+                        break;
+                    }
+
                     if (null != ((LambdaJSymbol)op).macro) {
                         errorInternal("unexpected unexpanded macrocall: %s", printSEx(form));
                     }
@@ -9504,21 +9522,63 @@ public class LambdaJ {
             return globalEnv;
         }
 
+        private ConsCell toplevelLetBody(WrappingWriter ret, StringBuilder globals, ConsCell globalEnv, ConsCell ccBodyForms, int rsfx) {
+            for (Object letbodyform : ccBodyForms) {
+                if (consp(letbodyform)) globalEnv = toplevelLet(ret, globals, globalEnv, (ConsCell)letbodyform, rsfx+1);
+            }
+            return globalEnv;
+        }
+
+        private ConsCell toplevelLet(WrappingWriter ret, StringBuilder globals, ConsCell globalEnv, ConsCell ccForm, int rsfx) {
+            final Object op = car(ccForm);
+            assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
+
+            if (symbolp(op)) switch (((LambdaJSymbol)op).wellknownSymbol) {
+
+            //case sDefine:
+            case sDefun:
+                final Object symbol = cadr(ccForm);
+                globalEnv = defineToJava(ret, ConsCell.list(intern(DEFINE), symbol, null), globalEnv, rsfx);
+                globals.append("        case \"").append(symbol).append("\": return ").append(javasym(symbol, globalEnv, ccForm)).append(";\n");
+                break;
+
+            case sLet:
+            case sLetStar:
+            case sLetrec:
+                final Object maybeBindings = cadr(ccForm);
+                if (listp(maybeBindings)) return toplevelLetBody(ret, globals, globalEnv, (ConsCell)cddr(ccForm), rsfx+1);
+                break;
+
+            case sMultipleValueBind:
+                return toplevelLetBody(ret, globals, globalEnv, (ConsCell)cdddr(ccForm), rsfx+1);
+
+            case sProgn:
+                return toplevelLetBody(ret, globals, globalEnv, (ConsCell)cdr(ccForm), rsfx + 1);
+            }
+
+            return globalEnv;
+        }
+
 
         /** Emit a member for {@code symbol} and a function that assigns {@code form} to {@code symbol}.
          *  @param form a list (define symbol form) */
-        private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env) {
+        private ConsCell defineToJava(WrappingWriter sb, ConsCell form, ConsCell env, int rsfx) {
             varargs1_2(DEFINE, listOrMalformed(DEFINE, cdr(form)));
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(DEFINE, cadr(form));
             notDefined(DEFINE, symbol, env);
             globalDecl.add(symbol);
 
-            final String javasym = mangle(symbol.toString(), 0);
+            final String javasym = mangle(symbol.toString(), rsfx);
             env = extenvIntern(symbol, javasym + ".get()", env);
 
             sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
-                    + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n"
-                    + "    private Object define").append(javasym).append("() {\n");
+                    + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
+            if (rsfx > 0) {
+                sb.append("\n");
+                return env;
+            }
+
+            sb.append("    private Object define").append(javasym).append("() {\n");
             emitClearValues(sb, form);
             sb.append("        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
                     + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
@@ -9912,8 +9972,29 @@ public class LambdaJ {
                     return;
                 }
 
+                case sDefun: {
+                    final LambdaJSymbol symbol = (LambdaJSymbol)car(ccArguments);
+                    if (fastassq(symbol, topEnv) == null) {
+                        if (hasNext) {
+                            sb.append("        ");
+                            emitForm(sb, form, env, topEnv, rsfx, false);
+                            sb.append(";\n");
+                            return;
+                        }
+                        break;
+                    }
+
+                    emitLoc(sb, ccForm, 40);
+                    final String javasym = mangleFunctionName(symbol.toString(), rsfx);
+                    sb.append("        ").append(javasym).append(" = new CompilerGlobal(");
+                    emitNamedLambda(DEFUN, sb, symbol, cadr(ccArguments), (ConsCell)cddr(ccArguments), extenvIntern(symbol, javasym, env), topEnv, rsfx, true);
+                    sb.append(");\n");
+                    if (!hasNext) sb.append(retLhs).append("intern(\"").append(symbol).append("\");\n");
+
+                    return;
+                }
+
                 case sDefine:
-                case sDefun:
                 case sDefmacro: {
                     if (hasNext) {
                         sb.append("        ");
@@ -9921,6 +10002,7 @@ public class LambdaJ {
                         sb.append(";\n");
                         return;
                     }
+                    break;
                 }
 
                 default: break;

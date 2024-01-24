@@ -6,9 +6,10 @@ Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
  * changed mlib: renamed the functions last0, last1, lastn to m%last0, m%last1, m%lastn
 
  * added #1= style labelled forms to the reader
- * added tailrecursion->loop transformation:
+ * added tailrecursion->loop transformation for compiled Murmel:
    transform the innermost tail recursion/ named let/ let* /letrec into a loop in compiled code
    avoiding the TCO trampoline
+ * added limited support for non-toplevel defuns aka let-over-lambda in compiled Murmel
 
  * mlib: added values as a place for setf
  * mlib: added psetf

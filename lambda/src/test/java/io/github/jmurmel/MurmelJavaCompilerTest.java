@@ -74,7 +74,9 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testDefunNonToplevel() throws Exception {
-        compileError("(let ((a 3)) (defun f () a))", "defun as non-toplevel");
+        final MurmelProgram program = compile("(let ((a 3)) (defun f () a))");
+        assertNotNull("failed to compile defun to class", program);
+        assertEquals("defun produced wrong result", "f", TestUtils.sexp(program.body()));
     }
 
     @Test

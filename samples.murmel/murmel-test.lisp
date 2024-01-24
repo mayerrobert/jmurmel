@@ -316,6 +316,17 @@ multiline comment
 (deftest let.14 (let* ((a 1) b) (list b a)) '(nil 1))
 #+murmel (deftest let.15 (letrec ((a 1) b) (list b a)) '(nil 1))
 
+(let ((n 0))
+  (defun f* () (setq n (1+ n))))
+(deftest let.15 (list (f*) (f*) (f*)) '(1 2 3))
+
+;(deftest let.16
+;  (progn
+;    (let ((n 0))
+;      (defun f () (setq n (1+ n))))
+;    (list (f) (f) (f)))
+;  '(1 2 3))
+
 
 ;;; test named let, let*, letrec
 #+murmel
