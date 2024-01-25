@@ -19,9 +19,10 @@
 ;;; mlib provides the following Common Lisp-like functions and macros:
 ;;;
 ;;; - logic, program structure
+;;;     - [when](#macro-when), [unless](#macro-unless)
 ;;;     - [not](#function-not), [and](#macro-and), [or](#macro-or)
 ;;;     - [prog1, prog2](#macro-prog1-prog2)
-;;;     - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [typecase](#macro-typecase)
+;;;     - [case](#macro-case), [typecase](#macro-typecase)
 
 ;;; - conses and lists
 ;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
@@ -111,6 +112,43 @@
 
 ; logic, program structure ********************************************
 
+;;; = Macro: when
+;;;     (when condition forms*) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; Execute `forms` if `condition` evaluates to true
+;;; and return the result of the last form if any.
+;;; Otherwise if `condition` evaluates to false,
+;;; the forms are not evaluated and the return value
+;;; of the `when`-form is `nil`.
+(defmacro when (condition . body)
+  (list 'if
+        condition
+        (if (cdr body)
+            (cons 'progn body)
+            (car body))))
+
+
+;;; = Macro: unless
+;;;     (unless condition forms*) -> result
+;;;
+;;; Since: 1.1
+;;;
+;;; Execute `forms` if `condition` evaluates to false
+;;; and return the result of the last form if any.
+;;; Otherwise if `condition` evaluates to true,
+;;; the forms are not evaluated and the return value
+;;; of the `unless`-form is `nil`.
+(defmacro unless (condition . body)
+  (list 'if
+        condition
+        nil
+        (if (cdr body)
+            (cons 'progn body)
+            (car body))))
+
+
 ;;; = Function: not
 ;;;     (not form) -> boolean
 ;;;
@@ -132,12 +170,12 @@
 ;;; otherwise return the values resulting from the evaluation of the last form unless any of the `forms` evaluate to `nil`,
 ;;; `nil` otherwise.
 (defmacro and forms
-   (if forms
-         (if (cdr forms)
-               `(if ,(car forms)
-                 (and ,@(cdr forms)))
-           (car forms))
-     t))
+  (if forms
+      (if (cdr forms)
+          `(if ,(car forms)
+               (and ,@(cdr forms)))
+          (car forms))
+      t))
 
 
 ;;; = Macro: or
@@ -150,21 +188,21 @@
 ;;; the result of the first form returning non-nil otherwise.
 (defmacro or forms
   (labels ((m%or (tmp forms)
-             (if forms
-                   (if (cdr forms)
-                         `(if (setq ,tmp ,(car forms))
-                                ,tmp
-                            ,(m%or tmp (cdr forms)))
-                     (car forms)))))
+             (when forms
+               (if (cdr forms)
+                   `(if (setq ,tmp ,(car forms))
+                        ,tmp
+                        ,(m%or tmp (cdr forms)))
+                   (car forms)))))
 
-    (if forms
-          (if (cdr forms)
-                (let ((temp (gensym)))
-                  `(let ((,temp ,(car forms)))
-                      (if ,temp
-                            ,temp
-                        ,(m%or temp (cdr forms)))))
-            (car forms)))))
+    (when forms
+      (if (cdr forms)
+          (let ((temp (gensym)))
+            `(let ((,temp ,(car forms)))
+               (if ,temp
+                   ,temp
+                   ,(m%or temp (cdr forms)))))
+          (car forms)))))
 
 
 ;;; = Macro: prog1, prog2
@@ -174,58 +212,21 @@
 ;;; Since: 1.1
 (defmacro prog1 (first-form . more-forms)
   (if more-forms
-        (let ((result (gensym)))
-          `(let ((,result ,first-form))
-             ,@more-forms
-             ,result))
-    `(values ,first-form)))
+      (let ((result (gensym)))
+        `(let ((,result ,first-form))
+           ,@more-forms
+           ,result))
+      `(values ,first-form)))
 
 (defmacro prog2 (first-form second-form . more-forms)
   (if more-forms
-        (let ((ignore (gensym))
-              (result (gensym)))
-          `(let ((,ignore ,first-form)
-                 (,result ,second-form))
-             ,@more-forms
-             ,result))
-    `(progn ,first-form (values ,second-form))))
-
-
-;;; = Macro: when
-;;;     (when condition forms*) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; Execute `forms` if `condition` evaluates to true
-;;; and return the result of the last form if any.
-;;; Otherwise if `condition` evaluates to false,
-;;; the forms are not evaluated and the return value
-;;; of the `when`-form is `nil`.
-(defmacro when (condition . body)
-  (list 'if
-        condition
-        (if (cdr body)
-              (cons 'progn body)
-          (car body))))
-
-
-;;; = Macro: unless
-;;;     (unless condition forms*) -> result
-;;;
-;;; Since: 1.1
-;;;
-;;; Execute `forms` if `condition` evaluates to false
-;;; and return the result of the last form if any.
-;;; Otherwise if `condition` evaluates to true,
-;;; the forms are not evaluated and the return value
-;;; of the `unless`-form is `nil`.
-(defmacro unless (condition . body)
-  (list 'if
-        condition
-        nil
-        (if (cdr body)
-              (cons 'progn body)
-          (car body))))
+      (let ((ignore (gensym))
+            (result (gensym)))
+        `(let ((,ignore ,first-form)
+               (,result ,second-form))
+           ,@more-forms
+           ,result))
+      `(progn ,first-form (values ,second-form))))
 
 
 ;;; = Macro: case
@@ -243,23 +244,23 @@
 (defmacro case (keyform . clauses)
   (labels ((do-key (tmp key)
              (if (symbolp key)
-                   `(eq ,tmp ',key)
-               `(eql ,tmp ',key)))
+                 `(eq ,tmp ',key)
+                 `(eql ,tmp ',key)))
 
            (do-keylist (tmp keylist)
              (if (cdr keylist)
-                   `(or ,@(mapcar (lambda (k) (do-key tmp k)) keylist))
-               (do-key tmp (car keylist))))
+                 `(or ,@(mapcar (lambda (k) (do-key tmp k)) keylist))
+                 (do-key tmp (car keylist))))
 
            (do-clause (tmp clause)
              (let ((keydesignator (car clause))
                    (forms (cdr clause)))
                (if keydesignator
-                     (if (consp keydesignator)
-                           (list* (do-keylist tmp keydesignator) forms)
+                   (if (consp keydesignator)
+                       (list* (do-keylist tmp keydesignator) forms)
                        (if (eq 't keydesignator)
-                             `(t ,@forms)
-                         `(,(do-key tmp keydesignator) ,@forms))))))
+                           `(t ,@forms)
+                           `(,(do-key tmp keydesignator) ,@forms))))))
 
            (do-clauses (key)
              (let* ((result (cons () ()))
@@ -270,13 +271,13 @@
                    (setq clause (do-clause key (car clauses)))
                    (if clause (setq append-to (cdr (rplacd append-to (cons clause ())))))
                    (loop (cdr clauses))))
-             (cdr result))))
+               (cdr result))))
 
     (if (atom keyform)
-          `(cond ,@(do-clauses keyform))
-      (let ((tmp (gensym)))
-        `(let ((,tmp ,keyform))
-           (cond ,@(do-clauses tmp)))))))
+        `(cond ,@(do-clauses keyform))
+        (let ((tmp (gensym)))
+          `(let ((,tmp ,keyform))
+             (cond ,@(do-clauses tmp)))))))
 
 
 ;;; = Macro: typecase
@@ -304,8 +305,8 @@
   (labels ((do-clause (tmp clause)
              (let ((keydesignator (car clause)))
                (if (and keydesignator (symbolp keydesignator))
-                     `((typep ,tmp ',keydesignator) ,@(cdr clause))
-                 (error 'simple-error "bad clause in typecase: %s" clause))))
+                   `((typep ,tmp ',keydesignator) ,@(cdr clause))
+                   (error 'simple-error "bad clause in typecase: %s" clause))))
 
            (do-clauses (key)
              (let* ((result (cons () ()))
@@ -317,10 +318,10 @@
              (cdr result))))
 
     (if (atom keyform)
-          `(cond ,@(do-clauses keyform))
-      (let ((tmp (gensym)))
-        `(let ((,tmp ,keyform))
-           (cond ,@(do-clauses tmp)))))))
+        `(cond ,@(do-clauses keyform))
+        (let ((tmp (gensym)))
+          `(let ((,tmp ,keyform))
+             (cond ,@(do-clauses tmp)))))))
 
 
 ; conses and lists ****************************************************
@@ -355,14 +356,15 @@
 
 (defun m%nonneg-integer-number (n)
   (cond ((integerp n)
-         (if (< n 0) #1=(error 'simple-type-error "must be an integer >= 0: %s" n))
-         n)
+         (if (< n 0)
+             #1=(error 'simple-type-error "must be an integer >= 0: %s" n)
+             n))
 
         ((numberp n)
-         (if (< n 0) #1#)
-         (let ((ntrunc (truncate n)))
-           (if (/= n ntrunc) #1#)
-           ntrunc))
+         (if (< n 0) #1#
+             (let ((ntrunc (truncate n)))
+               (if (/= n ntrunc) #1#
+                   ntrunc))))
 
         (t #1#)))
 
@@ -381,18 +383,16 @@
 ;;; `nth` works as if `(car (nthcdr n lst))` was invoked.
 (defun nthcdr (n lst)
   (let loop ((n (m%nonneg-integer-number n)) (lst lst))
-    (if (<= n 0) lst
-      (if lst
-            (loop (1- n) (cdr lst))
-        ()))))
+    (if (<= n 0)
+        lst
+        (when lst (loop (1- n) (cdr lst))))))
 
 ; For [n]butlast
 (defun dotted-nthcdr (n lst)
   (let loop ((n (m%nonneg-integer-number n)) (lst lst))
-    (if (<= n 0) lst
-      (if (consp lst)
-            (loop (1- n) (cdr lst))
-        ()))))
+    (if (<= n 0)
+        lst
+        (when (consp lst) (loop (1- n) (cdr lst))))))
 
 
 (m%def-macro-fun nth (n lst)
@@ -413,13 +413,13 @@
 ;;; as the corresponding elements of the given list.
 (defun copy-list (lst)
   (let* loop ((lst lst)
-              (result (cons () ()))
+              (result (list ()))
               (append-to result))
     (if (consp lst)
-          (loop (cdr lst) result (cdr (rplacd append-to (cons (car lst) ()))))
-      (progn
-        (if lst (rplacd append-to lst))
-        (cdr result)))))
+        (loop (cdr lst) result (cdr (rplacd append-to (list (car lst)))))
+        (progn
+          (when lst (rplacd append-to lst))
+          (cdr result)))))
 
 
 ;;; = Function: unzip
@@ -439,7 +439,8 @@
 ;;;
 ;;; See also: [unzip-tails](#function-unzip-tails).
 (defun unzip (lists)
-  (if lists (cons (caar lists) (unzip (cdr lists)))))
+  (when lists
+    (cons (caar lists) (unzip (cdr lists)))))
 
 
 ;;; = Function: unzip-tails
@@ -452,7 +453,8 @@
 ;;;
 ;;; See also: [unzip](#function-unzip).
 (defun unzip-tails (lists)
-  (if lists (cons (cdar lists) (unzip-tails (cdr lists)))))
+  (when lists
+    (cons (cdar lists) (unzip-tails (cdr lists)))))
 
 
 ;;; = Function: list-length
@@ -468,16 +470,20 @@
              (fast lst)      ; Fast pointer: leaps by 2
              (slow lst))     ; Slow pointer: leaps by 1
     ;; If fast pointer hits the end, return the count.
-    (if (null fast) n
-      (if (null (cdr fast)) (1+ n)
-        ;; If fast pointer eventually equals slow pointer,
-        ;;  then we must be stuck in a circular list.
-        ;; (A deeper property is the converse: if we are
-        ;;  stuck in a circular list, then eventually the
-        ;;  fast pointer will equal the slow pointer.
-        ;;  That fact justifies this implementation.)
-        (if (and (eq fast slow) (> n 0)) nil
-          (loop (1+ (1+ n)) (cddr fast) (cdr slow)))))))
+    (cond
+      ((null fast) n)
+
+      ((null (cdr fast)) (1+ n))
+
+      ;; If fast pointer eventually equals slow pointer,
+      ;;  then we must be stuck in a circular list.
+      ;; (A deeper property is the converse: if we are
+      ;;  stuck in a circular list, then eventually the
+      ;;  fast pointer will equal the slow pointer.
+      ;;  That fact justifies this implementation.)
+      ((and (eq fast slow) (> n 0)) nil)
+
+      (t (loop (1+ (1+ n)) (cddr fast) (cdr slow))))))
 
 
 ;;; = Function: last
@@ -494,8 +500,8 @@
 (defmacro m%last0-macro ()
   `(let loop ((rest lst))
      (if (consp rest)
-       (loop (cdr rest))
-       rest)))
+         (loop (cdr rest))
+         rest)))
 
 (defun m%last0 (lst)
   (m%last0-macro))
@@ -503,8 +509,8 @@
 (defmacro m%last1-macro ()
   `(let loop ((rest lst))
      (if (consp (cdr rest))
-       (loop (cdr rest))
-       rest)))
+         (loop (cdr rest))
+         rest)))
 
 (defun m%last1 (lst)
   (m%last1-macro))
@@ -519,19 +525,19 @@
            (checked-lst lst)
            (n n))
        (let ,scan ()
-            (setq checked-lst (cdr checked-lst))
-            (if (atom checked-lst)
+         (setq checked-lst (cdr checked-lst))
+         (if (atom checked-lst)
 
-                returned-lst
+             returned-lst
 
-                (if (= (setq n (1- n)) 0)
-                    (let ,pop ()
-                         (setq returned-lst (cdr returned-lst))
-                         (setq checked-lst (cdr checked-lst))
-                         (if (atom checked-lst)
-                             returned-lst
-                             (,pop)))
-                    (,scan)))))))
+             (if (= (setq n (1- n)) 0)
+                 (let ,pop ()
+                   (setq returned-lst (cdr returned-lst))
+                   (setq checked-lst (cdr checked-lst))
+                   (if (atom checked-lst)
+                       returned-lst
+                       (,pop)))
+                 (,scan)))))))
 
 (defun m%lastn (lst n)
   (setq n (m%nonneg-integer-number n))
@@ -572,27 +578,27 @@
   (let* outer ((outer-lists lists)
                (result (car outer-lists)))
     (if outer-lists
-      (cond
-        ((consp result)
-         (let ((splice result))
-           (let* inner ((inner-lists (cdr outer-lists))
-                        (ele (car inner-lists)))
+        (cond
+          ((consp result)
+           (let ((splice result))
+             (let* inner ((inner-lists (cdr outer-lists))
+                          (ele (car inner-lists)))
                (if inner-lists
-                 (cond
-                   ((consp ele) (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
-                   ((null ele) (rplacd (last splice) ())  (inner (cdr inner-lists) (cadr inner-lists)))
-                   ((atom ele) (if (cdr inner-lists)
+                   (cond
+                     ((consp ele) (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
+                     ((null ele) (rplacd (last splice) ())  (inner (cdr inner-lists) (cadr inner-lists)))
+                     ((atom ele) (if (cdr inner-lists)
                                      (error 'simple-type-error "nconc - not a list: %s" ele)
-                                 (rplacd (last splice) ele)))))))
+                                     (rplacd (last splice) ele)))))))
            result)
 
-        ((null result)
-         (outer (cdr outer-lists) (cadr outer-lists)))
+          ((null result)
+           (outer (cdr outer-lists) (cadr outer-lists)))
 
-        ((atom result)
-         (if (cdr outer-lists)
+          ((atom result)
+           (if (cdr outer-lists)
                (error 'simple-type-error "nconc - not a list: %s" result)
-           result))))))
+               result))))))
 
 
 ;;; = Function: revappend, nreconc
@@ -612,17 +618,19 @@
 ;;;     (revappend x y)  ::=  (append (reverse x) y)
 ;;;     (nreconc x y)    ::=  (nconc (nreverse x) y)
 (defun revappend (x y)
-  (if x (revappend (cdr x) (cons (car x) y))
-    y))
+  (if x
+      (revappend (cdr x) (cons (car x) y))
+      y))
 
 (defun nreconc (x y)
   (let loop ((1st (cdr x))
              (2nd x)
              (3rd y))
-    (if (atom 2nd) 3rd
-      (progn
-        (rplacd 2nd 3rd)
-        (loop (if (null 1st) 1st (cdr 1st)) 1st 2nd)))))
+    (if (atom 2nd)
+        3rd
+        (progn
+          (rplacd 2nd 3rd)
+          (loop (if (null 1st) 1st (cdr 1st)) 1st 2nd)))))
 
 
 ;;; = Function: member
@@ -653,10 +661,10 @@
   (let* ((tst (car test))
          (pred (if tst tst eql)))
     (let loop ((lst lst))
-      (if lst
-            (if (pred item (car lst))
-                  lst
-              (loop (cdr lst)))))))
+      (when lst
+        (if (pred item (car lst))
+            lst
+            (loop (cdr lst)))))))
 
 
 ;;; = Function: adjoin
@@ -668,8 +676,9 @@
 ;;; If the `item` is not an existing element, `adjoin` adds it to `lst` (as if by `cons`)
 ;;; and returns the resulting list; otherwise, nothing is added and the original list is returned.
 (defun adjoin (item lst . test)
-  (if (apply member (list* item lst test)) lst
-    (cons item lst)))
+  (if (apply member (list* item lst test))
+      lst
+      (cons item lst)))
 
 
 ;;; = Function: acons

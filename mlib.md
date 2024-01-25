@@ -20,9 +20,10 @@ and begin your source file with
 mlib provides the following Common Lisp-like functions and macros:
 
 - logic, program structure
+    - [when](#macro-when), [unless](#macro-unless)
     - [not](#function-not), [and](#macro-and), [or](#macro-or)
     - [prog1, prog2](#macro-prog1-prog2)
-    - [when](#macro-when), [unless](#macro-unless), [case](#macro-case), [typecase](#macro-typecase)
+    - [case](#macro-case), [typecase](#macro-typecase)
 - conses and lists
     - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
     - [list-length](#function-list-length), [last](#function-last), [butlast](#function-butlast), [nbutlast](#function-nbutlast), [ldiff](#function-ldiff), [tailp](#function-tailp)
@@ -100,6 +101,28 @@ as well as the following additional functions and macros:
 
 ## Description of functions and macros
 
+### Macro: when
+    (when condition forms*) -> result
+
+Since: 1.1
+
+Execute `forms` if `condition` evaluates to true
+and return the result of the last form if any.
+Otherwise if `condition` evaluates to false,
+the forms are not evaluated and the return value
+of the `when`-form is `nil`.
+
+### Macro: unless
+    (unless condition forms*) -> result
+
+Since: 1.1
+
+Execute `forms` if `condition` evaluates to false
+and return the result of the last form if any.
+Otherwise if `condition` evaluates to true,
+the forms are not evaluated and the return value
+of the `unless`-form is `nil`.
+
 ### Function: not
     (not form) -> boolean
 
@@ -131,28 +154,6 @@ the result of the first form returning non-nil otherwise.
     (prog2 first-form second-form more-forms*) -> result-2
 
 Since: 1.1
-
-### Macro: when
-    (when condition forms*) -> result
-
-Since: 1.1
-
-Execute `forms` if `condition` evaluates to true
-and return the result of the last form if any.
-Otherwise if `condition` evaluates to false,
-the forms are not evaluated and the return value
-of the `when`-form is `nil`.
-
-### Macro: unless
-    (unless condition forms*) -> result
-
-Since: 1.1
-
-Execute `forms` if `condition` evaluates to false
-and return the result of the last form if any.
-Otherwise if `condition` evaluates to true,
-the forms are not evaluated and the return value
-of the `unless`-form is `nil`.
 
 ### Macro: case
      (case keyform (keys forms*)* (t forms*)?) -> result
