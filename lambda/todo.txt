@@ -1,7 +1,3 @@
-emitSetq schreibt beim letzten assignment immer clrValues
--> isDefOrLet streichen, berechnung von isStmtExpr rausziehen und in emitSetq nutzen
-
-
 let-over-lambda (non-toplevel defuns) im compiler könnt so gehen:
 toplevelFormToJava bekommt ein case für let/let*/letrec, das sucht in diesen forms (rekursiv) nach defuns und bereitet ein CompilerGlobal vor
 emitForm schaut dann im pass 2 bei non-toplevel defuns im global environment nach obs das symbol gibt - wenn ja wird ein named lambda zugewiesen

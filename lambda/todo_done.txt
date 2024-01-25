@@ -2697,3 +2697,7 @@ dass die location in der exceptionmessage dranhängt ist ein hack
 -> gesondertes feld
 -> printSex escape=nil sollte nur message liefern, printSex escape=true sollte alles wie gehabt aneinanderhängen
    -> LambdaJError sollte Writeable implementieren
+
+
+emitSetq schreibt beim letzten assignment immer clrValues
+-> isDefOrLet streichen, berechnung von isStmtExpr rausziehen und in emitSetq nutzen

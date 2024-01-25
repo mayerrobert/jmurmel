@@ -9760,16 +9760,7 @@ public class LambdaJ {
 
                 // whether a form needs to be preceeded by "values = null;" and "... = ".
                 // This is needed before some special forms (?) and before some primitives that will be opencoded in a special way
-                isStmtExpr = ws == WellknownSymbol.interned || ws == WellknownSymbol.notInterned // userdefined functions set values correctly
-
-                             || isDefOrLet
-                             || ws == WellknownSymbol.sIf
-                             || ws == WellknownSymbol.sCond
-                             || ws == WellknownSymbol.sSetQ
-                             || ws == WellknownSymbol.sProgn
-                             || ws == WellknownSymbol.sCatch
-
-                             || ws.stmtExpr;
+                isStmtExpr = isDefOrLet || !needsClrValues(symop);
             }
             else {
                 symop = null; ws = null; isDefOrLet = isStmtExpr = false;
@@ -10556,12 +10547,28 @@ public class LambdaJ {
 
             notAPrimitive(SETQ, symbol, javaName);
 
-            final String clrValues = cddr(pairs) == null ? "clrValues" : ""; // only clear on the last assignment
+            String clrValues = "", closingParen = "";
+            if (cddr(pairs) == null) {
+                if (consp(valueForm)) {
+                    final Object valueOp = car((ConsCell)valueForm);
+                    if (valueOp instanceof LambdaJSymbol) {
+                        if (valueOp != intern(LAMBDA) && (valueOp == intern(VALUES) || needsClrValues((LambdaJSymbol)valueOp))) {
+                            clrValues = "clrValues(";
+                            closingParen = ")";
+                        }
+                    }
+                }
+                else {
+                    clrValues = "clrValues(";
+                    closingParen = ")";
+                }
+            }
+
             if (fastassq(symbol, env) == fastassq(symbol, topEnv)) {
                 if (javaName.endsWith(".get()")) {
                     // either a userdefined global or a
                     final String symName = javaName.substring(0, javaName.length()-6);
-                    sb.append(symName).append(".set(").append(clrValues).append('('); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append("))");
+                    sb.append(symName).append(".set(").append(clrValues); emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(closingParen).append(")");
                 }
                 else {
                     // immutable runtime globals such as pi are implemented as regular Java class members (and not as objects of class CompilerGlobal)
@@ -10569,9 +10576,24 @@ public class LambdaJ {
                 }
             }
             else {
-                sb.append(javaName).append(" = ").append(clrValues).append('(');  emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(')');
+                sb.append(javaName).append(" = ").append(clrValues);  emitForm(sb, valueForm, env, topEnv, rsfx, false); sb.append(closingParen);
             }
             return javaName;
+        }
+
+        private static boolean needsClrValues(LambdaJSymbol sym) {
+            final WellknownSymbol ws = sym.wellknownSymbol;
+            if (ws.stmtExpr
+                //|| ws == WellknownSymbol.sLambda
+                || ws == WellknownSymbol.sIf
+                || ws == WellknownSymbol.sCond
+                || ws == WellknownSymbol.sSetQ
+                || ws == WellknownSymbol.sProgn
+                || ws == WellknownSymbol.sCatch)
+                return false;
+            if (ws == WellknownSymbol.interned || ws == WellknownSymbol.notInterned) return false;
+
+            return true;
         }
 
         /** args = (((symbol (sym...) form...)...) form...) */
