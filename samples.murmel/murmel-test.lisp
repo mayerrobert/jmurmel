@@ -327,6 +327,20 @@ multiline comment
 ;    (list (f) (f) (f)))
 ;  '(1 2 3))
 
+(let ((a 1) (b 2))
+  (define *g2* (+ 0.0 a b)))
+(deftest let.17 *g2* 3.0)
+
+(let* ((a 1) (b 2))
+  (define *g3* (+ 0.0 a b)))
+(deftest let.18 *g3* 3.0)
+
+#+murmel
+(letrec ((a 1) (b 2))
+  (define *g4* (+ 0.0 a b)))
+#+murmel
+(deftest let.18 *g4* 3.0)
+
 
 ;;; test named let, let*, letrec
 #+murmel
@@ -640,6 +654,10 @@ multiline comment
 
 #+murmel (deftest mvb.8  (multiple-value-bind (a b . c) (values 1 2 3 4 5) (echo a b c)) '(1 2 (3 4 5)))
 #+murmel (deftest mvb.9  (multiple-value-bind (a b . c) (values 1) (echo a b c)) '(1 nil nil))
+
+(multiple-value-bind (a b) (values 1.0 2)
+  (define *g5* (+ a b)))
+(deftest mvb.10 *g5* 3.0)
 
 
 ;;; multiple-value-call

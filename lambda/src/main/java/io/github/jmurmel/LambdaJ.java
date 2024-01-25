@@ -9456,9 +9456,18 @@ public class LambdaJ {
                         return globalEnv;
                     }
 
-                    case sLet: {
+                    case sLet:
+                    case sLetStar:
+                    case sLetrec: {
                         if (cadr(ccForm) instanceof LambdaJSymbol) break;
                         final ConsCell ccBodyForms = (ConsCell)cddr(ccForm);
+                        globalEnv = toplevelLetBody(ret, globals, globalEnv, ccBodyForms, 1);
+                        bodyForms.add(ccForm);
+                        return globalEnv;
+                    }
+
+                    case sMultipleValueBind: {
+                        final ConsCell ccBodyForms = (ConsCell)cdddr(ccForm);
                         globalEnv = toplevelLetBody(ret, globals, globalEnv, ccBodyForms, 1);
                         bodyForms.add(ccForm);
                         return globalEnv;
@@ -9531,11 +9540,10 @@ public class LambdaJ {
 
         private ConsCell toplevelLet(WrappingWriter ret, StringBuilder globals, ConsCell globalEnv, ConsCell ccForm, int rsfx) {
             final Object op = car(ccForm);
-            assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
 
             if (symbolp(op)) switch (((LambdaJSymbol)op).wellknownSymbol) {
 
-            //case sDefine:
+            case sDefine:
             case sDefun:
                 final Object symbol = cadr(ccForm);
                 globalEnv = defineToJava(ret, ConsCell.list(intern(DEFINE), symbol, null), globalEnv, rsfx);
@@ -9963,9 +9971,10 @@ public class LambdaJ {
                     return;
                 }
 
+                case sDefine:
                 case sDefun: {
                     final LambdaJSymbol symbol = (LambdaJSymbol)car(ccArguments);
-                    if (fastassq(symbol, topEnv) == null) {
+                    if (rsfx == 0 || fastassq(symbol, topEnv) == null) {
                         if (hasNext) {
                             sb.append("        ");
                             emitForm(sb, form, env, topEnv, rsfx, false);
@@ -9978,14 +9987,14 @@ public class LambdaJ {
                     emitLoc(sb, ccForm, 40);
                     final String javasym = mangleFunctionName(symbol.toString(), rsfx);
                     sb.append("        ").append(javasym).append(" = new CompilerGlobal(");
-                    emitNamedLambda(DEFUN, sb, symbol, cadr(ccArguments), (ConsCell)cddr(ccArguments), extenvIntern(symbol, javasym, env), topEnv, rsfx, true);
+                    if (ws == WellknownSymbol.sDefine) emitForm(sb, cadr(ccArguments), env, topEnv, rsfx, false);
+                    else emitNamedLambda(DEFUN, sb, symbol, cadr(ccArguments), (ConsCell)cddr(ccArguments), extenvIntern(symbol, javasym, env), topEnv, rsfx, true);
                     sb.append(");\n");
                     if (!hasNext) sb.append(retLhs).append("intern(\"").append(symbol).append("\");\n");
 
                     return;
                 }
 
-                case sDefine:
                 case sDefmacro: {
                     if (hasNext) {
                         sb.append("        ");
