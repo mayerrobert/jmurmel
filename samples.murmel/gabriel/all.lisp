@@ -2,10 +2,15 @@
 ;;;
 ;;; See also the JMH benchmark lambdajbm/src/main/io/github/jmurmel/GabrielBenchmark.java
 
-(load "000_lib")
-(load "00_tak_apo")
+#+murmel (load "000_lib.lisp")
+#-murmel
+(defmacro define (sym &optional (val nil))
+  `(defparameter ,sym ,val))
+
+(load "00_tak_apo.lisp")
 (load "3.01_tak.lisp")
-(load "3.01_takeuchi")
-(load "3.02_stak")
-(load "3.04_takl")
-(load "3.10_deriv")
+(load "3.01_takeuchi.lisp")
+(load "3.02_stak.lisp")
+(load "3.04_takl.lisp")
+#+murmel (load "3.10_deriv.lisp")
+#-murmel (load "3.10_deriv_CL.lisp")

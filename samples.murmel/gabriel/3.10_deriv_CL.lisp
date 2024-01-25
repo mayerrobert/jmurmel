@@ -35,9 +35,9 @@
     (t 'error)))
 
 (defun run ()
-  (declare (fixnum i))  ;improves the code a little
   (do ((i 0 (1+ i)))
       ((= i 1000.))     ;runs it 5000 times
+    (declare (fixnum i))  ;improves the code a little
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))
@@ -45,3 +45,4 @@
     (deriv '(+ (* 3 x x) (* a x x) (* b x) 5))))
 
 ;;; call:  (run)
+(run)
