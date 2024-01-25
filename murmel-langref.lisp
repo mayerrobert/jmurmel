@@ -148,7 +148,7 @@
 
 ; = Labeled subobjects
 
-; Since: 1.5
+; Since: 1.4.6
 
 '(a #1=b #1# c)       ; ==> (a b b c)
 
