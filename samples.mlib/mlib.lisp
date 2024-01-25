@@ -2116,16 +2116,16 @@
 
 
 ;;; = Function: map-into
-;;;     (map-into result-list function sequence*) -> result-list
+;;;     (map-into result-sequence function sequence*) -> result-sequence
 ;;;
 ;;; Since: 1.2
 ;;;
-;;; Destructively modifies `result-list` to contain the results
-;;; of applying `function` to each element in the argument lists in turn.
-;;; The iteration terminates when the shortest list (of any of
-;;; the lists or the result-list) is exhausted.
+;;; Destructively modifies `result-sequence` to contain the results
+;;; of applying `function` to each element in the argument sequences in turn.
+;;; The iteration terminates when the shortest sequence (of any of
+;;; the sequences or the result-sequence) is exhausted.
 ;;;
-;;; If `result-list` is `nil`, `map-into` returns `nil`.
+;;; If `result-sequence` is `nil`, `map-into` returns `nil`.
 ;;;
 ;;; Similar to CL `map-into`.
 (defun map-into (result func . sequences)
