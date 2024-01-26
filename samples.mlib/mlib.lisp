@@ -143,7 +143,7 @@
 (defmacro unless (condition . body)
   (list 'if
         condition
-        nil
+        ()
         (if (cdr body)
             (cons 'progn body)
             (car body))))
@@ -263,13 +263,13 @@
                            `(,(do-key tmp keydesignator) ,@forms))))))
 
            (do-clauses (key)
-             (let* ((result (cons () ()))
+             (let* ((result (list ()))
                     (append-to result)
                     clause)
                (let loop ((clauses clauses))
                  (when clauses
                    (setq clause (do-clause key (car clauses)))
-                   (if clause (setq append-to (cdr (rplacd append-to (cons clause ())))))
+                   (if clause (setq append-to (cdr (rplacd append-to (list clause)))))
                    (loop (cdr clauses))))
                (cdr result))))
 
@@ -309,11 +309,11 @@
                    (error 'simple-error "bad clause in typecase: %s" clause))))
 
            (do-clauses (key)
-             (let* ((result (cons () ()))
+             (let* ((result (list ()))
                     (append-to result))
                (let loop ((clauses clauses))
                  (when clauses
-                   (setq append-to (cdr (rplacd append-to (cons (do-clause key (car clauses)) ()))))
+                   (setq append-to (cdr (rplacd append-to (list (do-clause key (car clauses))))))
                    (loop (cdr clauses))))
              (cdr result))))
 
@@ -465,7 +465,7 @@
 ;;; Returns the length of `list-or-string` if it is a string or proper list.
 ;;; Returns `nil` if `list-or-string` is a circular list.
 (defun list-length (lst)
-  ; see http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
+  ;; see http://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node149.html
   (let loop ((n 0)         ; Counter
              (fast lst)      ; Fast pointer: leaps by 2
              (slow lst))     ; Slow pointer: leaps by 1
@@ -515,9 +515,9 @@
 (defun m%last1 (lst)
   (m%last1-macro))
 
-; m%lastn-macro won't work for n <= 0.
-; This causes no ill effect because the code below avoids this,
-; and then m%lastn-macro is undefined so that user code doesn't see it.
+;; m%lastn-macro won't work for n <= 0.
+;; This causes no ill effect because the code below avoids this,
+;; and then m%lastn-macro is undefined so that user code doesn't see it.
 (defmacro m%lastn-macro ()
   (let ((scan (gensym "scan"))
         (pop (gensym "pop")))
@@ -701,7 +701,7 @@
            t))))
 
 
-; Helper macros to generate defuns for the various mapXX functions
+;; Helper macros to generate defuns for the various mapXX functions
 (defmacro m%mapx (name acc accn)
   `(defun ,name (func lst . more-lists)
      (if more-lists
@@ -1141,7 +1141,8 @@
 ; Replace the car of `lst` by `value` and return `value`
 ; (as opposed to `rplaca` which returns `lst`).
 ; Used in setf-expansions.
-(defun m%rplaca (lst v) (rplaca lst v) v)
+(defun m%rplaca (lst v)
+  (rplaca lst v) v)
 
 
 ; m%rplacd
@@ -1150,7 +1151,8 @@
 ; Replace the cdr of `lst` by `value` and return `value`
 ; (as opposed to `rplacd` which returns `lst`).
 ; Used in setf-expansions.
-(defun m%rplacd (lst value) (rplacd lst value) value)
+(defun m%rplacd (lst value)
+  (rplacd lst value) value)
 
 
 ;;; = Macro: destructuring-bind
@@ -1242,15 +1244,15 @@
                  `(nil
                    nil
                    ,vars
-                   (values ,@(let* loop ((ret (cons () ()))
+                   (values ,@(let* loop ((ret (list ()))
                                          (append-to ret)
                                          (vals args)
                                          (vars vars))
                                 (if vals
-                                      (progn
-                                        (rplacd append-to (cons (list 'setf (car vals) (car vars)) ()))
-                                        (loop ret (cdr append-to) (cdr vals) (cdr vars)))
-                                  (cdr ret))))
+                                    (progn
+                                      (rplacd append-to (list (list 'setf (car vals) (car vars))))
+                                      (loop ret (cdr append-to) (cdr vals) (cdr vars)))
+                                    (cdr ret))))
                    ,place)))
 
               (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, hashref, gethash, svref, bvref, bit, sref char and values are supported for 'place', got %s" place))))))))
@@ -1275,18 +1277,18 @@
 ;;; - values
 (defmacro setf args
   (if args
-        (if (cdr args)
-              (if (cddr args)
-                    (cons 'progn
-                      (let loop ((args args))
-                        (if (cdr args)
-                              (cons `(setf ,(car args) ,(cadr args))
-                                    (if (cddr args)
-                                          (loop (cddr args))))
+      (if (cdr args)
+          (if (cddr args)
+              (cons 'progn
+                    (let loop ((args args))
+                      (if (cdr args)
+                          (cons `(setf ,(car args) ,(cadr args))
+                                (if (cddr args)
+                                    (loop (cddr args))))
                           #1=(error "odd number of arguments to setf"))))
 
-                (if (symbolp (car args))
-                      `(setq   ,(car args)  ,@(cdr args))
+              (if (symbolp (car args))
+                  `(setq   ,(car args)  ,@(cdr args))
 
                   (let ((op (caar args)))
                     (cond
@@ -1331,21 +1333,21 @@
                       ((eq 'values op)
                        (let* ((vars (mapcar (lambda (x) (gensym)) #2#)))
                          `(multiple-value-bind ,vars ,#3#
-                            (values ,@(let* loop ((ret (cons () ()))
+                            (values ,@(let* loop ((ret (list ()))
                                                   (append-to ret)
                                                   (places #2#)
                                                   (vars vars))
-                                         (if places
-                                               (progn
-                                                 (rplacd append-to (cons (list 'setf (car places) (car vars)) ()))
-                                                 (loop ret (cdr append-to) (cdr places) (cdr vars)))
-                                           (cdr ret)))))))
+                                        (if places
+                                            (progn
+                                              (rplacd append-to (list (list 'setf (car places) (car vars))))
+                                              (loop ret (cdr append-to) (cdr places) (cdr vars)))
+                                            (cdr ret)))))))
 
                       ;; see https://stackoverflow.com/questions/44698426/how-do-setf-works-under-the-hood
                       (t (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion (car args))
                            `(let* ,(mapcar list vars vals)
                               (multiple-value-bind ,store-vars ,@(cdr args)
-                              ,writer-form))))))))
+                                ,writer-form))))))))
 
           #1#)))
 
@@ -1365,64 +1367,64 @@
 ;;; similar to `setf`.
 (defmacro psetf pairs
   (labels ((%make-bindings (pairs append-to)
-              (if pairs
-                  (if (cdr pairs)
-                        (let ((place (car pairs)) (value-form (cadr pairs)))
-                          (if (and (consp place) (eq 'values (car place)))
-                                (progn
-                                  (if (cddr place)
-                                        (rplacd append-to (cons (list* place value-form  (mapcar (lambda (x) (gensym)) (cdr place))) ()))
-                                    (rplacd append-to (cons (list (cadr place) value-form (gensym)) ())))
-                                  (%make-bindings (cddr pairs) (cdr append-to)))
-                            (progn
-                              (rplacd append-to (cons (list place value-form (gensym)) ()))
-                              (%make-bindings (cddr pairs) (cdr append-to)))))
-                    #1=(error "odd number of arguments to psetf"))))
+             (if pairs
+                 (if (cdr pairs)
+                     (let ((place (car pairs)) (value-form (cadr pairs)))
+                       (if (and (consp place) (eq 'values (car place)))
+                           (progn
+                             (if (cddr place)
+                                 (rplacd append-to (list (list* place value-form  (mapcar (lambda (x) (gensym)) (cdr place)))))
+                                 (rplacd append-to (list (list (cadr place) value-form (gensym)))))
+                             (%make-bindings (cddr pairs) (cdr append-to)))
+                           (progn
+                             (rplacd append-to (list (list place value-form (gensym))))
+                             (%make-bindings (cddr pairs) (cdr append-to)))))
+                     #1=(error "odd number of arguments to psetf"))))
 
            (make-bindings (pairs)
-             (let ((head (cons () ())))
+             (let ((head (list ())))
                (%make-bindings pairs head)
                (cdr head)))
 
            (maybe-values (vars)
              (if (cdr vars)
-                   `(values ,@vars)
-               (car vars))))
+                 `(values ,@vars)
+                 (car vars))))
 
     (if pairs
         (if (cdr pairs)
-              (if (cddr pairs)
-                    (let* ((bindings (make-bindings pairs)))
-                      `(let ,(apply append (mapcar cddr bindings))
-                         ,@(let ((head (cons () ())))
-                             (let loop ((bindings bindings) (append-to head))
-                               (when bindings
-                                 (destructuring-bind (place value-form . vars) (car bindings)
-                                   (rplacd append-to (cons `(setf ,(maybe-values vars) ,value-form) ())))
-                                 (loop (cdr bindings) (cdr append-to))))
-                             (cdr head))
-                         ,@(let ((head (cons () ())))
-                             (let loop ((bindings bindings) (append-to head))
-                               (when bindings
-                                 (destructuring-bind (place value-form . vars) (car bindings)
-                                   (rplacd append-to (cons `(setf ,place ,(maybe-values vars)) ())))
-                                 (loop (cdr bindings) (cdr append-to))))
-                             (cdr head))))
-                    `(setf ,(car pairs) ,@(cdr pairs)))
-          #1#))))
+            (if (cddr pairs)
+                (let* ((bindings (make-bindings pairs)))
+                  `(let ,(apply append (mapcar cddr bindings))
+                     ,@(let ((head (list ())))
+                         (let loop ((bindings bindings) (append-to head))
+                           (when bindings
+                             (destructuring-bind (place value-form . vars) (car bindings)
+                               (rplacd append-to (list `(setf ,(maybe-values vars) ,value-form))))
+                             (loop (cdr bindings) (cdr append-to))))
+                         (cdr head))
+                     ,@(let ((head (list ())))
+                         (let loop ((bindings bindings) (append-to head))
+                           (when bindings
+                             (destructuring-bind (place value-form . vars) (car bindings)
+                               (rplacd append-to (list `(setf ,place ,(maybe-values vars)))))
+                             (loop (cdr bindings) (cdr append-to))))
+                         (cdr head))))
+                `(setf ,(car pairs) ,@(cdr pairs)))
+            #1#))))
 
 
 ; Helper macro to generate defmacro's for inplace modification macros.
 (defmacro m%inplace (name noarg arg)
   `(defmacro ,name (place . delta-form)
-    (if (symbolp place)
-          `(setq ,place ,(if delta-form `(,,@arg ,place ,@delta-form) `(,,@noarg ,place)))
-      (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
-          `(let* (,@(mapcar list vars vals)
-                 (,(car store-vars) ,(if delta-form
+     (if (symbolp place)
+         `(setq ,place ,(if delta-form `(,,@arg ,place ,@delta-form) `(,,@noarg ,place)))
+         (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
+           `(let* (,@(mapcar list vars vals)
+                   (,(car store-vars) ,(if delta-form
                                            `(,,@arg ,reader-form ,@delta-form)
-                                       `(,,@noarg ,reader-form))))
-             ,writer-form)))))
+                                           `(,,@noarg ,reader-form))))
+              ,writer-form)))))
 
 
 ;;; = Macro: incf, decf
@@ -1500,11 +1502,11 @@
 ;;; stores the resulting list in `place`, and returns the list.
 (defmacro push (item place)
   (if (symbolp place)
-        `(setq ,place (cons ,item ,place))
-    (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
-      `(let* (,@(mapcar list vars vals)
-              (,(car store-vars) (cons ,item ,reader-form)))
-         ,writer-form))))
+      `(setq ,place (cons ,item ,place))
+      (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
+        `(let* (,@(mapcar list vars vals)
+                (,(car store-vars) (cons ,item ,reader-form)))
+           ,writer-form))))
 
 
 ;;; = Macro: pushnew
@@ -1518,11 +1520,11 @@
 ;;; `pushnew` returns the new list that is stored in `place`.
 (defmacro pushnew (item place . test)
   (if (symbolp place)
-        `(setq ,place (adjoin ,item ,place ,@test))
-    (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
-      `(let* (,@(mapcar list vars vals)
-              (,(car store-vars) (adjoin ,item ,reader-form ,@test)))
-         ,writer-form))))
+      `(setq ,place (adjoin ,item ,place ,@test))
+      (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
+        `(let* (,@(mapcar list vars vals)
+                (,(car store-vars) (adjoin ,item ,reader-form ,@test)))
+           ,writer-form))))
 
 
 ;;; = Macro: pop
@@ -1536,15 +1538,15 @@
 (defmacro pop (place)
   (let ((result (gensym)))
     (if (symbolp place)
-          `(let ((,result (car ,place)))
-             (setq ,place (cdr ,place))
-             ,result)
-      (destructuring-bind (vars vals new writer-form reader-form) (get-setf-expansion place)
-        `(let* (,@(mapcar list vars vals)
-                (,@new (cdr ,reader-form))
-                (,result (car ,reader-form)))
-           ,writer-form
-           ,result)))))
+        `(let ((,result (car ,place)))
+           (setq ,place (cdr ,place))
+           ,result)
+        (destructuring-bind (vars vals new writer-form reader-form) (get-setf-expansion place)
+          `(let* (,@(mapcar list vars vals)
+                  (,@new (cdr ,reader-form))
+                    (,result (car ,reader-form)))
+             ,writer-form
+             ,result)))))
 
 
 ; numbers, characters *************************************************
@@ -1599,8 +1601,9 @@
 ;;;
 ;;; Is this number even?
 (defun evenp (n)
-  (if (integerp n) (= 0.0 (mod n 2))
-    (error 'simple-type-error "not an integer: %s" n)))
+  (if (integerp n)
+      (= 0.0 (mod n 2))
+      (error 'simple-type-error "not an integer: %s" n)))
 
 
 ;;; = Function: oddp
@@ -1610,8 +1613,9 @@
 ;;;
 ;;; Is this number odd?
 (defun oddp (n)
-  (if (integerp n) (= 1.0 (mod n 2))
-    (error 'simple-type-error "not an integer: %s" n)))
+  (if (integerp n)
+      (= 1.0 (mod n 2))
+      (error 'simple-type-error "not an integer: %s" n)))
 
 
 ;;; = Function: char=
@@ -1622,12 +1626,12 @@
 ;;; Return `t` if all of the arguments are the same character.
 (defun char= (c . more)
   (if more
-        (let loop ((code (char-code c)) (l more))
-          (if (= code (char-code (car l)))
-                (if (cdr l)
-                      (loop code (cdr l))
-                  t)))
-    t))
+      (let loop ((code (char-code c)) (l more))
+        (if (= code (char-code (car l)))
+            (if (cdr l)
+                (loop code (cdr l))
+                t)))
+      t))
 
 
 ;;; = Function: char
@@ -1679,9 +1683,9 @@
 ;;; `parse-error` if the token is not of type `result-type`.
 (defun parse args
   (multiple-value-bind (obj pos) (apply read-from-string (cdr args))
-    (if (typep obj (car args)) ()
-      (error 'parse-error "expected an object of type %s, got %s" (car args) obj))
-    (values obj pos)))
+    (if (typep obj (car args))
+        (values obj pos)
+        (error 'parse-error "expected an object of type %s, got %s" (car args) obj))))
 
 
 ;;; = Function: parse-integer
@@ -1718,113 +1722,114 @@
 
            (if endincl
 
-                 (cond ((= step 1)
-                        (lambda ()
-                          (if (<= start endincl)
-                                (values start
-                                        (progn (incf start) t))
+               (cond ((= step 1)
+                      (lambda ()
+                        (if (<= start endincl)
+                            (values start
+                                    (progn (incf start) t))
                             (values nil nil))))
 
-                       ((= step -1)
-                        (lambda ()
-                          (if (>= start endincl)
-                                (values start
-                                        (progn (decf start) t))
+                     ((= step -1)
+                      (lambda ()
+                        (if (>= start endincl)
+                            (values start
+                                    (progn (decf start) t))
                             (values nil nil))))
 
-                       ((= step 0)
-                        (lambda () (values start t)))
+                     ((= step 0)
+                      (lambda () (values start t)))
 
-                       ((> step 0)
-                        (setq start (* start 1.0))
-                        (lambda ()
-                          (if (<= start endincl)
-                                (values start
-                                        (progn (incf start step) t))
+                     ((> step 0)
+                      (setq start (* start 1.0))
+                      (lambda ()
+                        (if (<= start endincl)
+                            (values start
+                                    (progn (incf start step) t))
                             (values nil nil))))
 
-                       (t
-                        (setq start (* start 1.0))
-                        (lambda ()
-                          (if (>= start endincl)
-                                (values start
-                                        (progn (incf start step) t))
+                     (t
+                      (setq start (* start 1.0))
+                      (lambda ()
+                        (if (>= start endincl)
+                            (values start
+                                    (progn (incf start step) t))
                             (values nil nil)))))
 
-             (cond ((= step 1)
-                    (lambda ()
-                      (values start
-                              (progn (incf start) t))))
+               (cond ((= step 1)
+                      (lambda ()
+                        (values start
+                                (progn (incf start) t))))
 
-                   ((= step -1)
-                    (lambda ()
-                      (values start
-                              (progn (decf start) t))))
-                   ((= step 0)
-                    (lambda () (values start t)))
+                     ((= step -1)
+                      (lambda ()
+                        (values start
+                                (progn (decf start) t))))
+                     ((= step 0)
+                      (lambda () (values start t)))
 
-                   (t
-                    (lambda ()
-                      (values start
-                              (progn (incf start step) t))))))))
+                     (t
+                      (lambda ()
+                        (values start
+                                (progn (incf start step) t))))))))
 
         ((consp arg)
          (when more-args
            (setq arg (nthcdr (car more-args) arg)))
 
          (if (cdr more-args)
-                 (let* ((n (floor (- (m%nonneg-integer-number (cadr more-args)) (car more-args)))))
-                   (lambda ()
-                     (if (and arg (> n 0))
-                           (values (prog1 (car arg) (setq arg (cdr arg)) (decf n))
-                                   t)
-                       (values nil nil))))
+             (let* ((n (floor (- (m%nonneg-integer-number (cadr more-args)) (car more-args)))))
+               (lambda ()
+                 (if (and arg (> n 0))
+                     (values (prog1 (car arg) (setq arg (cdr arg)) (decf n))
+                             t)
+                     (values nil nil))))
 
+             (lambda ()
+               (values (car arg)
+                       (when arg
+                         (setq arg (cdr arg))
+                         t)))))
+
+        ((vectorp arg)
+         (let* ((ref (cond ((simple-vector-p arg) svref)
+                           ((bit-vector-p arg) bvref)
+                           ((stringp arg) sref)
+                           ((vectorp arg) seqref)))
+                (len (vector-length arg))
+                (idx (if more-args (m%nonneg-integer-number (car more-args)) 0)))
+           (when (cdr more-args)
+             (when (< (cadr more-args) len)
+               (setq len (m%nonneg-integer-number (cadr more-args)))))
            (lambda ()
-             (values (car arg)
-                     (when arg
-                       (setq arg (cdr arg))
-                       t)))))
+             (if (< idx len)
+                 (values (ref arg idx)
+                         (progn (incf idx) t))
+                 (values nil nil)))))
 
-       ((vectorp arg)
-        (let* ((ref (cond ((simple-vector-p arg) svref)
-                          ((bit-vector-p arg) bvref)
-                          ((stringp arg) sref)
-                          ((vectorp arg) seqref)))
-               (len (vector-length arg))
-               (idx (if more-args (m%nonneg-integer-number (car more-args)) 0)))
-          (when (cdr more-args)
-            (if (< (cadr more-args) len) (setq len (m%nonneg-integer-number (cadr more-args)))))
-          (lambda ()
-            (if (< idx len)
-                  (values (ref arg idx)
-                          (progn (incf idx) t))
-              (values nil nil)))))
+        ((null arg)
+         (lambda () (values nil nil)))
 
-       ((null arg)
-        (lambda () (values nil nil)))
-
-       (t (error "scan: cannot create a generator function from given arguments"))))
+        (t (error "scan: cannot create a generator function from given arguments"))))
 
 
 (defun scan (arg . more-args)
   (cond ((functionp arg) ; assume it's a generator
          (if more-args
-               (if (cdr more-args)
- 
-                     (let* ((skip (m%nonneg-integer-number (car more-args)))
-                            (count (floor (- (m%nonneg-integer-number (cadr more-args)) skip))))
-                       (when (<= count 0) (setq count nil))
-                       (lambda ()
-                         (when skip
-                           (dotimes (ignore skip) (arg))
-                           (setq skip nil))
-                         (if count
-                               (progn
-                                 (setq count (if (> count 1) (1- count) nil))
-                                 (arg))
-                           (values nil nil))))
- 
+             (if (cdr more-args)
+
+                 (let* ((skip (m%nonneg-integer-number (car more-args)))
+                        (count (floor (- (m%nonneg-integer-number (cadr more-args)) skip))))
+                   (when (<= count 0) (setq count nil))
+                   (lambda ()
+                     (when skip
+                       (dotimes (ignore skip) (arg))
+                       (setq skip nil))
+                     (if count
+                         (progn
+                           (setq count (if (> count 1) (1- count) nil))
+                           (arg))
+                         (values nil nil))))
+
                  (let ((skip (m%nonneg-integer-number (car more-args))))
                    (lambda ()
                      (when skip
@@ -1832,7 +1837,7 @@
                        (setq skip nil))
                      (arg))))
 
-           arg))
+             arg))
 
         ((hash-table-p arg)
          (apply scan-hash-table (cons arg more-args)))
@@ -1850,30 +1855,33 @@
 ;;; and whose secondary value is nil if any generator returns nil as their secondary value.
 ;;; Once the first generator indicates "at end" for the first time no more generators will be called.
 (defun scan-multiple (generator . more-generators)
-  (if (functionp generator) nil (error 'simple-type-error "not a generator"))
+  (unless (functionp generator)
+    (error 'simple-type-error "not a generator"))
+
   (if more-generators
 
-        (let ((generators (cons generator more-generators)) (more-accum t))
-          (lambda ()
-            (if more-accum
-                  (let* ((list-accum (cons () ())) (append-to list-accum))
-                    (let loop ((x generators))
-                      (if x
-                        (if more-accum
-                          (multiple-value-bind (result more) ((car x))
-                            (if more
-                                  (progn (setq append-to (cdr (rplacd append-to (cons result ())))) (loop (cdr x)))
-                              (setq more-accum ()))))))
-                    (values (cdr list-accum) more-accum))
+      (let ((generators (cons generator more-generators))
+            (more-accum t))
+        (lambda ()
+          (if more-accum
+              (let* ((list-accum (list ())) (append-to list-accum))
+                (let loop ((x generators))
+                  (when x
+                    (when more-accum
+                      (multiple-value-bind (result more) ((car x))
+                        (if more
+                            (progn (setq append-to (cdr (rplacd append-to (list result)))) (loop (cdr x)))
+                            (setq more-accum ()))))))
+                (values (cdr list-accum) more-accum))
               (values nil nil))))
 
-    (lambda ()
-      (if generator
+      (lambda ()
+        (if generator
             (multiple-value-bind (result more) (generator)
               (if more
-                    (values (list result) more)
-                (values (setq generator nil) nil)))
-        (values nil nil)))))
+                  (values (list result) more)
+                  (values (setq generator nil) nil)))
+            (values nil nil)))))
 
 
 ;;; = Function: scan-concat
@@ -1886,22 +1894,24 @@
 ;;;
 ;;; A single generator would be returned unchanged.
 (defun scan-concat (generator . more-generators)
-  (if (functionp generator) nil (error 'simple-type-error "not a generator"))
+  (unless (functionp generator)
+    (error 'simple-type-error "not a generator"))
+
   (if more-generators
-        (let ((more-generators more-generators))
-          (lambda ()
-            (if generator
-                  (multiple-value-bind (value more) (generator)
-                    (if more
-                          (values value more)
-                      (if more-generators
-                            (progn
-                              (setq generator (car more-generators))
-                              (setq more-generators (cdr more-generators))
-                              (generator))
+      (let ((more-generators more-generators))
+        (lambda ()
+          (if generator
+              (multiple-value-bind (value more) (generator)
+                (if more
+                    (values value more)
+                    (if more-generators
+                        (progn
+                          (setq generator (car more-generators))
+                          (setq more-generators (cdr more-generators))
+                          (generator))
                         (values nil nil))))
               (values nil nil))))
-    generator))
+      generator))
 
 
 ;;; = Macro: dogenerator
@@ -1923,7 +1933,7 @@
                     ,@body
                     (multiple-value-call ,loop (,generator)))))
          (multiple-value-call ,loop (,generator))
-         ,(if result `(let ((,var nil)) ,@result))))))
+         ,(if result `(let ((,var ())) ,@result))))))
 
 
 ; sequences ***********************************************************
@@ -1965,10 +1975,11 @@
 ;;;
 ;;; Returns the length of `sequence`.
 (defun length (seq)
-  (cond ((null seq) 0)
-        ((listp seq) (list-length seq))
-        ((vectorp seq) (vector-length seq))
-        (t (error 'simple-type-error "length - %s is not a sequence" seq))))
+  (cond
+    ((null seq) 0)
+    ((listp seq) (list-length seq))
+    ((vectorp seq) (vector-length seq))
+    (t (error 'simple-type-error "length - %s is not a sequence" seq))))
 
 
 ;;; = Function: reverse
@@ -1981,8 +1992,9 @@
 ;;; is a vector then return a fresh reversed vector.
 (defun reverse (seq)
   (labels ((reverse/list (l lp)
-             (if l (reverse/list (cdr l) (cons (car l) lp))
-               lp))
+             (if l
+                 (reverse/list (cdr l) (cons (car l) lp))
+                 lp))
 
            (reverse/vector (from to get set)
              (let loop ((from-idx 0) (to-idx (1- (vector-length to))))
@@ -2013,7 +2025,8 @@
              (let loop ((1st (cdr list))
                         (2nd list)
                         (3rd ()))
-                 (if (atom 2nd) 3rd
+               (if (atom 2nd)
+                   3rd
                    (progn
                      (rplacd 2nd 3rd)
                      (loop (cdr 1st) 1st 2nd)))))
@@ -2021,12 +2034,13 @@
            (nreverse/vector (vector getter setter)
              (let loop ((left-index 0)
                         (right-index (1- (vector-length vector))))
-               (if (<= right-index left-index) vector
-                 (let ((left (getter vector left-index))
-                       (right (getter vector right-index)))
-                   (setter vector left-index right)
-                   (setter vector right-index left)
-                   (loop (1+ left-index) (1- right-index)))))))
+               (if (<= right-index left-index)
+                   vector
+                   (let ((left (getter vector left-index))
+                         (right (getter vector right-index)))
+                     (setter vector left-index right)
+                     (setter vector right-index left)
+                     (loop (1+ left-index) (1- right-index)))))))
 
     (cond
       ((null seq))
@@ -2047,32 +2061,32 @@
 ;;; evaluates to non-nil.
 (defun remove-if (pred seq)
   (labels ((remove-if/list (l)
-             (let* ((result (cons () ()))
+             (let* ((result (list ()))
                     (append-to result))
                (let loop ((l l))
                  (when l
                    (unless (pred (car l))
-                     (setq append-to (cdr (rplacd append-to (cons (car l) ())))))
+                     (setq append-to (cdr (rplacd append-to (list (car l))))))
                    (loop (cdr l))))
                (cdr result)))
 
            (remove-if/vector (vec)
              (let* ((len (vector-length vec))
-                    (result (cons () ()))
+                    (result (list ()))
                     (append-to result)
                     tmp)
                (dotimes (i len (cdr result))
                  (unless (pred (setq tmp (seqref vec i)))
-                   (setq append-to (cdr (rplacd append-to (cons tmp ())))))))))
+                   (setq append-to (cdr (rplacd append-to (list tmp)))))))))
 
     (cond
-          ((null seq))
-          ((consp seq)               (remove-if/list seq))
-          ((stringp seq)             (list->string            (remove-if/vector seq)))
-          ((simple-vector-p seq)     (list->simple-vector     (remove-if/vector seq)))
-          ((simple-bit-vector-p seq) (list->bit-vector        (remove-if/vector seq)))
-          ((vectorp seq)             (list->simple-vector     (remove-if/vector seq)))
-          (t (error 'simple-type-error "remove-if - %s is not a sequence" seq)))))
+      ((null seq))
+      ((consp seq)               (remove-if/list seq))
+      ((stringp seq)             (list->string            (remove-if/vector seq)))
+      ((simple-vector-p seq)     (list->simple-vector     (remove-if/vector seq)))
+      ((simple-bit-vector-p seq) (list->bit-vector        (remove-if/vector seq)))
+      ((vectorp seq)             (list->simple-vector     (remove-if/vector seq)))
+      (t (error 'simple-type-error "remove-if - %s is not a sequence" seq)))))
 
 
 ;;; = Function: remove
@@ -2116,25 +2130,25 @@
 ;;; Similar to CL `map`.
 (defun map (result-type func seq . more-sequences)
   (if more-sequences
-        (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
-              func (let ((original func))
-                     (lambda (val) (apply original val))))
-    (setq seq (m%scan seq)))
+      (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
+            func (let ((original func))
+                   (lambda (val) (apply original val))))
+      (setq seq (m%scan seq)))
 
   (if result-type
-        (let* ((result (cons () ()))
-               (append-to result))
-          (labels ((collect (val more)
-                     (when more
-                       (setq append-to (cdr (rplacd append-to (cons (func val) ()))))
-                       (multiple-value-call collect (seq)))))
-            (multiple-value-call collect (seq))
-            (m%list->sequence (cdr result) result-type)))
-    (labels ((collect (val more)
-               (when more
-                 (func val)
-                 (multiple-value-call collect (seq)))))
-      (multiple-value-call collect (seq)))))
+      (let* ((result (list ()))
+             (append-to result))
+        (labels ((collect (val more)
+                   (when more
+                     (setq append-to (cdr (rplacd append-to (list (func val)))))
+                     (multiple-value-call collect (seq)))))
+          (multiple-value-call collect (seq))
+          (m%list->sequence (cdr result) result-type)))
+      (labels ((collect (val more)
+                 (when more
+                   (func val)
+                   (multiple-value-call collect (seq)))))
+        (multiple-value-call collect (seq)))))
 
 
 ;;; = Function: map-into
@@ -2154,44 +2168,54 @@
   (when result
     (let (result-cursor set-result has-next-result result-length seq len)
       (cond
-        ((consp result) (setq result-cursor result)
-                        (setq set-result (lambda (elem) (rplaca result-cursor elem) (setq result-cursor (cdr result-cursor))))
-                        (setq has-next-result (lambda () result-cursor)))
-        ((vectorp result) (setq result-cursor 0)
-                          (setq set-result (lambda (elem) (seqset result result-cursor elem) (setq result-cursor (1+ result-cursor))))
-                          (setq has-next-result (lambda () (< result-cursor result-length)))
-                          (setq result-length (vector-length result)))
+        ((consp result)
+         (setq result-cursor result)
+         (setq set-result (lambda (elem)
+                            (rplaca result-cursor elem) (setq result-cursor (cdr result-cursor))))
+         (setq has-next-result (lambda () result-cursor)))
+
+        ((vectorp result)
+         (setq result-cursor 0)
+         (setq set-result (lambda (elem)
+                            (seqset result result-cursor elem) (setq result-cursor (1+ result-cursor))))
+         (setq has-next-result (lambda () (< result-cursor result-length)))
+         (setq result-length (vector-length result)))
+
         (t (error 'simple-type-error "map-into: not a sequence: %s" result)))
 
       (if (cdr sequences)
-            ; 2 or more sequences given
-            (labels ((into (next-values more)
-                       (when (and (has-next-result) more)
-                         (set-result (apply func next-values))
-                         (multiple-value-call into (seq)))))
-              (setq seq (apply scan-multiple (mapcar m%scan sequences)))
-              (multiple-value-call into (seq)))
+          ;; 2 or more sequences given
+          (labels ((into (next-values more)
+                     (when (and (has-next-result) more)
+                       (set-result (apply func next-values))
+                       (multiple-value-call into (seq)))))
+            (setq seq (apply scan-multiple (mapcar m%scan sequences)))
+            (multiple-value-call into (seq)))
 
-        (if sequences
-              ; 1 sequence given
+          (if sequences
+              ;; 1 sequence given
               (cond
                 ((null (setq seq (car sequences))))
-                ((consp seq) (let loop ((l seq))
-                               (when (and (has-next-result) l)
-                               (set-result (func (car l)))
-                               (loop (cdr l)))))
-                ((vectorp seq) (setq len (vector-length seq))
-                               (let loop ((i 0))
-                                 (when (and (has-next-result) (< i len))
-                                   (set-result (func (seqref seq i)))
-                                   (loop (1+ i)))))
+
+                ((consp seq)
+                 (let loop ((l seq))
+                      (when (and (has-next-result) l)
+                        (set-result (func (car l)))
+                        (loop (cdr l)))))
+
+                ((vectorp seq)
+                 (setq len (vector-length seq))
+                 (let loop ((i 0))
+                      (when (and (has-next-result) (< i len))
+                        (set-result (func (seqref seq i)))
+                        (loop (1+ i)))))
                 (t (error 'simple-type-error "map-into: not a sequence: %s" seq)))
 
-          ; 0 sequences given
-          (let loop ()
-            (when (has-next-result)
-              (set-result (func))
-              (loop))))))
+              ;; 0 sequences given
+              (let loop ()
+                (when (has-next-result)
+                  (set-result (func))
+                  (loop))))))
 
     result))
 
@@ -2221,33 +2245,33 @@
   (let ((from-end-p (car from-end)))
     (labels ((reduce/list (lst)
                (if (cdr lst)
-                     (if (cddr lst)
-                           (if from-end-p
-                                 (let loop ((elem (f (cadr (setq lst (reverse lst))) (car lst)))
-                                            (tail (cddr lst)))
-                                   (if (cdr tail)
-                                           (loop (f (car tail) elem) (cdr tail))
-                                     (f (car tail) elem)))
-                             (let loop ((elem (f (car lst) (cadr lst)))
-                                        (tail (cddr lst)))
-                               (if (cdr tail)
-                                     (loop (f elem (car tail)) (cdr tail))
+                   (if (cddr lst)
+                       (if from-end-p
+                           (let loop ((elem (f (cadr (setq lst (reverse lst))) (car lst)))
+                                      (tail (cddr lst)))
+                             (if (cdr tail)
+                                 (loop (f (car tail) elem) (cdr tail))
+                                 (f (car tail) elem)))
+                           (let loop ((elem (f (car lst) (cadr lst)))
+                                      (tail (cddr lst)))
+                             (if (cdr tail)
+                                 (loop (f elem (car tail)) (cdr tail))
                                  (f elem (car tail)))))
                        (f (car lst) (cadr lst)))
-                 (car lst)))
+                   (car lst)))
 
              (reduce/vector (vec acc)
                (if (= 0 (vector-length vec))
-                     (f)
-                 (if from-end-p
+                   (f)
+                   (if from-end-p
                        (do* ((i (1- (vector-length vec)) (1- i))
                              (accum (acc vec i) (f (acc vec i) accum)))
                             ((<= i 0) accum))
 
-                   (do* ((limit (1- (vector-length vec)))
-                         (i 0 (1+ i))
-                         (accum (acc vec 0) (f accum (acc vec i))))
-                        ((>= i limit) accum))))))
+                       (do* ((limit (1- (vector-length vec)))
+                             (i 0 (1+ i))
+                             (accum (acc vec 0) (f accum (acc vec i))))
+                            ((>= i limit) accum))))))
 
       (cond ((null seq)                (f))
             ((consp seq)               (reduce/list seq))
@@ -2266,13 +2290,13 @@
 ;;; Since: 1.4
 (defmacro gethash (key hash . default)
   (if default
-        `(hashref ,hash ,key ,(car default))
-    `(hashref ,hash ,key)))
+      `(hashref ,hash ,key ,@default)
+      `(hashref ,hash ,key)))
 
 (defun gethash (key hash . default)
   (if default
-        (hashref hash key (car default))
-    (hashref hash key)))
+      (hashref hash key (car default))
+      (hashref hash key)))
 
 
 ;;; = Function: remhash
@@ -2284,6 +2308,7 @@
 
 (defun remhash (key hash)
   (remhash key hash))
+
 
 ;;; = Function: maphash
 ;;;     (maphash function hash) -> nil
@@ -2337,15 +2362,15 @@
 (defmacro m%mapxx (name comb lastelem)
   `(defun ,name (pred seq . more-sequences)
      (if more-sequences
-           (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
-                 pred (let ((original pred))
-                        (lambda (val) (apply original val))))
-       (setq seq (m%scan seq)))
+         (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
+               pred (let ((original pred))
+                      (lambda (val) (apply original val))))
+         (setq seq (m%scan seq)))
 
      (labels ((do-step (val more)
                 (if more
-                      (,comb (pred val) (multiple-value-call do-step (seq)))
-                 ,lastelem)))
+                    (,comb (pred val) (multiple-value-call do-step (seq)))
+                    ,lastelem)))
        (multiple-value-call do-step (seq)))))
 
 
@@ -2413,8 +2438,8 @@
 ;;; `write-char` outputs `c` to stdout.
 (defun write-char (c)
   (if (characterp c)
-        (write c nil)
-    (error 'simple-type-error "write-char - %s is not a character" c)))
+      (write c nil)
+      (error 'simple-type-error "write-char - %s is not a character" c)))
 
 
 ;;; = Function: terpri, prin1, princ, print
@@ -2448,36 +2473,40 @@
 ;;; based on https://picolisp.com/wiki/?prettyPrint .
 (defun pprint (obj)
   (labels
-    ((size (l)
-       (if l
+      ((size (l)
+         (if l
              (if (consp l)
-                   (+ (size (car l)) (size (cdr l)))
-               1)
-         1))
+                 (+ (size (car l)) (size (cdr l)))
+                 1)
+             1))
 
-     (pp (obj l)
-        (dotimes (ign l) (write "   " nil))
-        (if (< (size obj) 6)
-              (write obj)
-          (progn
-            (write-char #\()
-            (let loop ()
-              (when
-                (and
-                   (member
-                      (write (pop obj))
-                      '(lambda let let* letrec defun define defmacro setq setf if when unless dotimes dolist))
-                   (< (size (car obj)) 7))
-                (write-char #\ )
-                (loop)))
-            (let loop ()
-              (when obj
-                (write-char #\Newline)
-                (if (atom obj)
-                      (pp obj (1+ l)))
-                  (progn (pp (pop obj) (1+ l)) (loop))))
-            (write-char #\))
-            t))))
+       (pp (obj l)
+         (dotimes (ign l)
+           (write " " nil))
+
+         (if (< (size obj) 6)
+             (write obj)
+             (progn
+               (write-char #\()
+               (let loop ()
+                 (when (and
+                        (member
+                         (write (pop obj))
+                         '(lambda let let* letrec labels defun define defmacro setq setf if when unless dotimes dolist))
+                        (incf l)
+                        (< (size (car obj)) 7))
+                   (write-char #\ )
+                   (loop)))
+               (let loop ()
+                 (when obj
+                   (write-char #\Newline)
+                   (if (atom obj)
+                       (pp obj (1+ l))
+                       (progn
+                         (pp (pop obj) (1+ l))
+                         (loop)))))
+               (write-char #\))
+               t))))
 
     (writeln)
     (pp obj 0)))
@@ -2515,13 +2544,13 @@
 ;;;
 ;;; Creates a circular list of elements.
 (defun circular-list elems
-  (if elems
-    (let* loop ((result (cons (car elems) ()))
+  (when elems
+    (let* loop ((result (list (car elems)))
                 (elems (cdr elems))
                 (append-to result))
       (if elems
-            (loop result (cdr elems) (setq append-to (cdr (rplacd append-to (cons (car elems) ())))))
-        (cdr (rplacd append-to result))))))
+          (loop result (cdr elems) (setq append-to (cdr (rplacd append-to (list (car elems))))))
+          (cdr (rplacd append-to result))))))
 
 
 ; Alexandria: higher order ********************************************
@@ -2541,9 +2570,9 @@
 ;;; When exactly one function is given, it is returned.
 (defun compose (func . more-functions)
   (if more-functions
-        (let ((g (apply compose more-functions)))
-          (lambda args (func (apply g args))))
-    func))
+      (let ((g (apply compose more-functions)))
+        (lambda args (func (apply g args))))
+      func))
 
 
 ;;; = Function: multiple-value-compose
@@ -2561,9 +2590,9 @@
 ;;; When exactly one function is given, it is returned.
 (defun multiple-value-compose (func . more-functions)
   (if more-functions
-        (let ((g (apply multiple-value-compose more-functions)))
-          (lambda args (multiple-value-call func (apply g args))))
-    func))
+      (let ((g (apply multiple-value-compose more-functions)))
+        (lambda args (multiple-value-call func (apply g args))))
+      func))
 
 
 ;;; = Function: conjoin
@@ -2578,16 +2607,16 @@
 (defun conjoin (predicate . more-predicates)
   (if more-predicates
 
-        (lambda arguments
-          (and (apply predicate arguments)
-               (let loop ((tail (cdr more-predicates))
-                          (head (car more-predicates)))
-                 (if tail
-                       (if (apply head arguments)
-                             (loop (cdr tail) (car tail)))
+      (lambda arguments
+        (and (apply predicate arguments)
+             (let loop ((tail (cdr more-predicates))
+                        (head (car more-predicates)))
+               (if tail
+                   (if (apply head arguments)
+                       (loop (cdr tail) (car tail)))
                    (apply head arguments)))))
 
-    predicate))
+      predicate))
 
 
 ;;; = Function: disjoin
@@ -2604,7 +2633,7 @@
     (or (apply predicate arguments)
         (some (lambda (p)
                 (apply p arguments))
-          more-predicates))))
+              more-predicates))))
 
 
 ;;; = Function: curry
@@ -2614,7 +2643,8 @@
 ;;;
 ;;; Returns a function that applies `args` and the arguments it is called with to `func`.
 (defun curry (func . args)
-  (lambda callargs (apply func (append args callargs))))
+  (lambda callargs
+    (apply func (append args callargs))))
 
 ; can't use a macro as that would have different semantics: args would be "late bound"
 ;(defmacro curry (func . args)
@@ -2628,7 +2658,8 @@
 ;;;
 ;;; Returns a function that applies the arguments it is called with and `args` to `func`.
 (defun rcurry (func . args)
-  (lambda callargs (apply func (append callargs args))))
+  (lambda callargs
+    (apply func (append callargs args))))
 
 
 ; Alexandria: misc ****************************************************
@@ -2644,7 +2675,8 @@
 ;;; (http://www.gigamonkeys.com/book/macros-defining-your-own.html)
 (defmacro with-gensyms (names . body)
   `(let ,(let loop ((names names))
-           (if names (cons (list (car names) '(gensym)) (loop (cdr names)))))
+           (when names
+             (cons (list (car names) '(gensym)) (loop (cdr names)))))
      ,@body))
 
 
@@ -2672,12 +2704,12 @@
 (defmacro -> terms
   (labels ((apply-partials (partials expr)
              (if partials
-                   (if (m%symbol-or-lambda (car partials))
-                         (list (car partials) (apply-partials (cdr partials) expr))
-                     ; if it's a list with other parameters, insert expr (recursive call)
-                     ; as second parameter into partial (note need to use cons to ensure same list for func args)
+                 (if (m%symbol-or-lambda (car partials))
+                     (list (car partials) (apply-partials (cdr partials) expr))
+                     ;; if it's a list with other parameters, insert expr (recursive call)
+                     ;; as second parameter into partial (note need to use cons to ensure same list for func args)
                      (cons (caar partials) (cons (apply-partials (cdr partials) expr) (cdar partials))))
-               expr)))
+                 expr)))
     (apply-partials (reverse (cdr terms)) (car terms))))
 
 
@@ -2699,12 +2731,12 @@
 (defmacro ->> terms
   (labels ((apply-partials (partials expr)
              (if partials
-                   (if (m%symbol-or-lambda (car partials))
-                         (list (car partials) (apply-partials (cdr partials) expr))
-                     ; if it's a list with other parameters, insert expr (recursive call)
-                     ; as last form
+                 (if (m%symbol-or-lambda (car partials))
+                     (list (car partials) (apply-partials (cdr partials) expr))
+                     ;; if it's a list with other parameters, insert expr (recursive call)
+                     ;; as last form
                      (cons (caar partials) (append (cdar partials) (list (apply-partials (cdr partials) expr)))))
-               expr)))
+                 expr)))
     (apply-partials (reverse (cdr terms)) (car terms))))
 
 
@@ -2719,19 +2751,19 @@
 ;;; functions are not called and the overall result is `nil`.
 (defmacro and-> terms
   (if (cdr terms)
-        (let* ((temp (gensym))
-               (init (car terms))
-               (forms (let loop ((tail (cdr terms)))
-                         (if (m%symbol-or-lambda (car tail))
-                               (if (cdr tail)
-                                     (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
-                                 (list (list (car tail) temp)))
-                           (if (cdr tail)
-                                 (cons (list 'setq temp (cons (caar tail) (cons temp (cdar tail)))) (loop (cdr tail)))
-                             (list (cons (caar tail) (cons temp (cdar tail)))))))))
-          `(let ((,temp ,init))
-             (and ,@forms)))
-    (car terms)))
+      (let* ((temp (gensym))
+             (init (car terms))
+             (forms (let loop ((tail (cdr terms)))
+                      (if (m%symbol-or-lambda (car tail))
+                          (if (cdr tail)
+                              (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
+                              (list (list (car tail) temp)))
+                          (if (cdr tail)
+                              (cons (list 'setq temp (cons (caar tail) (cons temp (cdar tail)))) (loop (cdr tail)))
+                              (list (cons (caar tail) (cons temp (cdar tail)))))))))
+        `(let ((,temp ,init))
+           (and ,@forms)))
+      (car terms)))
 
 
 ;;; = Macro: and->>
@@ -2745,19 +2777,19 @@
 ;;; functions are not called and the overall result is `nil`.
 (defmacro and->> terms
   (if (cdr terms)
-        (let* ((temp (gensym))
-               (init (car terms))
-               (forms (let loop ((tail (cdr terms)))
-                         (if (m%symbol-or-lambda (car tail))
-                               (if (cdr tail)
-                                     (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
-                                 (list (list (car tail) temp)))
-                           (if (cdr tail)
-                                 (cons (list 'setq temp (cons (caar tail) (append (cdar tail) (list temp)))) (loop (cdr tail)))
-                             (list (cons (caar tail) (append (cdar tail) (list temp)))))))))
-          `(let ((,temp ,init))
-             (and ,@forms)))
-    (car terms)))
+      (let* ((temp (gensym))
+             (init (car terms))
+             (forms (let loop ((tail (cdr terms)))
+                      (if (m%symbol-or-lambda (car tail))
+                          (if (cdr tail)
+                              (cons (list 'setq temp (list (car tail) temp)) (loop (cdr tail)))
+                              (list (list (car tail) temp)))
+                          (if (cdr tail)
+                              (cons (list 'setq temp (cons (caar tail) (append (cdar tail) (list temp)))) (loop (cdr tail)))
+                              (list (cons (caar tail) (append (cdar tail) (list temp)))))))))
+        `(let ((,temp ,init))
+           (and ,@forms)))
+      (car terms)))
 
 
 ; strings *************************************************************
@@ -2786,8 +2818,8 @@
 ;;; whose value is the substring [start end-excl[.
 (defun string-subseq (str start . end-excl)
   (if end-excl
-        ((jmethod "String" "substring" "int" "int") str start (car end-excl))
-    ((jmethod "String" "substring" "int") str start)))
+      ((jmethod "String" "substring" "int" "int") str start (car end-excl))
+      ((jmethod "String" "substring" "int") str start)))
 
 
 ;;; = Function: string-replace
@@ -2818,7 +2850,7 @@
 ;;;
 ;;;     (string-split "a b     c
 ;;;     d" "[ \\t\\n]")
-;;;     ; ==> #("a" "b" "c" "d") 
+;;;     ; ==> #("a" "b" "c" "d")
 (defmacro string-split (str regex)
   `((jmethod "String" "split" "String") ,str ,regex))
 (defun string-split (str regex)
@@ -2860,8 +2892,8 @@
         (delta (gensym)))
     `(let* ((,result ,start-value-form)
             (,name (lambda (,delta) (setq ,result (,accum ,result ,delta)))))
-        ,@body
-        ,result)))
+       ,@body
+       ,result)))
 
 
 ;;; = Macro: summing
@@ -2911,12 +2943,12 @@
   (let ((result (gensym))
         (append-to (gensym))
         (delta (gensym)))
-    `(let* ((,result (cons () ()))
+    `(let* ((,result (list ()))
             (,append-to ,result)
             (collect (lambda (,delta)
-                       (setq ,append-to (cdr (rplacd ,append-to (cons ,delta ())))))))
-        ,@body
-        (cdr ,result))))
+                       (setq ,append-to (cdr (rplacd ,append-to (list ,delta)))))))
+       ,@body
+       (cdr ,result))))
 
 
 ;;; = Function: plist-keys
