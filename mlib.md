@@ -409,7 +409,7 @@ Since: 1.4
     (do ({var | (var [init-form [step-form]])}*)
         (end-test-form result-form*)
         statement*) -> result
-    
+
     (do* ({var | (var [init-form [step-form]])}*)
          (end-test-form result-form*)
          statement*) -> result
@@ -456,7 +456,8 @@ Just like `dolist`, but with vectors.
 Since: 1.2
 
 Iterates over key-value pairs of `plist-form`.
-Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
+Similar to Alexandria `doplist`,
+see https://alexandria.common-lisp.dev/draft/alexandria.html.
 
 ### Function: butlast
     (butlast lst n?) -> result-list
@@ -464,7 +465,8 @@ Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/al
 Since: 1.4.5
 
 `butlast` returns a copy of `lst` from which the last `n` conses have been omitted.
-If `n` is not supplied, its value is 1. If there are fewer than `n` conses in `lst`, `nil` is returned.
+If `n` is not supplied, its value is 1. If there are fewer than `n` conses in `lst`,
+`nil` is returned.
 
 ### Function: nbutlast
     (nbutlast lst n?) -> result-list
@@ -473,7 +475,8 @@ Since: 1.4.5
 
 `nbutlast` is like `butlast`, but `nbutlast` may modify `lst`.
 It changes the cdr of the cons n+1 from the end of `lst` to `nil` except
-if there are fewer than `n` conses in `lst`, `nil` is returned and `lst` is not modified.
+if there are fewer than `n` conses in `lst`, `nil` is returned
+and `lst` is not modified.
 
 ### Function: ldiff
     (ldiff lst obj) -> result-list

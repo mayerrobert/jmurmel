@@ -696,53 +696,54 @@
   (let ((loop (gensym "loop"))
         (l (gensym "lst")))
     `(let ,loop ((,l ,lst))
-       (if ,l (and (car ,l) (,loop (cdr ,l)))
-         t))))
+       (if ,l
+           (and (car ,l) (,loop (cdr ,l)))
+           t))))
 
 
 ; Helper macros to generate defuns for the various mapXX functions
 (defmacro m%mapx (name acc accn)
   `(defun ,name (func lst . more-lists)
      (if more-lists
-           (let loop ((args (cons lst more-lists)))
-             (when (m%notany-null args)
-               (apply func ,(if accn (list accn 'args) 'args))
-               (loop (unzip-tails args))))
-       (let loop ((lst lst))
-         (when lst
-           (func ,(if acc (list acc 'lst) 'lst))
-           (loop (cdr lst)))))
-    lst))
+         (let loop ((args (cons lst more-lists)))
+           (when (m%notany-null args)
+             (apply func ,(if accn (list accn 'args) 'args))
+             (loop (unzip-tails args))))
+         (let loop ((lst lst))
+           (when lst
+             (func ,(if acc (list acc 'lst) 'lst))
+             (loop (cdr lst)))))
+     lst))
 
 (defmacro m%mapx-cons (name acc accn)
   `(defun ,name (func lst . more-lists)
-     (let* ((result (cons () ())) (append-to result))
+     (let* ((result (list ())) (append-to result))
        (if more-lists
-             (let loop ((args (cons lst more-lists)))
-               (when (m%notany-null args)
-                 (setq append-to (cdr (rplacd append-to (cons (apply func ,(if accn (list accn 'args) 'args)) ()))))
-                 (loop (unzip-tails args))))
-         (let loop ((lst lst))
-           (when lst
-             (setq append-to (cdr (rplacd append-to (cons (func ,(if acc (list acc 'lst) 'lst)) ()))))
-             (loop (cdr lst)))))
+           (let loop ((args (cons lst more-lists)))
+            (when (m%notany-null args)
+              (setq append-to (cdr (rplacd append-to (list (apply func ,(if accn (list accn 'args) 'args))))))
+              (loop (unzip-tails args))))
+           (let loop ((lst lst))
+              (when lst
+                (setq append-to (cdr (rplacd append-to (list (func ,(if acc (list acc 'lst) 'lst))))))
+                (loop (cdr lst)))))
 
        (cdr result))))
 
 (defmacro m%mapx-nconc (name acc accn)
   `(defun ,name (func lst . more-lists)
-     (let* ((result (cons () ())) (append-to result))
+     (let* ((result (list ())) (append-to result))
        (if more-lists
-               (let loop ((args (cons lst more-lists)))
-                 (when (m%notany-null args)
-                   (setq append-to (last append-to))
-                   (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
-                   (loop (unzip-tails args))))
-         (let loop ((lst lst))
-           (when lst
-             (setq append-to (last append-to))
-             (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
-             (loop (cdr lst)))))
+           (let loop ((args (cons lst more-lists)))
+             (when (m%notany-null args)
+               (setq append-to (last append-to))
+               (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
+               (loop (unzip-tails args))))
+           (let loop ((lst lst))
+             (when lst
+               (setq append-to (last append-to))
+               (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
+               (loop (cdr lst)))))
 
        (cdr result))))
 
@@ -843,7 +844,7 @@
 ;;;     (do ({var | (var [init-form [step-form]])}*)
 ;;;         (end-test-form result-form*)
 ;;;         statement*) -> result
-;;;     
+;;;
 ;;;     (do* ({var | (var [init-form [step-form]])}*)
 ;;;          (end-test-form result-form*)
 ;;;          statement*) -> result
@@ -853,40 +854,46 @@
 ;;; `do` and `do*` iterate over a group of statements while `end-test-form` returns `nil`.
 (defmacro do (var-defs test-and-result . forms)
   (labels ((init-form (l)
-             (if (symbolp l) (list l nil)
-               (list (car l) (cadr l))))
+             (if (symbolp l)
+                 (list l nil)
+                 (list (car l) (cadr l))))
 
            (step-form (l)
-             (if (symbolp l) l
-               (if (caddr l) (caddr l)
-                 (car l)))))
+             (if (symbolp l)
+                 l
+                 (if (caddr l)
+                     (caddr l)
+                     (car l)))))
 
     (let ((loop (gensym)))
       `(let ,loop (,@(mapcar init-form var-defs))
          (if ,(car test-and-result)
-               (progn ,@(cdr test-and-result))
-           (progn
-             ,@forms
-             (,loop ,@(mapcar step-form var-defs))))))))
+             (progn ,@(cdr test-and-result))
+             (progn
+               ,@forms
+               (,loop ,@(mapcar step-form var-defs))))))))
 
 (defmacro do* (var-defs test-and-result . forms)
   (labels ((init-form (l)
-             (if (symbolp l) (list l nil)
-               (list (car l) (cadr l))))
+             (if (symbolp l)
+                 (list l nil)
+                 (list (car l) (cadr l))))
 
            (step-form (l)
-             (if (symbolp l) nil
-               (if (caddr l) `((setq ,(car l) ,(caddr l)))))))
+             (if (symbolp l)
+                 nil
+                 (when (caddr l)
+                   `((setq ,(car l) ,(caddr l)))))))
 
     (let ((loop (gensym)))
       `(let* (,@(mapcar init-form var-defs))
          (let ,loop ()
            (if ,(car test-and-result)
-                 (progn ,@(cdr test-and-result))
-             (progn
-               ,@forms
-               ,@(mapcan step-form var-defs)
-               (,loop))))))))
+               (progn ,@(cdr test-and-result))
+               (progn
+                 ,@forms
+                 ,@(mapcan step-form var-defs)
+                 (,loop))))))))
 
 
 ;;; = Macro: dotimes
@@ -911,20 +918,24 @@
         (resultform (cddr loop-def)))
     (if (integerp countform)
 
-          `(let ((,var 0))
-             ,(if (<= countform 0) `(progn ,@resultform)
-               `(let ,loop ()
-                 ,@body
-                 (if (>= (incf ,var) ,countform) (progn ,@resultform)
-                   (,loop)))))
+        `(let ((,var 0))
+           ,(if (<= countform 0)
+                `(progn ,@resultform)
+                `(let ,loop ()
+                   ,@body
+                   (if (>= (incf ,var) ,countform)
+                       (progn ,@resultform)
+                       (,loop)))))
 
       `(let ((,var 0)
              (,count ,countform))
-         (if (<= ,count 0) (progn ,@resultform)
-           (let ,loop ()
-             ,@body
-             (if (>= (incf ,var) ,count) (progn ,@resultform)
-               (,loop))))))))
+         (if (<= ,count 0)
+             (progn ,@resultform)
+             (let ,loop ()
+               ,@body
+               (if (>= (incf ,var) ,count)
+                   (progn ,@resultform)
+                   (,loop))))))))
 
 
 ;;; = Macro: dolist
@@ -944,10 +955,10 @@
     `(let* ,loop ((,lst ,listform)
                   (,var (car ,lst)))
        (if ,lst
-             (progn
-               ,@body
-               (,loop (cdr ,lst) (cadr ,lst)))
-         (progn ,@result)))))
+           (progn
+             ,@body
+             (,loop (cdr ,lst) (cadr ,lst)))
+           (progn ,@result)))))
 
 
 ;;; = Macro: dovector
@@ -977,13 +988,14 @@
             ,var)
        (let ,loop ()
          (if (< ,idx ,limit)
-               (progn
-                 (setq ,var (,acc ,vec ,idx))
-                 ,@body
-                 (incf ,idx)
-                 (,loop))
+             (progn
+               (setq ,var (,acc ,vec ,idx))
+               ,@body
+               (incf ,idx)
+               (,loop))
 
-           ,(if resultforms `(progn (setq ,var nil) ,@resultforms)))))))
+             ,(when resultforms
+                `(progn (setq ,var nil) ,@resultforms)))))))
 
 
 ;;; = Macro: doplist
@@ -993,7 +1005,8 @@
 ;;; Since: 1.2
 ;;;
 ;;; Iterates over key-value pairs of `plist-form`.
-;;; Similar to Alexandria `doplist`, see https://alexandria.common-lisp.dev/draft/alexandria.html.
+;;; Similar to Alexandria `doplist`,
+;;; see https://alexandria.common-lisp.dev/draft/alexandria.html.
 (defmacro doplist (loop-def . body)
   (let ((key-var (car loop-def))
         (value-var (cadr loop-def))
@@ -1005,12 +1018,12 @@
                   (,key-var (car ,lst))
                   (,value-var (cadr ,lst)))
        (if ,lst
-             (if (cdr ,lst)
-                   (progn
-                     ,@body
-                     (,loop (cddr ,lst) (caddr ,lst) (car (cdddr ,lst))))
+           (if (cdr ,lst)
+               (progn
+                 ,@body
+                 (,loop (cddr ,lst) (caddr ,lst) (car (cdddr ,lst))))
                (error "doplist - odd number of elements in plist"))
-         (progn ,@result)))))
+           (progn ,@result)))))
 
 
 ;(defmacro while (expr . body)
@@ -1028,20 +1041,22 @@
 ;;; Since: 1.4.5
 ;;;
 ;;; `butlast` returns a copy of `lst` from which the last `n` conses have been omitted.
-;;; If `n` is not supplied, its value is 1. If there are fewer than `n` conses in `lst`, `nil` is returned.
+;;; If `n` is not supplied, its value is 1. If there are fewer than `n` conses in `lst`,
+;;; `nil` is returned.
 (defun butlast (lst . n)
-  (setq n (if n (m%nonneg-integer-number (car n))
-            1))
+  (setq n (if n
+              (m%nonneg-integer-number (car n))
+              1))
 
-  (if (= 0 n) (copy-list lst)
+  (if (= 0 n)
+      (copy-list lst)
 
-    (let ((head (dotted-nthcdr (1- n) lst))
-          result
-          splice)
-      (if (consp head)            ; there are at least n
-        (if (consp (cdr head))    ; conses
-          (progn
-            (setq result (cons () ()))
+      (let ((head (dotted-nthcdr (1- n) lst))
+            result
+            splice)
+        (when (consp head)              ; there are at least n
+          (when (consp (cdr head))    ; conses
+            (setq result (list ()))
             (setq splice result)
             (do ((trail lst (cdr trail))
                  (head head (cdr head)))
@@ -1050,7 +1065,7 @@
                 ;; the data copied so far.
                 ((atom (cdr head))
                  (cdr result))
-              (setq splice (cdr (rplacd splice (list (car trail))))))))))))
+              (setq splice (cdr (rplacd splice (list (car trail)))))))))))
 
 
 ;;; = Function: nbutlast
@@ -1060,23 +1075,26 @@
 ;;;
 ;;; `nbutlast` is like `butlast`, but `nbutlast` may modify `lst`.
 ;;; It changes the cdr of the cons n+1 from the end of `lst` to `nil` except
-;;; if there are fewer than `n` conses in `lst`, `nil` is returned and `lst` is not modified.
+;;; if there are fewer than `n` conses in `lst`, `nil` is returned
+;;; and `lst` is not modified.
 (defun nbutlast (lst . n)
-  (setq n (if n (m%nonneg-integer-number (car n))
-            1))
+  (setq n (if n
+              (m%nonneg-integer-number (car n))
+              1))
 
-  (if (= 0 n) lst
+  (if (= 0 n)
+      lst
 
-    (let ((head (dotted-nthcdr (1- n) lst)))
-      (if (consp head)            ; there are more than n
-        (if (consp (cdr head))    ; conses.
-          ;; TRAIL trails by n cons to be able to
-          ;; cut the list at the cons just before.
-          (do ((trail lst (cdr trail))
-               (head (cdr head) (cdr head)))
-              ((atom (cdr head))
-               (rplacd trail nil)
-               lst)))))))
+      (let ((head (dotted-nthcdr (1- n) lst)))
+        (when (consp head)            ; there are more than n
+          (when (consp (cdr head))    ; conses.
+            ;; TRAIL trails by n cons to be able to
+            ;; cut the list at the cons just before.
+            (do ((trail lst (cdr trail))
+                 (head (cdr head) (cdr head)))
+                ((atom (cdr head))
+                 (rplacd trail nil)
+                 lst)))))))
 
 
 ;;; = Function: ldiff
@@ -1091,11 +1109,12 @@
   (let* ((result (list ()))
          (splice result))
     (let loop ((lst lst))
-      (if (eq lst obj) nil
-        (if (atom lst) (rplacd splice lst)
-          (progn
-            (setq splice (cdr (rplacd splice (list (car lst)))))
-            (loop (cdr lst))))))
+      (unless (eq lst obj)
+        (if (atom lst)
+            (rplacd splice lst)
+            (progn
+              (setq splice (cdr (rplacd splice (list (car lst)))))
+              (loop (cdr lst))))))
     (cdr result)))
 
 
@@ -1108,9 +1127,10 @@
 ;;;  returns `false`. `lst` must be a proper list or a dotted list.
 (defun tailp (object lst)
   (let loop ((lst lst))
-    (if (eq object lst) t
-      (if (atom lst) nil
-        (loop (cdr lst))))))
+    (if (eq object lst)
+        t
+        (unless (atom lst)
+          (loop (cdr lst))))))
 
 
 ; places **************************************************************
@@ -1118,7 +1138,8 @@
 ; m%rplaca
 ;     (m%rplaca lst value) -> value
 ;
-; Replace the car of `lst` by `value` and return `value` (as opposed to `rplaca` which returns `lst`).
+; Replace the car of `lst` by `value` and return `value`
+; (as opposed to `rplaca` which returns `lst`).
 ; Used in setf-expansions.
 (defun m%rplaca (lst v) (rplaca lst v) v)
 
@@ -1126,7 +1147,8 @@
 ; m%rplacd
 ;     (m%rplacd lst value) -> value
 ;
-; Replace the cdr of `lst` by `value` and return `value` (as opposed to `rplacd` which returns `lst`).
+; Replace the cdr of `lst` by `value` and return `value`
+; (as opposed to `rplacd` which returns `lst`).
 ; Used in setf-expansions.
 (defun m%rplacd (lst value) (rplacd lst value) value)
 
