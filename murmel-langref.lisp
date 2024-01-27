@@ -1205,7 +1205,7 @@ pi ; ==> 3.141592653589793
 ;
 ; `write`, `writeln` and `lnwrite` accept an optional argument `dest`
 ; which may be `nil`, `t` or an adjustable string.
-; `nil`and `t` means: write to stdout, else write to `dest`.
+; `nil` and `t` means: write to stdout, else write to `dest`.
 ; (Implementation note: any Java object implementing `java.lang.Appendable`
 ; is acceptable.)
 ;
