@@ -943,20 +943,28 @@ and will be applied to subsequent items of the given sequences.
     (notany predicate sequence+) == (not (some predicate sequence+))
 
 ### Function: write-char
-    (write-char c) -> c
+    (write-char c [dest]) -> c
 
 Since: 1.1
 
 `write-char` outputs `c` to stdout.
 
 ### Function: terpri, prin1, princ, print
+    (terpri [dest]) -> nil
+    (prin1 obj [dest]) -> obj
+    (princ obj [dest]) -> obj
+    (print obj [dest]) -> obj
 
 Since: 1.1
 
 ### Macro: with-output-to-string
-    (with-output-to-string (var) forms*)
+    (with-output-to-string (var) forms*) -> string
 
 Since: 1.4.2
+
+Similar to CL's `with-output-to-string` except:
+CL's optional `string-form` and `element-type` are not supported,
+therefore the return value of `with-output-to-string` always is the string.
 
 ### Function: pprint
     (pprint object) -> t

@@ -1,6 +1,3 @@
-mlib: write-char, print, princ, terpri sollten optionale dest übernehmen 
-
-
 location gibts nicht in ReaderError usw, nur im LambdaJError
 "implements Writable" auch
 

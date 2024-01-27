@@ -2431,33 +2431,56 @@
 
 ; I/O *****************************************************************
 ;;; = Function: write-char
-;;;     (write-char c) -> c
+;;;     (write-char c [dest]) -> c
 ;;;
 ;;; Since: 1.1
 ;;;
 ;;; `write-char` outputs `c` to stdout.
-(defun write-char (c)
+(defun write-char (c . dest)
   (if (characterp c)
-      (write c nil)
+      (write c nil (car dest))
       (error 'simple-type-error "write-char - %s is not a character" c)))
 
 
 ;;; = Function: terpri, prin1, princ, print
+;;;     (terpri [dest]) -> nil
+;;;     (prin1 obj [dest]) -> obj
+;;;     (princ obj [dest]) -> obj
+;;;     (print obj [dest]) -> obj
 ;;;
 ;;; Since: 1.1
-(m%def-macro-fun terpri () `(writeln))
+(defmacro terpri dest
+  `(progn
+     (writeln "" nil ,@dest)
+     nil))
+(defun terpri dest
+  (writeln "" nil (car dest))
+  nil)
 
-(m%def-macro-fun prin1 (obj) `(write ,obj))
+(defmacro prin1 (obj . dest)
+  `(write ,obj t ,@dest))
+(defun prin1 (obj . dest)
+  (write obj t (car dest)))
 
-(m%def-macro-fun princ (obj) `(write ,obj nil))
+(defmacro princ (obj . dest)
+  `(write ,obj nil ,@dest))
+(defun princ (obj . dest)
+  (write obj nil (car dest)))
 
-(m%def-macro-fun print (obj) `(lnwrite ,obj))
+(defmacro print (obj . dest)
+  `(lnwrite ,obj t ,@dest))
+(defun print (obj . dest)
+  (lnwrite obj t (car dest)))
 
 
 ;;; = Macro: with-output-to-string
-;;;     (with-output-to-string (var) forms*)
+;;;     (with-output-to-string (var) forms*) -> string
 ;;;
 ;;; Since: 1.4.2
+;;;
+;;; Similar to CL's `with-output-to-string` except:
+;;; CL's optional `string-form` and `element-type` are not supported,
+;;; therefore the return value of `with-output-to-string` always is the string.
 (defmacro with-output-to-string (s . body)
   `(let ((,@s (make-array 0 'character t)))
      ,@body
@@ -2509,7 +2532,8 @@
                t))))
 
     (writeln)
-    (pp obj 0)))
+    (pp obj 0))
+  (values))
 
 
 ; misc ****************************************************************

@@ -2710,3 +2710,6 @@ emitForm schaut dann im pass 2 bei non-toplevel defuns im global environment nac
    -> sollte zumindest rt-fehler geben
 -> würd wsl. nicht nur für defun sondern auch define gehen, wär ggf sinnvoll
 -> zumindest multiple-value-bind wär auch gut
+
+
+mlib: write-char, print, princ, terpri sollten optionale dest übernehmen 
