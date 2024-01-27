@@ -398,11 +398,11 @@ public class LambdaJ {
 
         public LambdaJError(String msg)                                                    { super(msg, null, false, false); location = ""; }
         public LambdaJError(boolean format, String msg, Object... params)                  { super((format ? fmt(msg, params) : msg), null, false, false); location = getErrorExp(params); }
-        public LambdaJError(Throwable cause, boolean format, String msg, Object... params) { this(format ? fmt(msg, params) : msg, getLocation(cause) + getErrorExp(params), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, boolean format, String msg, Object... params) { this(format ? fmt(msg, params) : msg, merge(getLocation(cause), getErrorExp(params)), getMurmelCause(cause)); }
         public LambdaJError(Throwable cause)                                               { this(cause.getMessage(), getLocation(cause), getMurmelCause(cause)); }
         public LambdaJError(Throwable cause, String msg)                                   { this(msg, getLocation(cause), getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause, Object errorForm)                             { this(cause.getMessage(), getLocation(cause) + getErrorExp(new Object[] { errorForm }), getMurmelCause(cause)); }
-        public LambdaJError(Throwable cause, boolean fromCompiledCode, String errorLoc)    { this(cause.getMessage(), getLocation(cause) + getErrorExp(errorLoc), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, Object errorForm)                             { this(cause.getMessage(), merge(getLocation(cause), getErrorExp(new Object[] { errorForm })), getMurmelCause(cause)); }
+        public LambdaJError(Throwable cause, boolean fromCompiledCode, String errorLoc)    { this(cause.getMessage(), merge(getLocation(cause), getErrorExp(errorLoc)), getMurmelCause(cause)); }
 
         private LambdaJError(String msg, @NotNull String location, Throwable cause) {
             super(msg, cause);
@@ -411,6 +411,7 @@ public class LambdaJ {
 
         @Override
         public void printSEx(WriteConsumer out, boolean escapeAtoms) {
+            if (escapeAtoms) out.print(conditionName() + " - ");
             out.print(getMessage());
             if (escapeAtoms && !location.isEmpty()) {
                 out.print(System.lineSeparator());
@@ -438,6 +439,15 @@ public class LambdaJ {
 
 
         @Override public @NotNull String toString() { return conditionName() + " - " + getMessage(); }
+
+        public @NotNull String getLocation() { return location; }
+
+        private static @NotNull String merge(@NotNull String cause, @NotNull String prev) {
+            if (cause.isEmpty() && prev.isEmpty()) return "";
+            if (cause.isEmpty()) return prev;
+            if (prev.isEmpty()) return cause;
+            return cause + System.lineSeparator() + prev;
+        }
 
         private static @NotNull String getErrorExp(Object[] params) {
             final Object exp;
@@ -1482,10 +1492,10 @@ public class LambdaJ {
                 }
                 return c;
             } catch (CharacterCodingException e) {
-                errorReaderError("characterset conversion error in SExpressionReader: %s", e.toString());
+                errorReaderErrorFmt("characterset conversion error in SExpressionReader: %s", e.toString());
                 return -2; // notreached
             } catch (Exception e) {
-                errorReaderError("I/O error in SExpressionReader: %s", e.toString());
+                errorReaderErrorFmt("I/O error in SExpressionReader: %s", e.toString());
                 return -2; // notreached
             }
         }
@@ -1516,7 +1526,7 @@ public class LambdaJ {
                 for (int i = 0; i < CTRL.length; i++) {
                     if (CTRL[i].equalsIgnoreCase(charOrCharactername)) return (char)i;
                 }
-                errorReaderError("unrecognized character name %s", charOrCharactername);
+                errorReaderErrorFmt("unrecognized character name %s", charOrCharactername);
                 //NOTREACHED
 
             // #| ... multiline comment ending with |#
@@ -1558,7 +1568,7 @@ public class LambdaJ {
             case 'r':
             case 'R':
                 skipWs();
-                if (arg < Character.MIN_RADIX || arg > Character.MAX_RADIX) errorReaderError("%s is not a valid radix for #R", arg);
+                if (arg < Character.MIN_RADIX || arg > Character.MAX_RADIX) errorReaderErrorFmt("%s is not a valid radix for #R", arg);
                 return parseLong(readerMacroToken(), arg);
 
             case 'x':
@@ -1585,26 +1595,26 @@ public class LambdaJ {
             case '=':
                 final Object obj = readObjRec(null);
                 if (labelledObjects == null) labelledObjects = JavaUtil.newHashMap(10);
-                if (labelledObjects.putIfAbsent(arg, obj) != null) errorReaderError("label #%d= was already defined", arg);
+                if (labelledObjects.putIfAbsent(arg, obj) != null) errorReaderErrorFmt("label #%d= was already defined", arg);
                 return obj;
 
             case '#':
                 final Object ref;
                 if (labelledObjects != null && (ref = labelledObjects.get(arg)) != null) return ref;
-                errorReaderError("reference to undefined label #%d#", arg);
+                errorReaderErrorFmt("reference to undefined label #%d#", arg);
 
             default:
                 look = getchar();
-                errorReaderError("no dispatch function defined for %s", printChar(sub_char));
+                errorReaderErrorFmt("no dispatch function defined for %s", printChar(sub_char));
                 return null; // notreached
             }
         }
 
         private static boolean[] stringToBitvector(String bv, int len) {
-            if (len < bv.length()) errorReaderError("too many bits in \"%s\": expected %d or fewer", bv, len);
+            if (len < bv.length()) errorReaderErrorFmt("too many bits in \"%s\": expected %d or fewer", bv, len);
             if (bv.isEmpty()) {
                 if (len == 0) return EMPTY_BITVECTOR;
-                errorReaderError("#%d* requires at least 1 bit of input", len);
+                errorReaderErrorFmt("#%d* requires at least 1 bit of input", len);
             }
             final boolean[] ret = new boolean[len];
             int i = 0;
@@ -1612,7 +1622,7 @@ public class LambdaJ {
                 switch (digit(c)) {
                 case 0: break;
                 case 1: ret[i] = true; break;
-                default: errorReaderError("not a valid value for bitvector: %c", c);
+                default: errorReaderErrorFmt("not a valid value for bitvector: %c", c);
                 }
                 i++;
             }
@@ -1782,7 +1792,7 @@ public class LambdaJ {
             try {
                 return Long.valueOf(s, radix);
             } catch (NumberFormatException e) {
-                errorReaderError("'%s' is not a valid number", s);
+                errorReaderErrorFmt("'%s' is not a valid number", s);
                 return null; // notreached
             }
         }
@@ -1791,7 +1801,7 @@ public class LambdaJ {
             try {
                 return Double.valueOf(s);
             } catch (NumberFormatException e) {
-                errorReaderError("'%s' is not a valid number", s);
+                errorReaderErrorFmt("'%s' is not a valid number", s);
                 return null; // notreached
             }
         }
@@ -1961,7 +1971,7 @@ public class LambdaJ {
          *  Returns a dotted list unless rest is a proper list. This works like a two arg nconc. */
         private static void nconc2(@NotNull ConsCell first, Object rest) {
             for (ConsCell last = first; ; last = (ConsCell) cdr(last)) {
-                if (cdr(last) == first) errorReaderError("%s: first argument is a circular list", "appendToList");
+                if (cdr(last) == first) errorReaderErrorFmt("%s: first argument is a circular list", "appendToList");
                 if (cdr(last) == null) {
                     last.rplacd(rest);
                     return;
@@ -3810,7 +3820,7 @@ public class LambdaJ {
             throw wrap(re);
         }
         catch (IOException e) {
-            errorReaderError("%s: error reading file '%s': %s", func, argument, e.getMessage());
+            errorReaderErrorFmt("%s: error reading file '%s': %s", func, argument, e.getMessage());
             return null; // notreached
         }
         finally {
@@ -4175,14 +4185,14 @@ public class LambdaJ {
     static Object[] listToArray(ConsCell lst, int len) {
         if (lst == null) {
             if (len == 0) return EMPTY_ARRAY;
-            errorReaderError(VECTOR + " of length %d cannot be initialized from ()", len);
+            errorReaderErrorFmt(VECTOR + " of length %d cannot be initialized from ()", len);
             assert false; //notreached
         }
         if (len < 0) len = listLength(lst);
         final Object[] ret = new Object[len];
         int i = 0;
         for (Object o: lst) {
-            if (i == len) errorReaderError(VECTOR + " is longer than the specified length: #%d%s", len, printSEx(lst));
+            if (i == len) errorReaderErrorFmt(VECTOR + " is longer than the specified length: #%d%s", len, printSEx(lst));
             ret[i++] = o;
         }
         final Object last = ret[i-1];
@@ -4410,7 +4420,7 @@ public class LambdaJ {
     /// ##  Error "handlers"
 
     static void             errorReaderError     (String msg)                                   { wrap0(new ReaderError(msg)); }
-    static void             errorReaderError     (String msg, Object... args)                   { wrap0(new ReaderError(msg, args)); }
+    static void             errorReaderErrorFmt  (String msg, Object... args)                   { wrap0(new ReaderError(msg, args)); }
     static RuntimeException errorNotImplemented  (String msg, Object... args)                   { throw new LambdaJError(true, msg, args); }
     static RuntimeException errorInternal        (String msg, Object... args)                   { throw new LambdaJError(true, "internal error - " + msg, args); }
     static RuntimeException errorInternal        (Throwable t, String msg, Object... args)      { throw new LambdaJError(t, true, "internal error - " + msg, args); }
