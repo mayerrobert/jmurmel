@@ -967,7 +967,7 @@ CL's optional `string-form` and `element-type` are not supported,
 therefore the return value of `with-output-to-string` always is the string.
 
 ### Function: pprint
-    (pprint object) -> t
+    (pprint object [dest]) -> t
 
 Since: 1.1
 

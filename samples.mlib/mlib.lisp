@@ -1569,7 +1569,8 @@
 ;;; Return the smallest number of the given arguments.
 (defun min (num . more-numbers)
   (dolist (n more-numbers)
-    (if (< n num) (setq num n)))
+    (when (< n num)
+      (setq num n)))
   num)
 
 
@@ -1581,7 +1582,8 @@
 ;;; Return the largest number of the given arguments.
 (defun max (num . more-numbers)
   (dolist (n more-numbers)
-    (if (> n num) (setq num n)))
+    (when (> n num)
+      (setq num n)))
   num)
 
 
@@ -2488,13 +2490,14 @@
 
 
 ;;; = Function: pprint
-;;;     (pprint object) -> t
+;;;     (pprint object [dest]) -> t
 ;;;
 ;;; Since: 1.1
 ;;;
 ;;; Simple pretty printer,
 ;;; based on https://picolisp.com/wiki/?prettyPrint .
-(defun pprint (obj)
+(defun pprint (obj . dest)
+  (setq dest (car dest))
   (labels
       ((size (l)
          (if l
@@ -2505,35 +2508,71 @@
 
        (pp (obj l)
          (dotimes (ign l)
-           (write " " nil))
+           (write " " nil dest))
 
          (if (< (size obj) 6)
-             (write obj)
+             (write obj t dest)
+
              (progn
-               (write-char #\()
+               (write-char #\( dest)
+
                (let loop ()
-                 (when (and
-                        (member
-                         (write (pop obj))
-                         '(lambda let let* letrec labels defun define defmacro setq setf if when unless dotimes dolist))
+                 ;;(progn (write "*** size=" nil) (write (size obj)) (write " " nil) (write obj) (writeln "***" nil) t)
+                 (cond ((member (car obj) '(defun define defmacro))
+
                         (incf l)
-                        (< (size (car obj)) 7))
-                   (write-char #\ )
-                   (loop)))
+                        (write (pop obj) t dest)                  ; defun/define/defmacro
+                        (write-char #\  dest)
+
+                        (when (symbolp (car obj))
+                          (write (pop obj) t dest)                ; name/ looplabel
+                          (write-char #\  dest)
+
+                          (when obj (write (pop obj) t dest))))   ; lambdalist
+
+                       ((member (car obj) '(lambda let let* letrec dotimes dolist dovector))
+
+                        (incf l)
+                        (write (pop obj) t dest)
+                        (write-char #\  dest)
+
+                        (when (symbolp (car obj))
+                          (write (pop obj) t dest)
+                          (write-char #\  dest))
+
+                        (when (and obj (< (size (car obj)) 7))
+                          (pp (pop obj) 0)))
+
+                       ((and (eq (car obj) 'if)
+                             (incf l 3)
+                             (write (pop obj) t dest)
+                             (write-char #\  dest)
+                             (< (size obj) 6))
+
+                        (loop))
+
+                       ((and (member (write (pop obj) t dest) '(cond labels setq setf psetf when unless))
+                             (incf l)
+                             (< (size obj) 6))
+
+                        (write-char #\  dest)
+                        (loop))))
+
                (let loop ()
                  (when obj
-                   (write-char #\Newline)
+                   (writeln "" nil dest)
                    (if (atom obj)
                        (pp obj (1+ l))
                        (progn
                          (pp (pop obj) (1+ l))
                          (loop)))))
-               (write-char #\))
-               t))))
 
-    (writeln)
-    (pp obj 0))
-  (values))
+               (write-char #\) dest)))
+
+         t))
+
+    (writeln "" nil dest)
+    (pp obj 0)))
 
 
 ; misc ****************************************************************

@@ -4,7 +4,8 @@ Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
  * changed printing of conditions: (write cnd nil) will only print the message, (write cnd t)
    will also print the location info
  * changed mlib: renamed the functions last0, last1, lastn to m%last0, m%last1, m%lastn
- * changed mlib: write-char, terpri, prin1, princ and print now accept an optional output destination
+ * changed mlib: write-char, terpri, prin1, princ, print and pprint
+   now accept an optional output destination
 
  * added #1= style labelled forms to the reader
  * added tailrecursion->loop transformation for compiled Murmel:
