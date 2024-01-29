@@ -51,13 +51,13 @@ jobs:
       - name: Run native image Windows
         if: runner.os == 'Windows'
         run: |
-          native-image         --no-fallback --initialize-at-build-time=io.github.jmurmel --initialize-at-run-time=io.github.jmurmel.InstallDir -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./graalvm/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./graalvm/src/main/graalvm/proxyconfig -cp ./graalvm/target/unsupported.jar -jar ./lambda/target/jmurmel.jar
+          native-image         --no-fallback --initialize-at-build-time=io.github.jmurmel --initialize-at-run-time=io.github.jmurmel.InstallDir -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./graalvm/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./graalvm/src/main/graalvm/proxyconfig -H:SerializationConfigurationFiles=./graalvm/src/main/graalvm/serializationconfig -cp ./graalvm/target/unsupported.jar -jar ./lambda/target/jmurmel.jar
           ./jmurmel --version
 
       - name: Run native image Linux
         if: runner.os == 'Linux'
         run: |
-          native-image --gc=G1 --no-fallback --initialize-at-build-time=io.github.jmurmel --initialize-at-run-time=io.github.jmurmel.InstallDir -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./graalvm/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./graalvm/src/main/graalvm/proxyconfig -cp ./graalvm/target/unsupported.jar -jar ./lambda/target/jmurmel.jar
+          native-image --gc=G1 --no-fallback --initialize-at-build-time=io.github.jmurmel --initialize-at-run-time=io.github.jmurmel.InstallDir -H:IncludeResources="META-INF/.*" -H:ReflectionConfigurationFiles=./graalvm/src/main/graalvm/reflectconfig -H:DynamicProxyConfigurationFiles=./graalvm/src/main/graalvm/proxyconfig -H:SerializationConfigurationFiles=./graalvm/src/main/graalvm/serializationconfig -cp ./graalvm/target/unsupported.jar -jar ./lambda/target/jmurmel.jar
           ./jmurmel --version
 
       - name: Save Maven repo

@@ -8,7 +8,8 @@
 # install a C compiler that will be used by GraalVM's native_image,
 # download an appropriate GraalVM distribution
 # e.g. from https://github.com/graalvm/graalvm-ce-builds/releases/tag/vm-22.3.1
-# unzip it somewhere, adjust GRAAL_HOME accordingly and then do
+# unzip it somewhere, adjust GRAAL_HOME accordingly and then (if using an older
+# version of GraalVM that does not come with native-image already included) do
 #
 # $ sudo $GRAAL_HOME/bin/gu install native-image
 #
@@ -28,21 +29,21 @@
 # (as all GraalVM native binaries do).
 #
 
-export GRAAL_HOME=/usr/local/graalvm-ce-java19-22.3.1
+export GRAAL_HOME=/usr/local/graalvm-jdk-21.0.2+13.1
 export PATH=$GRAAL_HOME/bin:$PATH
 
 test -d target || mkdir target
 
-native-image \
-  -H:IncludeResources="META-INF/.*" \
+
+NI_OPTS="\
+  -H:IncludeResources=\"META-INF/.*\" \
   -H:ReflectionConfigurationFiles=./src/main/graalvm/reflectconfig \
   -H:DynamicProxyConfigurationFiles=./src/main/graalvm/proxyconfig \
+  -H:SerializationConfigurationFiles=./src/main/graalvm/serializationconfig \
   --no-fallback \
   --initialize-at-build-time=io.github.jmurmel \
-  --initialize-at-run-time=io.github.jmurmel.MurmelDir \
-   -cp ./target/unsupported.jar \
-  -jar ../lambda/target/jmurmel.jar \
-  -o target/jmurmel
+  --initialize-at-run-time=io.github.jmurmel.InstallDir \
+"
 
 # to have reports written during compilation:
 #  -H:+PrintClassInitialization \
@@ -52,3 +53,18 @@ native-image \
 
 # in case you want to use "jmurmel -XX:+DumpHeapAndExit"
 #  --enable-monitoring=heapdump \
+
+
+# comment the next line if using Windows and/ or GraalVM CE
+NI_OPTS="--gc=G1 $NI_OPTS"
+
+
+# build using profile-guided-optimization (not supported by GraalVM CE)
+native-image --pgo-instrument $NI_OPTS -cp ./target/unsupported.jar -jar ../lambda/target/jmurmel.jar -o target/jmurmel
+target/jmurmel -XX:ProfilesDumpFile=target/jmurmel.iprof ../samples.murmel/murmel-test.lisp ../samples.mlib/mlib-test.lisp
+mv target/jmurmel target/jmurmel-pgo
+native-image --pgo=target/jmurmel.iprof $NI_OPTS -cp ./target/unsupported.jar -jar ../lambda/target/jmurmel.jar -o target/jmurmel
+
+
+# or build w/o PGO
+#native-image $NI_OPTS -cp ./target/unsupported.jar -jar ../lambda/target/jmurmel.jar -o target/jmurmel
