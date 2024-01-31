@@ -35,9 +35,15 @@ der compiler opencoded nur numeric compare operator mit 2 args
 
 
 Clojure hat counted?, liefert true für ISeq, false für Cons
-Murmel könnte countedp bekommen, true für ArraySlice (und j.u.RandomAccess?, (mutable?) String/Vector/Bitvector?), und counted (wandelt ConsCell zu ArraySlice)
+Murmel könnte countedp bekommen, true für ArraySlice (und j.u.RandomAccess?, (mutable?) String/Vector/Bitvector?), und counted (wandelt ConsCell zu ArraySlice, liefert Vector unverändert)
 -> oder statt countedp: random-access-p
--> conj dazu? rplaca würd gehen, rplacd nicht
+-> conj dazu? rplaca würd bei ArraySlice gehen, rplacd nicht, ein weiteres element hintendran hängen ala conj würd auch bei ArraySlice gehen
+   -> wenns conj gäbe, bräuchte man fast kein rplacd mehr, nur für dotted und circular lists
+   -> ggf. könnte man mit conj/ ohne rplacd einen einfacheren GC nehmen? https://news.ycombinator.com/item?id=29630572
+   -> Clojure conj hängt bei vector hintendran und bei list vornedran.
+      ggf. wär besser immer hintendran zu hängen, das wär bei loops ala collect praktisch
+      problem wär halt "(conj nil 123)", lösung könnte sein dass der erste parameter nicht (or vector list) aka sequence sondern (or vector cons) ist. oder (or vector cons counted) ?
+      ähnliches problem: was liefert (counted nil) ? ein ArraySlice objekt ohne / mit leerem Object[]? ggf. müsste die funktion "null" erweitert werden
 kann man das ins Murmel typsystem einhängen?
 
 

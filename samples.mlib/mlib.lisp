@@ -195,6 +195,13 @@
                         ,(m%or tmp (cdr forms)))
                    (car forms)))))
 
+    ;; strip off any leading nil
+    (let loop ()
+      (when forms
+        (when (null (car forms))
+          (setq forms (cdr forms))
+          (loop))))
+
     (when forms
       (if (cdr forms)
           (let ((temp (gensym)))

@@ -72,7 +72,8 @@
 
 ;;; Macro to run some tests
 ;;; usage:
-;;; (tests form1 => expected-result1
+;;; (tests test-name
+;;;        form1 => expected-result1
 ;;;        form2 => expected-result2
 ;;;        ...)
 (defmacro tests (name . l)
@@ -145,10 +146,10 @@
   temp1 => 11
   temp2 => 20
   temp3 => 30
- (or (values) temp1) => 11
- (or (values temp1 temp2) temp3) => 11
-; (or temp0 (values temp1 temp2)) => 11, 20
-; (or (values temp0 temp1) (values temp2 temp3)) => 20, 30
+  (or (values) temp1) => 11
+  (or (values temp1 temp2) temp3) => 11
+;  (or temp0 (values temp1 temp2)) => 11, 20
+;  (or (values temp0 temp1) (values temp2 temp3)) => 20, 30
 )
 
 
