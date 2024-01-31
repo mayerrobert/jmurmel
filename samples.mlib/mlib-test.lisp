@@ -24,13 +24,24 @@
 ;;;   is bad style...), I think I fixed all, though.
 
 #+murmel (require "mlib")
-#-murmel (defmacro define (n v) `(defparameter ,n ,v))
-#-murmel
+
+
+#-murmel (progn
+
+(defmacro define (n v) `(defparameter ,n ,v))
+
 (defun writeln (&optional (o nil) (escape t))
   (when o (funcall (if escape #'print #'princ) o))
   (terpri)
   o)
-#-murmel (defmacro sref (str idx) `(aref ,str ,idx))
+
+(defmacro sref (str idx) `(aref ,str ,idx))
+
+(defmacro try (form &optional errorobj)
+  (let ((ex (gensym)))
+    `(handler-case ,form
+                   (condition (,ex) (values ,errorobj ,ex)))))
+)
 
 
 (define *success-count* 0)
@@ -68,6 +79,20 @@
   (if l
     `(append (assert-equal ',(caddr l) ,(car l) ',name)
              (tests ,name ,@(cdddr l)))))
+
+
+;;; Macro to check if given condition is thrown
+;;; modeled after https://github.com/pfdietz/ansi-test
+;;; usage:
+;;;     (tests
+;;;       (signals-error (/) program-error) => t
+;;;       (signals-error (read-from-string "") end-of-file) => t
+;;;     )
+;;;
+(defmacro signals-error (form cnd)
+  (let ((v (gensym))
+        (e (gensym)))
+    `(multiple-value-bind (,v ,e) (try ,form) (typep ,e ',cnd))))
 
 
 
@@ -420,19 +445,21 @@
 ;; test adjoin
 (define slist nil)
 (tests adjoin
- (setq slist '()) =>  NIL
- (adjoin 'a slist) =>  (A)
- slist =>  NIL
- (setq slist (adjoin (list 'test-item 1) slist)) =>  ((TEST-ITEM 1))
- (adjoin (list 'test-item 1) slist) =>  ((TEST-ITEM 1) (TEST-ITEM 1))
+  (setq slist '()) =>  NIL
+  (adjoin 'a slist) =>  (A)
+  slist =>  NIL
+  (setq slist (adjoin (list 'test-item 1) slist)) =>  ((TEST-ITEM 1))
+  (adjoin (list 'test-item 1) slist) =>  ((TEST-ITEM 1) (TEST-ITEM 1))
 
- ;(adjoin '(test-item 1) slist #-murmel :test 'equal) =>  ((TEST-ITEM 1))   ; CL accepts a symbol as a test, Murmel does not
- (adjoin (list 'test-item 1) slist #-murmel :test #'equal) =>  ((TEST-ITEM 1))
+  ;(adjoin '(test-item 1) slist #-murmel :test 'equal) =>  ((TEST-ITEM 1))   ; CL accepts a symbol as a test, Murmel does not
+  (adjoin (list 'test-item 1) slist #-murmel :test #'equal) =>  ((TEST-ITEM 1))
 
- ;(adjoin '(new-test-item 1) slist :key #'cadr) =>  ((TEST-ITEM 1))         ; CL supports :key, Murmel does not
- (adjoin '(new-test-item 1) slist #-murmel :test (lambda (l r) (eql (cadr l) (cadr r)))) =>  ((TEST-ITEM 1))
+  ;(adjoin '(new-test-item 1) slist :key #'cadr) =>  ((TEST-ITEM 1))         ; CL supports :key, Murmel does not
+  (adjoin '(new-test-item 1) slist #-murmel :test (lambda (l r) (eql (cadr l) (cadr r)))) =>  ((TEST-ITEM 1))
 
- (adjoin (list 'new-test-item 1) slist) =>  ((NEW-TEST-ITEM 1) (TEST-ITEM 1))
+  (adjoin (list 'new-test-item 1) slist) =>  ((NEW-TEST-ITEM 1) (TEST-ITEM 1))
+
+  (signals-error (adjoin) program-error) => t
 )
 
 

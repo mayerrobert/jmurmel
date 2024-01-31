@@ -160,6 +160,19 @@
   x)
 
 
+;;; Macro to check if given condition is thrown
+;;; modeled after https://github.com/pfdietz/ansi-test
+;;; usage:
+;;;     (deftest quot.1
+;;;       (signals-error (/) program-error)
+;;;       t)
+;;;
+(defmacro signals-error (form cnd)
+  (let ((v (gensym))
+        (e (gensym)))
+    `(multiple-value-bind (,v ,e) (try ,form) (typep ,e ',cnd))))
+
+
 ; *******************************************************************
 ;;; Test the test-framework
 
@@ -1335,6 +1348,8 @@ multiline comment
     (setq *features* (cons ':test *features*))
     (read-from-string "#+:test 1 2"))
   1)
+(deftest read-from-string.5
+  (signals-error (read-from-string "") end-of-file) t)
 
 #+murmel (progn
 (defun expect (expect-error-obj expect-cnd-type actual-error-obj actual-condition)
