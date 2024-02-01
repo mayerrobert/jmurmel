@@ -41,6 +41,10 @@
   (let ((ex (gensym)))
     `(handler-case ,form
                    (condition (,ex) (values ,errorobj ,ex)))))
+
+(defun circular-list (&rest elements)
+  (let ((cycle (copy-list elements)))
+    (nconc cycle cycle)))
 )
 
 
@@ -55,8 +59,8 @@
      ,expected
      ,form
      ,(if (car msg)
-             (car msg)
-         (append (list 'equal) (list expected) (list form)))))
+          (car msg)
+          (append (list 'equal) (list expected) (list form)))))
 
 ; helper function for assert-equal macro
 (defun do-assert-equal (expected actual msg)
@@ -71,24 +75,42 @@
 
 
 ;;; Macro to run some tests
-;;; usage:
-;;; (tests test-name
-;;;        form1 => expected-result1
-;;;        form2 => expected-result2
-;;;        ...)
+;;;
+;;; The format is so that examples form the CLHS can be copy&pasted.
+;;; `expected-result`s will not be evaluated.
+;;;
+;;; Usage:
+;;;     (tests test-name
+;;;       form1 => expected-result1
+;;;       form2 => expected-result2
+;;;       ...)
 (defmacro tests (name . l)
-  (if l
+  (when l
     `(append (assert-equal ',(caddr l) ,(car l) ',name)
              (tests ,name ,@(cdddr l)))))
 
 
+;;; Macro to run one test
+;;;
+;;; Modeled after https://github.com/pfdietz/ansi-test.
+;;; `expected-result` will not be evaluated.
+;;;
+;;; Usage:
+;;;     (deftest test-name
+;;;       form1 expected-result)
+(defmacro deftest (name form expected-result)
+  `(append (assert-equal ',(caddr l) ,(cadr l))))
+
+
 ;;; Macro to check if given condition is thrown
-;;; modeled after https://github.com/pfdietz/ansi-test
-;;; usage:
-;;;     (tests
+;;;
+;;; Modeled after https://github.com/pfdietz/ansi-test.
+;;;
+;;; Usage:
+;;;     (tests test-name
 ;;;       (signals-error (/) program-error) => t
 ;;;       (signals-error (read-from-string "") end-of-file) => t
-;;;     )
+;;;       ...)
 ;;;
 (defmacro signals-error (form cnd)
   (let ((v (gensym))
@@ -148,8 +170,8 @@
   temp3 => 30
   (or (values) temp1) => 11
   (or (values temp1 temp2) temp3) => 11
-;  (or temp0 (values temp1 temp2)) => 11, 20
-;  (or (values temp0 temp1) (values temp2 temp3)) => 20, 30
+  (multiple-value-list (or temp0 (values temp1 temp2))) => (11 20)
+  (multiple-value-list (or (values temp0 temp1) (values temp2 temp3))) => (20 30)
 )
 
 
@@ -178,7 +200,7 @@
   (setq temp 1) =>  1
   (prog2 (incf temp) (incf temp) (incf temp)) =>  3
   temp =>  4
-  ;(prog2 1 (values 2 3 4) 5) =>  2
+  (prog2 1 (values 2 3 4) 5) =>  2
 )
 
 
@@ -262,10 +284,6 @@
 
 
 ;; test list-length
-#-murmel
-(defun circular-list (&rest elements)
-  (let ((cycle (copy-list elements)))
-    (nconc cycle cycle)))
 (tests list-length
   (list-length '(a b c d)) =>  4
   (list-length '(a (b c) d)) =>  3

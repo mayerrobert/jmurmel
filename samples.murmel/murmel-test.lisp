@@ -33,12 +33,12 @@
   (typecase seq
     (cons
      (if (> idx 0)
-           (let ((c (nthcdr (1- idx) seq)))
-             (cond ((consp (cdr c)) (cadr c))
-                   (c (cdr c))))
-       (if (= idx 0)
+         (let ((c (nthcdr (1- idx) seq)))
+           (cond ((consp (cdr c)) (cadr c))
+                 (c (cdr c))))
+         (if (= idx 0)
              (car seq)
-         (error "idx must be >= 0"))))
+             (error "idx must be >= 0"))))
 
     (vector
      (elt seq idx))
@@ -49,12 +49,12 @@
   (typecase seq
     (cons
      (if (> idx 0)
-           (let ((c (nthcdr (1- idx) seq)))
-             (cond ((consp (cdr c)) (cadr c))
-                   (c (rplacd c val))))
-       (if (= idx 0)
+         (let ((c (nthcdr (1- idx) seq)))
+           (cond ((consp (cdr c)) (cadr c))
+                 (c (rplacd c val))))
+         (if (= idx 0)
              (rplaca seq val)
-         (error "idx must be >= 0"))))
+             (error "idx must be >= 0"))))
     (vector
      (setf (elt seq idx) val)))
 
@@ -66,16 +66,40 @@
 
 (defun vector-fill (vec item &optional start end)
   (check-type vec vector)
-  (if end (fill vec item :start start :end end)
-    (if start (fill vec item :start start)
-      (fill vec item))))
+  (if end
+      (fill vec item :start start :end end)
+      (if start
+          (fill vec item :start start)
+          (fill vec item))))
 
 (defmacro try (form &optional errorobj)
   (let ((ex (gensym)))
     `(handler-case ,form
-                   (condition (,ex) (values ,errorobj ,ex)))))
+       (condition (,ex) (values ,errorobj ,ex)))))
 
 #+sbcl (defvar *command-line-argument-list* nil)
+
+;;; - hash-tables
+(defun hash (test &rest pairs)
+  (let ((h (make-hash-table :test test)))
+    (labels ((luup (lst)
+               (when lst
+                 (unless (cdr lst) (error "last tuple is missing a value"))
+                 (setf (gethash (car lst) h) (cadr lst))
+                 (luup (cddr lst)))))
+      (luup pairs))
+    h))
+
+(defun hashref (hash key &optional (default nil default-supplied-p))
+  (if default-supplied-p
+      (gethash key hash default)
+      (gethash key hash)))
+
+(defun hashset (hash key value)
+  (setf (gethash key hash) value))
+
+(defun hash-table-remove (hash key)
+  (remhash key hash))
 )
 
 
@@ -96,48 +120,47 @@
 
 (defun tequal (a b)
   (if (eql a b)
-        t
-    (if (numberp a)
+      t
+      (if (numberp a)
           (if (numberp b)
-                (= a b)
-            nil)
-      (if (stringp a)
-            (if (stringp b)
-                  (string= a b)
+              (= a b)
               nil)
-        (if (consp a)
-              (if (consp b)
-                    (if (tequal (car a) (car b))
-                          (tequal (cdr a) (cdr b))
-                      nil)
-                nil)
-          (if (bit-vector-p a)
-                (if (bit-vector-p b)
-                      #+murmel (bv= a b)
-                      #-murmel (equal a b)
+          (if (stringp a)
+              (if (stringp b)
+                  (string= a b)
                   nil)
-            (if (vectorp a)
-                  (if (vectorp b)
-                        #+murmel (let ((lena (vector-length a)) (lenb (vector-length b)))
-                                   (if (= lena lenb)
-                                         (let loop ((i 0))
-                                           (cond ((= i lena) t)
-                                                 ((null (tequal (seqref a i) (seqref b i))) nil)
-                                                 (t (loop (1+ i)))))
-                                     nil))
+              (if (consp a)
+                  (if (consp b)
+                      (if (tequal (car a) (car b))
+                          (tequal (cdr a) (cdr b))
+                          nil)
+                      nil)
+                  (if (bit-vector-p a)
+                      (if (bit-vector-p b)
+                          #+murmel (bv= a b)
+                          #-murmel (equal a b)
+                          nil)
+                      (if (vectorp a)
+                          (if (vectorp b)
+                              #+murmel (let ((lena (vector-length a)) (lenb (vector-length b)))
+                                         (if (= lena lenb)
+                                             (let loop ((i 0))
+                                                  (cond ((= i lena) t)
+                                                        ((null (tequal (seqref a i) (seqref b i))) nil)
+                                                        (t (loop (1+ i)))))
+                                             nil))
 
-                        #-murmel (equalp a b)
-                    nil)
-              nil)))))))
+                              #-murmel (equalp a b)
+                              nil)
+                          nil)))))))
 
 
 (defun assert-equal (expected-result result msg)
   (inc-count)
   #-murmel
-  (if (equalp result expected-result) nil
-    (progn
-      (write msg)
-      (format t " equal test failed, expected '~A', got unexpected result '~A'~%" expected-result result)))
+  (unless (equalp result expected-result)
+    (write msg)
+    (format t " equal test failed, expected '~A', got unexpected result '~A'~%" expected-result result))
 
   (if (tequal result expected-result) nil
     (progn
@@ -147,10 +170,8 @@
       #-murmel (format t " tequal test failed, expected '~A', got unexpected result '~A'~%" expected-result result))))
 
 
-(defmacro deftest (name form expected-result)
-  (let ((result (gensym)))
-    `(let ((,result ,form))
-       (assert-equal ,expected-result ,result ',name))))
+(defmacro deftest (name form expected-result-form)
+  `(assert-equal ,expected-result-form ,form ',name))
 
 
 ; a varargs function that echoes all arguments as a list.
@@ -550,10 +571,11 @@ multiline comment
 (deftest catch.2 (catch 'dummy-tag 1 2 3 4)                     4)
 (defun throw-back (tag) (throw tag t)) ; =>  THROW-BACK
 (deftest catch.3 (catch 'dummy-tag (throw-back 'dummy-tag) 2)   t)
-(deftest catch.4 (catch 'c
-                   (labels ((c1 () (throw 'c 1)))
-                     (catch 'c (c1) (write 'unreachable))
-                     2))  2)
+(deftest catch.4
+    (catch 'c (labels ((c1 () (throw 'c 1)))
+                (catch 'c (c1) (write 'unreachable))
+                2))
+    2)
 
 (deftest catch.5
   (multiple-value-bind (a b c d) (catch 'tag (throw 'tag (values 1 2))) (list a b c d))
@@ -631,7 +653,7 @@ multiline comment
   ; Inner error will be handled by the outer handler.
   (let* dynamic (inner-result
                   (*condition-handler* (lambda (e)
-                                         ;(write "innerer handler: ") (writeln e)
+                                         ;(write "inner handler: ") (writeln e)
                                          (setq inner-result 'inner-was-here)
                                          (error "hi-from-inner"))))
     (deftest condition-handler.4 (list (catch 'target (fail "test3")) inner-result) '("oops" inner-was-here)))
@@ -653,7 +675,7 @@ multiline comment
 
 (deftest values.8 (multiple-value-bind (a b c) (let (x) (setq x (values 1 2 3))) (list a b c))    '(1 nil nil))
 
-(deftest values.9 (multiple-value-bind (a b c) (if (= 1 (values 1 2 3)) t) (list a b c))        '(t nil nil))
+(deftest values.9 (multiple-value-bind (a b c) (if (= 1 (values 1 2 3)) t) (list a b c))          '(t nil nil))
 
 
 ;;; multiple-value-bind
@@ -1244,27 +1266,6 @@ multiline comment
 
 ; *******************************************************************
 ;;; - hash-tables
-#-murmel (progn
-(defun hash (test &rest pairs)
-  (let ((h (make-hash-table :test test)))
-    (labels ((luup (lst)
-               (when lst
-                 (unless (cdr lst) (error "last tuple is missing a value"))
-                 (setf (gethash (car lst) h) (cadr lst))
-                 (luup (cddr lst)))))
-      (luup pairs))
-    h))
-
-(defun hashref (hash key &optional (default nil default-supplied-p))
-  (if default-supplied-p (gethash key hash default)
-    (gethash key hash)))
-
-(defun hashset (hash key value)
-  (setf (gethash key hash) value))
-
-(defun hash-table-remove (hash key)
-  (remhash key hash))
-)
 
 ;;; test hashref w/ value present
 (deftest hash.1 (multiple-value-call #'list (hashref (hash 'eql 1 11 2 22 3 32) 2))    '(22 t))
@@ -1380,16 +1381,18 @@ multiline comment
 (defmacro macroexpand (form)
   (let loop ((form (eval form)) (x nil))
     (multiple-value-bind (expanded expanded-p) (macroexpand-1 form)
-      (if expanded-p (loop expanded t)
-        `(values ',form ,x)))))
+      (if expanded-p
+          (loop expanded t)
+          `(values ',form ,x)))))
 
 (defmacro expand (form #|&environment env|#)
   (labels (#-murmel (macroexp (form) (macroexpand form))
            #+murmel (macroexp (form)
                       (let loop ((form form) (x nil))
                         (multiple-value-bind (expanded expanded-p) (macroexpand-1 form)
-                          (if expanded-p (loop expanded t)
-                            (values form x))))))
+                          (if expanded-p
+                              (loop expanded t)
+                              (values form x))))))
 
     (multiple-value-bind (expansion expanded-p)
         (macroexp form #|env|#)
@@ -1445,11 +1448,11 @@ multiline comment
 
 (labels ((looop (cnd-types) ; can't use "loop" because of CL's "Lock on package COMMON-LISP"
            (if cnd-types
-                 (let ((cnd-type (car cnd-types)))
-                   ;(format t "condition %s%n" cnd-type)
-                   (deftest cnd.X.1 (typep (get-condition (error cnd-type)) cnd-type) t)
-                   (deftest cnd.X.2 (typep (get-condition (fling cnd-type)) cnd-type) t)
-                   (looop (cdr cnd-types))))))
+               (let ((cnd-type (car cnd-types)))
+                 ;;(format t "condition %s%n" cnd-type)
+                 (deftest cnd.X.1 (typep (get-condition (error cnd-type)) cnd-type) t)
+                 (deftest cnd.X.2 (typep (get-condition (fling cnd-type)) cnd-type) t)
+                 (looop (cdr cnd-types))))))
   (looop *all-murmel-conditions*))
 
 
@@ -1584,8 +1587,8 @@ multiline comment
 
   (let loop ((i 0))
     (if (< i 10)
-      (progn (vector-add arrayList i)
-             (loop (1+ i)))))
+        (progn (vector-add arrayList i)
+               (loop (1+ i)))))
 
   (deftest ffi.adjustable.1 (adjustable-array-p arrayList)     t)
   (deftest ffi.adjustable.2 (adjustable-array-p string)        nil)
@@ -1621,7 +1624,7 @@ multiline comment
 (write *failed*) (format t "/") (write *count*) (format t " test(s) failed")
 (writeln)
 (if (= 0 *failed*)
-      (format t "Success.")
-  (format t "Failure."))
+    (format t "Success.")
+    (format t "Failure."))
 
 #+murmel (if (> *failed* 0) (error "%d/%d errors" *failed* *count*))
