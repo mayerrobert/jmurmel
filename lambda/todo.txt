@@ -1,7 +1,3 @@
-location gibts nicht in ReaderError usw, nur im LambdaJError
-"implements Writable" auch
-
-
 vector (oder nur das was make-array ohne typ ausspuckt?) oder sollte make-array "dynamic" als typ akzeptieren?) koennte intelligenter sein:
 derzeit ists ein Object[] bzw. ArrayList<Object>
 -> denkbar waere, dass beim anlegen nix allokiert wird, und wenn z.B. als erstes element ein double daherkommt wird ein double[] allokiert,

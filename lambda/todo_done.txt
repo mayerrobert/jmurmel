@@ -2713,3 +2713,7 @@ emitForm schaut dann im pass 2 bei non-toplevel defuns im global environment nac
 
 
 mlib: write-char, print, princ, terpri sollten optionale dest übernehmen 
+
+
+location gibts nicht in ReaderError usw, nur im LambdaJError
+"implements Writable" auch
