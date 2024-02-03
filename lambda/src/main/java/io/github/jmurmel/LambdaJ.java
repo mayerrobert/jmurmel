@@ -403,6 +403,7 @@ public class LambdaJ {
         public LambdaJError(Throwable cause, String msg)                                   { this(msg, getLocation(cause), getMurmelCause(cause)); }
         public LambdaJError(Throwable cause, Object errorForm)                             { this(cause.getMessage(), merge(getLocation(cause), getErrorExp(new Object[] { errorForm })), getMurmelCause(cause)); }
         public LambdaJError(Throwable cause, boolean fromCompiledCode, String errorLoc)    { this(cause.getMessage(), merge(getLocation(cause), getErrorExp(errorLoc)), getMurmelCause(cause)); }
+        public LambdaJError(String msg, boolean fromCompiledCode, String errorLoc)         { this(msg, getErrorExp(errorLoc), null); }
 
         private LambdaJError(String msg, @NotNull String location, Throwable cause) {
             super(msg, cause);
@@ -494,7 +495,8 @@ public class LambdaJ {
                                                               public ProgramError(String msg) { super(msg); }
                                                               @Override public @NotNull String conditionName() { return "program-error"; } }
 
-    public static class ParseError extends LambdaJError     { public ParseError(String msg, Object... args) { super(true, msg, args); }
+    public static class ParseError extends LambdaJError     { public ParseError(String errorLoc, String msg, Object... args) { super(fmt(msg, args), true, errorLoc); }
+                                                              public ParseError(String msg) { super(msg); } 
                                                               @Override public @NotNull String conditionName() { return "parse-error"; } }
 
     // artithmetic-error... java.lang.ArithmeticException
@@ -519,9 +521,18 @@ public class LambdaJ {
         throw new LambdaJError(t, t.getMessage());
     }
 
+    static RuntimeException wrap(@NotNull Throwable t, @NotNull String errorLoc) {
+        if (t instanceof RuntimeException) throw (RuntimeException)t;
+        throw new LambdaJError(t, true, errorLoc);
+    }
+
     /** same as {@link #wrap} but returns void so that callsites won't need a bytecode to pop the returnvalue */
     static void wrap0(@NotNull Throwable t) {
         wrap(t);
+    }
+
+    static void wrap0(@NotNull Throwable t, String errorLoc) {
+        wrap(t, errorLoc);
     }
 
 
@@ -1320,7 +1331,7 @@ public class LambdaJ {
             if (idx == len) return false;
 
             if (s.charAt(idx) == '.') {
-                if (!isDigit(s.charAt(++idx))) return false;
+                if (++idx == len || !isDigit(s.charAt(idx))) return false;
 
                 while (++idx < len && isDigit(s.charAt(idx))) {
                     /* nothing */
@@ -1492,10 +1503,10 @@ public class LambdaJ {
                 }
                 return c;
             } catch (CharacterCodingException e) {
-                errorReaderErrorFmt("characterset conversion error in SExpressionReader: %s", e.toString());
+                errorReaderErrorFmt(posInfo(), "characterset conversion error in SExpressionReader: %s", e.toString());
                 return -2; // notreached
             } catch (Exception e) {
-                errorReaderErrorFmt("I/O error in SExpressionReader: %s", e.toString());
+                errorReaderErrorFmt(posInfo(), "I/O error in SExpressionReader: %s", e.toString());
                 return -2; // notreached
             }
         }
@@ -1520,13 +1531,13 @@ public class LambdaJ {
                     try {
                         return (char) Integer.parseInt(charOrCharactername);
                     } catch (NumberFormatException e) {
-                        throw new ParseError("'%s' following #\\ is not a valid number", charOrCharactername);
+                        throw new ParseError(posInfo(), "'%s' following #\\ is not a valid number", charOrCharactername);
                     }
                 }
                 for (int i = 0; i < CTRL.length; i++) {
                     if (CTRL[i].equalsIgnoreCase(charOrCharactername)) return (char)i;
                 }
-                errorReaderErrorFmt("unrecognized character name %s", charOrCharactername);
+                errorReaderErrorFmt(posInfo(), "unrecognized character name %s", charOrCharactername);
                 //NOTREACHED
 
             // #| ... multiline comment ending with |#
@@ -1568,7 +1579,7 @@ public class LambdaJ {
             case 'r':
             case 'R':
                 skipWs();
-                if (arg < Character.MIN_RADIX || arg > Character.MAX_RADIX) errorReaderErrorFmt("%s is not a valid radix for #R", arg);
+                if (arg < Character.MIN_RADIX || arg > Character.MAX_RADIX) errorReaderErrorFmt(posInfo(), "%s is not a valid radix for #R", arg);
                 return parseLong(readerMacroToken(), arg);
 
             case 'x':
@@ -1586,7 +1597,7 @@ public class LambdaJ {
                 return stringToBitvector(bv, arg >= 0 ? arg : bv.length());
 
             case 'H':
-                if (look != '(') errorReaderError("expected '(' after '#H'");
+                if (look != '(') errorReaderError(posInfo(), "expected '(' after '#H'");
                 look = getchar();
                 final ConsCell testAndPairs = readList(lineNo, charNo);
                 if (backquote > 0) return ConsCell.cons(sBqHash, testAndPairs);
@@ -1595,26 +1606,26 @@ public class LambdaJ {
             case '=':
                 final Object obj = readObjRec(null);
                 if (labelledObjects == null) labelledObjects = JavaUtil.newHashMap(10);
-                if (labelledObjects.putIfAbsent(arg, obj) != null) errorReaderErrorFmt("label #%d= was already defined", arg);
+                if (labelledObjects.putIfAbsent(arg, obj) != null) errorReaderErrorFmt(posInfo(), "label #%d= was already defined", arg);
                 return obj;
 
             case '#':
                 final Object ref;
                 if (labelledObjects != null && (ref = labelledObjects.get(arg)) != null) return ref;
-                errorReaderErrorFmt("reference to undefined label #%d#", arg);
+                errorReaderErrorFmt(posInfo(), "reference to undefined label #%d#", arg);
 
             default:
                 look = getchar();
-                errorReaderErrorFmt("no dispatch function defined for %s", printChar(sub_char));
+                errorReaderErrorFmt(posInfo(), "no dispatch function defined for %s", printChar(sub_char));
                 return null; // notreached
             }
         }
 
-        private static boolean[] stringToBitvector(String bv, int len) {
-            if (len < bv.length()) errorReaderErrorFmt("too many bits in \"%s\": expected %d or fewer", bv, len);
+        private boolean[] stringToBitvector(String bv, int len) {
+            if (len < bv.length()) errorReaderErrorFmt(posInfo(), "too many bits in \"%s\": expected %d or fewer", bv, len);
             if (bv.isEmpty()) {
                 if (len == 0) return EMPTY_BITVECTOR;
-                errorReaderErrorFmt("#%d* requires at least 1 bit of input", len);
+                errorReaderErrorFmt(posInfo(), "#%d* requires at least 1 bit of input", len);
             }
             final boolean[] ret = new boolean[len];
             int i = 0;
@@ -1622,7 +1633,7 @@ public class LambdaJ {
                 switch (digit(c)) {
                 case 0: break;
                 case 1: ret[i] = true; break;
-                default: errorReaderErrorFmt("not a valid value for bitvector: %c", c);
+                default: errorReaderErrorFmt(posInfo(), "not a valid value for bitvector: %c", c);
                 }
                 i++;
             }
@@ -1761,7 +1772,7 @@ public class LambdaJ {
                     } else if (!escapeSeen && (haveDouble || haveLong) && isCLDecimalLong(s)) {
                         // reject CL-style 123. for "123 in radix 10" - Murmel doesn't support changing reader radix,
                         // and non-lispers may think digits followed by a dot are floating point numbers (as is the case in most programming languages)
-                        throw new ParseError("digits followed by '.' to indicate 'integer in radix' 10 is not supported. Digits followed by '.' without decimal numbers to indicate 'floating point' also is not supported.");
+                        throw new ParseError(posInfo(prevLineNo, prevCharNo), "digits followed by '.' to indicate 'integer in radix' 10 is not supported. Digits followed by '.' without decimal numbers to indicate 'floating point' also is not supported.");
                     } else {
                         if (s.length() > SYMBOL_MAX) s = s.substring(0, SYMBOL_MAX);
                         tok = st.intern(s);
@@ -1779,7 +1790,7 @@ public class LambdaJ {
             int index = 0;
             while (true) {
                 look = getchar(false);
-                if (look == LambdaJ.EOF) wrap0(new EOFException("|-quoted symbol is missing closing |")); // wrap0() doesn't return
+                if (look == LambdaJ.EOF) wrap0(new EOFException("|-quoted symbol is missing closing |"), posInfo()); // wrap0() doesn't return
                 if (isBar(look)) break;
                 if (index < SYMBOL_MAX) token[index++] = (char) look;
             }
@@ -1788,20 +1799,20 @@ public class LambdaJ {
         }
 
         // todo sollte wsl parseFixnum() solangs keine bignums gibt, sein sonst wird was gelesen was eig. ungueltig ist?!
-        private static Number parseLong(String s, int radix) {
+        private Number parseLong(String s, int radix) {
             try {
                 return Long.valueOf(s, radix);
             } catch (NumberFormatException e) {
-                errorReaderErrorFmt("'%s' is not a valid number", s);
+                errorReaderErrorFmt(posInfo(), "'%s' is not a valid number", s);
                 return null; // notreached
             }
         }
 
-        private static Number parseDouble(String s) {
+        private Number parseDouble(String s) {
             try {
                 return Double.valueOf(s);
             } catch (NumberFormatException e) {
-                errorReaderErrorFmt("'%s' is not a valid number", s);
+                errorReaderErrorFmt(posInfo(), "'%s' is not a valid number", s);
                 return null; // notreached
             }
         }
@@ -1837,9 +1848,8 @@ public class LambdaJ {
                 //return expand_backquote(readObject(startLine, startChar));
                 return readObject(startLine, startChar, eof);
             }
-            catch (Exception pe) {
-                throw new LambdaJError(pe, pe.getMessage() + posInfo()); // todo posInfo nicht an message dranpicken
-            }
+            catch (LambdaJError le) { throw le; }
+            catch (Exception pe) { throw new LambdaJError(pe, true, posInfo()); }
         }
 
         private static final Object sQuasiquote = "quasiquote", sUnquote = "unquote", sUnquote_splice = "unquote-splice", sBqVector = "bq-vector", sBqHash = "bq-hash";
@@ -1861,16 +1871,16 @@ public class LambdaJ {
                 return tok;
             }
             if (!tokEscape) {
-                if (tok == Token.RP) errorReaderError("unexpected ')'");
+                if (tok == Token.RP) errorReaderError(posInfo(), "unexpected ')'");
                 if (tok == Token.LP) {
                     try {
                         final ConsCell list = readList(startLine, startChar);
                         if (!tokEscape && tok == Token.DOT) {
-                            if (list == null) errorReaderError("nothing appears before . in list");
+                            if (list == null) errorReaderError(posInfo(), "nothing appears before . in list");
                             skipWs();
                             final ConsCell cdr = readList(lineNo, charNo);
-                            if (cdr == null) throw new ParseError("illegal end of dotted list: nothing appears after . in list");
-                            if (cdr(cdr) != null) throw new ParseError("illegal end of dotted list: %s", printSEx(cdr));
+                            if (cdr == null) errorReaderError(posInfo(startLine, startChar), "illegal end of dotted list: nothing appears after . in list");
+                            if (cdr(cdr) != null) errorReaderErrorFmt(posInfo(startLine, startChar), "illegal end of dotted list: %s", printSEx(cdr));
                             assert list != null;
                             nconc2(list, car(cdr));
                             if (traceParse) tracer.println("*** parse list   " + printSEx(list));
@@ -1879,9 +1889,7 @@ public class LambdaJ {
                         if (traceParse) tracer.println("*** parse list   " + printSEx(list));
                         return list;
                     }
-                    catch (LambdaJError | IOException e) {
-                        errorReaderError(e.getMessage() + posInfo(startLine, startChar));
-                    }
+                    catch (IOException e) { errorReaderError(posInfo(startLine, startChar), e.getMessage()); }
                 }
                 if (tok == Token.SQ) {
                     skipWs();
@@ -1904,10 +1912,10 @@ public class LambdaJ {
                     return o;
                 }
                 if (tok == Token.COMMA) {
-                    if (backquote == 0) errorReaderError("comma is not inside a backquote" + posInfo(startLine, startChar));
+                    if (backquote == 0) errorReaderError(posInfo(startLine, startChar), "comma is not inside a backquote");
                     skipWs();
                     final Object unquote;
-                    if (look == '.') errorReaderError(",. is not supported" + posInfo(startLine, startChar));
+                    if (look == '.') errorReaderError(posInfo(startLine, startChar), ",. is not supported");
                     if (look == '@') { unquote = sUnquote_splice; look = getchar(); }
                     else unquote = sUnquote;
                     final int _startLine = lineNo, _startChar = charNo;
@@ -1926,11 +1934,11 @@ public class LambdaJ {
         }
 
         private String posInfo(int startLine, int startChar) {
-            return System.lineSeparator() + "error occurred in " + (filePath == null ? "line " : filePath.toString() + ':') + startLine + ':' + startChar + ".." + lineNo + ':' + charNo;
+            return (filePath == null ? "line " : filePath.toString() + ':') + startLine + ':' + startChar + ".." + lineNo + ':' + charNo;
         }
 
         private String posInfo() {
-            return System.lineSeparator() + "error occurred in " + (filePath == null ? "line " : filePath.toString() + ':') + lineNo + ':' + charNo;
+            return (filePath == null ? "line " : filePath.toString() + ':') + lineNo + ':' + charNo;
         }
 
         private ConsCell readList(int listStartLine, int listStartChar) throws IOException {
@@ -2016,7 +2024,7 @@ public class LambdaJ {
                 return cadr(xCons);
 
             if (op == sUnquote_splice)
-                errorReaderError("can't splice here");
+                errorReaderError(posInfo(), "can't splice here"); // todo wsl falsch
 
             if (op == sQuasiquote)
                 return qq_expand(qq_expand(cadr(xCons)));
@@ -4185,14 +4193,14 @@ public class LambdaJ {
     static Object[] listToArray(ConsCell lst, int len) {
         if (lst == null) {
             if (len == 0) return EMPTY_ARRAY;
-            errorReaderErrorFmt(VECTOR + " of length %d cannot be initialized from ()", len);
+            errorReaderErrorFmt("", VECTOR + " of length %d cannot be initialized from ()", len); // todo posinfo
             assert false; //notreached
         }
         if (len < 0) len = listLength(lst);
         final Object[] ret = new Object[len];
         int i = 0;
         for (Object o: lst) {
-            if (i == len) errorReaderErrorFmt(VECTOR + " is longer than the specified length: #%d%s", len, printSEx(lst));
+            if (i == len) errorReaderErrorFmt("", VECTOR + " is longer than the specified length: #%d%s", len, printSEx(lst)); // todo posinfo
             ret[i++] = o;
         }
         final Object last = ret[i-1];
@@ -4419,8 +4427,8 @@ public class LambdaJ {
 
     /// ##  Error "handlers"
 
-    static void             errorReaderError     (String msg)                                   { wrap0(new ReaderError(msg)); }
-    static void             errorReaderErrorFmt  (String msg, Object... args)                   { wrap0(new ReaderError(msg, args)); }
+    static void             errorReaderError     (String errorLoc, String msg)                  { wrap0(new ReaderError(msg), errorLoc); }
+    static void             errorReaderErrorFmt  (String errorLoc, String msg, Object... args)  { wrap0(new ReaderError(msg, args), errorLoc); }
     static RuntimeException errorNotImplemented  (String msg, Object... args)                   { throw new LambdaJError(true, msg, args); }
     static RuntimeException errorInternal        (String msg, Object... args)                   { throw new LambdaJError(true, "internal error - " + msg, args); }
     static RuntimeException errorInternal        (Throwable t, String msg, Object... args)      { throw new LambdaJError(t, true, "internal error - " + msg, args); }

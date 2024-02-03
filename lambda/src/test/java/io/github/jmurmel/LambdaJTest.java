@@ -193,7 +193,7 @@ public class LambdaJTest {
 
             String expectedOutput = findMatch(outputPattern, contents);
             String expectedResult = findMatch(resultPattern, contents);
-            final String expectedError = findMatch(errorPattern, contents);
+            String expectedError = findMatch(errorPattern, contents);
 
             if (expectedOutput != null && expectedResult != null || expectedError != null) {
                 expectedOutput = transform(expectedOutput);
@@ -203,17 +203,19 @@ public class LambdaJTest {
                     if (expectedError != null) fail(fileName + ": expected error \"" + expectedError + "\" but no error occurred");
                 }
                 catch (Exception e) {
-                    assertTrue("unexpected exception " + e.getClass().getSimpleName() + ": " + e.getMessage(), e instanceof LambdaJ.LambdaJError || e instanceof LambdaJ.ReaderError);
+                    final String message = messageAndLocation(e);
+                    assertTrue("unexpected exception " + e.getClass().getSimpleName() + ": " + message, e instanceof LambdaJ.LambdaJError || e instanceof LambdaJ.ReaderError);
                     if (expectedError != null) {
-                        if (e.getMessage().contains(expectedError)) {
+                        expectedError = EolUtil.anyToUnixEol(expectedError).toString(); // todo findMatch sollte gleich \n liefern dann brauchts hier kein anyToUnixEol
+                        if (message.contains(expectedError)) {
                             // thats fine
                         }
                         else {
                             fail(fileName + ": expected error \"" + expectedError + '\"'
-                                    + " but got error \"" + e.getMessage() + '\"');
+                                    + " but got error \"" + message + '\"');
                         }
                     } else {
-                        fail(fileName + " threw exception " + e.getMessage());
+                        fail(fileName + " threw exception " + message);
                     }
                 }
                 return 0;
@@ -252,13 +254,18 @@ public class LambdaJTest {
         }
         catch (Exception e) {
             assertTrue("unexpected exception " + e.getClass().getSimpleName() + ": " + e.getMessage(), e instanceof LambdaJ.LambdaJError || e instanceof LambdaJ.ReaderError);
-            String msg = e.getMessage();
-            if (e instanceof LambdaJ.LambdaJError) msg += "\n" + ((LambdaJ.LambdaJError)e).getLocation();
-            msg = EolUtil.anyToUnixEol(msg).toString();
+            String msg = messageAndLocation(e);
 
             final String expected = EolUtil.anyToUnixEol(expectedExceptionMsgPfx).toString();
             assertTrue("got wrong exception message: " + e.getMessage(), msg.startsWith(expected));
         }
+    }
+
+    private static String messageAndLocation(Exception e) {
+        String msg = e.getMessage();
+        if (e instanceof LambdaJ.LambdaJError) msg += "\n" + ((LambdaJ.LambdaJError)e).getLocation();
+        msg = EolUtil.anyToUnixEol(msg).toString();
+        return msg;
     }
 
     /**
