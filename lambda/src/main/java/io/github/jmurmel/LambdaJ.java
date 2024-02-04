@@ -2337,7 +2337,7 @@ public class LambdaJ {
         sFunctionp(FUNCTIONP, Features.HAVE_UTIL, 1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(intp.functionp(car(args))); } },
         sListp(LISTP, Features.HAVE_UTIL, 1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(listp(car(args))); } },
 
-        sTypep(TYPEP, Features.HAVE_UTIL, 2)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(typep(intp.getSymbolTable(), intp, car(args), cadr(args))); } },
+        sTypep(TYPEP, Features.HAVE_UTIL, 2)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(typep(intp.getSymbolTable(), intp, intp.typeSpecs(), car(args), cadr(args))); } },
 
         sAdjArrayp(ADJUSTABLE_ARRAY_P, Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(adjustableArrayP(car(args))); } },
 
@@ -2470,7 +2470,7 @@ public class LambdaJ {
         sTrace("trace", Features.HAVE_XTRA, -1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
         sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)          { @Override Object apply(LambdaJ intp, ConsCell args) { return macroexpand1(intp, args); } },
-        sError(ERROR, Features.HAVE_UTIL, 1, -1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.getSymbolTable(), car(args), listToArray(cdr(args))); return null; } },
+        sError(ERROR, Features.HAVE_UTIL, 1, -1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.typeSpecs(), car(args), listToArray(cdr(args))); return null; } },
         sImplType("lisp-implementation-type", Features.HAVE_UTIL, 0)   { @Override Object apply(LambdaJ intp, ConsCell args) { return "JMurmel"; } },
         sImplVersion("lisp-implementation-version", Features.HAVE_UTIL, 0) { @Override Object apply(LambdaJ intp, ConsCell args) { return ENGINE_VERSION_NUM; } },
 
@@ -4105,6 +4105,59 @@ public class LambdaJ {
     @SuppressWarnings("unused")
     static boolean listp(ConsCell ignored)  { throw errorInternal("listp(ConsCell c) should NOT be called"); }
 
+    static class TypeSpec {
+        final String name; final Predicate<Object> pred; final Consumer<String> thrower;
+        TypeSpec(String name, Predicate<Object> pred, Consumer<String> thrower) { this.name = name; this.pred = pred; this.thrower = thrower; }
+    }
+    private static final TypeSpec[] TYPE_SPECS = {
+    new TypeSpec("simple-error", o -> o instanceof SimpleError, msg -> { throw new SimpleError(msg); }),
+
+    new TypeSpec("unbound-variable",    o -> o instanceof UnboundVariable, msg -> { throw new UnboundVariable(msg);  }),
+    new TypeSpec("undefined-function",  o -> o instanceof UndefinedFunction, msg -> { throw new UndefinedFunction(msg);  }),
+    new TypeSpec("cell-error",          o -> o instanceof CellError, msg -> { throw new CellError(msg);  }),
+
+    new TypeSpec("control-error",       o -> o instanceof ControlError, msg -> { throw new ControlError(msg);  }),
+
+    new TypeSpec("program-error",       o -> o instanceof ProgramError, msg -> { throw new ProgramError(msg);  }),
+
+    new TypeSpec("parse-error",         o -> o instanceof ParseError || o instanceof ReaderError, msg -> { throw new ParseError(msg);  }),
+
+
+    // extends RuntimeException
+    new TypeSpec("arithmetic-error",    o -> o instanceof ArithmeticException, msg -> { throw new ArithmeticException(msg);  }),
+
+    new TypeSpec("simple-type-error",   o -> o instanceof SimpleTypeError, msg -> { throw new SimpleTypeError(msg);  }),
+    new TypeSpec("type-error",          o -> o instanceof ClassCastException || o instanceof IndexOutOfBoundsException, msg -> { throw new ClassCastException(msg);  }),
+    new TypeSpec("invalid-index-error", o -> o instanceof IndexOutOfBoundsException, msg -> { throw new InvalidIndexError(msg);  }),
+
+    new TypeSpec("file-error",          o -> o instanceof InvalidPathException, msg -> { throw new InvalidPathException("(filename)", msg == null ? "(unknown reason)" : msg);  }),
+
+
+    // extends IOException
+    new TypeSpec("end-of-file",  o -> o instanceof EOFException, msg -> wrap0(new EOFException(msg))),
+    new TypeSpec("reader-error", o -> o instanceof ReaderError,  msg -> wrap0(new ReaderError(msg))),
+    new TypeSpec("stream-error", o -> o instanceof IOException,  msg -> wrap0(new IOException(msg))),
+
+
+    // extends Throwable
+    new TypeSpec("error", o -> o instanceof Exception, msg -> wrap0(new Exception(msg))),
+    new TypeSpec("condition", o -> o instanceof Throwable, msg -> wrap0(new Throwable(msg))),
+    };
+
+    Map<LambdaJSymbol, TypeSpec> typeSpecs;
+    Map<LambdaJSymbol, TypeSpec> typeSpecs() {
+        if (typeSpecs == null) {
+            final Map<LambdaJSymbol, TypeSpec> map = new IdentityHashMap<>(JavaUtil.hashMapCapacity(TYPE_SPECS.length));
+            fillTypespecs(symtab, map);
+            typeSpecs = map;
+        }
+        return typeSpecs;
+    }
+
+    static void fillTypespecs(SymbolTable st, Map<LambdaJSymbol, TypeSpec> map) {
+        for (TypeSpec typeSpec : TYPE_SPECS) map.put(st.intern(typeSpec.name), typeSpec);
+    }
+
 
     static ConsCell arraySlice(Object[] o, int offset) { return o == null || offset >= o.length ? null : new ArraySlice(o, offset); }
     static ConsCell arraySlice(Object... elems) {
@@ -4725,7 +4778,7 @@ public class LambdaJ {
 
         /// logic, predicates
 
-        static boolean typep(SymbolTable st, LambdaJ intp, Object o, Object typespec) {
+        static boolean typep(SymbolTable st, @Null LambdaJ intp, @NotNull Map<LambdaJSymbol, TypeSpec> typeSpecs, @Null Object o, @Null Object typespec) {
             if (typespec == LambdaJ.sT) return true;
             if (typespec == st.intern(NULL)) return null == o;
 
@@ -4766,38 +4819,9 @@ public class LambdaJ {
             // conditions
             if (o.getClass() == LambdaJError.class) o = ((LambdaJError)o).getCause();
 
-            if (typespec == st.intern("simple-error")) return o instanceof SimpleError;
-
-            if (typespec == st.intern("unbound-variable")) return o instanceof UnboundVariable;
-            if (typespec == st.intern("undefined-function")) return o instanceof UndefinedFunction;
-            if (typespec == st.intern("cell-error")) return o instanceof CellError;
-
-            if (typespec == st.intern("control-error")) return o instanceof ControlError;
-
-            if (typespec == st.intern("program-error")) return o instanceof ProgramError;
-
-            if (typespec == st.intern("parse-error")) return o instanceof ParseError || o instanceof ReaderError;
-
-
-            // extends RuntimeException
-            if (typespec == st.intern("arithmetic-error")) return o instanceof ArithmeticException;
-
-            if (typespec == st.intern("simple-type-error")) return o instanceof SimpleTypeError;
-            if (typespec == st.intern("type-error")) return o instanceof ClassCastException || o instanceof IndexOutOfBoundsException;
-            if (typespec == st.intern("invalid-index-error")) return o instanceof IndexOutOfBoundsException;
-
-            if (typespec == st.intern("file-error")) return o instanceof InvalidPathException;
-
-
-            // extends IOException
-            if (typespec == st.intern("end-of-file")) return o instanceof EOFException;
-            if (typespec == st.intern("reader-error")) return o instanceof ReaderError;
-            if (typespec == st.intern("stream-error")) return o instanceof IOException;
-
-
-            // extends Throwable
-            if (typespec == st.intern("error")) return o instanceof Exception;
-            if (typespec == st.intern("condition")) return o instanceof Throwable;
+            @SuppressWarnings("SuspiciousMethodCalls")
+            final TypeSpec murmelTypeSpec = typeSpecs.get(typespec);
+            if (murmelTypeSpec != null) return murmelTypeSpec.pred.test(o);
 
 
             // todo Class.forName().isAssignableFrom() probieren falls JFFI aufgedreht ist
@@ -5975,7 +5999,7 @@ public class LambdaJ {
             else return new LambdaJSymbol("gensym");
         }
 
-        static void error(SymbolTable st, Object datum, Object... args) {
+        static void error(Map<LambdaJSymbol, TypeSpec> typeSpecs, Object datum, Object... args) {
             if (datum instanceof Throwable) wrap0((Throwable)datum);
 
             if (stringp(datum)) { throw new SimpleError(requireString(ERROR, datum), args); }
@@ -5987,30 +6011,9 @@ public class LambdaJ {
             default: msg = String.format(requireString(ERROR, args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
             }
 
-            if (datum == st.intern("condition")) wrap0(new Throwable(msg));
-            if (datum == st.intern("error")) wrap0(new Exception(msg));
-
-            if (datum == st.intern("simple-error")) throw new SimpleError(msg);
-
-            if (datum == st.intern("cell-error")) throw new CellError(msg);
-            if (datum == st.intern("unbound-variable")) throw new UnboundVariable(msg);
-            if (datum == st.intern("undefined-function")) throw new UndefinedFunction(msg);
-
-            if (datum == st.intern("control-error")) throw new ControlError(msg);
-            if (datum == st.intern("program-error")) throw new ProgramError(msg);
-            if (datum == st.intern("parse-error")) throw new ParseError(msg);
-
-            if (datum == st.intern("arithmetic-error")) throw new ArithmeticException(msg);
-
-            if (datum == st.intern("type-error")) throw new ClassCastException(msg);
-            if (datum == st.intern("simple-type-error")) throw new SimpleTypeError(msg);
-            if (datum == st.intern("invalid-index-error")) throw new InvalidIndexError(msg);
-
-            if (datum == st.intern("file-error"))   throw new InvalidPathException("(filename)", msg == null ? "(unknown reason)" : msg);
-
-            if (datum == st.intern("stream-error")) wrap0(new IOException(msg));
-            if (datum == st.intern("end-of-file"))  wrap0(new EOFException(msg));
-            if (datum == st.intern("reader-error")) wrap0(new ReaderError(msg));
+            @SuppressWarnings("SuspiciousMethodCalls")
+            final TypeSpec murmelTypeSpec = typeSpecs.get(datum);
+            if (murmelTypeSpec != null) murmelTypeSpec.thrower.accept(msg);
 
             throw new SimpleTypeError("error: unknown condition type " + printSEx(datum) + ": " + msg);
         }
@@ -6260,7 +6263,7 @@ public class LambdaJ {
         private static Object makeDynamicProxy(LambdaJ intp, MurmelJavaProgram program, String intf, ConsCell args) {
             try {
                 final Class<?> clazz = findClass(intf);
-                final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>();
+                final Map<Method, MurmelFunction> methodToMurmelFunction = new HashMap<>(); // todo kann/ soll das eine IdentityHashMap sein?
                 final Map<String, Method> nameToMethod = new HashMap<>();
 
                 final MurmelFunction notImplemented = a -> { throw new UndefinedFunction("method is not implemented"); };
@@ -7805,6 +7808,7 @@ public class LambdaJ {
                 intp.compiledProgram = this;
                 intp.init(lispReader, lispPrinter, null);
                 intp.extendGlobal(commandlineArgumentListEnvEntry);
+                intp.typeSpecs = typeSpecs();
             }
             else {
                 assert intp.conditionHandlerEnvEntry != null : "MurmelJavaProgram has an interpreter with feature XTRA enabled and conditionHandlerEnvEntry should be != null";
@@ -7983,8 +7987,18 @@ public class LambdaJ {
 
         public final Object _listp     (Object... args) { oneArg(LISTP, args);                 return bool(listp(args[0])); }
         public final Object _listp     (Object    arg)  {                                      return bool(listp(arg)); }
-        public final Object _typep     (Object... args) { twoArgs(TYPEP, args);                return bool(typep(symtab, null, args[0], args[1])); }
-        public final Object _typep     (Object o, Object t) {                                  return bool(typep(symtab, null, o, t)); }
+        public final Object _typep     (Object... args) { twoArgs(TYPEP, args);                return bool(typep(symtab, null, typeSpecs(), args[0], args[1])); }
+        public final Object _typep     (Object o, Object t) {                                  return bool(typep(symtab, null, typeSpecs(), o, t)); }
+
+        private Map<LambdaJSymbol, TypeSpec> typeSpecs;
+        private Map<LambdaJSymbol, TypeSpec> typeSpecs() {
+            if (typeSpecs == null) {
+                final Map<LambdaJSymbol, TypeSpec> map = new IdentityHashMap<>(JavaUtil.hashMapCapacity(TYPE_SPECS.length));
+                fillTypespecs(symtab, map);
+                typeSpecs = map;
+            }
+            return typeSpecs;
+        }
 
         public final Object adjustableArrayP(Object... args) { oneArg(ADJUSTABLE_ARRAY_P, args); return bool(LambdaJ.Subr.adjustableArrayP(args[0])); }
 
@@ -8296,18 +8310,18 @@ public class LambdaJ {
         public final Object _trace     (Object... args) { clrValues(); return null; }
         public final Object _untrace   (Object... args) { clrValues(); return null; }
 
-        public final Object _error     (Object... args) { clrValues(); varargs1(ERROR, args); LambdaJ.Subr.error(symtab, args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
-        public final Object error1     (Object a1)      { clrValues(); LambdaJ.Subr.error(symtab, a1, NOARGS); return null; }
-        public final Object error2     (Object a1, Object a2) { clrValues(); LambdaJ.Subr.error(symtab, a1, a2); return null; }
-        public final Object error3     (Object a1, Object a2, Object a3) { clrValues(); LambdaJ.Subr.error(symtab, a1, a2, a3); return null; }
-        public final Object error4     (Object a1, Object a2, Object a3, Object a4) { clrValues(); LambdaJ.Subr.error(symtab, a1, a2, a3, a4); return null; }
+        public final Object _error     (Object... args) { clrValues(); varargs1(ERROR, args); LambdaJ.Subr.error(typeSpecs(), args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
+        public final Object error1     (Object a1)      { clrValues(); LambdaJ.Subr.error(typeSpecs(), a1, NOARGS); return null; }
+        public final Object error2     (Object a1, Object a2) { clrValues(); LambdaJ.Subr.error(typeSpecs(), a1, a2); return null; }
+        public final Object error3     (Object a1, Object a2, Object a3) { clrValues(); LambdaJ.Subr.error(typeSpecs(), a1, a2, a3); return null; }
+        public final Object error4     (Object a1, Object a2, Object a3, Object a4) { clrValues(); LambdaJ.Subr.error(typeSpecs(), a1, a2, a3, a4); return null; }
         public final Object errorN     (Object a1, Object a2, Object a3, Object... args) {
             clrValues();
             final Object[] newArgs = new Object[args.length + 2];
             newArgs[0] = a2;
             newArgs[1] = a3;
             System.arraycopy(args, 0, newArgs, 2, args.length);
-            LambdaJ.Subr.error(symtab, a1, newArgs);
+            LambdaJ.Subr.error(typeSpecs(), a1, newArgs);
             return null;
         }
 
