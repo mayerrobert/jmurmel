@@ -3828,7 +3828,7 @@ public class LambdaJ {
             throw wrap(re);
         }
         catch (IOException e) {
-            errorReaderErrorFmt("%s: error reading file '%s': %s", func, argument, e.getMessage());
+            errorReaderErrorFmt(func, "%s: error reading file '%s': %s", func, argument, e.getMessage());
             return null; // notreached
         }
         finally {
@@ -6541,6 +6541,22 @@ public class LambdaJ {
 
     /// JMurmel native embed API - Java calls Murmel
 
+    public String evalString(String forms) {
+        try {
+            final ObjectReader program = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, new StringReader(forms)::read, null);
+            final StringBuilder out = new StringBuilder();
+            final ObjectWriter outWriter = makeWriter(out::append);
+
+            final Object ret = interpretExpressions(program, null, outWriter, null, false);
+            return out.toString() + '\n'
+                   + "==> " + printSEx(ret, true);
+
+        }
+        catch (Exception e) {
+            return printSEx(e, true).toString();
+        }
+    }
+
     /** <p>Build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result.
      *
      *  <p>After the expression was read from {@code in}, the primitive function {@code read} (if used)
@@ -6573,8 +6589,13 @@ public class LambdaJ {
      *  <p>The primitive function {@code read} (if used) will read expressions from {@code inReader},
      *  and {@code write}/ {@code writeln} will write Objects to {@code out}. */
     public Object interpretExpressions(ObjectReader program, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv) {
+        return interpretExpressions(program, inReader, outWriter, customEnv, true);
+    }
+
+    public Object interpretExpressions(ObjectReader program, ObjectReader inReader, ObjectWriter outWriter, CustomEnvironmentSupplier customEnv, boolean reset) {
         final ConsCell customEnvironment = customEnv == null ? null : customEnv.customEnvironment(symtab);
-        init(inReader, outWriter, customEnvironment);
+        if (reset || globals.isEmpty()) init(inReader, outWriter, customEnvironment);
+        else setReaderPrinter(null, outWriter);
         currentSource = program.getInput();
         final boolean traceStats = trace.ge(TraceLevel.TRC_STATS);
         final Object eof = "EOF";

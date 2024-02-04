@@ -1,3 +1,5 @@
+evalString() sollte ggf. multiple-values printen
+
 toplevel atoms (auch symbole) ausser dem letzten könnte toplevelFormToJava() (oder die schleife in formsToJavaSource?) gleich wegputzen
 -> (ignorieren, nicht in bodyForms stecken, mit note())
 
