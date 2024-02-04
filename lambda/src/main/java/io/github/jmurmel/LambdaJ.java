@@ -6547,10 +6547,23 @@ public class LambdaJ {
             final StringBuilder out = new StringBuilder();
             final ObjectWriter outWriter = makeWriter(out::append);
 
-            final Object ret = interpretExpressions(program, null, outWriter, null, false);
-            return out.toString() + '\n'
-                   + "==> " + printSEx(ret, true);
-
+            values = NO_VALUES;
+            final Object val = interpretExpressions(program, null, outWriter, null, false);
+            if (values == NO_VALUES) {
+                return out.toString() + '\n'
+                       + "==> " + printSEx(val, true);
+            }
+            else if (values == null) {
+                return out.toString();
+            }
+            else {
+                final StringBuilder ret = new StringBuilder();
+                ret.append(out);
+                for (Object mv: values) {
+                    ret.append("--> ").append(printSEx(mv, true)).append('\n');
+                }
+                return ret.toString();
+            }
         }
         catch (Exception e) {
             return printSEx(e, true).toString();

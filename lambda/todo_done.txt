@@ -2722,3 +2722,5 @@ location gibts nicht in ReaderError usw, nur im LambdaJError
 typep und error haben beide elsif chains mit allen conditions
 -> eine (oder zwei?) Identity map rausziehen, key ist LambdaJSymbol, value ist typprädikat bzw. ein lambda das die entsprechende exception erzeugt (und gleich schmeisst? eher nur erzeugen)
    erzeugt werden diese maps aus einem array { { string, pred, error }, ... }
+
+evalString() sollte ggf. multiple-values printen
