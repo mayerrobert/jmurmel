@@ -6661,18 +6661,18 @@ public class LambdaJ {
 
         private enum Action { INTERPRET, TO_JAVA, TO_JAR, COMPILE_AND_RUN, }
 
-        private static class Exit extends RuntimeException {
+        static class Exit extends RuntimeException {
             final int rc;
             Exit(int rc) { super(null, null, false, false); this.rc = rc; }
         }
 
-        private static final Exit EXIT_SUCCESS =       new Exit(0);
+        static final Exit EXIT_SUCCESS =       new Exit(0);
 
-        private static final Exit EXIT_PROGRAM_ERROR = new Exit(1);
+        static final Exit EXIT_PROGRAM_ERROR = new Exit(1);
 
-        private static final Exit EXIT_CMDLINE_ERROR = new Exit(128);
-        private static final Exit EXIT_IO_ERROR =      new Exit(129);
-        private static final Exit EXIT_RUNTIME_ERROR = new Exit(255);
+        static final Exit EXIT_CMDLINE_ERROR = new Exit(128);
+        static final Exit EXIT_IO_ERROR =      new Exit(129);
+        static final Exit EXIT_RUNTIME_ERROR = new Exit(255);
 
         static int mainInternal(String[] args) {
             try {
@@ -6840,7 +6840,7 @@ public class LambdaJ {
                 }
                 return result;
             }
-            catch (Exception e) { return errorExit(e); }
+            catch (Exception e) { return Repl.errorExit(e); }
             finally { interpreter.currentSource = prev; }
         }
 
@@ -6871,7 +6871,7 @@ public class LambdaJ {
         }
 
         /** compile history to a class and run compiled class */
-        private static Object compileAndRunForms(ObjectReader history, String[] cmdlineArgs, LambdaJ interpreter, boolean repl, boolean finalResult) {
+        static Object compileAndRunForms(ObjectReader history, String[] cmdlineArgs, LambdaJ interpreter, boolean repl, boolean finalResult) {
             final Path tmpDir;
             try { tmpDir = getTmpDir(); }
             catch (IOException e) {
@@ -6918,7 +6918,7 @@ public class LambdaJ {
                     final String msg = (prg != null ? "runtime error" : "error") + location(prg) + ": " + e.getMessage();
                     System.out.println("history NOT run as Java - " + msg);
                 }
-                else errorExit(e);
+                else Repl.errorExit(e);
             }
             catch (Throwable t) {
                 final String loc = location(prg);
@@ -6936,7 +6936,7 @@ public class LambdaJ {
             return prg instanceof MurmelJavaProgram ? " at " + ((MurmelJavaProgram) prg).loc : "";
         }
 
-        private static boolean compileToJava(Charset charset, SymbolTable st, Path libDir, ObjectReader history, Object className, Object filename) {
+        static boolean compileToJava(Charset charset, SymbolTable st, Path libDir, ObjectReader history, Object className, Object filename) {
             return compileToJava(charset, new MurmelJavaCompiler(st, libDir, null), history, className, filename);
         }
 
@@ -6986,7 +6986,7 @@ public class LambdaJ {
             }
         }
 
-        private static boolean compileToJar(SymbolTable st, Path libDir, ObjectReader history, Object className, Object jarFile) {
+        static boolean compileToJar(SymbolTable st, Path libDir, ObjectReader history, Object className, Object jarFile) {
             final Path tmpDir;
             try { tmpDir = getTmpDir(); }
             catch (IOException e) { System.out.println("NOT compiled to .jar - cannot get/ create tmp directory: " + e.getMessage()); return false; }
@@ -7019,76 +7019,128 @@ public class LambdaJ {
         /// repl and helpers
         /** Enter REPL, doesn't return */
         private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, boolean echo, List<Object> prevHistory, String[] args) {
-            final LambdaJSymbol cmdQuit   = interpreter.intern(":q");
-            final LambdaJSymbol cmdHelp   = interpreter.intern(":h");
-            final LambdaJSymbol cmdDesc   = interpreter.intern(":desc");
-            final LambdaJSymbol cmdEcho   = interpreter.intern(":echo");
-            final LambdaJSymbol cmdNoEcho = interpreter.intern(":noecho");
-            final LambdaJSymbol cmdEnv    = interpreter.intern(":env");
-            final LambdaJSymbol cmdMacros = interpreter.intern(":macros");
-            final LambdaJSymbol cmdRes    = interpreter.intern(":res");
-            final LambdaJSymbol cmdList   = interpreter.intern(":l");
-            final LambdaJSymbol cmdWrite  = interpreter.intern(":w");
-            final LambdaJSymbol cmdJava   = interpreter.intern(":java");
-            final LambdaJSymbol cmdRun    = interpreter.intern(":r");
-            final LambdaJSymbol cmdJar    = interpreter.intern(":jar");
-
-            final LambdaJSymbol define = interpreter.intern(DEFINE), setq = interpreter.intern(SETQ), quote = interpreter.intern(QUOTE);
-            final LambdaJSymbol form0 = interpreter.intern("@-");
-            final LambdaJSymbol form1 = interpreter.intern("@+"), form2 = interpreter.intern("@++"), form3 = interpreter.intern("@+++");
-            final LambdaJSymbol result1 = interpreter.intern("@*"), result2 = interpreter.intern("@**"), result3 = interpreter.intern("@***");
-            final LambdaJSymbol values1 = interpreter.intern("@/"), values2 = interpreter.intern("@//"), values3 = interpreter.intern("@///");
-
+            final Repl repl = new Repl(System.in, System.out, interpreter, isInit, echo, prevHistory, args, System.getProperty("sun.stdout.encoding"));
             if (!echo) {
                 System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
                 System.out.println();
             }
 
-            final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
-            final Charset consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
-
-            final Object eof = "EOF";
-            final List<Object> history = prevHistory == null ? new ArrayList<>() : prevHistory;
-            SExpressionReader parser = null;
-            ObjectWriter outWriter = null;
-            final Reader consoleReader = new InputStreamReader(System.in, consoleCharset);
-            final ReadSupplier echoingSupplier = () -> { final int c = consoleReader.read(); if (c != EOF) System.out.print((char)c); return c; };
-            final ReadSupplier nonechoingSupplier = consoleReader::read;
-
-            final boolean replVars = interpreter.have(Features.HAVE_XTRA) && interpreter.have(Features.HAVE_DEFINE);
-            final Object bye = new Object();
-            final Runnable initReplVars = () -> {
-                for (Object v: new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3 }) {
-                    interpreter.eval(ConsCell.list(define, v, null), null);
-                }
-                interpreter.eval(ConsCell.list(define,
-                                               interpreter.intern("quit"),
-                                               (Primitive) a -> { throw new ReturnException(bye, 0, (Object[])null); }),
-                                 null);
-            };
-
-            if (isInit) {
-                interpreter.resetCounters();
-                parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.getSymbolTable(), interpreter.featuresEnvEntry,
-                                               echo ? echoingSupplier : nonechoingSupplier, null);
-                outWriter = interpreter.getLispPrinter();
-                if (replVars) initReplVars.run();
-            }
             for (;;) {
+                if (!echo) {
+                    System.out.print("JMurmel> ");
+                    if (istty) System.out.flush();
+                }
+
+                repl.oneForm(istty);
+            }
+        }
+
+        static class Repl {
+            private final PrintStream stdout;
+            private final LambdaJ interpreter;
+            private boolean isInit, echo;
+            private final String[] args;
+            private final LambdaJSymbol cmdQuit, cmdHelp, cmdDesc, cmdEcho, cmdNoEcho, cmdEnv, cmdMacros, cmdRes, cmdList, cmdWrite, cmdJava, cmdRun, cmdJar;
+
+            private final LambdaJSymbol define, setq, quote;
+            private final LambdaJSymbol form0;
+            private final LambdaJSymbol form1, form2, form3;
+            private final LambdaJSymbol result1, result2, result3;
+            private final LambdaJSymbol values1, values2, values3;
+
+            private final Object eof = "EOF";
+            private final List<Object> history;
+            private SExpressionReader parser;
+            private ObjectWriter outWriter;
+
+            private final Charset consoleCharset;
+            private final ReadSupplier echoingSupplier;
+            private final ReadSupplier nonechoingSupplier;
+
+            private final boolean replVars;
+            private final Object bye;
+            private final Runnable initReplVars;
+
+            Repl(InputStream stdin, PrintStream stdout, LambdaJ interpreter, boolean isInit, boolean echo, List<Object> prevHistory, String[] args, String consoleCharsetName) {
+                this.stdout = stdout;
+                this.interpreter = interpreter;
+                this.isInit = isInit;
+                this.echo = echo;
+                this.args = args;
+                cmdQuit = interpreter.intern(":q");
+                cmdHelp = interpreter.intern(":h");
+                cmdDesc = interpreter.intern(":desc");
+                cmdEcho = interpreter.intern(":echo");
+                cmdNoEcho = interpreter.intern(":noecho");
+                cmdEnv = interpreter.intern(":env");
+                cmdMacros = interpreter.intern(":macros");
+                cmdRes = interpreter.intern(":res");
+                cmdList = interpreter.intern(":l");
+                cmdWrite = interpreter.intern(":w");
+                cmdJava = interpreter.intern(":java");
+                cmdRun = interpreter.intern(":r");
+                cmdJar = interpreter.intern(":jar");
+
+                define = interpreter.intern(DEFINE);
+                setq = interpreter.intern(SETQ);
+                quote = interpreter.intern(QUOTE);
+                form0 = interpreter.intern("@-");
+                form1 = interpreter.intern("@+");
+                form2 = interpreter.intern("@++");
+                form3 = interpreter.intern("@+++");
+                result1 = interpreter.intern("@*");
+                result2 = interpreter.intern("@**");
+                result3 = interpreter.intern("@***");
+                values1 = interpreter.intern("@/");
+                values2 = interpreter.intern("@//");
+                values3 = interpreter.intern("@///");
+
+                history = prevHistory == null ? new ArrayList<>() : prevHistory;
+
+                consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
+                final Reader consoleReader = new InputStreamReader(stdin, consoleCharset);
+                echoingSupplier = () -> {
+                    final int c = consoleReader.read();
+                    if (c != EOF) {
+                        stdout.print((char)c);
+                    }
+                    return c;
+                };
+                nonechoingSupplier = consoleReader::read;
+
+                replVars = interpreter.have(Features.HAVE_XTRA) && interpreter.have(Features.HAVE_DEFINE);
+                bye = new Object();
+                initReplVars = () -> {
+                    for (Object v : new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3 }) {
+                        interpreter.eval(ConsCell.list(define, v, null), null);
+                    }
+                    interpreter.eval(ConsCell.list(define,
+                                                   interpreter.intern("quit"),
+                                                   (Primitive)a -> { throw new ReturnException(bye, 0, (Object[])null); }),
+                                     null);
+                };
+
+                if (isInit) {
+                    interpreter.resetCounters();
+                    parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.getSymbolTable(), interpreter.featuresEnvEntry,
+                                                   echo ? echoingSupplier : nonechoingSupplier, null);
+                    outWriter = interpreter.getLispPrinter();
+                    if (replVars) initReplVars.run();
+                }
+            }
+
+            void oneForm(boolean istty) {
+                final LambdaJ interpreter = this.interpreter;
+                final PrintStream stdout = this.stdout;
                 if (!isInit) {
                     interpreter.resetCounters();
                     parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.getSymbolTable(), interpreter.featuresEnvEntry,
                                                    echo ? echoingSupplier : nonechoingSupplier, null);
-                    outWriter = makeWriter(System.out::print);
+                    outWriter = makeWriter(stdout::print);
                     interpreter.init(parser, outWriter, null);
                     injectCommandlineArgs(interpreter, args);
                     if (replVars) initReplVars.run();
                     isInit = true;
-                }
-
-                if (!echo) {
-                    System.out.print("JMurmel> ");
-                    System.out.flush();
                 }
 
                 try {
@@ -7097,39 +7149,39 @@ public class LambdaJ {
 
                     if (exp != null) {
                         if (exp == eof
-                            || exp == cmdQuit) { System.out.println("bye."); System.out.println();  throw EXIT_SUCCESS; }
-                        if (exp == cmdHelp)   { showHelp();  continue; }
-                        if (exp == cmdDesc)   { final Object name = parser.readObj(eof);  if (name == eof) continue;
-                                                if (!symbolp(name)) { System.out.println(name + " is not a symbol"); continue; }
+                            || exp == cmdQuit) { stdout.println("bye."); stdout.println();  throw EXIT_SUCCESS; }
+                        if (exp == cmdHelp)   { showHelp();  return; }
+                        if (exp == cmdDesc)   { final Object name = parser.readObj(eof);  if (name == eof) return;
+                                                if (!symbolp(name)) { stdout.println(name + " is not a symbol"); return; }
                                                 final LambdaJSymbol symbol = (LambdaJSymbol)name;
                                                 final ConsCell envEntry = interpreter.globals.get(name);
                                                 if (envEntry == null && symbol.macro == null) {
-                                                    System.out.println(name + " is not bound"); continue;
+                                                    stdout.println(name + " is not bound"); return;
                                                 }
                                                 if (symbol.macro != null) {
-                                                    System.out.println("macro " + symbol + ":");
+                                                    stdout.println("macro " + symbol + ":");
                                                     printClosureInfo(symbol.macro);
                                                 }
                                                 if (cdr(envEntry) instanceof LambdaJ.Closure) {
-                                                    System.out.println("function " + symbol + ":");
+                                                    stdout.println("function " + symbol + ":");
                                                     printClosureInfo((Closure)cdr(envEntry));
                                                 }
-                                                System.out.println(LambdaJ.printSEx(cdr(envEntry), true));
-                                                continue; }
-                        if (exp == cmdEcho)   { echo = true; parser.setInput(echoingSupplier, null); continue; }
-                        if (exp == cmdNoEcho) { echo = false; parser.setInput(nonechoingSupplier, null); continue; }
-                        if (exp == cmdRes)    { isInit = false; history.clear(); continue; }
-                        if (exp == cmdList)   { listHistory(history); continue; }
-                        if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false)); continue; }
-                        if (exp == cmdJava)   { compileToJava(consoleCharset, interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
-                        if (exp == cmdRun)    { compileAndRunForms(makeReader(history), null, interpreter, true, false); continue; }
-                        if (exp == cmdJar)    { compileToJar(interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); continue; }
-                        //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); continue; }
+                                                stdout.println(LambdaJ.printSEx(cdr(envEntry), true));
+                                                return; }
+                        if (exp == cmdEcho)   { echo = true; parser.setInput(echoingSupplier, null); return; }
+                        if (exp == cmdNoEcho) { echo = false; parser.setInput(nonechoingSupplier, null); return; }
+                        if (exp == cmdRes)    { isInit = false; history.clear(); return; }
+                        if (exp == cmdList)   { listHistory(history); return; }
+                        if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false)); return; }
+                        if (exp == cmdJava)   { compileToJava(consoleCharset, interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); return; }
+                        if (exp == cmdRun)    { compileAndRunForms(makeReader(history), null, interpreter, true, false); return; }
+                        if (exp == cmdJar)    { compileToJar(interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); return; }
+                        //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); return; }
                         if (exp == cmdEnv)    {
                             interpreter.globals.entrySet().stream().sorted(Comparator.comparing(entry -> entry.getKey().toString()))
-                                               .forEach(e -> System.out.println(e.getValue()));
-                            System.out.println("env length: " + interpreter.globals.size());  System.out.println();
-                            continue;
+                                               .forEach(e -> stdout.println(e.getValue()));
+                            stdout.println("env length: " + interpreter.globals.size());  stdout.println();
+                            return;
                         }
                         if (exp == cmdMacros) {
                             final ArrayList<LambdaJSymbol> names = new ArrayList<>();
@@ -7137,9 +7189,9 @@ public class LambdaJ {
                                 if (entry != null && entry.macro != null) names.add(entry);
                             }
                             names.sort(Comparator.comparing(Object::toString));
-                            for (LambdaJSymbol name: names) System.out.println(name + ": " + printSEx(ConsCell.cons(name.macro.params(), name.macro.body)));
-                            System.out.println("number of macros: " + names.size());  System.out.println();
-                            continue;
+                            for (LambdaJSymbol name: names) stdout.println(name + ": " + printSEx(ConsCell.cons(name.macro.params(), name.macro.body)));
+                            stdout.println("number of macros: " + names.size());  stdout.println();
+                            return;
                         }
                     }
 
@@ -7167,27 +7219,27 @@ public class LambdaJ {
                         interpreter.eval(ConsCell.list(setq, values1, ConsCell.list(quote, resultMv == NO_VALUES ? ConsCell.list(result) : resultMv)), null);
                     }
 
-                    System.out.println();
+                    stdout.println();
                     if (resultMv == NO_VALUES) {
-                        System.out.print("==> "); outWriter.printObj(result, true); System.out.println();
+                        stdout.print("==> "); outWriter.printObj(result, true); stdout.println();
                     }
                     else if (resultMv != null) {
                         for (Object value : resultMv) {
-                            System.out.print(" -> ");  outWriter.printObj(value, true);  System.out.println();
+                            stdout.print(" -> ");  outWriter.printObj(value, true);  stdout.println();
                         }
                     }
                 }
                 catch (ReturnException ex) {
                     if (ex.tag == bye) {
-                        if (istty) System.out.println("bye.");
-                        System.out.println();
+                        if (istty) stdout.println("bye.");
+                        stdout.println();
                         throw EXIT_SUCCESS;
                     }
                     else {
                         if (istty) {
-                            System.out.println();
-                            System.out.println("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
-                            System.out.println();
+                            stdout.println();
+                            stdout.println("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
+                            stdout.println();
                         }
                         else {
                             System.err.println();
@@ -7202,45 +7254,85 @@ public class LambdaJ {
                     else errorExit(e);
                 }
             }
-        }
 
-        private static void printClosureInfo(Closure closure) {
-            if (closure.body instanceof SExpConsCell) {
-                final String info = closure.body.lineInfo();
-                if (!info.isEmpty()) System.out.println(info);
+            private static ObjectReader makeReader(List<Object> forms) {
+                final Iterator<Object> i = forms.iterator();
+                return (eof) -> i.hasNext() ? i.next() : eof;
             }
-            System.out.println(LambdaJ.printSEx(ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params(), closure.body))));
-        }
 
-        private static void errorContinue(Exception e) {
-            System.out.println();
-            System.out.println("Error: " + LambdaJ.printSEx(e, true));
-            System.out.println();
-        }
-
-        private static Object errorExit(Exception e) {
-            System.err.println();
-            System.err.println("Error: " + LambdaJ.printSEx(e, true));
-            throw EXIT_RUNTIME_ERROR;
-        }
-
-        private static void listHistory(List<Object> history) {
-            for (Object sexp: history) {
-                System.out.println(printSEx(sexp));
+            private void printClosureInfo(Closure closure) {
+                if (closure.body instanceof SExpConsCell) {
+                    final String info = closure.body.lineInfo();
+                    if (!info.isEmpty()) stdout.println(info);
+                }
+                stdout.println(LambdaJ.printSEx(ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params(), closure.body))));
             }
-        }
 
-        private static void writeHistory(List<Object> history, Object filename) {
-            try {
-                final Path p = Paths.get(filename.toString());
-                Files.createFile(p);
-                Files.write(p, history.stream()
-                                      .map(LambdaJ::printSEx)
-                                      .collect(Collectors.toList()));
-                System.out.println("wrote history to file '" + p + '\'');
+            private void errorContinue(Exception e) {
+                stdout.println();
+                stdout.println("Error: " + LambdaJ.printSEx(e, true));
+                stdout.println();
             }
-            catch (Exception e) {
-                System.out.println("history NOT written - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+
+            static Object errorExit(Exception e) {
+                System.err.println();
+                System.err.println("Error: " + LambdaJ.printSEx(e, true));
+                throw EXIT_RUNTIME_ERROR;
+            }
+
+            private void listHistory(List<Object> history) {
+                for (Object sexp : history) {
+                    stdout.println(printSEx(sexp));
+                }
+            }
+
+            private void writeHistory(List<Object> history, Object filename) {
+                try {
+                    final Path p = Paths.get(filename.toString());
+                    Files.createFile(p);
+                    Files.write(p, history.stream()
+                                          .map(LambdaJ::printSEx)
+                                          .collect(Collectors.toList()));
+                    stdout.println("wrote history to file '" + p + '\'');
+                }
+                catch (Exception e) {
+                    stdout.println("history NOT written - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                }
+            }
+
+            private void showHelp() {
+                stdout.println("Available commands:\n"
+                               + "  :h ............................. this help screen\n"
+                               + "  :echo .......................... print forms to screen before eval'ing\n"
+                               + "  :noecho ........................ don't print forms\n"
+                               + "  :env ........................... list current global environment\n"
+                               + "  :desc <symbol> ................. display interpreter data about <symbol>\n"
+                               + "  :macros ........................ list currently defined macros\n"
+                               + "  :res ........................... 'CTRL-ALT-DEL' the REPL, i.e. reset global environment, clear history\n"
+                               + "\n"
+                               + "  :l ............................. print history to the screen\n"
+                               + "  :w filename .................... write history to a new file with the given filename\n"
+                               + "\n"
+                               + "  :r ............................. compile history to Java class 'MurmelProgram' and run it\n"
+                               + "\n"
+                               + "  :java classname t .............. compile history to Java class 'classname' and print to the screen\n"
+                               + "  :java classname nil ............ compile history to Java class 'classname' and save to a file based on 'classname' in current directory\n"
+                               + "  :java classname directory ...... compile history to Java class 'classname' and save to a file based on 'classname' in directory 'directory'\n"
+                               + "\n"
+                               + "  :jar  classname jarfilename .... compile history to jarfile 'jarfile' containing Java class 'classname'\n"
+                               + "                                   the generated jar needs jmurmel.jar in the same directory to run\n"
+                               + "\n"
+                               + "Available variables:\n"
+                               + "  @- ............................. currently evaluated form\n"
+                               + "  @+, @++, @+++ .................. recently evaluated forms\n"
+                               + "  @*, @**, @*** .................. recently returned primary results\n"
+                               + "  @/, @//, @/// .................. recently returned values\n"
+                               + "\n"
+                               + "  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).\n"
+                               + "  If 'jarfilename' is nil then 'a.jar' will be used as the jar file name.\n"
+                               + "  classname, directory and jarfilename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")\n"
+                               + "\n"
+                               + "  :q ............................. quit JMurmel\n");
             }
         }
 
@@ -7443,7 +7535,7 @@ public class LambdaJ {
             return ret;
         }
 
-        private static void injectCommandlineArgs(LambdaJ intp, String[] args) {
+        static void injectCommandlineArgs(LambdaJ intp, String[] args) {
             int n = 0;
             for (String arg: args) {
                 n++;
@@ -7465,44 +7557,9 @@ public class LambdaJ {
 
 
 
-        /// functions that print info to the screen, used in REPL as well as from main()
+        /// functions that print info to the screen
         private static void showVersion() {
             System.out.println(ENGINE_VERSION);
-        }
-
-        private static void showHelp() {
-            System.out.println("Available commands:\n"
-                               + "  :h ............................. this help screen\n"
-                               + "  :echo .......................... print forms to screen before eval'ing\n"
-                               + "  :noecho ........................ don't print forms\n"
-                               + "  :env ........................... list current global environment\n"
-                               + "  :desc <symbol> ................. display interpreter data about <symbol>\n"
-                               + "  :macros ........................ list currently defined macros\n"
-                               + "  :res ........................... 'CTRL-ALT-DEL' the REPL, i.e. reset global environment, clear history\n"
-                               + "\n"
-                               + "  :l ............................. print history to the screen\n"
-                               + "  :w filename .................... write history to a new file with the given filename\n"
-                               + "\n"
-                               + "  :r ............................. compile history to Java class 'MurmelProgram' and run it\n"
-                               + "\n"
-                               + "  :java classname t .............. compile history to Java class 'classname' and print to the screen\n"
-                               + "  :java classname nil ............ compile history to Java class 'classname' and save to a file based on 'classname' in current directory\n"
-                               + "  :java classname directory ...... compile history to Java class 'classname' and save to a file based on 'classname' in directory 'directory'\n"
-                               + "\n"
-                               + "  :jar  classname jarfilename .... compile history to jarfile 'jarfile' containing Java class 'classname'\n"
-                               + "                                   the generated jar needs jmurmel.jar in the same directory to run\n"
-                               + "\n"
-                               + "Available variables:\n"
-                               + "  @- ............................. currently evaluated form\n"
-                               + "  @+, @++, @+++ .................. recently evaluated forms\n"
-                               + "  @*, @**, @*** .................. recently returned primary results\n"
-                               + "  @/, @//, @/// .................. recently returned values\n"
-                               + "\n"
-                               + "  If 'classname' is nil then 'MurmelProgram' will be used as the classname (in the Java default package).\n"
-                               + "  If 'jarfilename' is nil then 'a.jar' will be used as the jar file name.\n"
-                               + "  classname, directory and jarfilename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")\n"
-                               + "\n"
-                               + "  :q ............................. quit JMurmel\n");
         }
 
         // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
@@ -7685,11 +7742,6 @@ public class LambdaJ {
             final Path tmpDir = Files.createTempDirectory("JMurmel");
             tmpDir.toFile().deleteOnExit();
             return tmpDir;
-        }
-
-        private static ObjectReader makeReader(List<Object> forms) {
-            final Iterator<Object> i = forms.iterator();
-            return (eof) -> i.hasNext() ? i.next() : eof;
         }
 
         private static class MultiFileReadSupplier implements ReadSupplier {
