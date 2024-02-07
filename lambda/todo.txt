@@ -1,3 +1,14 @@
+mlib: dotimes, dolist, dovector könnten laufvariablen mit namen "_" besonders behandeln:
+die sind im body nicht gebunden, macroexpansion könnte effizienter sein
+z.b. dotimes könnte bis 0 runterzählen, (dovector (_ v) ...) -> (dotimes (_ (length v)) ...), (dolist (_ lst) ...) braucht nur cdr und nullcheck aber kein car/cadr
+-> vielleicht auch in let bindings _ als variablennamen zulassen? damit könnte man imperativen code (nur sideeffect) zwischen die bindings reinschummeln und braucht keine unnötigen variablen erfinden
+
+
+kamma ein lambda das sofort ausgeführt wird in ein let umwandeln? vielleicht gleich in expandForms()
+-> kommt vor z.b. in destructuring-bind, destructuring-bind könnte auch ein let ausspucken, mittels pairlis
+-> wird schon verwendet, u.a. in setf und psetf
+
+
 toplevel atoms (auch symbole) ausser dem letzten könnte toplevelFormToJava() (oder die schleife in formsToJavaSource?) gleich wegputzen
 -> (ignorieren, nicht in bodyForms stecken, mit note())
 
