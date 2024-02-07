@@ -7129,6 +7129,9 @@ public class LambdaJ {
                 }
             }
 
+            /** read one form (or :command) from the stdin that was passed to the constructor Repl(), write results to stdout, formatted in REPL-style with "==>" or "-->".
+             *  This may block if reading from stdin blocks. If stdin is exhausted (returns -1) then a bye message is followed by throw EXIT_SUCCESS.
+             *  The command ":q" or form "(quit)" will throw the exception EXIT_SUCCESS, if "istty" is false then any error will throw EXIT_RUNTIME_ERROR. */
             void oneForm(boolean istty) {
                 final LambdaJ interpreter = this.interpreter;
                 final PrintStream stdout = this.stdout;
@@ -7236,16 +7239,8 @@ public class LambdaJ {
                         throw EXIT_SUCCESS;
                     }
                     else {
-                        if (istty) {
-                            stdout.println();
-                            stdout.println("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
-                            stdout.println();
-                        }
-                        else {
-                            System.err.println();
-                            System.err.println("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
-                            throw EXIT_RUNTIME_ERROR;
-                        }
+                        if (istty) errorContinue("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
+                        else errorExit("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
                     }
                 }
                 catch (Exit exit) { throw exit; }
@@ -7268,13 +7263,13 @@ public class LambdaJ {
                 stdout.println(LambdaJ.printSEx(ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params(), closure.body))));
             }
 
-            private void errorContinue(Exception e) {
+            private void errorContinue(Object e) {
                 stdout.println();
                 stdout.println("Error: " + LambdaJ.printSEx(e, true));
                 stdout.println();
             }
 
-            static Object errorExit(Exception e) {
+            static Object errorExit(Object e) {
                 System.err.println();
                 System.err.println("Error: " + LambdaJ.printSEx(e, true));
                 throw EXIT_RUNTIME_ERROR;
