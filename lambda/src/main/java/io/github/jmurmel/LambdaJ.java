@@ -28,6 +28,7 @@ import java.math.BigInteger;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
+import java.nio.CharBuffer;
 import java.nio.charset.CharacterCodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.CharsetEncoder;
@@ -7026,17 +7027,17 @@ public class LambdaJ {
             }
 
             for (;;) {
-                if (!echo) {
+                if (!repl.echo) {
                     System.out.print("JMurmel> ");
                     if (istty) System.out.flush();
                 }
 
-                repl.oneForm(istty);
+                repl.oneForm(istty, System.lineSeparator());
             }
         }
 
         static class Repl {
-            private final PrintStream stdout;
+            private final WriteConsumer stdout;
             private final LambdaJ interpreter;
             private boolean isInit, echo;
             private final String[] args;
@@ -7061,8 +7062,8 @@ public class LambdaJ {
             private final Object bye;
             private final Runnable initReplVars;
 
-            Repl(InputStream stdin, PrintStream stdout, LambdaJ interpreter, boolean isInit, boolean echo, List<Object> prevHistory, String[] args, String consoleCharsetName) {
-                this.stdout = stdout;
+            Repl(InputStream stdin, Appendable stdout, LambdaJ interpreter, boolean isInit, boolean echo, List<Object> prevHistory, String[] args, String consoleCharsetName) {
+                this.stdout = makeWriteConsumer(stdout);
                 this.interpreter = interpreter;
                 this.isInit = isInit;
                 this.echo = echo;
@@ -7101,9 +7102,7 @@ public class LambdaJ {
                 final Reader consoleReader = new InputStreamReader(stdin, consoleCharset);
                 echoingSupplier = () -> {
                     final int c = consoleReader.read();
-                    if (c != EOF) {
-                        stdout.print((char)c);
-                    }
+                    if (c != EOF) stdout.append((char)c);
                     return c;
                 };
                 nonechoingSupplier = consoleReader::read;
@@ -7132,14 +7131,14 @@ public class LambdaJ {
             /** read one form (or :command) from the stdin that was passed to the constructor Repl(), write results to stdout, formatted in REPL-style with "==>" or "-->".
              *  This may block if reading from stdin blocks. If stdin is exhausted (returns -1) then a bye message is followed by throw EXIT_SUCCESS.
              *  The command ":q" or form "(quit)" will throw the exception EXIT_SUCCESS, if "istty" is false then any error will throw EXIT_RUNTIME_ERROR. */
-            void oneForm(boolean istty) {
+            void oneForm(boolean istty, String nl) {
                 final LambdaJ interpreter = this.interpreter;
-                final PrintStream stdout = this.stdout;
+                final WriteConsumer stdout = this.stdout;
                 if (!isInit) {
                     interpreter.resetCounters();
                     parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.getSymbolTable(), interpreter.featuresEnvEntry,
                                                    echo ? echoingSupplier : nonechoingSupplier, null);
-                    outWriter = makeWriter(stdout::print);
+                    outWriter = makeWriter(stdout);
                     interpreter.init(parser, outWriter, null);
                     injectCommandlineArgs(interpreter, args);
                     if (replVars) initReplVars.run();
@@ -7152,38 +7151,39 @@ public class LambdaJ {
 
                     if (exp != null) {
                         if (exp == eof
-                            || exp == cmdQuit) { stdout.println("bye."); stdout.println();  throw EXIT_SUCCESS; }
-                        if (exp == cmdHelp)   { showHelp();  return; }
+                            || exp == cmdQuit) { stdout.print("bye." + nl + nl);  throw EXIT_SUCCESS; }
+                        if (exp == cmdHelp)   { showHelp(nl);  return; }
                         if (exp == cmdDesc)   { final Object name = parser.readObj(eof);  if (name == eof) return;
-                                                if (!symbolp(name)) { stdout.println(name + " is not a symbol"); return; }
+                                                if (!symbolp(name)) { stdout.print(name + " is not a symbol" + nl); return; }
                                                 final LambdaJSymbol symbol = (LambdaJSymbol)name;
                                                 final ConsCell envEntry = interpreter.globals.get(name);
                                                 if (envEntry == null && symbol.macro == null) {
-                                                    stdout.println(name + " is not bound"); return;
+                                                    stdout.print(name + " is not bound" + nl); return;
                                                 }
                                                 if (symbol.macro != null) {
-                                                    stdout.println("macro " + symbol + ":");
-                                                    printClosureInfo(symbol.macro);
+                                                    stdout.print("macro " + symbol + ":" + nl);
+                                                    printClosureInfo(symbol.macro, nl);
                                                 }
                                                 if (cdr(envEntry) instanceof LambdaJ.Closure) {
-                                                    stdout.println("function " + symbol + ":");
-                                                    printClosureInfo((Closure)cdr(envEntry));
+                                                    stdout.print("function " + symbol + ":" + nl);
+                                                    printClosureInfo((Closure)cdr(envEntry), nl);
                                                 }
-                                                stdout.println(LambdaJ.printSEx(cdr(envEntry), true));
+                                                stdout.print(LambdaJ.printSEx(cdr(envEntry), true) + nl);
                                                 return; }
                         if (exp == cmdEcho)   { echo = true; parser.setInput(echoingSupplier, null); return; }
                         if (exp == cmdNoEcho) { echo = false; parser.setInput(nonechoingSupplier, null); return; }
                         if (exp == cmdRes)    { isInit = false; history.clear(); return; }
-                        if (exp == cmdList)   { listHistory(history); return; }
-                        if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false)); return; }
+                        if (exp == cmdList)   { listHistory(history, nl); return; }
+                        if (exp == cmdWrite)  { writeHistory(history, parser.readObj(false), nl); return; }
                         if (exp == cmdJava)   { compileToJava(consoleCharset, interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); return; }
                         if (exp == cmdRun)    { compileAndRunForms(makeReader(history), null, interpreter, true, false); return; }
                         if (exp == cmdJar)    { compileToJar(interpreter.getSymbolTable(), interpreter.libDir, makeReader(history), parser.readObj(false), parser.readObj(false)); return; }
                         //if (":peek".equals(exp.toString())) { System.out.println("gensymcounter: " + interpreter.gensymCounter); return; }
                         if (exp == cmdEnv)    {
-                            interpreter.globals.entrySet().stream().sorted(Comparator.comparing(entry -> entry.getKey().toString()))
-                                               .forEach(e -> stdout.println(e.getValue()));
-                            stdout.println("env length: " + interpreter.globals.size());  stdout.println();
+                            final List<Map.Entry<Object, ConsCell>> toSort = new ArrayList<>(interpreter.globals.entrySet());
+                            toSort.sort(Comparator.comparing(entry -> entry.getKey().toString()));
+                            for (Map.Entry<Object, ConsCell> e : toSort) stdout.print(e.getValue() + nl);
+                            stdout.print("env length: " + interpreter.globals.size() + nl + nl);
                             return;
                         }
                         if (exp == cmdMacros) {
@@ -7192,8 +7192,8 @@ public class LambdaJ {
                                 if (entry != null && entry.macro != null) names.add(entry);
                             }
                             names.sort(Comparator.comparing(Object::toString));
-                            for (LambdaJSymbol name: names) stdout.println(name + ": " + printSEx(ConsCell.cons(name.macro.params(), name.macro.body)));
-                            stdout.println("number of macros: " + names.size());  stdout.println();
+                            for (LambdaJSymbol name: names) stdout.print(name + ": " + printSEx(ConsCell.cons(name.macro.params(), name.macro.body)) + nl);
+                            stdout.print("number of macros: " + names.size() + nl + nl);
                             return;
                         }
                     }
@@ -7222,32 +7222,49 @@ public class LambdaJ {
                         interpreter.eval(ConsCell.list(setq, values1, ConsCell.list(quote, resultMv == NO_VALUES ? ConsCell.list(result) : resultMv)), null);
                     }
 
-                    stdout.println();
+                    stdout.print(nl);
                     if (resultMv == NO_VALUES) {
-                        stdout.print("==> "); outWriter.printObj(result, true); stdout.println();
+                        stdout.print("==> "); outWriter.printObj(result, true); stdout.print(nl);
                     }
                     else if (resultMv != null) {
                         for (Object value : resultMv) {
-                            stdout.print(" -> ");  outWriter.printObj(value, true);  stdout.println();
+                            stdout.print(" -> ");  outWriter.printObj(value, true);  stdout.print(nl);
                         }
                     }
                 }
                 catch (ReturnException ex) {
                     if (ex.tag == bye) {
-                        if (istty) stdout.println("bye.");
-                        stdout.println();
+                        if (istty) stdout.print("bye." + nl);
+                        stdout.print(nl);
                         throw EXIT_SUCCESS;
                     }
                     else {
-                        if (istty) errorContinue("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
+                        if (istty) errorContinue("uncaught throw tag " + LambdaJ.printSEx(ex.tag), nl);
                         else errorExit("uncaught throw tag " + LambdaJ.printSEx(ex.tag));
                     }
                 }
                 catch (Exit exit) { throw exit; }
                 catch (Exception e) {
-                    if (istty) errorContinue(e);
+                    if (istty) errorContinue(e, nl);
                     else errorExit(e);
                 }
+            }
+
+            /** if "appendable" doesn't throw then cast, else wrap */
+            private static WriteConsumer makeWriteConsumer(Appendable appendable) {
+                final WriteConsumer wc;
+                if (appendable instanceof StringBuilder) wc = ((StringBuilder)appendable)::append;
+                else if (appendable instanceof CharBuffer) wc = ((CharBuffer)appendable)::append;
+                else if (appendable instanceof StringBuffer) wc = ((StringBuffer)appendable)::append;
+                else if (appendable instanceof StringWriter) wc = ((StringWriter)appendable)::append;
+                else if (appendable instanceof PrintWriter) wc = ((PrintWriter)appendable)::append;
+                else if (appendable instanceof PrintStream) wc = ((PrintStream)appendable)::append;
+                else if (appendable instanceof CharArrayWriter) wc = ((CharArrayWriter)appendable)::append;
+                else wc = cs -> {
+                    try { appendable.append(cs); }
+                    catch (IOException e) { wrap0(e); }
+                };
+                return wc;
             }
 
             private static ObjectReader makeReader(List<Object> forms) {
@@ -7255,18 +7272,16 @@ public class LambdaJ {
                 return (eof) -> i.hasNext() ? i.next() : eof;
             }
 
-            private void printClosureInfo(Closure closure) {
+            private void printClosureInfo(Closure closure, String nl) {
                 if (closure.body instanceof SExpConsCell) {
                     final String info = closure.body.lineInfo();
-                    if (!info.isEmpty()) stdout.println(info);
+                    if (!info.isEmpty()) stdout.print(info + nl);
                 }
-                stdout.println(LambdaJ.printSEx(ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params(), closure.body))));
+                stdout.print(LambdaJ.printSEx(ConsCell.cons(LambdaJ.sLambda, ConsCell.cons(closure.params(), closure.body))) + nl);
             }
 
-            private void errorContinue(Object e) {
-                stdout.println();
-                stdout.println("Error: " + LambdaJ.printSEx(e, true));
-                stdout.println();
+            private void errorContinue(Object e, String nl) {
+                stdout.print(nl + "Error: " + LambdaJ.printSEx(e, true) + nl);
             }
 
             static Object errorExit(Object e) {
@@ -7275,28 +7290,29 @@ public class LambdaJ {
                 throw EXIT_RUNTIME_ERROR;
             }
 
-            private void listHistory(List<Object> history) {
+            private void listHistory(List<Object> history, String nl) {
                 for (Object sexp : history) {
-                    stdout.println(printSEx(sexp));
+                    stdout.print(printSEx(sexp));
+                    stdout.print(nl);
                 }
             }
 
-            private void writeHistory(List<Object> history, Object filename) {
+            private void writeHistory(List<Object> history, Object filename, String nl) {
                 try {
                     final Path p = Paths.get(filename.toString());
                     Files.createFile(p);
                     Files.write(p, history.stream()
                                           .map(LambdaJ::printSEx)
                                           .collect(Collectors.toList()));
-                    stdout.println("wrote history to file '" + p + '\'');
+                    stdout.print("wrote history to file '" + p + '\'' + nl);
                 }
                 catch (Exception e) {
-                    stdout.println("history NOT written - error: " + e.getClass().getSimpleName() + ": " + e.getMessage());
+                    stdout.print("history NOT written - error: " + e.getClass().getSimpleName() + ": " + e.getMessage() + nl);
                 }
             }
 
-            private void showHelp() {
-                stdout.println("Available commands:\n"
+            private void showHelp(String nl) {
+                stdout.print("Available commands:\n"
                                + "  :h ............................. this help screen\n"
                                + "  :echo .......................... print forms to screen before eval'ing\n"
                                + "  :noecho ........................ don't print forms\n"
@@ -7328,6 +7344,7 @@ public class LambdaJ {
                                + "  classname, directory and jarfilename may need to be enclosed in double quotes if they contain spaces or are longer than SYMBOL_MAX (" + SYMBOL_MAX + ")\n"
                                + "\n"
                                + "  :q ............................. quit JMurmel\n");
+                stdout.print(nl);
             }
         }
 

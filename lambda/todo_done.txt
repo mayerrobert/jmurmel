@@ -2724,3 +2724,9 @@ typep und error haben beide elsif chains mit allen conditions
    erzeugt werden diese maps aus einem array { { string, pred, error }, ... }
 
 evalString() sollte ggf. multiple-values printen
+
+
+wenn Repl() nicht PrintStream stdout nimmt sondern Appendable könnte direkt ein StringBuilder oder StringBuffer als stdout übergeben werden
+-> println muss man selber nachmachen
+-> PrintStream macht auch jede menge flush()
+   wenn man System.out übergibt bleibts zwar beim flush, bei StringBuilder wärs aber kein problem
