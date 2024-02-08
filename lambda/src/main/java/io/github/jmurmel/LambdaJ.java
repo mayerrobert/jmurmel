@@ -1857,16 +1857,17 @@ public class LambdaJ {
 
         private Object readObject(int startLine, int startChar, Object eof) throws IOException {
             if (tok == null) {
-                if (traceParse) tracer.println("*** parse list   ()");
+                if (traceParse) tracer.println("*** parse EOF");
                 return eof;
             }
             if (tok == sNil) {
+                // can't handle this with "if (symbolp..." below: nil is not a regular symbol but has the type "null" which is a subtype of symbol
                 if (traceTok) tracer.println("*** parse symbol " + NIL);
                 if (haveNil) return null;
                 else return tok;
             }
             if (symbolp(tok)) {
-                if (traceTok) tracer.println("*** parse symbol " + tok);
+                if (traceTok) tracer.println("*** parse symbol " + printSEx(tok));
                 return tok;
             }
             if (!tokEscape) {
