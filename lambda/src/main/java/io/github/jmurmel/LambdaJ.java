@@ -1831,7 +1831,7 @@ public class LambdaJ {
         }
 
         @Override public Object readObj(Object eof) {
-            if (!init) {
+            if (!init || look == EOF) {
                 prevWasCR = false;
                 lineNo = 1; charNo = 0;
                 look = getchar();
@@ -7020,7 +7020,11 @@ public class LambdaJ {
         /// repl and helpers
         /** Enter REPL, doesn't return */
         private static void repl(final LambdaJ interpreter, boolean isInit, final boolean istty, boolean echo, List<Object> prevHistory, String[] args) {
-            final Repl repl = new Repl(System.in, System.out, interpreter, isInit, echo, prevHistory, args, System.getProperty("sun.stdout.encoding"));
+            String consoleCharsetName = System.getProperty("sun.stdout.encoding");
+            if (consoleCharsetName == null) consoleCharsetName = "UTF-8";
+            final Charset consoleCharset = Charset.forName(consoleCharsetName);
+
+            final Repl repl = new Repl(new InputStreamReader(System.in, consoleCharset)::read, System.out, interpreter, isInit, echo, prevHistory, args, consoleCharsetName);
             if (!echo) {
                 System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
                 System.out.println();
@@ -7062,7 +7066,8 @@ public class LambdaJ {
             private final Object bye;
             private final Runnable initReplVars;
 
-            Repl(InputStream stdin, Appendable stdout, LambdaJ interpreter, boolean isInit, boolean echo, List<Object> prevHistory, String[] args, String consoleCharsetName) {
+            Repl(@NotNull ReadSupplier consoleReader, @NotNull Appendable stdout, @NotNull LambdaJ interpreter, boolean isInit, boolean echo,
+                 List<Object> prevHistory, String[] args, String consoleCharsetName) {
                 this.stdout = makeWriteConsumer(stdout);
                 this.interpreter = interpreter;
                 this.isInit = isInit;
@@ -7099,13 +7104,12 @@ public class LambdaJ {
                 history = prevHistory == null ? new ArrayList<>() : prevHistory;
 
                 consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
-                final Reader consoleReader = new InputStreamReader(stdin, consoleCharset);
                 echoingSupplier = () -> {
                     final int c = consoleReader.read();
                     if (c != EOF) stdout.append((char)c);
                     return c;
                 };
-                nonechoingSupplier = consoleReader::read;
+                nonechoingSupplier = consoleReader;
 
                 replVars = interpreter.have(Features.HAVE_XTRA) && interpreter.have(Features.HAVE_DEFINE);
                 bye = new Object();
@@ -7140,7 +7144,7 @@ public class LambdaJ {
                                                    echo ? echoingSupplier : nonechoingSupplier, null);
                     outWriter = makeWriter(stdout);
                     interpreter.init(parser, outWriter, null);
-                    injectCommandlineArgs(interpreter, args);
+                    if (args != null) injectCommandlineArgs(interpreter, args);
                     if (replVars) initReplVars.run();
                     isInit = true;
                 }
@@ -7828,6 +7832,48 @@ public class LambdaJ {
             final ObjectReader reader = interpreter.makeReader(NULL_READCHARS, null);
             reader.setInput(new MultiFileReadSupplier(paths, forms, interpreter, reader, verbose), null);
             return reader;
+        }
+    }
+
+    public static class StringRepl extends Cli.Repl {
+        private final StringBuilderSupplier inBuffer;
+        private final StringBuilder outBuffer;
+
+        private static class StringBuilderSupplier implements ReadSupplier {
+            private final StringBuilder sb = new StringBuilder();
+            private int pos;
+
+            @Override public int read() {
+                if (pos >= sb.length()) return -1;
+                return sb.charAt(pos++) & 0xffff;
+            }
+
+            void reset(String s) { sb.setLength(0);  sb.append(s); pos = 0; }
+            boolean eof() { return pos >= sb.length(); }
+        }
+
+        /** create an object of class StringRepl whose main method is {@link #evalString(String)} */
+        public static StringRepl makeStringRepl() {
+            final StringBuilderSupplier inBuffer = new StringBuilderSupplier();
+            return new StringRepl(inBuffer, new StringBuilder(100));
+        }
+
+        private StringRepl(StringBuilderSupplier in, StringBuilder out) {
+            super(in, out, new LambdaJ(), false, false, null, null, "UTF-8");
+            this.inBuffer = in;
+            outBuffer = out;
+        }
+
+        /** eval all forms in the String "forms" and return a String consisting of the forms' output and their results prepended by "==>" or multiple "-->".
+         *  The returned String looks like REPL output. A prompt is NOT displayed.
+         *  
+         *  @throws Cli.Exit if ":q" was passed as a form */
+        public String evalString(String forms) {
+            inBuffer.reset(forms);
+            while (!inBuffer.eof()) oneForm(true, "\n");
+            final String ret = outBuffer.toString();
+            outBuffer.setLength(0);
+            return ret;
         }
     }
 
