@@ -1383,14 +1383,13 @@ public class LambdaJ {
 
         private @NotNull ReadSupplier in;    // readObj() will read from this
         private Path filePath;
-        private boolean init;
         private boolean pos;
         private int lineNo = 1, charNo;
         private int prevLineNo = 1, prevCharNo;
         private boolean escape; // is the lookahead escaped
         private boolean tokEscape;
         private int backquote;
-        private int look;
+        private int look = EOF;
         private final char[] token = new char[TOKEN_MAX];
         private Object tok;
 
@@ -1831,11 +1830,10 @@ public class LambdaJ {
         }
 
         @Override public Object readObj(Object eof) {
-            if (!init || look == EOF) {
+            if (look == EOF) {
                 prevWasCR = false;
                 lineNo = 1; charNo = 0;
                 look = getchar();
-                init = true;
             }
             try { return readObjRec(eof); }
             finally { if (labelledObjects != null) labelledObjects.clear(); }
@@ -6541,35 +6539,6 @@ public class LambdaJ {
 
 
     /// JMurmel native embed API - Java calls Murmel
-
-    public String evalString(String forms) {
-        try {
-            final ObjectReader program = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, new StringReader(forms)::read, null);
-            final StringBuilder out = new StringBuilder();
-            final ObjectWriter outWriter = makeWriter(out::append);
-
-            values = NO_VALUES;
-            final Object val = interpretExpressions(program, null, outWriter, null, false);
-            if (values == NO_VALUES) {
-                return out.toString() + '\n'
-                       + "==> " + printSEx(val, true);
-            }
-            else if (values == null) {
-                return out.toString();
-            }
-            else {
-                final StringBuilder ret = new StringBuilder();
-                ret.append(out);
-                for (Object mv: values) {
-                    ret.append("--> ").append(printSEx(mv, true)).append('\n');
-                }
-                return ret.toString();
-            }
-        }
-        catch (Exception e) {
-            return printSEx(e, true).toString();
-        }
-    }
 
     /** <p>Build environment, read a single S-expression from {@code in}, invoke {@code eval()} and return result.
      *
