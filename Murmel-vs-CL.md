@@ -24,6 +24,7 @@ Murmel is somewhat close to but not really a "subset of Common Lisp as specified
 
 * `letrec`
 * named `let, let*, letrec`
+* hash literals
 * the default library "Mlib" provides various functions and macros not available in Common Lisp
   (most of Mlib's extensions are available through commonly used CL-libraries such as alexandria or serapeum, though)
 
