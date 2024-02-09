@@ -18,6 +18,7 @@ Murmel is somewhat close to but not really a "subset of Common Lisp as specified
 * floating point by default is `double-float`
 * math functions such as `+` return a `double-float`
 * REPL variables are prefixed by @, e.g. `@*`
+* `format`'s syntax currently is different, e.g. Murmel: `%s` vs. CL: `~A`
 
 
 ## Extensions:
