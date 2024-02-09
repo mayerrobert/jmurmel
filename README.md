@@ -18,7 +18,8 @@ and [mlib.md](mlib.md) for Murmel's default library.
 The interpreter, REPL, compiler as well as Jars with compiled Murmel all run on top of the JVM.
 Compilation is done as Murmel to Java source
 which is then compiled to .class files using the JDK compiler.
-JMurmel as well as compiled Murmel programs should run on all platforms that support Java8+.
+JMurmel as well as compiled Murmel programs should run on all platforms that support Java8+
+(including [CheerpJ](https://labs.leaningtech.com/cheerpj3)).
 
 **Key features**
 
@@ -39,6 +40,8 @@ Murmel is inspired by Common Lisp, i.e. when in doubt try to do it the Common Li
 It should be relatively easy to port a program from Murmel to Common Lisp,
 and Murmel knowledge should transfer to Common Lisp.
 
+See [Murmel vs Common Lisp](Murmel-vs-CL.md) for an overview of differences and similarities.
+
 **Status**
 
 At this time Murmel is a personal project,
@@ -58,6 +61,10 @@ For a copy, see [LICENSE](LICENSE).
 
 
 ## Getting started
+
+**Online REPL**
+
+Use the [Murmel Online REPL](https://jmurmel.github.io/repl/) for a first glimpse.
 
 **Quickstart for Java 11+ users**
 
