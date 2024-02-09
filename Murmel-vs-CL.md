@@ -5,7 +5,7 @@ Some changes/ omissions may go away in future versions of Murmel.
 
 
 Murmel is inspired by Common Lisp but is not quite a subset in the sense of the ANSI spec https://www.lispworks.com/documentation/lw51/CLHS/Body/01_g.htm.
-Murmel is somewhat close to but not really a "subset of Common Lisp as specified by ANSI __standard number__."
+Murmel is somewhat close to but not really a "subset of Common Lisp as specified by ANSI _standard number_."
 
 
 ## Changes:
