@@ -4,8 +4,8 @@ Disclaimer: this document is WIP and incomplete, i.e. doesn't fully reflect the 
 Some changes/ omissions may go away in future versions of Murmel.
 
 
-Murmel is inspired by Common Lisp but not a subset in the sense of the ANSI spec https://www.lispworks.com/documentation/lw51/CLHS/Body/01_g.htm.
-Murmel is somewhat close to but not really a "subset of Common Lisp as specified by ANSI <<standard number>>."
+Murmel is inspired by Common Lisp but is not quite a subset in the sense of the ANSI spec https://www.lispworks.com/documentation/lw51/CLHS/Body/01_g.htm.
+Murmel is somewhat close to but not really a "subset of Common Lisp as specified by ANSI __standard number__."
 
 
 ## Changes:
@@ -30,13 +30,16 @@ Murmel is somewhat close to but not really a "subset of Common Lisp as specified
 ## Omissions:
 
 - no keyword arguments, e.g.
+
     (write "bla" :escape nil :stream t)  ; CL
     (write "bla" nil t)  ; Murmel
-- no `tagbody/go`
+
+- no `tagbody/go`, no `loop` macro
 - the numeric tower is tiny: no bigints, ratios, complex
+- no multi-dimension arrays
 - the reader rejects numbers with a trailing dot, i.e. `1.` is the integer 1 in Common Lisp but an `reader-error` in Murmel
 - no symbol macros
 - no userdefined reader macros
 - no `#.` reader macro
 - the reader doesn't eval anything
-- no support for various other special forms and functions from the ANSI spec
+- various other special forms and functions from the ANSI spec are missing
