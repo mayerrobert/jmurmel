@@ -17,6 +17,9 @@ toplevelFormToJava: solange nur progn/ defuns/ einfache defines (mit einfachem w
 -> ggf. auch letXXX (inkl named let) zulassen wenn die bindingforms gecheckt werden ?
 
 
+Object[].class gibts, Murmel kann das. Object[][].class usw gibts auch
+
+
 vector (oder nur das was make-array ohne typ ausspuckt? oder sollte make-array "dynamic" als typ akzeptieren?) koennte intelligenter sein:
 derzeit ists ein Object[] bzw. ArrayList<Object>
 -> denkbar waere, dass beim anlegen nix allokiert wird, und wenn z.B. als erstes element ein double daherkommt wird ein double[] allokiert,
@@ -29,6 +32,9 @@ hashtables könnten auch intelligenz bekommen: bis 10 mappings ists kein hash so
 
 setf-functions: ggf. würds reichen in expandForm (setf func) in define/ defun/ im car einer form auf das symbol |(setf func)| umzubiegen?
 -> zumindest noch apply, multiple-value-call
+
+
+MIT Lisp OS hatte "resources" sowas wie arenas/ pools/ try-with-resources: https://news.ycombinator.com/threads?id=lispm&next=39134195#39080782
 
 
 butlast-iterator wär einfach
