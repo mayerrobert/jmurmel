@@ -7834,7 +7834,7 @@ public class LambdaJ {
             outBuffer = out;
         }
 
-        /** eval all forms in the String "forms" and return a String consisting of the forms' output and their results prepended by "==>" or multiple "-->".
+        /** eval all forms in the String "forms" and return a String consisting of the forms' output and their results prepended by "==&gt;" or multiple "--&gt;".
          *  The returned String looks like REPL output. A prompt is NOT displayed.
          *  
          *  @throws Cli.Exit if ":q" was passed as a form */
