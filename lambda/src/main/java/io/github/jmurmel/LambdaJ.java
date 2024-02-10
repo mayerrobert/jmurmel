@@ -7840,7 +7840,15 @@ public class LambdaJ {
          *  @throws Cli.Exit if ":q" was passed as a form */
         public String evalString(String forms) {
             inBuffer.reset(forms);
-            while (!inBuffer.eof()) oneForm(true, "\n");
+            while (!inBuffer.eof()) {
+                try {
+                    oneForm(true, "\n");
+                }
+                catch (Cli.Exit e) {
+                    // probably due to EOF, ignore
+                    break;
+                }
+            }
             final String ret = outBuffer.toString();
             outBuffer.setLength(0);
             return ret;
