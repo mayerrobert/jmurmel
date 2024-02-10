@@ -2730,3 +2730,8 @@ wenn Repl() nicht PrintStream stdout nimmt sondern Appendable könnte direkt ein
 -> println muss man selber nachmachen
 -> PrintStream macht auch jede menge flush()
    wenn man System.out übergibt bleibts zwar beim flush, bei StringBuilder wärs aber kein problem
+
+
+
+#n= und #n# syntax ist unter "CLtL2 22.1.4. Standard Dispatching Macro Character Syntax" beschrieben,
+siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node191.html

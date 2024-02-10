@@ -17,7 +17,10 @@ toplevelFormToJava: solange nur progn/ defuns/ einfache defines (mit einfachem w
 -> ggf. auch letXXX (inkl named let) zulassen wenn die bindingforms gecheckt werden ?
 
 
-Object[].class gibts, Murmel kann das. Object[][].class usw gibts auch
+CL hat (machine-type), Chez auch
+
+
+Object[].class gibts, Murmel kann das. Object[][].class usw gibts auch, das kann Murmel nicht
 
 
 vector (oder nur das was make-array ohne typ ausspuckt? oder sollte make-array "dynamic" als typ akzeptieren?) koennte intelligenter sein:
@@ -376,11 +379,6 @@ und nur die subtrees die kein environment nutzen zur macroexpansion time expandi
 
 defmacro ggf. ersetzen durch set-macro-function/ macro-function, und defmacro durch ein macro in mlib ersetzen
 -> vielleicht auch set-macro-symbol/ macro-symbol dazu
-
-
-
-#n= und #n# syntax ist unter "CLtL2 22.1.4. Standard Dispatching Macro Character Syntax" beschrieben,
-siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node191.html
 
 
 
