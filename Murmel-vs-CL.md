@@ -15,7 +15,7 @@ The list looks long, but a surprising amount of CL code (at least simple CL code
 
 * Murmel is a Lisp-1
 * special variables work differently: Murmel doesn't have special variables but dynamic bindings via `(let dynamic (...`
-* vararg lambda lists are specified as a as a dotted list (CL has &rest)
+* vararg lambda lists are specified as a as a dotted list (CL has `&rest` and `&body`)
 * the reader macro `#!` is used for multi-line comments
 * the default library is not automatically available, i.e. programs need to `(require "mlib")` to use library functions
 * floating point by default is `double-float`
@@ -40,6 +40,8 @@ The list looks long, but a surprising amount of CL code (at least simple CL code
     - `(write "bla" :escape nil :stream t)  ; CL`
     - `(write "bla" nil t)  ; Murmel`
 
+* no optional or default parameters: CL has `&optional` and `&default`,
+  in Murmel the last parameter in a dotted lambda list has to be processed manually
 * no `tagbody/go`, no `loop` macro
 * the numeric tower is tiny: no bigints, ratios, complex
 * no multi-dimension arrays
