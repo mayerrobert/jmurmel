@@ -43,11 +43,10 @@ or works after some massaging which may or may not introduce some `#+murmel`.
 ### Surface syntax
 
 * no special handling for function names that are lists like `(setf ...)`
-* no keyword arguments, e.g.
-
-    - `(write "bla" :escape nil :stream t)  ; CL`
-    - `(write "bla" nil t)  ; Murmel`
-
+* no keyword arguments, e.g.  
+  `(write "bla" :escape nil :stream t)                    ; CL`  
+  `(write "bla" nil t)                                    ; Murmel`  
+  `(write "bla" #-murmel :escape nil #-murmel :stream t)  ; CL and Murmel`  
 * no special handling for `:keywords`
 * no optional or default parameters: CL has `&optional` and `&default`,
   in Murmel the last parameter in a dotted lambda list has to be processed manually
@@ -69,7 +68,7 @@ or works after some massaging which may or may not introduce some `#+murmel`.
 * no `loop` macro
 * no `defstruct`
 * no CLOS (Murmel has some conditions related stuff, though)
-* various other special forms, global variables and functions from the ANSI spec are missing
+* various other global variables and functions from the ANSI spec are missing
 
 ### System
 
