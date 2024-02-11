@@ -80,7 +80,7 @@ jobs:
       with:
         name: jmurmel-temurin-${{ matrix.java }}
         path: |
-          samples.mlib/mlib.lisp
+          samples.murmel-mlib/mlib.lisp
 
     - name: Create W64 launcher
       if: ${{ matrix.java == '8' }}
@@ -100,7 +100,7 @@ jobs:
       with:
         name: jmurmel-w64-slim
         path: |
-          samples.mlib/mlib.lisp
+          samples.murmel-mlib/mlib.lisp
 
     - name: Upload launch4j docs
       if: ${{ matrix.java == '8' }}

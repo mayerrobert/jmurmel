@@ -41,7 +41,7 @@ public class ArmstrongBenchmark {
 
     @Setup(Level.Trial)
     public static void setup() throws Exception {
-        final Path prog = Paths.get("../samples.mlib/pom.xml");
+        final Path prog = Paths.get("../samples.murmel-mlib/pom.xml");
         final String source = "(require \"mlib\")\n"
                               + "(declaim (optimize (debug 0)))\n"
                               + "\n"

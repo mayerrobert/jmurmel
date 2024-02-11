@@ -51,7 +51,7 @@
                             <arguments>
                                 <argument>-nf</argument>
                                 <argument>mlib-to-md.sed</argument>
-                                <argument>../samples.mlib/mlib.lisp</argument>
+                                <argument>../samples.murmel-mlib/mlib.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>

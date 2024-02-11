@@ -7,15 +7,15 @@ $ rm -f jmurmel.jsa
 
 # the first runn will create the CDS archive.
 # Run murmel-test.lisp both compiled as well as interpreted so that everything ends up in the archive:
-$ time echo "(load \"samples.mlib/mlib-test\") (eval '(load \"samples.mlib/mlib-test\"))" \
+$ time echo "(load \"samples.murmel-mlib/mlib-test\") (eval '(load \"samples.murmel-mlib/mlib-test\"))" \
         | /usr/local/jdk-19.0.1/bin/java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=jmurmel.jsa -jar lambda/target/jmurmel.jar --run
 
 # do the same again. The second run will use the now existing CDS archive and should be faster:
-$ time echo "(load \"samples.mlib/mlib-test\") (eval '(load \"samples.mlib/mlib-test\"))" \
+$ time echo "(load \"samples.murmel-mlib/mlib-test\") (eval '(load \"samples.murmel-mlib/mlib-test\"))" \
         | /usr/local/jdk-19.0.1/bin/java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=jmurmel.jsa -jar lambda/target/jmurmel.jar --run
 
 # do the same a third time with classloading debug info enabled.
-$ time echo "(load \"samples.mlib/mlib-test\") (eval '(load \"samples.mlib/mlib-test\"))" \
+$ time echo "(load \"samples.murmel-mlib/mlib-test\") (eval '(load \"samples.murmel-mlib/mlib-test\"))" \
         | /usr/local/jdk-19.0.1/bin/java -XX:+AutoCreateSharedArchive -XX:SharedArchiveFile=jmurmel.jsa -Xlog:class+load -jar lambda/target/jmurmel.jar --run | grep -v "shared objects file"
 
 

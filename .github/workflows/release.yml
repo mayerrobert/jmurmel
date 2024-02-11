@@ -44,10 +44,10 @@ jobs:
       run: mvn -V -B clean package -pl lambda,scripts -Dlaunch4j.skip=false -DskipTests=true -Djavac.target=${{ env.JAVA_TARGET }}
 
     - name: Create Jar zipfile
-      run: zip -j ${{ github.ref_name }}-jar.zip      LICENSE lambda/target/jmurmel.jar  samples.mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html
+      run: zip -j ${{ github.ref_name }}-jar.zip      LICENSE lambda/target/jmurmel.jar  samples.murmel-mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html
 
     - name: Create slim zipfile
-      run: zip -j ${{ github.ref_name }}-w64-slim.zip LICENSE scripts/target/jmurmel.exe samples.mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html && zip -r ${{ github.ref_name }}-w64-slim.zip legal/launch4j/
+      run: zip -j ${{ github.ref_name }}-w64-slim.zip LICENSE scripts/target/jmurmel.exe samples.murmel-mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html && zip -r ${{ github.ref_name }}-w64-slim.zip legal/launch4j/
 
     - name: Create release and upload files
       uses: softprops/action-gh-release@de2c0eb89ae2a093876385947365aca7b0e5f844 # v1
@@ -58,7 +58,7 @@ jobs:
           GETTING STARTED.txt
           LICENSE
           lambda/target/jmurmel.jar
-          samples.mlib/mlib.lisp
+          samples.murmel-mlib/mlib.lisp
           mlib.md
           mlib.html
           murmel-langref.html

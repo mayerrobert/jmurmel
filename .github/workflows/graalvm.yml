@@ -85,4 +85,4 @@ jobs:
         with:
           name: jmurmel-native-${{ runner.os }}-${{ runner.arch }}
           path: |
-            samples.mlib/mlib.lisp
+            samples.murmel-mlib/mlib.lisp

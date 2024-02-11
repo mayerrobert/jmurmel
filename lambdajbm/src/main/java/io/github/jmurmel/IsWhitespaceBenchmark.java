@@ -29,7 +29,7 @@ public class IsWhitespaceBenchmark {
 
     static {
         try {
-            final Path p = Paths.get("../samples.mlib/mlib.lisp");
+            final Path p = Paths.get("../samples.murmel-mlib/mlib.lisp");
             final String mlib = JavaUtil.readString(p, StandardCharsets.UTF_8);
             mlibCharacters = new int[mlib.length()];
             int wsMlib = 0;

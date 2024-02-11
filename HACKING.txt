@@ -37,10 +37,10 @@ After adding Murmel tests one should re-run the Murmel tests with something like
 
 
 Mlib:
-Murmel's default library "Mlib" (written in Murmel) is in the file samples.mlib/mlib.lisp.
-Tests for "Mlib" (written in Murmel) are in samples.mlib/mlib-test.lisp.
+Murmel's default library "Mlib" (written in Murmel) is in the file samples.murmel-mlib/mlib.lisp.
+Tests for "Mlib" (written in Murmel) are in samples.murmel-mlib/mlib-test.lisp.
 After changing mlib.lisp and/ or adding Mlib tests one should re-run the Mlib tests with something like
-    java -ea -jar lambda/target/jmurmel.jar samples.mlib/mlib-test.lisp
+    java -ea -jar lambda/target/jmurmel.jar samples.murmel-mlib/mlib-test.lisp
 
 
 
@@ -93,14 +93,14 @@ mvn test -Ppitest -pl lambda -DwithHistory=true -DtargetTests=io.github.jmurmel.
 Other useful commandlines:
 --------------------------
 
-doskey jm=java -ea -jar lambda/target/jmurmel.jar --libdir samples.mlib $*
+doskey jm=java -ea -jar lambda/target/jmurmel.jar --libdir samples.murmel-mlib $*
     Windows cmd alias to run JMurmel
 
-alias jm="java -ea -jar lambda/target/jmurmel.jar --libdir samples.mlib"
+alias jm="java -ea -jar lambda/target/jmurmel.jar --libdir samples.murmel-mlib"
     Unix/Bash style alias that does the same
 
 export JMURMEL=.../jmurmel
-alias jm="rlwrap -C jm -i -q'\"' -b '\(\)' -f $JMURMEL/murmel.completions java -ea -jar $JMURMEL/lambda/target/jmurmel.jar --libdir $JMURMEL/samples.mlib"
+alias jm="rlwrap -C jm -i -q'\"' -b '\(\)' -f $JMURMEL/murmel.completions java -ea -jar $JMURMEL/lambda/target/jmurmel.jar --libdir $JMURMEL/samples.murmel-mlib"
     Unix/Bash style alias that launches JMurmel with rlwrap and a TAB-completion file for Murmel.
     (Ruthlessly stolen from https://github.com/elahtrebor/RLWRAP-SBCL-LISP-COMPLETIONS)
 
@@ -112,23 +112,23 @@ sbcl --script samples.murmel/murmel-test.lisp
     run the tests in murmel-test.lisp using sbcl, useful after adding tests to murmel-tests.lib, this will check if the added tests check for valid Common Lisp behaviour
 
 
-jm samples.mlib/mlib-test.lisp
+jm samples.murmel-mlib/mlib-test.lisp
     interpret the tests in mlib-test.lisp, useful after making changes/ additions in mlib.lisp
 
-sbcl --script samples.mlib/mlib-test.lisp
+sbcl --script samples.murmel-mlib/mlib-test.lisp
     run the tests in mlib-test.lisp using sbcl, useful after adding tests to mlib-tests.lib, this will check if the added tests check for valid Common Lisp behaviour
 
 
 jm --run samples.murmel/julia.lisp
     compile and run the Julia sample
 
-jm samples.mlib/benchmark/3.01_tak.lisp
+jm samples.murmel-mlib/benchmark/3.01_tak.lisp
     interpret the single benchmark "TAK"
 
-jm --run samples.mlib/benchmark/3.01_tak.lisp
+jm --run samples.murmel-mlib/benchmark/3.01_tak.lisp
     compile and run the single benchmark "TAK"
 
-cd samples.mlib/benchmark
+cd samples.murmel-mlib/benchmark
 sbcl --script 3.01_tak.lisp
     run the single benchmark "TAK" using sbcl
 
@@ -136,7 +136,7 @@ sbcl --script 3.01_tak.lisp
 sed -nf doc/langref-to-md.sed murmel-langref.lisp > murmel-langref.md
     transform the Murmel language reference to markdown. (This is automatically done by "mvn install".)
 
-sed -nf doc/mlib-to-md.sed samples.mlib/mlib.lisp > mlib.md
+sed -nf doc/mlib-to-md.sed samples.murmel-mlib/mlib.lisp > mlib.md
     transform the Mlib reference to markdown.  (This is automatically done by "mvn install".)
 
 
@@ -165,5 +165,5 @@ AP-Loader - Loader for AsyncProfiler (see https://github.com/jvm-profiling-tools
 
 Java 9+ linux:
 java -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -javaagent:ap-loader-all.jar=start,event=cpu,file=profile.html \
-        -jar lambda/target/jmurmel.jar --run --libdir samples.mlib/ samples.mlib/benchmark/3.08_destru.lisp
+        -jar lambda/target/jmurmel.jar --run --libdir samples.murmel-mlib/ samples.murmel-mlib/benchmark/3.08_destru.lisp
     run the benchmark 3.08_destru in compiled mode and create a CPU flamegraph in "profile.html"

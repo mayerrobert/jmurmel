@@ -1085,8 +1085,8 @@ push & co auf get-setf-expansion umstellen
 
 mlib: length funktion für strings und listen, funktion (char string n) -> nter character von string
 
-samples umsortieren: samples.murmel und samples.mlib
--> gabriel vielleicht in beiden, in samples.mlib brauchts weniger anpassungen
+samples umsortieren: samples.murmel und samples.murmel-mlib
+-> gabriel vielleicht in beiden, in samples.murmel-mlib brauchts weniger anpassungen
 
 named letrec geht nicht im compiler, weils überhaupt nicht implementiert ist -> cce
 
@@ -1758,7 +1758,7 @@ scan sequence erweitern:
 -> wenn scan auch generator unterstützt (und skip und count), brauchts kein scan-range 
 
 wenn in einem defun ein macro benutzt wird das erst später definiert wird, gibts z.B.
-java.lang.AssertionError: c:\robert\jmurmel\samples.mlib\mlib.lisp:118:3..118:60: unexpanded macro call: unless
+java.lang.AssertionError: c:\robert\jmurmel\samples.murmel-mlib\mlib.lisp:118:3..118:60: unexpanded macro call: unless
 
 gscheite implementierung von char, schar (?) in LambdaJ
 -> char für CharSequence, schar für String
@@ -2555,7 +2555,7 @@ parsing day01.lisp...
 -> sollte eig nicht sein ?!
 
 
-jm samples.mlib\aoc2022\day01.lisp
+jm samples.murmel-mlib\aoc2022\day01.lisp
 -> gibt korrekt file not found
 -> mit --run gibts rt error
 

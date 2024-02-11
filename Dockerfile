@@ -79,7 +79,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends libx11-6 libxi6
 
 
 WORKDIR /jmurmel
-COPY --from=builder /jmurmel/jdkbuild /jmurmel/lambda/target/jmurmel.jar /jmurmel/samples.mlib/mlib.lisp ./
+COPY --from=builder /jmurmel/jdkbuild /jmurmel/lambda/target/jmurmel.jar /jmurmel/samples.murmel-mlib/mlib.lisp ./
 
 # set X11 environment variables in order to make turtle frames work.
 # This will probably not work and you will need to specify the X-server on the commandline e.g.

@@ -130,7 +130,7 @@
         <module>graalvm</module>
 
         <module>samples.murmel</module>
-        <module>samples.mlib</module>
+        <module>samples.murmel-mlib</module>
 
         <module>scripts</module> <!-- comment this out if you don't have sed -->
     </modules>

@@ -117,7 +117,7 @@ You just wrote and ran a Murmel program!
 Now take it from there,
 e.g. read [murmel-langref.md](murmel-langref.md) and [mlib.md](mlib.md).  
 Or take a look at the example code in [samples.murmel/](samples.murmel)
-and [samples.mlib/](samples.mlib)
+and [samples.murmel-mlib/](samples.murmel-mlib)
 Or type `:h` at the REPL prompt.  
 Or run `java -jar jmurmel.jar --help`.  
 
@@ -182,7 +182,7 @@ or setup an alias (again Windows style shown here):
 
     set JAVA_HOME=c:\Program files\jdk-17.0.2
     set JAVA_OPTS=-Xms200M -Xmx1G -Xss2m -XX:+UseZGC
-    doskey jm="%JAVA_HOME%\bin\java" %JAVA_OPTS% -jar C:\jmurmel\lambda\target\jmurmel.jar --libdir C:\jmurmel\samples.mlib $*
+    doskey jm="%JAVA_HOME%\bin\java" %JAVA_OPTS% -jar C:\jmurmel\lambda\target\jmurmel.jar --libdir C:\jmurmel\samples.murmel-mlib $*
 
 That way to run e.g. the file `hanoi.lisp` you can use the following command:
 
@@ -389,7 +389,7 @@ Graphical "Hello, World!" with Java FFI
     
     ==> nil
 
-See [samples.murmel/](samples.murmel) and [samples.mlib/](samples.mlib)
+See [samples.murmel/](samples.murmel) and [samples.murmel-mlib/](samples.murmel-mlib)
 for more Murmel example code
 including usage of Murmel's turtle graphics.
 

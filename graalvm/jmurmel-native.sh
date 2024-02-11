@@ -61,7 +61,7 @@ NI_OPTS="--gc=G1 $NI_OPTS"
 
 # build using profile-guided-optimization (not supported by GraalVM CE)
 native-image --pgo-instrument $NI_OPTS -cp ./target/unsupported.jar -jar ../lambda/target/jmurmel.jar -o target/jmurmel
-target/jmurmel -XX:ProfilesDumpFile=target/jmurmel.iprof ../samples.murmel/murmel-test.lisp ../samples.mlib/mlib-test.lisp
+target/jmurmel -XX:ProfilesDumpFile=target/jmurmel.iprof ../samples.murmel/murmel-test.lisp ../samples.murmel-mlib/mlib-test.lisp
 mv target/jmurmel target/jmurmel-pgo
 native-image --pgo=target/jmurmel.iprof $NI_OPTS -cp ./target/unsupported.jar -jar ../lambda/target/jmurmel.jar -o target/jmurmel
 

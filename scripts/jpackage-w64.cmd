@@ -33,7 +33,7 @@ rd /s /q target\jpackage-input
 
 md target\jpackage-input
 copy ..\lambda\target\jmurmel.jar target\jpackage-input\.
-copy ..\samples.mlib\mlib.lisp    target\jpackage-input\.
+copy ..\samples.murmel-mlib\mlib.lisp    target\jpackage-input\.
 copy ..\LICENSE                   target\jpackage-input\.
 copy ..\murmel-langref.md         target\jpackage-input\.
 copy ..\mlib.md                   target\jpackage-input\.

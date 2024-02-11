@@ -7,7 +7,7 @@ siehe https://docs.oracle.com/javase/8/docs/technotes/samples/hprof.html
 
 
 
-D:\jmurmel\samples.mlib\benchmark>java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar ..\..\lambda\target\jmurmel.jar --libdir .. --run 3.08_destru.lisp > comp.txt
+D:\jmurmel\samples.murmel-mlib\benchmark>java -XX:+UnlockDiagnosticVMOptions -XX:+PrintInlining -XX:+PrintCompilation -jar ..\..\lambda\target\jmurmel.jar --libdir .. --run 3.08_destru.lisp > comp.txt
 
 
 

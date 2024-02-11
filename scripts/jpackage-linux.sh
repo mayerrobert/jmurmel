@@ -48,7 +48,7 @@ rm -rf target/jpackage-input
 
 mkdir target/jpackage-input
 cp ../lambda/target/jmurmel.jar target/jpackage-input/.
-cp ../samples.mlib/mlib.lisp    target/jpackage-input/.
+cp ../samples.murmel-mlib/mlib.lisp    target/jpackage-input/.
 
 
 # create a directory with jlinked JDK, Murmel files and launcher .exe, see https://docs.oracle.com/en/java/javase/17/docs/specs/man/jpackage.html
