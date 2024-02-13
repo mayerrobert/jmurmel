@@ -59,7 +59,7 @@ or works after some massaging which may or may not introduce some `#+murmel`.
 ### Special forms
 
 * no `eval-when`, no `load-time-value`
-* no `function`, no `tagbody/go`, no `block/return-from`, no `flet`, no `the`, no `locally`
+* no `function`, no `tagbody/go`, no `block/return-from/return`, no `flet`, no `the`, no `locally`
 * no local macros via `macrolet` or `symbol-macrolet`
 
 ### Library
