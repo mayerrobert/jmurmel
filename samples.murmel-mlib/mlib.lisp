@@ -27,6 +27,7 @@
 ;;; - conses and lists
 ;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
 ;;;     - [list-length](#function-list-length), [last](#function-last), [butlast](#function-butlast), [nbutlast](#function-nbutlast), [ldiff](#function-ldiff), [tailp](#function-tailp)
+;;;     - [subst](#function-subst), [subst-if](#function-subst-if), [nsubst](#function-nsubst), [nsubst-if](#function-nsubst-if)
 ;;;     - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member), [adjoin](#function-adjoin)
 ;;;     - [acons](#function-acons)
 ;;;     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
@@ -1138,6 +1139,112 @@
         t
         (unless (atom lst)
           (loop (cdr lst))))))
+
+
+;;; = Function: subst
+;;;     (subst new old tree [test-fn [key-fn]]) -> new-tree
+;;;
+;;; Since: 1.4.6
+(defun subst (new old tree . args)
+  "Substitutes new for subtrees matching old."
+
+  (let* ((test (if args
+                   (car args)
+                   eql))
+         (key (cadr args))
+         (satisfies-the-test (if (cdr args)
+                                 (lambda (old new) (test old (key new)))
+                                 (lambda (old new) (test old new)))))
+
+    (labels ((s (subtree)
+               (cond ((satisfies-the-test old subtree) new)
+                     ((atom subtree) subtree)
+                     (t (let ((%car (s (car subtree)))
+                              (%cdr (s (cdr subtree))))
+                          (if (and (eq %car (car subtree))
+                                   (eq %cdr (cdr subtree)))
+                              subtree
+                              (cons %car %cdr)))))))
+      (s tree))))
+
+
+;;; = Function: subst-if
+;;;     (subst-if new test-fn tree [key-fn]) -> new-tree
+;;;
+;;; Since: 1.4.6
+(defun subst-if (new test tree . args)
+  "Substitutes new for subtrees for which test is true."
+
+  (let* ((key (car args))
+         (satisfies-the-test (if args
+                                 (lambda (x) (test (key x)))
+                                 (lambda (x) (test x)))))
+
+    (labels ((s (subtree)
+               (cond ((satisfies-the-test subtree) new)
+                     ((atom subtree) subtree)
+                     (t (let ((%car (s (car subtree)))
+                              (%cdr (s (cdr subtree))))
+                          (if (and (eq %car (car subtree))
+                                   (eq %cdr (cdr subtree)))
+                              subtree
+                              (cons %car %cdr)))))))
+      (s tree))))
+
+
+;;; = Function: nsubst
+;;;     (nsubst new old tree [test-fn [key-fn]]) -> new-tree
+;;;
+;;; Since: 1.4.6
+(defun nsubst (new old tree . args)
+  "Substitute NEW for subtrees matching OLD."
+
+  (let* ((test (if args
+                   (car args)
+                   eql))
+         (key (cadr args))
+         (satisfies-the-test (if (cdr args)
+                                 (lambda (old new) (test old (key new)))
+                                 (lambda (old new) (test old new)))))
+
+    (labels ((s (subtree)
+               (cond ((satisfies-the-test old subtree) new)
+                     ((atom subtree) subtree)
+                     (t (let loop ((last nil)
+                                   (subtree subtree))
+                          (if (satisfies-the-test old subtree)
+                              (rplacd last subtree))
+                          (when (consp subtree)
+                            (rplaca subtree (s (car subtree)))
+                            (loop subtree (cdr subtree))))
+                        subtree))))
+      (s tree))))
+
+
+;;; = Function: nsubst-if
+;;;     (nsubst-if new test-fn tree [key-fn]) -> new-tree
+;;;
+;;; Since: 1.4.6
+(defun nsubst-if (new test tree . args)
+  "Substitute NEW for subtrees of TREE for which TEST is true."
+
+  (let* ((key (car args))
+         (satisfies-the-test (if args
+                                 (lambda (x) (test (key x)))
+                                 (lambda (x) (test x)))))
+
+    (labels ((s (subtree)
+               (cond ((satisfies-the-test subtree) new)
+                     ((atom subtree) subtree)
+                     (t (let loop ((last nil)
+                                   (subtree subtree))
+                          (if (satisfies-the-test subtree)
+                              (rplacd last subtree))
+                          (when (consp subtree)
+                            (rplaca subtree (s (car subtree)))
+                            (loop subtree (cdr subtree))))
+                        subtree))))
+      (s tree))))
 
 
 ; places **************************************************************

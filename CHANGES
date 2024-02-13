@@ -17,6 +17,7 @@ Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
 
  * mlib: added values as a place for setf
  * mlib: added psetf
+ * mlib: added subst, subst-if, nsubst, nsubst-if
 
  * fixed multiple-value-bind when the values form was a variable
  * fixed compiled (list* 1 2 3 (values 4 5)) and (list 1 2 3 (values 4 5))

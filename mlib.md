@@ -27,6 +27,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - conses and lists
     - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
     - [list-length](#function-list-length), [last](#function-last), [butlast](#function-butlast), [nbutlast](#function-nbutlast), [ldiff](#function-ldiff), [tailp](#function-tailp)
+    - [subst](#function-subst), [subst-if](#function-subst-if), [nsubst](#function-nsubst), [nsubst-if](#function-nsubst-if)
     - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member), [adjoin](#function-adjoin)
     - [acons](#function-acons)
     - [mapcar](#function-mapcar), [maplist](#function-maplist), [mapc](#function-mapc), [mapl](#function-mapl), [mapcan](#function-mapcan), [mapcon](#function-mapcon)
@@ -494,6 +495,26 @@ Since: 1.4.5
 
  Return `true` if `obj` is the same as some tail of `lst`, otherwise
  returns `false`. `lst` must be a proper list or a dotted list.
+
+### Function: subst
+    (subst new old tree [test-fn [key-fn]]) -> new-tree
+
+Since: 1.4.6
+
+### Function: subst-if
+    (subst-if new test-fn tree [key-fn]) -> new-tree
+
+Since: 1.4.6
+
+### Function: nsubst
+    (nsubst new old tree [test-fn [key-fn]]) -> new-tree
+
+Since: 1.4.6
+
+### Function: nsubst-if
+    (nsubst-if new test-fn tree [key-fn]) -> new-tree
+
+Since: 1.4.6
 
 ### Macro: destructuring-bind
     (destructuring-bind (vars*) expression forms*)

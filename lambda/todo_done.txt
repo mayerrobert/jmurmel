@@ -2735,3 +2735,6 @@ wenn Repl() nicht PrintStream stdout nimmt sondern Appendable könnte direkt ein
 
 #n= und #n# syntax ist unter "CLtL2 22.1.4. Standard Dispatching Macro Character Syntax" beschrieben,
 siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node191.html
+
+
+mlib: subst, nsubst, ggf. subst-if/ nsubst-if sind einfach

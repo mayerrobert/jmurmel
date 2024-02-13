@@ -93,6 +93,10 @@ butlast
 nbutlast
 ldiff
 tailp
+subst
+subst-if
+nsubst
+nsubst-if
 nconc
 copy-list
 last
