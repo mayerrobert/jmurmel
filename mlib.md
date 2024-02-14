@@ -501,20 +501,28 @@ Since: 1.4.5
 
 Since: 1.4.6
 
+Substitutes `new` for subtrees of `tree` matching `old`.
+
 ### Function: subst-if
-    (subst-if new test-fn tree [key-fn]) -> new-tree
+    (subst-if new test-pred tree [key-fn]) -> new-tree
 
 Since: 1.4.6
+
+Substitutes `new` for subtrees of `tree` for which `test-pred` is true.
 
 ### Function: nsubst
     (nsubst new old tree [test-fn [key-fn]]) -> new-tree
 
 Since: 1.4.6
 
+Substitutes `new` for subtrees of `tree` matching `old`.
+
 ### Function: nsubst-if
-    (nsubst-if new test-fn tree [key-fn]) -> new-tree
+    (nsubst-if new test-pred tree [key-fn]) -> new-tree
 
 Since: 1.4.6
+
+Substitutes `new` for subtrees of `tree` for which `test-pred` is true.
 
 ### Macro: destructuring-bind
     (destructuring-bind (vars*) expression forms*)
