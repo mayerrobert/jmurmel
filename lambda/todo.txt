@@ -1,5 +1,4 @@
-mlib: copy-list gibts, copy-tree gibts nicht, wär einfach
--> tests subst sollte nicht das listliteral ändern sondern mit copytree kopieren
+tests subst sollte nicht das listliteral ändern sondern mit copytree kopieren
 
 
 mlib: substitute ist für sequence statt list

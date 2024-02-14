@@ -25,7 +25,8 @@
 ;;;     - [case](#macro-case), [typecase](#macro-typecase)
 
 ;;; - conses and lists
-;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
+;;;     - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [endp](#function-endp)
+;;;     - [copy-list](#function-copy-list), [copy-alist](#function-copy-alist), [copy-tree](#function-copy-tree)
 ;;;     - [list-length](#function-list-length), [last](#function-last), [butlast](#function-butlast), [nbutlast](#function-nbutlast), [ldiff](#function-ldiff), [tailp](#function-tailp)
 ;;;     - [subst](#function-subst), [subst-if](#function-subst-if), [nsubst](#function-nsubst), [nsubst-if](#function-nsubst-if)
 ;;;     - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member), [adjoin](#function-adjoin)
@@ -360,6 +361,20 @@
 (m%def-macro-fun cdadr (lst) `(cdr (cadr ,lst)))
 (m%def-macro-fun cddar (lst) `(cdr (cdar ,lst)))
 (m%def-macro-fun cdddr (lst) `(cdr (cddr ,lst)))
+
+
+;;; = Function: endp
+;;;     (endp list) -> boolean
+;;;
+;;; Since: 1.4.6
+;;;
+;;; This is the recommended way to test for the end of a proper list. It
+;;; returns true if `obj` is `nil`, false if `obj` is a `cons`,
+;;; and a `type-error` for any other type of `object`.
+(m%def-macro-fun endp (obj)
+  `(cond ((consp ,obj) nil)
+         ((null  ,obj) t)
+         (t (error 'simple-type-error "not a list: %s" ,obj))))
 
 
 (defun m%nonneg-integer-number (n)
@@ -1042,6 +1057,70 @@
 
 
 ; more lists **********************************************************
+
+;;; = Function: copy-alist
+;;;     (copy-alist alist) -> new-alist
+;;;
+;;; Since: 1.4.6
+;;;
+;;; `copy-alist` returns a copy of `alist`.
+;;;
+;;; The list structure of `alist` is copied, and the elements of `alist` which are conses are also copied (as conses only).
+;;; Any other objects which are referred to, whether directly or indirectly, by the `alist` continue to be shared.
+(defun copy-alist (alist)
+  "Return a new association list which is EQUAL to ALIST."
+  (if (endp alist)
+      alist
+      (let ((result
+             (cons (if (atom (car alist))
+                       (car alist)
+                       (cons (caar alist) (cdar alist)))
+                   nil)))
+        (do ((x (cdr alist) (cdr x))
+             (splice result
+                     (cdr (rplacd splice
+                                  (cons
+                                   (if (atom (car x))
+                                       (car x)
+                                       (cons (caar x) (cdar x)))
+                                   nil)))))
+            ((endp x)))
+        result)))
+
+
+;;; = Function: copy-tree
+;;;     (copy-tree tree) -> new-tree
+;;;
+;;; Since: 1.4.6
+;;;
+;;; Creates a copy of a tree of conses.
+;;;
+;;; If `tree` is not a `cons`, it is returned;
+;;; otherwise, the result is a new cons of the results of calling `copy-tree` on the car and cdr of `tree`.
+;;; In other words, all conses in the tree represented by `tree` are copied recursively,
+;;; stopping only when non-conses are encountered.
+;;; copy-tree does not preserve circularities and the sharing of substructure.
+(defun copy-tree (object)
+  "Recursively copy trees of conses."
+  (if (consp object)
+      (let* ((%car (car object))
+             (result #1=(list (if (consp %car)
+                                  (copy-tree %car)
+                                  %car))))
+
+        (let loop ((last-cons result)
+                   (%cdr (cdr object)))
+          (if (atom %cdr)
+              (rplacd last-cons %cdr)
+              (let* ((%car (car %cdr))
+                     (new-cons #1#))
+                (rplacd last-cons new-cons)
+                (loop new-cons (cdr %cdr)))))
+
+        result)
+
+      object))
+
 
 ;;; = Function: butlast
 ;;;     (butlast lst n?) -> result-list

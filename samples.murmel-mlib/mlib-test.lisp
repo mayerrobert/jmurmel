@@ -260,6 +260,14 @@
 
 ;;; - conses and lists
 
+;; test endp
+(tests endp
+  (endp nil) =>  t
+  (endp '(1 2)) =>  nil
+  (endp (cddr '(1 2))) =>  t
+)
+
+
 ;; test copy-list
 (let (lst slst clst)
   (tests copy-list
@@ -283,6 +291,53 @@
 ))
 
 
+;; test copy-alist
+(define *alist* (acons 1 "one" (acons 2 "two" '())))
+(define *list-copy* nil)
+(define *alist-copy* nil)
+(tests copy-alist
+  *alist* =>  ((1 . "one") (2 . "two"))
+  (setq *list-copy* (copy-list *alist*)) =>  ((1 . "one") (2 . "two"))
+  (setq *alist-copy* (copy-alist *alist*)) =>  ((1 . "one") (2 . "two"))
+  (setf (cdr (assoc 2 *alist-copy*)) "deux") =>  "deux"
+  *alist-copy* =>  ((1 . "one") (2 . "deux"))
+  *alist* =>  ((1 . "one") (2 . "two"))
+  (setf (cdr (assoc 1 *list-copy*)) "uno") =>  "uno"
+  *list-copy* =>  ((1 . "uno") (2 . "two"))
+  *alist* =>  ((1 . "uno") (2 . "two"))
+)
+
+
+;; test copy-tree
+(let ((object (list (cons 1 "one")
+                    (cons 2 (list 'a 'b 'c))))
+      object-too copy-as-list copy-as-alist copy-as-tree)
+  (tests copy-tree
+    object =>  ((1 . "one") (2 A B C))
+
+    (setq object-too object)                  =>  #1=((1 . "one") (2 A B C))
+    (setq copy-as-list (copy-list object))    =>  #1#
+    (setq copy-as-alist (copy-alist object))  =>  #1#
+    (setq copy-as-tree (copy-tree object))    =>  #1#
+
+    (eq object object-too)      =>  t
+    (eq copy-as-tree object)    =>  nil
+    (eql copy-as-tree object)   =>  nil
+    (equal copy-as-tree object) =>  t
+
+    (setf (car (cdr (cadr object))) "a"
+          (car (cadr object)) "two"
+          (car object) '(one . 1))            =>  (ONE . 1)
+
+    object        =>  ((ONE . 1) ("two" "a" B C))
+    object-too    =>  ((ONE . 1) ("two" "a" B C))
+    copy-as-list  =>  ((1 . "one") ("two" "a" B C))
+    copy-as-alist =>  ((1 . "one") (2 "a" B C))
+    copy-as-tree  =>  ((1 . "one") (2 A B C))
+  )
+) 
+ 
+ 
 ;; test list-length
 (tests list-length
   (list-length '(a b c d)) =>  4

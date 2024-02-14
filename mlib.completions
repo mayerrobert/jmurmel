@@ -99,6 +99,10 @@ nsubst
 nsubst-if
 nconc
 copy-list
+endp
+copy-list
+copy-tree
+copy-alist
 last
 nth
 nthcdr

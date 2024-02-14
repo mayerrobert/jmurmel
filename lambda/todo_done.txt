@@ -2738,3 +2738,5 @@ siehe https://www.cs.cmu.edu/Groups/AI/html/cltl/clm/node191.html
 
 
 mlib: subst, nsubst, ggf. subst-if/ nsubst-if sind einfach
+
+mlib: copy-list gibts, copy-tree gibts nicht, wär einfach

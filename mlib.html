@@ -34,7 +34,8 @@ mlib provides the following Common Lisp-like functions and macros:
     - [prog1, prog2](#macro-prog1-prog2)
     - [case](#macro-case), [typecase](#macro-typecase)
 - conses and lists
-    - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [copy-list](#function-copy-list)
+    - [caar..cdddr](#function-caarcdddr), [nthcdr, dotted-nthcdr, nth](#function-nthcdr-dotted-nthcdr-nth), [endp](#function-endp)
+    - [copy-list](#function-copy-list), [copy-alist](#function-copy-alist), [copy-tree](#function-copy-tree)
     - [list-length](#function-list-length), [last](#function-last), [butlast](#function-butlast), [nbutlast](#function-nbutlast), [ldiff](#function-ldiff), [tailp](#function-tailp)
     - [subst](#function-subst), [subst-if](#function-subst-if), [nsubst](#function-nsubst), [nsubst-if](#function-nsubst-if)
     - [nconc](#function-nconc), [revappend, nreconc](#function-revappend-nreconc), [member](#function-member), [adjoin](#function-adjoin)
@@ -206,6 +207,15 @@ If there is no otherwise-clause, typecase returns nil.
 Since: 1.1
 
 `c..r` repeatedly apply `car` and/ or `cdr` as the name suggests.
+
+### Function: endp
+    (endp list) -> boolean
+
+Since: 1.4.6
+
+This is the recommended way to test for the end of a proper list. It
+returns true if `obj` is `nil`, false if `obj` is a `cons`,
+and a `type-error` for any other type of `object`.
 
 ### Function: nthcdr, dotted-nthcdr, nth
     (nthcdr n lst) -> nth-tail
@@ -468,6 +478,29 @@ Since: 1.2
 Iterates over key-value pairs of `plist-form`.
 Similar to Alexandria `doplist`,
 see https://alexandria.common-lisp.dev/draft/alexandria.html.
+
+### Function: copy-alist
+    (copy-alist alist) -> new-alist
+
+Since: 1.4.6
+
+`copy-alist` returns a copy of `alist`.
+
+The list structure of `alist` is copied, and the elements of `alist` which are conses are also copied (as conses only).
+Any other objects which are referred to, whether directly or indirectly, by the `alist` continue to be shared.
+
+### Function: copy-tree
+    (copy-tree tree) -> new-tree
+
+Since: 1.4.6
+
+Creates a copy of a tree of conses.
+
+If `tree` is not a `cons`, it is returned;
+otherwise, the result is a new cons of the results of calling `copy-tree` on the car and cdr of `tree`.
+In other words, all conses in the tree represented by `tree` are copied recursively,
+stopping only when non-conses are encountered.
+copy-tree does not preserve circularities and the sharing of substructure.
 
 ### Function: butlast
     (butlast lst n?) -> result-list
