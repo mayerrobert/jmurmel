@@ -21,8 +21,6 @@ scan-iterator dazu für JFFI?
 (limit-if generator skip-pred linit-pred)
 
 
-last-n: last mit optionalem parameter N siehe http://clhs.lisp.se/Issues/iss209_w.htm
-
 evenp, oddp mit x & 0x1 machen.
 
 https://github.com/cl21/cl21 ist Common Lisp 2021
@@ -48,6 +46,7 @@ benutzt nur den aufruferthread.
 siehe auch https://stackoverflow.com/questions/3732109/simple-http-server-in-java-using-only-java-se-api
 
 oder: Apache spark https://github.com/perwendel/spark
+-> ist ein jetty wrapper, hat jetty version mit CVE als dependency
 
 Helidon ist eine Art Application Server als Jar
 https://blogs.oracle.com/javamagazine/post/you-dont-always-need-an-application-server-to-run-jakarta-ee-applications?=2-

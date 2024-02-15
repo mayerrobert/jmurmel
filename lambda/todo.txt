@@ -3,13 +3,17 @@ tests subst sollte nicht das listliteral ändern sondern mit copytree kopieren
 
 mlib: substitute ist für sequence statt list
 
+
 string als parameter für car/cdr ggf verbieten?
+
+vielleicht doch :keywords ? nicht als parameter, nur als konstanten/ enum ähnlich
 
 
 mlib: dotimes, dolist, dovector könnten laufvariablen mit namen "_" besonders behandeln:
 die sind im body nicht gebunden, macroexpansion könnte effizienter sein
 z.b. dotimes könnte bis 0 runterzählen, (dovector (_ v) ...) -> (dotimes (_ (length v)) ...), (dolist (_ lst) ...) braucht nur cdr und nullcheck aber kein car/cadr
 -> vielleicht auch in let bindings _ als variablennamen zulassen? damit könnte man imperativen code (nur sideeffect) zwischen die bindings reinschummeln und braucht keine unnötigen variablen erfinden
+-> elisp hat while, in mlib ist das auskommentiert, damit kamma auch auf 0 runterzählen
 
 
 kamma ein lambda das sofort ausgeführt wird in ein let umwandeln? vielleicht gleich in expandForms()
