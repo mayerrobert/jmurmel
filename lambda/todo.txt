@@ -1,12 +1,9 @@
-tests subst sollte nicht das listliteral ändern sondern mit copytree kopieren
-
-
 mlib: substitute ist für sequence statt list
 
 
 string als parameter für car/cdr ggf verbieten?
 
-vielleicht doch :keywords ? nicht als parameter, nur als konstanten/ enum ähnlich
+vielleicht doch :keywords ? nicht als parameter, nur als konstanten/ enum ähnlich, expandForm könnte das ins globale environment stecken
 
 
 mlib: dotimes, dolist, dovector könnten laufvariablen mit namen "_" besonders behandeln:

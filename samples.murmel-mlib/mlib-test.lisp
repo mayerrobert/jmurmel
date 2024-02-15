@@ -443,7 +443,7 @@
 ;; test subst
 (define tree1 nil)
 (tests subst
-  (setq tree1 '(1 (1 2) (1 2 3) (1 2 3 4))) =>  (1 (1 2) (1 2 3) (1 2 3 4))
+  (setq tree1 (copy-tree '(1 (1 2) (1 2 3) (1 2 3 4)))) =>  (1 (1 2) (1 2 3) (1 2 3 4))
   (subst "two" 2 tree1) =>  (1 (1 "two") (1 "two" 3) (1 "two" 3 4))
   (subst "five" 5 tree1) =>  (1 (1 2) (1 2 3) (1 2 3 4))
 ;  (eq tree1 (subst "five" 5 tree1)) =>  implementation-dependent
