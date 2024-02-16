@@ -9353,7 +9353,7 @@ public class LambdaJ {
             return cons(cons(sym, javaName), env);
         }
 
-        private ConsCell extenvprim(LambdaJSymbol sym, String javaName, ConsCell env) {
+        private static ConsCell extenvprim(LambdaJSymbol sym, String javaName, ConsCell env) {
             return extenvIntern(sym, "((CompilerPrimitive)rt()::" + javaName + ')', env);
         }
 
@@ -9410,59 +9410,67 @@ public class LambdaJ {
         { COMMAND_LINE_ARGUMENT_LIST, "commandlineArgumentList.get()" },
         { FEATURES, "features.get()" }, { CONDITION_HANDLER, "conditionHandler.get()" }, { RANDOM_STATE, "randomState.get()" },
         };
-        private static final String[] primitives = {
-        CAR, CDR, CONS, RPLACA, RPLACD,
-        /*"apply",*/ EVAL, EQ, EQL, EQUAL, NULL, "read", "write", "writeln", "lnwrite",
-        ATOM, CONSP, FUNCTIONP, LISTP, SYMBOLP, NUMBERP, STRINGP, CHARACTERP, INTEGERP, FLOATP, VECTORP, TYPEP,
-        ASSOC, ASSQ, LIST, VECT, VECTOR, "seqref", "seqset", "svref", "svset", "svlength", "string", "slength", "sref", "sset", "bvref", "bvset", "bvlength",
-        APPEND, VALUES,
-        "round", "floor", "ceiling", "truncate",
-        "fround", "ffloor", "fceiling", "ftruncate",
-        "sqrt", "log", "log10", "exp", "expt", "mod", "rem", "signum", "random",
-        "gensym", "trace", "untrace",
-        ERROR, JMETHOD, "jproxy",
-        };
-        private static final String[][] aliasedPrimitives = {
-        {"+", "add"}, {"*", "mul"}, {"-", "sub"}, {"/", "quot"},
-        {"=", "numbereq"}, {"<=", "le"}, {"<", "lt"}, {">=", "ge"}, {">", "gt"}, { "/=", "ne" },
-        {"1+", "inc"}, {"1-", "dec"},
-        {"read-from-string", "readFromStr"}, {"read-textfile-lines", "readTextfileLines"}, {"read-textfile", "readTextfile"},
-        {"write-textfile-lines", "writeTextfileLines"}, {"write-textfile", "writeTextfile"}, {"write-to-string", "writeToString"}, {"format", "format"}, {"format-locale", "formatLocale" }, {"char-code", "charInt"}, {"code-char", "intChar"},
-        {"string=", "stringeq"}, {"string->list", "stringToList"}, {"list->string", "listToString"},
-        {ADJUSTABLE_ARRAY_P, "adjustableArrayP"}, {"vector-add", "vectorAdd"},
-        {"vector->list", "vectorToList"}, {"list->vector", "listToVector"}, {"simple-vector->list", "simpleVectorToList"}, {"list->simple-vector", "listToSimpleVector"},
-        {"bit-vector->list", "bitVectorToList"}, {"list->bit-vector", "listToBitVector"},
-        {"vector-length", "vectorLength"}, {"vector-copy", "vectorCopy"}, {"vector-fill", "vectorFill"},
-        {SIMPLE_VECTOR_P, "svectorp"}, {SIMPLE_STRING_P, "sstringp"}, {RANDOM_STATE_P, "_randomstatep"}, {"make-random-state", "makeRandomState"},
-        {BIT_VECTOR_P, "bitvectorp"}, {"bv=", "bvEq"}, {SIMPLE_BIT_VECTOR_P, "sbitvectorp"}, {HASH_TABLE_P, "hashtablep"}, {MAKE_ARRAY, "makeArray"},
-        {HASH, "_hash"}, {MAKE_HASH_TABLE, "makeHash"}, {"hashref", "_hashref"}, {"hashset", "_hashset"},
-        {"hash-table-count", "hashTableCount"}, {"clrhash", "_clrhash"}, {"hash-table-remove", "hashRemove"}, {"sxhash", "_sxhash"}, {"scan-hash-table", "scanHash"},
 
-        {LISTSTAR, "listStar"},
-        //{ "macroexpand-1", "macroexpand1" },
-        {"lisp-implementation-type", "implType"}, {"lisp-implementation-version", "implVersion"},
-        {"get-internal-real-time", "getInternalRealTime" }, {"get-internal-run-time", "getInternalRunTime" },
-        {"sleep", "sleep" }, {"get-universal-time", "getUniversalTime" }, {"get-decoded-time", "getDecodedTime" },
+        private static final String primitives =
+        CAR + "\n" +CDR + "\n" +CONS + "\n" +RPLACA + "\n" +RPLACD + "\n"
+        + /*"apply",*/ EVAL + "\n" +EQ + "\n" +EQL + "\n" +EQUAL + "\n" +NULL + "\n" +"read" + "\n" +"write" + "\n" +"writeln" + "\n" +"lnwrite" + "\n"
+        + ATOM + "\n" +CONSP + "\n" +FUNCTIONP + "\n" +LISTP + "\n" +SYMBOLP + "\n" +NUMBERP + "\n" +STRINGP + "\n" +CHARACTERP + "\n" +INTEGERP + "\n" +FLOATP + "\n" +VECTORP + "\n" +TYPEP + "\n"
+        + ASSOC + "\n" +ASSQ + "\n" +LIST + "\n" +VECT + "\n" +VECTOR + "\n" +"seqref" + "\n" +"seqset" + "\n" +"svref" + "\n" +"svset" + "\n" +"svlength" + "\n" +"string" + "\n" +"slength" + "\n" +"sref" + "\n" +"sset" + "\n" +"bvref" + "\n" +"bvset" + "\n" +"bvlength" + "\n"
+        + APPEND + "\n" +VALUES + "\n"
+        + "round" + "\n" +"floor" + "\n" +"ceiling" + "\n" +"truncate" + "\n"
+        + "fround" + "\n" +"ffloor" + "\n" +"fceiling" + "\n" +"ftruncate" + "\n"
+        + "sqrt" + "\n" +"log" + "\n" +"log10" + "\n" +"exp" + "\n" +"expt" + "\n" +"mod" + "\n" +"rem" + "\n" +"signum" + "\n" +"random" + "\n"
+        + "gensym" + "\n" +"trace" + "\n" +"untrace" + "\n"
+        + ERROR + "\n" +JMETHOD + "\n" +"jproxy";
 
-        { "make-frame", "makeFrame" }, { "open-frame", "openFrame"}, { "close-frame", "closeFrame" },
-        { "reset-frame", "resetFrame" }, { "clear-frame", "clearFrame" }, { "repaint-frame", "repaintFrame" }, { "flush-frame", "flushFrame" },
-        { "current-frame", "currentFrame" },
-        { "push-pos", "pushPos" }, { "pop-pos", "popPos" }, { "pen-up", "penUp" }, { "pen-down", "penDown" },
-        { "color", "color" }, { "bgcolor", "bgColor" }, { "text", "text" },
-        { "right", "right" }, { "left", "left" }, { "forward", "forward" },
-        { "move-to", "moveTo" }, { "line-to", "lineTo" }, { "move-rel", "moveRel" }, { "line-rel", "lineRel" },
-        { "make-bitmap", "makeBitmap" }, { "discard-bitmap", "discardBitmap" },
-        { "set-pixel", "setPixel" },
-        { "rgb-to-pixel", "rgbToPixel" }, { "hsb-to-pixel", "hsbToPixel" },
-        };
+        private static final String aliasedPrimitives =
+        "+@add" + "\n" + "*@mul" + "\n" + "-@sub" + "\n" + "/@quot" + "\n"
+        + "=@numbereq" + "\n" + "<=@le" + "\n" + "<@lt" + "\n" + ">=@ge" + "\n" + ">@gt" + "\n" + "/=@ne" + "\n"
+        + "1+@inc" + "\n" + "1-@dec" + "\n"
+        + "read-from-string@readFromStr" + "\n" + "read-textfile-lines@readTextfileLines" + "\n" + "read-textfile@readTextfile" + "\n"
+        + "write-textfile-lines@writeTextfileLines" + "\n" + "write-textfile@writeTextfile" + "\n" + "write-to-string@writeToString" + "\n" + "format@format" + "\n" + "format-locale@formatLocale" + "\n" + "char-code@charInt" + "\n" + "code-char@intChar" + "\n"
+        + "string=@stringeq" + "\n" + "string->list@stringToList" + "\n" + "list->string@listToString" + "\n"
+        + ADJUSTABLE_ARRAY_P+"@adjustableArrayP" + "\n" + "vector-add@vectorAdd" + "\n"
+        + "vector->list@vectorToList" + "\n" + "list->vector@listToVector" + "\n" + "simple-vector->list@simpleVectorToList" + "\n" + "list->simple-vector@listToSimpleVector" + "\n"
+        + "bit-vector->list@bitVectorToList" + "\n" + "list->bit-vector@listToBitVector" + "\n"
+        + "vector-length@vectorLength" + "\n" + "vector-copy@vectorCopy" + "\n" + "vector-fill@vectorFill" + "\n"
+        + SIMPLE_VECTOR_P+"@svectorp" + "\n" + SIMPLE_STRING_P+"@sstringp" + "\n" + RANDOM_STATE_P+"@_randomstatep" + "\n" + "make-random-state@makeRandomState" + "\n"
+        + BIT_VECTOR_P+"@bitvectorp" + "\n" + "bv=@bvEq" + "\n" + SIMPLE_BIT_VECTOR_P+"@sbitvectorp" + "\n" + HASH_TABLE_P+"@hashtablep" + "\n" + MAKE_ARRAY+"@makeArray" + "\n"
+        + HASH+"@_hash" + "\n" + MAKE_HASH_TABLE+"@makeHash" + "\n" + "hashref@_hashref" + "\n" + "hashset@_hashset" + "\n"
+        + "hash-table-count@hashTableCount" + "\n" + "clrhash@_clrhash" + "\n" + "hash-table-remove@hashRemove" + "\n" + "sxhash@_sxhash" + "\n" + "scan-hash-table@scanHash" + "\n"
+
+        + LISTSTAR+"@listStar" + "\n"
+        //+ "macroexpand-1@macroexpand1" + "\n"
+        + "lisp-implementation-type@implType" + "\n" + "lisp-implementation-version@implVersion" + "\n"
+        + "get-internal-real-time@getInternalRealTime" + "\n" + "get-internal-run-time@getInternalRunTime" + "\n"
+        + "sleep@sleep" + "\n" + "get-universal-time@getUniversalTime" + "\n" + "get-decoded-time@getDecodedTime" + "\n"
+
+        + "make-frame@makeFrame" + "\n" + "open-frame@openFrame" + "\n" + "close-frame@closeFrame" + "\n"
+        + "reset-frame@resetFrame" + "\n" + "clear-frame@clearFrame" + "\n" + "repaint-frame@repaintFrame" + "\n" + "flush-frame@flushFrame" + "\n"
+        + "current-frame@currentFrame" + "\n"
+        + "push-pos@pushPos" + "\n" + "pop-pos@popPos" + "\n" + "pen-up@penUp" + "\n" + "pen-down@penDown" + "\n"
+        + "color@color" + "\n" + "bgcolor@bgColor" + "\n" + "text@text" + "\n"
+        + "right@right" + "\n" + "left@left" + "\n" + "forward@forward" + "\n"
+        + "move-to@moveTo" + "\n" + "line-to@lineTo" + "\n" + "move-rel@moveRel" + "\n" + "line-rel@lineRel" + "\n"
+        + "make-bitmap@makeBitmap" + "\n" + "discard-bitmap@discardBitmap" + "\n"
+        + "set-pixel@setPixel" + "\n"
+        + "rgb-to-pixel@rgbToPixel" + "\n" + "hsb-to-pixel@hsbToPixel";
 
         /** maps symbol -> javaNameAsString */
         private final Map<LambdaJSymbol, String> primitivesBySymbol;
 
         private Map<LambdaJSymbol, String>  makePrimitivesBySymbol() {
+            final String[] primitives = MurmelJavaCompiler.primitives.split("\n");
+            final String[][] aliasedPrimitives = Arrays.stream(MurmelJavaCompiler.aliasedPrimitives.split("\n"))
+                                                                   .map(s -> s.split("@"))
+                                                                   .collect(Collectors.toList())
+                                                       .toArray(new String[0][2]);
+
             final Map<LambdaJSymbol, String> map = new IdentityHashMap<>(JavaUtil.hashMapCapacity(primitives.length + aliasedPrimitives.length));
-            for (String[] alias:  aliasedPrimitives) map.put(intern(alias[0]), alias[1]);
+
             for (String prim: primitives) map.put(intern(prim), mangle(prim, 0));
+            for (String[] alias:  aliasedPrimitives) map.put(intern(alias[0]), alias[1]);
+
             return map;
         }
 
