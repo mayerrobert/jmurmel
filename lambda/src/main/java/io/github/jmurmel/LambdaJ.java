@@ -9300,6 +9300,8 @@ public class LambdaJ {
             sList = intern(LIST);
 
             this.javaCompiler = outPath == null ? null : new JavaCompilerHelper(outPath);
+
+            primitivesBySymbol = makePrimitivesBySymbol();
         }
 
         public SymbolTable getSymbolTable() { return intp.getSymbolTable(); }
@@ -9351,8 +9353,7 @@ public class LambdaJ {
             return cons(cons(sym, javaName), env);
         }
 
-        private ConsCell extenvprim(String symname, String javaName, ConsCell env) {
-            final LambdaJSymbol sym = intern(symname);
+        private ConsCell extenvprim(LambdaJSymbol sym, String javaName, ConsCell env) {
             return extenvIntern(sym, "((CompilerPrimitive)rt()::" + javaName + ')', env);
         }
 
@@ -9455,6 +9456,16 @@ public class LambdaJ {
         { "rgb-to-pixel", "rgbToPixel" }, { "hsb-to-pixel", "hsbToPixel" },
         };
 
+        /** maps symbol -> javaNameAsString */
+        private final Map<LambdaJSymbol, String> primitivesBySymbol;
+
+        private Map<LambdaJSymbol, String>  makePrimitivesBySymbol() {
+            final Map<LambdaJSymbol, String> map = new IdentityHashMap<>(JavaUtil.hashMapCapacity(primitives.length + aliasedPrimitives.length));
+            for (String[] alias:  aliasedPrimitives) map.put(intern(alias[0]), alias[1]);
+            for (String prim: primitives) map.put(intern(prim), mangle(prim, 0));
+            return map;
+        }
+
 
 
         /// Wrappers to compile Murmel to a Java class and optionally a .jar
@@ -9477,8 +9488,7 @@ public class LambdaJ {
             ConsCell predefinedEnv = null;
             for (String   global: globalvars)        predefinedEnv = extenvIntern(intern(global),   '_' + global,   predefinedEnv);
             for (String[] alias:  aliasedGlobals)    predefinedEnv = extenvIntern(intern(alias[0]), alias[1], predefinedEnv);
-            for (String   prim:   primitives)        predefinedEnv = extenvprim(prim, mangle(prim, 0), predefinedEnv);
-            for (String[] alias:  aliasedPrimitives) predefinedEnv = extenvprim(alias[0], alias[1], predefinedEnv);
+            for (Map.Entry<LambdaJSymbol, String> entry: primitivesBySymbol.entrySet()) predefinedEnv = extenvprim(entry.getKey(), entry.getValue(), predefinedEnv);
 
             // _apply needs to be of type MurmelFunction so that it will be processed by the TCO trampoline
             predefinedEnv = extenvIntern(sApply, "((MurmelFunction)rt()::_apply)", predefinedEnv);
@@ -11093,8 +11103,8 @@ public class LambdaJ {
                 if (applyOp == sList) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(')'); return true; }
 
                 if (applyOp != sApply) { // apply needs special treatment for TCO
-                    for (String prim: primitives)          if (symbolEq(applyOp, prim))    { opencodeApplyHelper(sb, "_" + prim,  applyArg, env, topEnv, rsfx);  return true; }
-                    for (String[] prim: aliasedPrimitives) if (symbolEq(applyOp, prim[0])) { opencodeApplyHelper(sb, prim[1],  applyArg, env, topEnv, rsfx);  return true; }
+                    final String javaName = primitivesBySymbol.get(op);
+                    if (javaName != null) { opencodeApplyHelper(sb, javaName,  applyArg, env, topEnv, rsfx);  return true; }
                 }
 
                 sb.append(isLast ? "tailcall" : "funcall").append("((MurmelFunction)rt()::apply, ");
@@ -11178,8 +11188,8 @@ public class LambdaJ {
                 break;
             }
 
-            for (String primitive: primitives)          if (symbolEq(op, primitive))    { emitCallPrimitive(sb, "_" + primitive, args, env, topEnv, rsfx);  return true; }
-            for (String[] primitive: aliasedPrimitives) if (symbolEq(op, primitive[0])) { emitCallPrimitive(sb, primitive[1], args, env, topEnv, rsfx);  return true; }
+            final String javaName = primitivesBySymbol.get(op);
+            if (javaName != null) { emitCallPrimitive(sb, javaName, args, env, topEnv, rsfx);  return true; }
 
             return false;
         }
