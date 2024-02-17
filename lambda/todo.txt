@@ -21,10 +21,6 @@ kamma ein lambda das sofort ausgeführt wird in ein let umwandeln? vielleicht gl
 toplevel atoms (auch symbole) ausser dem letzten könnte toplevelFormToJava() (oder die schleife in formsToJavaSource?) gleich wegputzen
 -> (ignorieren, nicht in bodyForms stecken, mit note())
 
-toplevelFormToJava: solange nur progn/ defuns/ einfache defines (mit einfachem wert, zb nur atoms, keine symbols zulassen) vorgekommen sind, könnten die CompilerGlobals gleich zugewiesen werden
--> umweg über defun_... könnte man sich sparen
--> ggf. auch letXXX (inkl named let) zulassen wenn die bindingforms gecheckt werden ?
-
 
 CL hat (machine-type), Chez auch
 
