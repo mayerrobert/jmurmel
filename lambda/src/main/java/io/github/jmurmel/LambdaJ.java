@@ -9601,7 +9601,7 @@ public class LambdaJ {
                         if (!complexFormSeen) complexFormSeen = consp(caddr(ccForm)) && intern("jmethod") != car(caddr(ccForm));
                         globalEnv = defineToJava(ret, ccForm, globalEnv, 0);
                         intp.eval(ccForm, null);
-                        bodyForms.add(ccForm);
+                        if (complexFormSeen) bodyForms.add(ccForm);
                         globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv, ccForm)).append(";\n");
                         return globalEnv;
                     }
@@ -9757,20 +9757,29 @@ public class LambdaJ {
             final String javasym = mangle(symbol.toString(), rsfx);
             env = extenvIntern(symbol, javasym + ".get()", env);
 
-            sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
-                    + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
-            if (rsfx > 0) {
-                sb.append("\n");
-                return env;
-            }
+            if (complexFormSeen) {
+                sb.append("    // ").append(form.lineInfo()).append("(define ").append(symbol).append(" ...)\n"
+                          + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
+                if (rsfx > 0) {
+                    sb.append("\n");
+                    return env;
+                }
 
-            sb.append("    private Object define").append(javasym).append("() {\n");
-            emitClearValues(sb, form);
-            sb.append("        try { final Object value = "); emitForm(sb, caddr(form), env, env, 0, false); sb.append(";\n"
-                    + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
-                    + "        catch (Exception e) { rterror(e); }\n");
-            sb.append("        return intern(\"").append(symbol).append("\");\n"
-                    + "    }\n\n");
+                sb.append("    private Object define").append(javasym).append("() {\n");
+                emitClearValues(sb, form);
+                sb.append("        try { final Object value = ");
+                emitForm(sb, caddr(form), env, env, 0, false);
+                sb.append(";\n"
+                          + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
+                          + "        catch (Exception e) { rterror(e); }\n");
+                sb.append("        return intern(\"").append(symbol).append("\");\n"
+                          + "    }\n\n");
+            }
+            else {
+                sb.append("    public CompilerGlobal ").append(javasym).append(" = new CompilerGlobal(");
+                emitForm(sb, caddr(form), env, env, 0, false);
+                sb.append(");\n\n");
+            }
             return env;
         }
 
