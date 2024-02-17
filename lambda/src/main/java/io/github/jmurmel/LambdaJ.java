@@ -9767,12 +9767,12 @@ public class LambdaJ {
 
                 sb.append("    private Object define").append(javasym).append("() {\n");
                 emitClearValues(sb, form);
-                sb.append("        try { final Object value = ");
+                sb.append("        try {\n"
+                          + "        ").append(javasym).append(" = new CompilerGlobal(");
                 emitForm(sb, caddr(form), env, env, 0, false);
-                sb.append(";\n"
-                          + "        ").append(javasym).append(" = new CompilerGlobal(value); }\n"
-                          + "        catch (Exception e) { rterror(e); }\n");
-                sb.append("        return intern(\"").append(symbol).append("\");\n"
+                sb.append(");\n        }\n"
+                          + "        catch (Exception e) { rterror(e); }\n"
+                          + "        return intern(\"").append(symbol).append("\");\n"
                           + "    }\n\n");
             }
             else {
