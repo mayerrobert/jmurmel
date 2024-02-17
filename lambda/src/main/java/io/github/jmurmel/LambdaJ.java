@@ -10194,9 +10194,7 @@ public class LambdaJ {
 
                 case sDefmacro: {
                     if (hasNext) {
-                        sb.append("        ");
-                        emitForm(sb, form, env, topEnv, rsfx, false);
-                        sb.append(";\n");
+                        intp.expandForm(form); // this will process the macro definition as a side effect in case macroexpand-1 was used
                         return;
                     }
                     break;
