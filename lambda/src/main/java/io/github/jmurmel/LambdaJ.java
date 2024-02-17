@@ -9489,10 +9489,12 @@ public class LambdaJ {
 
         /// Wrappers to compile Murmel to Java source
 
+        private boolean complexFormSeen;
+
         /** Compile the Murmel compilation unit to Java source for a standalone application class {@code unitName}
          *  with a "public static void main()" */
         public void formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
-            quotedForms.clear();  qCounter = 0;
+            quotedForms.clear();  qCounter = 0;  complexFormSeen = false;
             ConsCell predefinedEnv = null;
             for (String   global: globalvars)        predefinedEnv = extenvIntern(intern(global),   '_' + global,   predefinedEnv);
             for (String[] alias:  aliasedGlobals)    predefinedEnv = extenvIntern(intern(alias[0]), alias[1], predefinedEnv);
@@ -9596,6 +9598,7 @@ public class LambdaJ {
                     switch (((LambdaJSymbol)op).wellknownSymbol) {
 
                     case sDefine: {
+                        if (!complexFormSeen) complexFormSeen = consp(caddr(ccForm)) && intern("jmethod") != car(caddr(ccForm));
                         globalEnv = defineToJava(ret, ccForm, globalEnv, 0);
                         intp.eval(ccForm, null);
                         bodyForms.add(ccForm);
@@ -9606,7 +9609,7 @@ public class LambdaJ {
                     case sDefun: {
                         globalEnv = defunToJava(ret, ccForm, globalEnv);
                         intp.eval(ccForm, null);
-                        bodyForms.add(ccForm);
+                        if (complexFormSeen) bodyForms.add(ccForm);
                         globals.append("        case \"").append(cadr(ccForm)).append("\": return ").append(javasym(cadr(ccForm), globalEnv, ccForm)).append(";\n");
                         return globalEnv;
                     }
@@ -9620,7 +9623,7 @@ public class LambdaJ {
 
                     case sProgn: {
                         // toplevel progn will be replaced by the (macroexpanded) forms it contains.
-                        // Macroexpand is needed in case the progn contained a load or require that contains defmacro forms, seel also LambdaJ#expandAndEval()
+                        // Macroexpand is needed in case the progn contained a load or require that contains defmacro forms, see also LambdaJ#expandAndEval()
                         final ConsCell body = listOrMalformed(PROGN, cdr(ccForm));
                         for (Object prognForm : body) {
                             globalEnv = toplevelFormToJava(ret, bodyForms, globals, globalEnv, intp.expandForm(prognForm));
@@ -9631,6 +9634,7 @@ public class LambdaJ {
                     case sLet:
                     case sLetStar:
                     case sLetrec: {
+                        complexFormSeen = true;
                         if (cadr(ccForm) instanceof LambdaJSymbol) break;
                         final ConsCell ccBodyForms = (ConsCell)cddr(ccForm);
                         globalEnv = toplevelLetBody(ret, globals, globalEnv, ccBodyForms, 1);
@@ -9639,6 +9643,7 @@ public class LambdaJ {
                     }
 
                     case sMultipleValueBind: {
+                        complexFormSeen = true;
                         final ConsCell ccBodyForms = (ConsCell)cdddr(ccForm);
                         globalEnv = toplevelLetBody(ret, globals, globalEnv, ccBodyForms, 1);
                         bodyForms.add(ccForm);
@@ -9690,6 +9695,7 @@ public class LambdaJ {
                     }
 
                     default:
+                        complexFormSeen = true;
                         break;
                     }
 
@@ -9797,18 +9803,28 @@ public class LambdaJ {
 
             final String javasym = mangleFunctionName(symbol.toString(), 0);
 
-            sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' '); printSEx(sb::append, params); sb.append(" forms...)\n"
-                      + "    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
+            sb.append("    // ").append(form.lineInfo()).append("(defun ").append(symbol).append(' ');
+            printSEx(sb::append, params);
+            sb.append(" forms...)\n");
+            if (complexFormSeen) {
+                sb.append("    public CompilerGlobal ").append(javasym).append(" = UNASSIGNED_GLOBAL;\n");
 
-            sb.append("    private LambdaJSymbol defun").append(javasym).append("() {\n");
-            emitLoc(sb, form, 40);
-            sb.append("        final MurmelFunction func = ");
+                sb.append("    private LambdaJSymbol defun").append(javasym).append("() {\n");
 
-            emitNamedLambda(DEFUN, sb, symbol, params, body, extenvIntern(symbol, javasym, topEnv), topEnv, 0, true);
+                emitLoc(sb, form, 40);
+                sb.append("        final MurmelFunction func = ");
+                emitNamedLambda(DEFUN, sb, symbol, params, body, extenvIntern(symbol, javasym, topEnv), topEnv, 0, true);
+                sb.append(";\n        ");
 
-            sb.append(";\n        ").append(javasym).append(" = new CompilerGlobal(func);\n"
-                    + "        return intern(\"").append(symbol).append("\");\n"
-                    + "    }\n\n");
+                sb.append(javasym).append(" = new CompilerGlobal(func);\n"
+                                          + "        return intern(\"").append(symbol).append("\");\n"
+                                          + "    }\n\n");
+            }
+            else {
+                sb.append("    public CompilerGlobal ").append(javasym).append(" = new CompilerGlobal(");
+                emitNamedLambda(DEFUN, sb, symbol, params, body, extenvIntern(symbol, javasym, topEnv), topEnv, 0, true);
+                sb.append(");\n\n");
+            }
 
             return extenvIntern(symbol, javasym + ".get()", topEnv);
         }
