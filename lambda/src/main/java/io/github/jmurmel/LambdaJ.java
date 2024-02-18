@@ -9936,7 +9936,7 @@ public class LambdaJ {
                     + "        private Object ").append(javasym).append("(Object[] args").append(rsfx).append(") {\n");
             final ConsCell extenv = params(func, sb, params, env, rsfx, symbol.toString(), true);
             final String ret = "ret" + rsfx;
-            sb.append("        Object ").append(ret).append(" = null;\n");
+            sb.append("        Object ").append(ret).append(";\n");
             if (maybeRecursive) sb.append("        ").append(javasym).append(": while (true) {\n");
             final int minParams, maxParams;
             if (params == null) {
