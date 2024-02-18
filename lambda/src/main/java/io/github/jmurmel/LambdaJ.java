@@ -7888,6 +7888,8 @@ public class LambdaJ {
             Object applyCompilerPrimitive(Object... args);
             @Override default void printSEx(WriteConsumer out, boolean ignored) { out.print("#<compiler primitive>"); }
         }
+        /** marker interface that the TCO trampoline need not be used, instead at runtime {@link MurmelJavaProgram#funcall(MurmelLeafFunction, Object...)} will be used */
+        public interface MurmelLeafFunction extends MurmelFunction { }
 
         private final SymbolTable symtab = new ListSymbolTable();
         private static final LambdaJSymbol sBit = new LambdaJSymbol(true, "bit"), sCharacter = new LambdaJSymbol(true, "character"), sDynamic = new LambdaJSymbol(true, DYNAMIC);
@@ -8778,6 +8780,18 @@ public class LambdaJ {
 
 
 
+        public final Object funcall(@NotNull MurmelLeafFunction fn, Object... args) {
+            try {
+                return fn.apply(args);
+            }
+            catch (ReturnException re) { throw re; }
+            catch (Exception e) {
+                fling(e);
+                //noinspection ConstantConditions because fling() doesn't return
+                throw null;
+            }
+        }
+
         /** TCO trampoline, used for function calls, and also for let, labels, progn */
         public final Object funcall(@NotNull MurmelFunction fn, Object... args) {
             ConsCell cleanups = null;
@@ -8817,6 +8831,7 @@ public class LambdaJ {
         }
 
         public final Object funcall(Object fn, Object... args) {
+            if (fn instanceof MurmelLeafFunction)    return funcall((MurmelLeafFunction)fn, args);
             if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
             if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
             return funcallIntp(fn, args);
@@ -8852,6 +8867,21 @@ public class LambdaJ {
         /** used for function calls */
         public final Tailcall tailcall(MurmelFunction fn, Object... args) { return tailcallWithCleanup(fn, null, args); }
 
+        public Object tailcallWithCleanup(MurmelLeafFunction fn, MurmelFunction cleanup, Object[] args) {
+            try {
+                return funcall(fn, args);
+            }
+            finally {
+                if (cleanup != null) {
+                    try { cleanup.apply((Object[])null); }
+                    //catch (LambdaJError e) { if (ex == null) ex = e; else ex.addSuppressed(e); }
+                    //catch (Exception e)    { if (ex == null) ex = new LambdaJError(e); else ex.addSuppressed(e); }
+                    catch (LambdaJError e) { throw e; }
+                    catch (Exception e)    { throw new LambdaJError(e); }
+                }
+            }
+        }
+
         public final Tailcall tailcallWithCleanup(MurmelFunction fn, MurmelFunction cleanup, Object... args) {
             final Tailcall tailcall = this.tailcall;
             tailcall.fn = fn;
@@ -8863,6 +8893,9 @@ public class LambdaJ {
         public final Object tailcall(Object fn, Object... args) { return tailcallWithCleanup(fn, null, args); }
 
         public final Object tailcallWithCleanup(Object fn, MurmelFunction cleanup, Object... args) {
+            if (fn instanceof MurmelLeafFunction) {
+                return tailcallWithCleanup((MurmelLeafFunction)fn, cleanup, args);
+            }
             if (fn instanceof MurmelFunction)    {
                 return tailcallWithCleanup((MurmelFunction)fn, cleanup, args);
             }
@@ -9288,7 +9321,7 @@ public class LambdaJ {
         private final JavaCompilerHelper javaCompiler;
         final @NotNull LambdaJ intp;
 
-        private final LambdaJSymbol sApply, sLambda, sList;
+        private final LambdaJSymbol sApply, sEval, sLambda, sList;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, null, null, libDir);
@@ -9296,6 +9329,7 @@ public class LambdaJ {
             this.intp = intp;
 
             sApply = intern(APPLY);
+            sEval = intern(EVAL);
             sLambda = intern(LAMBDA);
             sList = intern(LIST);
 
@@ -9846,20 +9880,64 @@ public class LambdaJ {
             return extenvIntern(symbol, javasym + ".get()", topEnv);
         }
 
+        /** return false if {@code forms} doesn't contain any calls to other Murmel functions, true if there may be such calls, calls to {@code recur} are ignored */
+        private boolean callsMurmel(ConsCell forms, LambdaJSymbol recur) {
+            if (forms == null) return false;
+            for (Object form: forms) {
+                if (atom(form)) continue;
+                final ConsCell ccForm = (ConsCell)form;
+                final Object op = car(ccForm);
+                if (symbolp(op)) {
+                    if (op != recur) {
+                        if (op == sApply) return true; // todo naechstes symbol checken statt aufgeben
+                        if (op == sEval) return true;
+                        final WellknownSymbol ws = ((LambdaJSymbol)op).wellknownSymbol;
+                        switch (ws) {
+                        case sMultipleValueCall:
+                        case interned:
+                        case notInterned:
+                            return true;
+                        }
+                    }
+                }
+                else if (consp(op)) {
+                    if (callsMurmel((ConsCell)op, recur)) return true;
+                }
+                // todo bei named let sollte statt recur das looplabel uebergeben werden, bindings sollten gesondert gecheckt werden
+                // weil sonst wird der variablenname in einem binding als call missinterpretiert
+                if (callsMurmel((ConsCell)cdr(form), recur)) return true;
+            }
+            return false;
+        }
+
         private String currentFunctionName = "_";
         private void emitNamedLambda(String func, WrappingWriter sb, LambdaJSymbol symbol, Object params, ConsCell body, ConsCell env, ConsCell topEnv, int rsfx, boolean emitSelf) {
             final String javasym = mangleFunctionName(symbol.toString(), rsfx);
             final String prevName = currentFunctionName;
             currentFunctionName = javasym + '_';
+            final String intf;
+            final boolean maybeRecursive;
+            if (callsMurmel(body, symbol)) {
+                //note(null, symbol + " may call Murmel");
+                intf = "MurmelFunction";
+                maybeRecursive = true;
+            }
+            else {
+                //note(null, symbol + " doesn't call Murmel");
+                intf = "MurmelLeafFunction";
+                maybeRecursive = callsMurmel(body, null);
+                emitSelf = maybeRecursive;
+            }
 
-            sb.append("new MurmelFunction() {\n");
-            if (emitSelf) sb.append("        private final MurmelFunction ").append(javasym).append(" = this;\n");
+            sb.append("new ").append(intf).append("() {\n");
+            if (emitSelf) sb.append("        private final ").append(intf).append(" ").append(javasym).append(" = this;\n");
             sb.append("        public final Object apply(Object... args").append(rsfx).append(") {\n"
                     + "        return ").append(javasym).append("(args").append(rsfx).append(");\n        }\n" 
                     + "        private Object ").append(javasym).append("(Object[] args").append(rsfx).append(") {\n");
             final ConsCell extenv = params(func, sb, params, env, rsfx, symbol.toString(), true);
             final String ret = "ret" + rsfx;
-            sb.append("        Object ").append(ret).append(" = null;\n        ").append(javasym).append(": while (true) {\n");
+            sb.append("        Object ").append(ret).append(" = null;\n");
+            if (maybeRecursive) sb.append("        ").append(javasym).append(": while (true) {\n");
             final int minParams, maxParams;
             if (params == null) {
                 minParams = maxParams = 0;
@@ -9875,7 +9953,8 @@ public class LambdaJ {
                 minParams = maxParams = listLength((ConsCell)params);
             }
             emitStmts(sb, body, extenv, topEnv, rsfx, "        " + ret + " = ", symbol, "args" + rsfx, minParams, maxParams, false, false);
-            sb.append("        break;\n        }\n        return ").append(ret).append(";\n");
+            if (maybeRecursive) sb.append("        break;\n        }\n");
+            sb.append("        return ").append(ret).append(";\n");
             sb.append("        } }");
 
             currentFunctionName = prevName;
