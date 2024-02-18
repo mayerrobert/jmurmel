@@ -997,8 +997,8 @@ public class LambdaJ {
     /// ## Infrastructure
 
     static final int EOF = -1;
-    static final ReadSupplier NULL_READCHARS = () -> EOF;
-    static final WriteConsumer NULL_WRITECHARS = c -> {};
+    public static final ReadSupplier NULL_READCHARS = () -> EOF;
+    public static final WriteConsumer NULL_WRITECHARS = c -> {};
 
     static final Object[] EMPTY_ARRAY = new Object[0];
     static final boolean[] EMPTY_BITVECTOR = new boolean[0];
@@ -6427,6 +6427,23 @@ public class LambdaJ {
     ///
 
     /// JMurmel native embed API: Java calls Murmel with getValue() and getFunction()
+
+    /** eval {@code forms} and return the primary result, interpreter will be reset before eval */
+    public Object evalString(String forms) {
+        return evalString(forms, true, null, null);
+    }
+
+    /** eval {@code forms} and return the primary result, {@code reset} determines if the interpreter will be reset before eval */
+    public Object evalString(String forms, boolean reset, ReadSupplier in, WriteConsumer out) {
+        try {
+            final ObjectReader program = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, new StringReader(forms)::read, null);
+            final ObjectReader inReader = in == null ? null : makeReader(in, null);
+            final ObjectWriter outWriter = out == null ? null : makeWriter(out);
+            return interpretExpressions(program, inReader, outWriter, null, reset);
+        }
+        catch (LambdaJError e) { throw e; }
+        catch (Exception e) { throw wrap(e); }
+    }
 
     /** embed API: interface for compiled lambdas as well as primitives and jmethods, used for embedding as well as compiled Murmel */
     public interface MurmelFunction { Object apply(Object... args) throws Exception; }
