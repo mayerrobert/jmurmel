@@ -1276,17 +1276,19 @@
 (defun nsubst (new old tree . args)
   (let* #1#
 
-    (labels ((s (subtree)
+    (labels ((do-subtree (last subtree)
+               (when (satisfies-the-test old subtree)
+                 (rplacd last subtree))
+               #7=(when (consp subtree)
+                    (rplaca subtree (s (car subtree)))
+                    (do-subtree subtree (cdr subtree))))
+
+             (s (subtree)
                (cond #2#
                      #3#
-                     (t (let loop ((last nil)
-                                   (subtree subtree))
-                          (when (satisfies-the-test old subtree)
-                            (rplacd last subtree))
-                          #7=(when (consp subtree)
-                               (rplaca subtree (s (car subtree)))
-                               (loop subtree (cdr subtree))))
-                        subtree))))
+                     #8=(t (do-subtree nil subtree)
+                           subtree))))
+
       (s tree))))
 
 
@@ -1299,15 +1301,16 @@
 (defun nsubst-if (new test tree . args)
   (let* #5#
 
-    (labels ((s (subtree)
+    (labels ((do-subtree (last subtree)
+               (when (satisfies-the-test subtree)
+                 (rplacd last subtree))
+               #7#)
+
+             (s (subtree)
                (cond #6#
                      #3#
-                     (t (let loop ((last nil)
-                                   (subtree subtree))
-                          (when (satisfies-the-test subtree)
-                            (rplacd last subtree))
-                          #7#)
-                        subtree))))
+                     #8#)))
+
       (s tree))))
 )
 
