@@ -2677,7 +2677,7 @@ public class LambdaJ {
         globals.put(car(envEntry), envEntry);
     }
 
-    void extendGlobal(@NotNull String sym, Object value) {
+    final void extendGlobal(@NotNull String sym, Object value) {
         extendGlobal(intern(sym), value);
     }
 
@@ -5772,10 +5772,16 @@ public class LambdaJ {
 
         /** (read-textfile filenamestr [charset]) -> result-string */
         static Object readTextfile(ConsCell args) {
-            final String fileName = requireString("read-textfile", car(args));
-            args = requireList("read-textfile", cdr(args));
+            final Object fileSpec = car(args);
+            args = requireList("read-textfile", cdr(args)); // todo brauchts requireList oder einfach casten?
             try {
-                final Path p = Paths.get(fileName);
+                if (fileSpec == sT) {
+                    final byte[] buf = new byte[8192]; // todo nicht nur die ersten 8k lesen
+                    final int nRead = System.in.read(buf);
+                    final CharSequence s =  EolUtil.anyToUnixEol(new String(buf, 0, nRead, StandardCharsets.UTF_8));
+                    return s instanceof StringBuilder ? (StringBuilder)s : new StringBuilder(s);
+                }
+                final Path p = Paths.get(requireString("read-textfile", fileSpec));
                 final Charset cs = args == null ? StandardCharsets.UTF_8 : Charset.forName(requireString("read-textfile", car(args)));
                 final CharSequence s = EolUtil.anyToUnixEol(JavaUtil.readString(p, cs));
                 return s instanceof StringBuilder ? (StringBuilder)s : new StringBuilder(s);
@@ -6505,13 +6511,13 @@ public class LambdaJ {
 
     private class CallProgram implements MurmelProgram {
         private final String program;
-        private final ReadSupplier in;
-        private final WriteConsumer out;
+        private ObjectReader in;
+        private ObjectWriter out;
 
         CallProgram(String program, ReadSupplier in, WriteConsumer out) {
             this.program = program;
-            this.in = in;
-            this.out = out;
+            this.in = in == null ? null : new SExpressionReader(features, TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, in, null);
+            this.out = out == null ? null : makeWriter(out);
         }
 
         @Override public Object getValue(String globalSymbol) { return LambdaJ.this.getValue(globalSymbol); }
@@ -6522,10 +6528,14 @@ public class LambdaJ {
         }
         @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
         @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
-        @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) { LambdaJ.this.setReaderPrinter(reader, writer); }
+        @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) {
+            LambdaJ.this.setReaderPrinter(reader, writer);
+            in = reader;  out = writer;
+        } 
 
         @Override public Object body() {
-            return interpretExpressions(new StringReader(program)::read, in, out);
+            final ObjectReader reader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, new StringReader(program)::read, null);
+            return interpretExpressions(reader, in, out, null);
         }
     }
 
