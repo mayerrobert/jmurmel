@@ -1,5 +1,5 @@
-read-textfile und read-textfile-lines sollten zus parameter "translate-linefeed-p" bekommen, ggf. auch schreibfunktionen
-read-textfile-lines sollte auch filespec == t koennen
+read-textfile-lines sollte filename t können
+write-textfile-lines sollte filename t und translate-lineend-p können
 
 
 mlib: substitute ist für sequence statt list

@@ -2454,9 +2454,9 @@ public class LambdaJ {
         sRead("read", Features.HAVE_IO, 0, 1)                          { @Override Object apply(LambdaJ intp, ConsCell args) { return read(intp.getLispReader(), args); } },
         sReadFromString("read-from-string", Features.HAVE_IO, 1, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { final Object[] ret = readFromString(intp.getSymbolTable(), intp.featuresEnvEntry, args); intp.values = intp.cons(ret[0], intp.cons(ret[1], null)); return ret[0]; } },
         sReadallLines("read-textfile-lines", Features.HAVE_IO, 1, 2)   { @Override Object apply(LambdaJ intp, ConsCell args) { return readTextfileLines(args); } },
-        sReadString("read-textfile", Features.HAVE_IO, 1, 2)           { @Override Object apply(LambdaJ intp, ConsCell args) { return readTextfile(args); } },
+        sReadString("read-textfile", Features.HAVE_IO, 1, 3)           { @Override Object apply(LambdaJ intp, ConsCell args) { return readTextfile(args); } },
         sWriteLines("write-textfile-lines", Features.HAVE_IO, 2, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeTextfileLines(args); } },
-        sWriteString("write-textfile", Features.HAVE_IO, 2, 4)         { @Override Object apply(LambdaJ intp, ConsCell args) { return writeTextfile(args); } },
+        sWriteString("write-textfile", Features.HAVE_IO, 2, 5)         { @Override Object apply(LambdaJ intp, ConsCell args) { return writeTextfile(args); } },
         sWriteToString("write-to-string", Features.HAVE_IO, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return writeToString(car(args), cdr(args) == null || cadr(args) != null); } },
         sWrite("write", Features.HAVE_IO, 1, 3)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(caddr(args), intp.getLispPrinter()), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(caddr(args), intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
@@ -5770,20 +5770,24 @@ public class LambdaJ {
             }
         }
 
-        /** (read-textfile filenamestr [charset]) -> result-string */
+        /** (read-textfile filenamestr [charset [translate-lineend-q]]) -> result-string */
         static Object readTextfile(ConsCell args) {
             final Object fileSpec = car(args);
-            args = requireList("read-textfile", cdr(args)); // todo brauchts requireList oder einfach casten?
+            args = requireList("read-textfile", cdr(args));
             try {
-                if (fileSpec == sT) {
-                    final byte[] buf = new byte[8192]; // todo nicht nur die ersten 8k lesen
-                    final int nRead = System.in.read(buf);
-                    final CharSequence s =  EolUtil.anyToUnixEol(new String(buf, 0, nRead, StandardCharsets.UTF_8));
-                    return s instanceof StringBuilder ? (StringBuilder)s : new StringBuilder(s);
-                }
-                final Path p = Paths.get(requireString("read-textfile", fileSpec));
                 final Charset cs = args == null ? StandardCharsets.UTF_8 : Charset.forName(requireString("read-textfile", car(args)));
-                final CharSequence s = EolUtil.anyToUnixEol(JavaUtil.readString(p, cs));
+                CharSequence s;
+                if (fileSpec == sT) {
+                    s = JavaUtil.readString(System.in, cs);
+                }
+                else {
+                    final Path p = Paths.get(requireString("read-textfile", fileSpec));
+                    s = JavaUtil.readString(p, cs);
+                }
+
+                args = requireList("read-textfile", cdr(args));
+                final boolean translateLineend = args == null || car(args) != null;
+                if (translateLineend) s = EolUtil.anyToUnixEol(s);
                 return s instanceof StringBuilder ? (StringBuilder)s : new StringBuilder(s);
             }
             catch (Exception e) {
@@ -5824,9 +5828,11 @@ public class LambdaJ {
             catch (Exception e) { throw wrap(e); }
         }
 
-        /** (write-textfile filenamestr string [appendp [charset]]) -> nil */
+        /** (write-textfile filenamestr string [appendp [charset [translate-lineend-p]]]) -> nil */
         static Object writeTextfile(ConsCell args) {
-            final String fileName = requireString("write-textfile", car(args));
+            final String fileName;
+            if (car(args) == sT) fileName = null;
+            else fileName = requireString("write-textfile", car(args));
             args = (ConsCell)cdr(args);
 
             final CharSequence charSeq = requireCharsequence("write-textfile", car(args));
@@ -5839,9 +5845,14 @@ public class LambdaJ {
                 args = (ConsCell)cdr(args);
                 if (args != null) cs = requireString("write-textfile", car(args));
             }
-            try (BufferedWriter w = bufferedWriter(fileName, appendp, cs)) {
+            args = requireList("write-textfile", cdr(args));
+            final boolean translateLineend = args == null || car(args) != null;
+            Appendable w = null;
+            RuntimeException le = null;
+            try {
+                w = fileName == null ? System.out : bufferedWriter(fileName, appendp, cs);
                 final String eol = System.lineSeparator();
-                if ("\n".equals(eol))
+                if (!translateLineend || "\n".equals(eol))
                     w.append(charSeq);
                 else for (int i = 0; i < charSeq.length(); i++) {
                     final char c = charSeq.charAt(i);
@@ -5850,10 +5861,20 @@ public class LambdaJ {
                 }
                 return null;
             }
-            catch (Exception e) { throw wrap(e); }
+            catch (Throwable e) { le = wrap(e); throw le; }
+            finally {
+                if (fileName != null) {
+                    try { if (w != null) ((Closeable)w).close(); }
+                    catch (IOException ioe) {
+                        if (le != null) le.addSuppressed(ioe);
+                        else le = wrap(ioe);
+                    }
+                }
+                if (le != null) throw le;
+            }
         }
 
-        private static BufferedWriter bufferedWriter(String fileName, boolean appendp, String cs) throws IOException {
+        private static @NotNull BufferedWriter bufferedWriter(@NotNull String fileName, boolean appendp, @Null String cs) throws IOException {
             return Files.newBufferedWriter(Paths.get(fileName), cs == null ? StandardCharsets.UTF_8 : Charset.forName(cs),
                                            appendp
                                            ? new OpenOption[]{StandardOpenOption.APPEND, StandardOpenOption.CREATE}
@@ -8441,9 +8462,9 @@ public class LambdaJ {
                                                                   featuresEnvEntry.rplacd(features.get());
                                                                   return retn(LambdaJ.Subr.readFromString(symtab, featuresEnvEntry, arraySlice(args))); }
         public final Object readTextfileLines (Object... args)  { clrValues(); varargs1_2("read-textfile-lines",     args);       return LambdaJ.Subr.readTextfileLines(arraySlice(args)); }
-        public final Object readTextfile      (Object... args)  { clrValues(); varargs1_2("read-textfile",           args);       return LambdaJ.Subr.readTextfile(arraySlice(args)); }
+        public final Object readTextfile      (Object... args)  { clrValues(); varargsMinMax("read-textfile",        args, 1, 3); return LambdaJ.Subr.readTextfile(arraySlice(args)); }
         public final Object writeTextfileLines(Object... args)  { clrValues(); varargsMinMax("write-textfile-lines", args, 2, 4); return LambdaJ.Subr.writeTextfileLines(arraySlice(args)); }
-        public final Object writeTextfile     (Object... args)  { clrValues(); varargsMinMax("write-textfile",       args, 2, 4); return LambdaJ.Subr.writeTextfile(arraySlice(args)); }
+        public final Object writeTextfile     (Object... args)  { clrValues(); varargsMinMax("write-textfile",       args, 2, 5); return LambdaJ.Subr.writeTextfile(arraySlice(args)); }
         public final Object writeToString     (Object... args)  { clrValues(); varargs1_2("write-to-string",         args);       return LambdaJ.Subr.writeToString(args[0], noSecondArgOrNotNull(args)); }
         public final Object _write            (Object... args)  { clrValues(); varargsMinMax("write",                args, 1, 3); return LambdaJ.Subr.write  (getLispPrinter(args, 2, lispPrinter), args[0], noSecondArgOrNotNull(args)); }
 
@@ -11961,15 +11982,20 @@ final class JavaUtil {
         return Integer.compare(cs1.length, cs2.length);
     }
 
-    /* don't use APIs with default charset
-    static String readString(Path p) throws IOException {
-        // Java11+ has Files.readString() which does one less copying than this
-        return new String(Files.readAllBytes(p));
-    }*/
-
     static String readString(Path p, Charset cs) throws IOException {
         // Java11+ has Files.readString() which does one less copying than this
         return new String(Files.readAllBytes(p), cs);
+    }
+
+    static CharSequence readString(InputStream fis, Charset cs) throws IOException {
+        try (Reader r = new InputStreamReader(fis, cs)) {
+            final StringBuilder ret = new StringBuilder(4096);
+            final char[] buf = new char[4096];
+            while (r.read(buf) != -1) {
+                ret.append(buf);
+            }
+            return ret;
+        }
     }
 
     private static int jvmVersion = -1;

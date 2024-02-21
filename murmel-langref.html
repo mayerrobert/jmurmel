@@ -1012,7 +1012,8 @@ Examples:
 
     (assoc 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))
       ; ==> (a-key 3)
-    (cdr (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
+    (cdr
+      (assoc 'a-key '((key-1 . 1) (key-2 . 2) (a-key . 3) (key-4 . 4))))
       ; ==> 3
     (assoc nil '((key-1 1) nil (nil 2) (a-key 3) (key-4 4)))
       ; ==> (nil 2)
@@ -1258,13 +1259,20 @@ Since: 1.4
 Read the file with the given filename and return it's contents
 as a `simple-vector` containing one `simple-string` for each line.
 
+If `charset` is `nil` then `UTF-8` will be used.
 
-### (read-textfile filenamestr [charset]) -> result-string
+
+### (read-textfile filename [charset [translate-lineend-p]]) -> result-string
 
 Since: 1.4
 
-Read the file with the given filename and return it's contents
-as a `string`. Lineend character sequences will be normalized to `#\Newline`.
+Read the file with the given filename (or stdin if `filename` is `t`)
+and return it's contents as a mutable `string`.
+
+If `charset` is `nil` then `UTF-8` will be used.
+
+If `translate-lineend-p` is omitted or non-nil then (possibly OS-dependent)
+lineend character sequences will be normalized to `#\Newline`.
 
 `charset` defaults to UTF-8.
 
@@ -1278,15 +1286,19 @@ of `string-sequence` to the file `filenamestr`.
 Each element (line) will be terminated with the OS-default line-end character(-sequence).
 (Note: with the JVM this can be set using -Dline.separator.)
 
-`charset` defaults to UTF-8.
+If `charset` is `nil` then `UTF-8` will be used.
 
 
-### (write-textfile filenamestr string  [appendp [charset]]) -> nil
+### (write-textfile filename string  [appendp [charset [translate-lineend-p]]]) -> nil
 
 Since: 1.4
 
-Write `string` to the file `filenamestr`.
-Each #\Newline character will be written as the OS-default line-end character(-sequence).
+Write `string` to the file `filename` (or stdout if `filename` is `t`).
+
+If `charset` is `nil` then `UTF-8` will be used.
+
+If `translate-lineend-p` is omitted or non-nil then each #\Newline character
+will be written as the OS-dependent line-end character(-sequence).
 
 
 ### (format dest formatstr args*), (format-locale dest locale formatstr args*)
@@ -1297,21 +1309,22 @@ The first argument `dest` can be `t`, `nil` or an adjustable string.
 `format`'s parameters work as with `java.lang.String.format()`
 which is similar to C's `printf()`.
 
-    (format t "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+    (format t
+      "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 `format-locale` works similar to format except it has an additional
 second string parameter that should be a locale, `nil` means use Java's
 default locale.
 
-    (format-locale t
-       "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+    (format-locale t "de-DE"
+      "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 `format nil` and `format-locale nil` work similar
 to `format t` and `format-locale t` except they don't write to stdout
 but return the string.
 
-    (format-locale nil
-       "de-DE" "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
+    (format-locale nil "de-DE"
+      "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 
 ### Misc
@@ -1549,8 +1562,13 @@ width/ height will be used.
 If padding is omitted or nil then 40 will be used.
 The newly created frame will not yet be visible (see open-frame below).
 
-    (let ((window-title "test") (optwidthpixels 100) (optheightpixels 100) (optpaddingpixels 10))
-      (make-frame window-title optwidthpixels optheightpixels optpaddingpixels)) ; ==> frame
+    (let ((window-title "test")
+          (optwidthpixels 100)
+          (optheightpixels 100)
+          (optpaddingpixels 10))
+      (make-frame window-title
+        optwidthpixels optheightpixels optpaddingpixels))
+      ; ==> frame
 
 ### (current-frame) -> frame
 

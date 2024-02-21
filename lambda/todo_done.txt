@@ -2744,3 +2744,7 @@ mlib: copy-list gibts, copy-tree gibts nicht, wär einfach
 toplevelFormToJava: solange nur progn/ defuns/ einfache defines (mit einfachem wert, zb nur atoms, keine symbols zulassen) vorgekommen sind, könnten die CompilerGlobals gleich zugewiesen werden
 -> umweg über defun_... könnte man sich sparen
 -> ggf. auch letXXX (inkl named let) zulassen wenn die bindingforms gecheckt werden ?
+
+
+read-textfile und read-textfile-lines sollten zus parameter "translate-linefeed-p" bekommen, ggf. auch schreibfunktionen
+read-textfile-lines sollte auch filespec == t koennen
