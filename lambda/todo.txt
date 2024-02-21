@@ -1,7 +1,3 @@
-read-textfile-lines sollte filename t können
-write-textfile-lines sollte filename t und translate-lineend-p können
-
-
 mlib: substitute ist für sequence statt list
 
 

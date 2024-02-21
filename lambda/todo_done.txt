@@ -2748,3 +2748,10 @@ toplevelFormToJava: solange nur progn/ defuns/ einfache defines (mit einfachem w
 
 read-textfile und read-textfile-lines sollten zus parameter "translate-linefeed-p" bekommen, ggf. auch schreibfunktionen
 read-textfile-lines sollte auch filespec == t koennen
+
+
+read-textfile-lines sollte filename t können
+
+write-textfile-lines sollte translate-lineend-p können
+
+write-textfile und write-textfile-lines sollten filename t können

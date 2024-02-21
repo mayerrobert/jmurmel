@@ -6,6 +6,10 @@ Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
  * changed mlib: renamed the functions last0, last1, lastn to m%last0, m%last1, m%lastn
  * changed mlib: write-char, terpri, prin1, princ, print and pprint
    now accept an optional output destination
+ * changed read-textfile, write-textfile, write-textfile-lines: the optional parameter
+  'translate-lineend-p' controls translating from/to OS-dependent lineend character (sequence)s
+ * changed read-textfile, read-textfile-lines, write-textfile, write-textfile-lines:
+   the symbol t as a filename indicates "stdin"
 
  * added #1= style labelled forms to the reader
  * added tailrecursion->loop transformation for compiled Murmel:

@@ -5758,11 +5758,17 @@ public class LambdaJ {
 
         /** (read-textfile-lines filenamestr [charset]) -> result-string-vector */
         static Object readTextfileLines(ConsCell args) {
-            final String fileName = requireString("read-textfile-lines", car(args));
+            final Object fileSpec = car(args);
             args = requireList("read-textfile-lines", cdr(args));
             try {
                 final Charset cs = args == null ? StandardCharsets.UTF_8 : Charset.forName(requireString("read-textfile-lines", car(args)));
-                final List<String> ret = Files.readAllLines(Paths.get(fileName), cs);
+                final List<String> ret;
+                if (fileSpec == sT) {
+                    ret = JavaUtil.readStrings(System.in, cs);
+                }
+                else {
+                    ret = Files.readAllLines(Paths.get(requireString("read-textfile-lines", fileSpec)), cs);
+                }
                 return ret.toArray();
             }
             catch (Exception e) {
@@ -5770,7 +5776,7 @@ public class LambdaJ {
             }
         }
 
-        /** (read-textfile filenamestr [charset [translate-lineend-q]]) -> result-string */
+        /** (read-textfile filenamestr [charset [translate-lineend-p]]) -> result-string */
         static Object readTextfile(ConsCell args) {
             final Object fileSpec = car(args);
             args = requireList("read-textfile", cdr(args));
@@ -5795,10 +5801,12 @@ public class LambdaJ {
             }
         }
 
-        /** (write-textfile-lines filenamestr string-sequence  [appendp [charset]]) -> nil */
+        /** (write-textfile-lines filenamestr string-sequence  [appendp [charset [translate-lineend-p]]]) -> nil */
         @SuppressWarnings("unchecked")
         static Object writeTextfileLines(ConsCell args) {
-            final String fileName = requireString("write-textfile-lines", car(args));
+            final String fileName;
+            if (car(args) == sT) fileName = null;
+            else fileName = requireString("write-textfile-lines", car(args));
             args = (ConsCell)cdr(args);
 
             final Object seq = car(args);
@@ -5807,25 +5815,44 @@ public class LambdaJ {
 
             boolean appendp = false;
             String cs = null;
+            boolean translateLineend = true;
             if (args != null) {
                 if (car(args) != null) appendp = true;
                 args = (ConsCell)cdr(args);
-                if (args != null) cs = requireString("write-textfile-lines", car(args));
+                if (args != null) {
+                    cs = requireString("write-textfile-lines", car(args));
+                    args = (ConsCell)cdr(args);
+                    if (args != null) translateLineend = car(args) != null;
+                }
             }
             final Iterator<Object> it;
             if (svectorp(seq)) it = Arrays.asList((Object[])seq).iterator();
             else if (seq instanceof Iterable) it = ((Iterable<Object>)seq).iterator(); // covers ConCell and adjustable array which are ArrayLists
             else throw errorArgTypeError("sequence of strings", "write-textfile-lines", seq);
-            try (Writer w = bufferedWriter(fileName, appendp, cs)) {
-                final String eol = System.lineSeparator();
+
+            Appendable w = null;
+            RuntimeException le = null;
+            try {
+                w = fileName == null ? System.out : bufferedWriter(fileName, appendp, cs);
+                final String eol = translateLineend ? System.lineSeparator() : "\n";
                 while (it.hasNext()) {
                     final String line = requireString("write-textfile-lines", it.next());
-                    w.write(line);
-                    w.write(eol);
+                    w.append(line);
+                    w.append(eol);
                 }
                 return null;
             }
-            catch (Exception e) { throw wrap(e); }
+            catch (Throwable e) { le = wrap(e); throw le; }
+            finally {
+                if (fileName != null) {
+                    try { if (w != null) ((Closeable)w).close(); }
+                    catch (IOException ioe) {
+                        if (le != null) le.addSuppressed(ioe);
+                        else le = wrap(ioe);
+                    }
+                }
+                if (le != null) throw le;
+            }
         }
 
         /** (write-textfile filenamestr string [appendp [charset [translate-lineend-p]]]) -> nil */
@@ -11987,14 +12014,27 @@ final class JavaUtil {
         return new String(Files.readAllBytes(p), cs);
     }
 
-    static CharSequence readString(InputStream fis, Charset cs) throws IOException {
-        try (Reader r = new InputStreamReader(fis, cs)) {
+    static CharSequence readString(InputStream is, Charset cs) throws IOException {
+        try (Reader r = new InputStreamReader(is, cs)) {
             final StringBuilder ret = new StringBuilder(4096);
             final char[] buf = new char[4096];
             while (r.read(buf) != -1) {
                 ret.append(buf);
             }
             return ret;
+        }
+    }
+
+    public static List<String> readStrings(InputStream is, Charset cs) throws IOException {
+        try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, cs))) {
+            final List<String> result = new ArrayList<>();
+            for (;;) {
+                final String line = reader.readLine();
+                if (line == null)
+                    break;
+                result.add(line);
+            }
+            return result;
         }
     }
 

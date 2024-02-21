@@ -1243,11 +1243,11 @@ will be signalled as an `end-of-file` condition.
     (read-from-string "          " 'eof 5) ; ==> eof, 10
 
 
-### (read-textfile-lines filenamestr [charset]) -> result-string-vector
+### (read-textfile-lines filename [charset]) -> result-string-vector
 
 Since: 1.4
 
-Read the file with the given filename and return it's contents
+Read the file with the given filename (or stdin if `filename` is `t`) and return it's contents
 as a `simple-vector` containing one `simple-string` for each line.
 
 If `charset` is `nil` then `UTF-8` will be used.
@@ -1268,16 +1268,19 @@ lineend character sequences will be normalized to `#\Newline`.
 `charset` defaults to UTF-8.
 
 
-### (write-textfile-lines filenamestr string-sequence  [appendp [charset]]) -> nil
+### (write-textfile-lines filename string-sequence  [appendp [charset [translate-lineend-p]]]) -> nil
 
 Since: 1.4
 
 Write all elements (which must be of type `string`)
-of `string-sequence` to the file `filenamestr`.
+of `string-sequence` to the file `filename` (or stdout if `filename` is `t`).
 Each element (line) will be terminated with the OS-default line-end character(-sequence).
 (Note: with the JVM this can be set using -Dline.separator.)
 
 If `charset` is `nil` then `UTF-8` will be used.
+
+If `translate-lineend-p` is omitted or non-nil then each #\Newline character
+will be written as the OS-dependent line-end character(-sequence).
 
 
 ### (write-textfile filename string  [appendp [charset [translate-lineend-p]]]) -> nil
