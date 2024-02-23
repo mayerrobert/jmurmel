@@ -15,12 +15,15 @@ import io.github.jmurmel.LambdaJ;
 
 class TemplateProcessorDemo {
 
-    void main() {
+    void main() throws Exception {
 
         // create a Murmel interpreter object
         // and a template processor that will turn Murmel code into Java Objects
-        var murmel = new LambdaJ();
-        var MTP = StringTemplate.Processor.of((StringTemplate st) -> { return murmel.formsToInterpretedProgram(st.interpolate(), null, null); } );
+        var MTP = StringTemplate.Processor.of((StringTemplate st) -> {
+            var murmelProgram = new LambdaJ().formsToInterpretedProgram(st.interpolate(), null, null);
+            murmelProgram.body();
+            return murmelProgram;
+        } );
 
         LambdaJ.MurmelProgram hello = MTP."""
         
@@ -30,10 +33,12 @@ class TemplateProcessorDemo {
         
         (require "mlib")
         
-        (princ "Hello, ")
-        (princ "World!")
-        
-        42 ; the answer, obviously
+        (defun greet (name)
+          (princ "Hello, ")
+          (princ name)
+          (princ "!")
+          ;; the answer, obviously
+          42)
         
         """;
 
@@ -41,8 +46,9 @@ class TemplateProcessorDemo {
         var sb = new StringBuffer();
         hello.setReaderPrinter(null, LambdaJ.makeWriter(sb::append));
 
-        // run the Murmelprogram and display it's result and stdout
-        var answer = hello.body();
+        // get and run the Murmel function "greet" and display it's result and stdout
+        LambdaJ.MurmelFunction greet = hello.getFunction("greet");
+        var answer = greet.apply("your name");
         System.out.format("Murmel answers %s%n", answer);
 
         System.out.format("Murmel's stdout was: %s%n", sb);
