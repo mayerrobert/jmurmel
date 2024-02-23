@@ -1,3 +1,18 @@
+define und defun non-toplevel in let usw forms dokumentieren
+
+formsToInterpretedProgram macht ein CallProgram, dessen konstruktor speichert nur den string weg
+-> konstruktor sollte gleich zumindest read machen und nicht der string sondern die liste mit forms wird gespeichert.
+   damit macroexpand auch schon vorab geht, müsste man einen durchlauf machen wo wie im compiler alle defun und defmacro forms durch eval durchgehen
+   -> wär gschickt das erst nach eval-when einzubauen? oder gleich machen und aus dem compiler rausziehen?
+
+load/ require in expandForms könnte das load/ require durch ein progn mit dem fileinhalt ersetzen
+-> dann brauchts in eval nicht mehr gemacht werden, auch nicht im compiler
+-> load und require sollten nil als return bekommen statt letzte form weil nil kann man in eval faken, so wie im compiler
+-> vorteil wäre v.a. für formsToInterpretedProgram - mehrfache aufrufe von body brauchen das file nicht immer wieder einlesen
+
+-> oder: CallProgram.body wird nur 1x aufgerufen, und in weiterer folge macht man getValue/ getFunction und ruft diese auf
+
+
 mlib: substitute ist für sequence statt list
 
 

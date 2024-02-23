@@ -3142,7 +3142,8 @@ public class LambdaJ {
         if (consp(expansion) && car((ConsCell)expansion) == sProgn) {
             ConsCell rest;
             for (rest = (ConsCell)cdr((ConsCell)expansion); cdr(rest) != null; rest = (ConsCell)cdr(rest)) {
-                // must expand a second time in case the progn contained a load/require that contained defmacro
+                // must expand a second time in case the progn contained a load/require that contained defmacro.
+                // Can't do it in expandForm->progn because the load and defmacro must be eval'd to take effect.
                 expandAndEval(car(rest), env);
             }
             values = NO_VALUES;
@@ -3154,9 +3155,9 @@ public class LambdaJ {
     /** expand all macros within a form and do some syntax checks. Macro-expansion is done in a copy, i.e. form will not be modified. */
     Object expandForm(Object form) {
         try {
-            if (form instanceof String)
-                return ((String)form).intern();
+            if (form instanceof String) return ((String)form).intern();
             if (atom(form)) return form;
+
             final ConsCell ccForm = ((ConsCell)form).copy();
             final Object op = car(ccForm);
             if (op == null) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": " + NIL);
@@ -6583,7 +6584,7 @@ public class LambdaJ {
 
         @Override public Object body() {
             final ObjectReader reader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, new StringReader(program)::read, null);
-            return interpretExpressions(reader, in, out, null);
+            return interpretExpressions(reader, in, out, null); // todo evtl reset=false mitgeben?
         }
     }
 
