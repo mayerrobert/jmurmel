@@ -18,7 +18,7 @@ void main() throws Exception {
 
     var murmelStdout = new StringBuffer();
 
-    // create a template processor that will use a Murmel interpreter the turn Murmel code into Java Objects
+    // create a template processor that will use a Murmel interpreter to turn Murmel code into Java Objects
     var MTP = StringTemplate.Processor.of((StringTemplate st) -> {
         var murmel = new LambdaJ();
         var additionalEnvironment = list(cons(murmel.getSymbolTable().intern("callback"), callback));
