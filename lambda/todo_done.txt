@@ -2755,3 +2755,11 @@ read-textfile-lines sollte filename t können
 write-textfile-lines sollte translate-lineend-p können
 
 write-textfile und write-textfile-lines sollten filename t können
+
+define und defun non-toplevel in let usw forms dokumentieren
+
+formsToInterpretedProgram macht ein CallProgram, dessen konstruktor speichert nur den string weg
+-> konstruktor sollte gleich zumindest read machen und nicht der string sondern die liste mit forms wird gespeichert.
+   damit macroexpand auch schon vorab geht, müsste man einen durchlauf machen wo wie im compiler alle defun und defmacro forms durch eval durchgehen
+   -> wär gschickt das erst nach eval-when einzubauen? oder gleich machen und aus dem compiler rausziehen?
+-> oder body 1x aufrufen und in weiterer folge funktionen mit getFunction() holen und diese nutzen

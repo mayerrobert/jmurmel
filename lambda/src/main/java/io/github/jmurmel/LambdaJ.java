@@ -2684,13 +2684,13 @@ public class LambdaJ {
 
     /** Build environment, setup Lisp reader and writer.
      *  Needs to be called once before {@link #eval(Object, ConsCell, int, int, int)} */
-    ObjectReader init(@NotNull ReadSupplier in, @NotNull WriteConsumer out) {
-        final SExpressionReader parser = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in, null);
-        final ObjectWriter outWriter = makeWriter(out);
-        return init(parser, outWriter, null);
+    public ObjectReader init(ReadSupplier in, WriteConsumer out, ConsCell customEnv) {
+        final SExpressionReader parser = in == null ? null : new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, in, null);
+        final ObjectWriter outWriter = out == null ? null : makeWriter(out);
+        return init(parser, outWriter, customEnv);
     }
 
-    ObjectReader init(ObjectReader inReader, ObjectWriter outWriter, ConsCell customEnv) {
+    public ObjectReader init(ObjectReader inReader, ObjectWriter outWriter, ConsCell customEnv) {
         speed = 1;  debug = 3;
         resetCounters();
         clearMacros();
@@ -6584,7 +6584,7 @@ public class LambdaJ {
 
         @Override public Object body() {
             final ObjectReader reader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, new StringReader(program)::read, null);
-            return interpretExpressions(reader, in, out, null); // todo evtl reset=false mitgeben?
+            return interpretExpressions(reader, in, out, null, false);
         }
     }
 
@@ -6623,7 +6623,7 @@ public class LambdaJ {
      *  will read S-expressions from {@code in} as well,
      *  and {@code write}/ {@code writeln} will write S-Expressions to {@code out}. */
     public Object interpretExpression(ReadSupplier in, WriteConsumer out) {
-        final ObjectReader parser = init(in, out);
+        final ObjectReader parser = init(in, out, null);
         final Object exp = parser.readObj(true, null);
         final long tStart = System.nanoTime();
         final Object result = expandAndEval(exp, null); // don't just use eval - maybe there are no macros to expand but expandAndEval also does syntax checks. Also they could pass a progn form containing macros.
@@ -6768,7 +6768,7 @@ public class LambdaJ {
                     if (!files.isEmpty() || immediateForms != null) {
                         switch (action) {
                         case INTERPRET:
-                            interpreter.init(NULL_READCHARS, NULL_WRITECHARS);
+                            interpreter.init(NULL_READCHARS, NULL_WRITECHARS, null);
                             injectCommandlineArgs(interpreter, args);
                             Object result = null;
                             for (String fileName : files) {
@@ -6815,7 +6815,7 @@ public class LambdaJ {
                     final Charset consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
                     if (action == Action.INTERPRET) {
-                        interpreter.init(NULL_READCHARS, NULL_WRITECHARS);
+                        interpreter.init(NULL_READCHARS, NULL_WRITECHARS, null);
                         injectCommandlineArgs(interpreter, args);
                         final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
                         if (finalResult && !printResult && result != null) {
@@ -9401,7 +9401,7 @@ public class LambdaJ {
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, null, null, libDir);
-            intp.init(NULL_READCHARS, System.out::print);
+            intp.init(NULL_READCHARS, System.out::print, null);
             this.intp = intp;
 
             sApply = intern(APPLY);

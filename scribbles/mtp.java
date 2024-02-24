@@ -10,15 +10,22 @@ Usage: make sure jmurmel.jar and mlib.lisp are in the current directory and then
 */
 
 import io.github.jmurmel.LambdaJ;
-
+import static io.github.jmurmel.LambdaJ.ConsCell.*;
 
 void main() throws Exception {
 
+    LambdaJ.Primitive callback = args -> "hi from Java";
+
+    var murmelStdout = new StringBuffer();
+
     // create a template processor that will use a Murmel interpreter the turn Murmel code into Java Objects
     var MTP = StringTemplate.Processor.of((StringTemplate st) -> {
-    var murmelProgram = new LambdaJ().formsToInterpretedProgram(st.interpolate(), null, null);
-    murmelProgram.body();
-    return murmelProgram;
+        var murmel = new LambdaJ();
+        var additionalEnvironment = list(cons(murmel.getSymbolTable().intern("callback"), callback));
+        murmel.init((LambdaJ.ReadSupplier)null, null, additionalEnvironment);
+        var murmelProgram = murmel.formsToInterpretedProgram(st.interpolate(), null, murmelStdout::append);
+        murmelProgram.body();
+        return murmelProgram;
     } );
 
     LambdaJ.MurmelProgram hello = MTP."""
@@ -33,19 +40,20 @@ void main() throws Exception {
       (princ "Hello, ")
       (princ name)
       (princ "!")
+      (terpri)
+      
+      (princ "Java says: ")
+      (princ (callback))
+      
       ;; the answer, obviously
       42)
     
     """;
-
-    // create and assign a buffer for Murmel's stdout
-    var sb = new StringBuffer();
-    hello.setReaderPrinter(null, LambdaJ.makeWriter(sb::append));
 
     // get and run the Murmel function "greet" and display it's result and stdout
     LambdaJ.MurmelFunction greet = hello.getFunction("greet");
     var answer = greet.apply("your name");
     System.out.format("Murmel answers %s%n", answer);
 
-    System.out.format("Murmel's stdout was: %s%n", sb);
+    System.out.format("Murmel's stdout was: %s%n", murmelStdout);
 }
