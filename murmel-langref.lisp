@@ -517,6 +517,8 @@ pi ; ==> 3.141592653589793
 (define *global-var* 42)               ; ==> *gloval-var*
 (define f1 (lambda (p1 p2) (+ p1 p2))) ; ==> f1
 
+; `define` forms can appear inside toplevel `let, let*, letrec, multiple-value-bind` forms.
+
 ;;; = (defun symbol (params\*) docstring? forms\*) -> symbol
 ;
 ; `defun` is a shorthand for defining functions:
@@ -529,6 +531,24 @@ pi ; ==> 3.141592653589793
 ; Arguments to `defun` are not evaluated.
 
 (defun f2 (p1 p2) (+ p1 p2)) ; ==> f2
+
+; `defun` forms that appear inside toplevel `let, let*, letrec, multiple-value-bind` forms
+; will bind a globally visible symbol to a closure (aka let-over-lambda):
+
+(let ((counter 0))
+  (defun pre-increment-counter ()
+    (setq counter (1+ counter)))
+
+  (defun pre-decrement-counter ()
+    (setq counter (1- counter)))
+
+  (defun peek-counter ()
+    counter))
+
+(pre-increment-counter)  ; ==> 1
+(pre-increment-counter)  ; ==> 2
+(pre-decrement-counter)  ; ==> 1
+(peek-counter)  ; ==> 1
 
 ;;; = (defmacro name (params\*) docstring? forms\*) -> symbol<br/>(defmacro name) -> prev-name
 ;
