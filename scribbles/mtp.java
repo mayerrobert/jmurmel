@@ -7,6 +7,8 @@ Usage: make sure jmurmel.jar and mlib.lisp are in the current directory and then
 
   C:> java -cp jmurmel.jar --enable-preview --source 21 mtp.java
 
+See mctp.java for an alternative version that uses the compiler.
+
 */
 
 import io.github.jmurmel.LambdaJ;
