@@ -1,3 +1,6 @@
+zyklen erkennen: https://coredumped.dev/2024/02/23/cycles-all-way-down/
+-> list-length hat Floyd’s cycle detection, gibt aber noch Brent’s algorithm für zyklen in trees siehe https://en.wikipedia.org/wiki/Cycle_detection#Brent's_algorithm
+
 load/ require in expandForms könnte das load/ require durch ein progn mit dem fileinhalt ersetzen
 -> dann brauchts in eval nicht mehr gemacht werden, auch nicht im compiler
 -> load und require sollten nil als return bekommen statt letzte form weil nil kann man in eval faken, so wie im compiler
