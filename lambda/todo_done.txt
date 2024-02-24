@@ -2763,3 +2763,8 @@ formsToInterpretedProgram macht ein CallProgram, dessen konstruktor speichert nu
    damit macroexpand auch schon vorab geht, müsste man einen durchlauf machen wo wie im compiler alle defun und defmacro forms durch eval durchgehen
    -> wär gschickt das erst nach eval-when einzubauen? oder gleich machen und aus dem compiler rausziehen?
 -> oder body 1x aufrufen und in weiterer folge funktionen mit getFunction() holen und diese nutzen
+
+
+MurmelProgram.setReaderPrinter überladen mit ReadSupplier/WriteConsumer statt ObjectReader/ObjectWriter
+
+formsToJavaClass überladen mit ReadSupplier statt ObjectReader

@@ -38,10 +38,9 @@ public class MurmelJavaCompilerTest {
         final String source = "(define f (lambda (a b) (write a) (write b)))"
                               + "(f \"Hello, \" \"World!\")";
 
-        final Reader reader = new StringReader(source);
-        final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable(), null);
+        final ReadSupplier reader = new StringReader(source)::read;
 
-        final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, "target/test-1.0.zip");
+        final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", reader, "target/test-1.0.zip");
         assertNotNull("failed to compile Murmel to class", murmelClass);
 
         final MurmelProgram instance = murmelClass.getDeclaredConstructor().newInstance();
@@ -462,7 +461,7 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile let dynamic to class", program);
 
         final StringBuilder out = new StringBuilder();
-        program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
+        program.setReaderPrinter(null, out::append);
         program.body();
         assertEquals("let dynamic produced wrong output", "(1 . 2)(11 . 1)(1 . 2)", out.toString());
     }
@@ -473,7 +472,7 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile let* dynamic to class", program);
 
         final StringBuilder out = new StringBuilder();
-        program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
+        program.setReaderPrinter(null, out::append);
         program.body();
         assertEquals("let* dynamic produced wrong output", "333312", out.toString());
     }
@@ -485,7 +484,7 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile let* dynamic to class", program);
 
         final StringBuilder out = new StringBuilder();
-        program.setReaderPrinter(eof -> eof, LambdaJ.makeWriter(out::append));
+        program.setReaderPrinter(null, out::append);
         program.body();
         assertEquals("let* dynamic produced wrong output", "33.0", out.toString());
     }
@@ -727,11 +726,10 @@ public class MurmelJavaCompilerTest {
     private static MurmelProgram compile(String source) throws Exception {
         final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
 
-        final Reader reader = new StringReader(source);
-        final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable(), null);
+        final ReadSupplier reader = new StringReader(source)::read;
 
         try {
-            final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
+            final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", reader, null);
             return murmelClass.getDeclaredConstructor().newInstance();
         }
         catch (LambdaJError le) {
@@ -747,11 +745,10 @@ public class MurmelJavaCompilerTest {
 
     private static void compileError(String source, String expected) throws Exception {
         final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
-        final Reader reader = new StringReader(source);
-        final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable(), null);
+        final ReadSupplier reader = new StringReader(source)::read;
 
         try {
-            c.formsToJavaClass("Test", parser, null);
+            c.formsToJavaClass("Test", reader, null);
             fail("expected error " + expected + " but got no error");
         }
         catch (LambdaJError e) {
@@ -763,11 +760,10 @@ public class MurmelJavaCompilerTest {
 
     private static void runtimeError(String source, String expected) throws Exception {
         final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
-        final Reader reader = new StringReader(source);
-        final ObjectReader parser = LambdaJ.makeReader(reader::read, c.getSymbolTable(), null);
+        final ReadSupplier reader = new StringReader(source)::read;
 
         try {
-            final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
+            final Class<MurmelProgram> murmelClass = c.formsToJavaClass("Test", reader, null);
             murmelClass.getDeclaredConstructor().newInstance().body();
             fail("expected error " + expected + " but got no error");
         }

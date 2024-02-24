@@ -6550,6 +6550,7 @@ public class LambdaJ {
         ObjectReader getLispReader();
         ObjectWriter getLispPrinter();
         void setReaderPrinter(ObjectReader reader, ObjectWriter writer);
+        void setReaderPrinter(ReadSupplier in, WriteConsumer out);
     }
 
     /** Turn {@code program} into an interpreted Murmel program: {@code program} will be wrapped in the method
@@ -6560,13 +6561,13 @@ public class LambdaJ {
 
     private class CallProgram implements MurmelProgram {
         private final String program;
-        private ObjectReader in;
-        private ObjectWriter out;
+        private ObjectReader lispReader;
+        private ObjectWriter lispPrinter;
 
         CallProgram(String program, ReadSupplier in, WriteConsumer out) {
             this.program = program;
-            this.in = in == null ? null : new SExpressionReader(features, TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, in, null);
-            this.out = out == null ? null : makeWriter(out);
+            this.lispReader = in == null ? null : new SExpressionReader(features, TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, in, null);
+            this.lispPrinter = out == null ? null : makeWriter(out);
         }
 
         @Override public Object getValue(String globalSymbol) { return LambdaJ.this.getValue(globalSymbol); }
@@ -6577,14 +6578,20 @@ public class LambdaJ {
         }
         @Override public ObjectReader getLispReader() { return LambdaJ.this.getLispReader(); }
         @Override public ObjectWriter getLispPrinter() { return LambdaJ.this.getLispPrinter(); }
+
         @Override public void setReaderPrinter(ObjectReader reader, ObjectWriter writer) {
             LambdaJ.this.setReaderPrinter(reader, writer);
-            in = reader;  out = writer;
-        } 
+            this.lispReader = reader;  lispPrinter = writer;
+        }
+        @Override public void setReaderPrinter(ReadSupplier in, WriteConsumer out) {
+            this.lispReader = in == null ? null : new SExpressionReader(features, TraceLevel.TRC_NONE, null, symtab, featuresEnvEntry, in, null);
+            this.lispPrinter = out == null ? null : makeWriter(out);
+            LambdaJ.this.setReaderPrinter(lispReader, lispPrinter);
+        }
 
         @Override public Object body() {
             final ObjectReader reader = new SExpressionReader(features, trace, tracer, symtab, featuresEnvEntry, new StringReader(program)::read, null);
-            return interpretExpressions(reader, in, out, null, false);
+            return interpretExpressions(reader, this.lispReader, lispPrinter, null, false);
         }
     }
 
@@ -8052,6 +8059,10 @@ public class LambdaJ {
         @Override public final ObjectReader getLispReader()  { return lispReader; }
         @Override public final ObjectWriter getLispPrinter() { return lispPrinter; }
         @Override public final void setReaderPrinter(ObjectReader lispStdin, ObjectWriter lispStdout) { lispReader = lispStdin; lispPrinter = lispStdout; }
+        @Override public final void setReaderPrinter(ReadSupplier in, WriteConsumer out) {
+            this.lispReader = in == null ? null : new SExpressionReader(in, symtab, featuresEnvEntry, null);
+            this.lispPrinter = out == null ? null : makeWriter(out);
+        }
 
         @Override public final @NotNull MurmelFunction getFunction(String func) {
             final Object maybeFunction = getValue(func);
@@ -9589,6 +9600,10 @@ public class LambdaJ {
         /// Wrappers to compile Murmel to a Java class and optionally a .jar
 
         /** Compile the Murmel compilation unit {@code forms} to a Java class for a standalone application with a "public static void main()" */
+        public Class <MurmelProgram> formsToJavaClass(String unitName, ReadSupplier forms, String jarFileName) throws Exception {
+            return formsToJavaClass(unitName, makeReader(forms, getSymbolTable(), intp.featuresEnvEntry), null);
+        }
+
         public Class <MurmelProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
             final StringWriter w = new StringWriter();
             formsToJavaSource(w, unitName, forms);

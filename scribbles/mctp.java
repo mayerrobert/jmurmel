@@ -29,10 +29,10 @@ void main() throws Exception {
             var murmelCompiler = new LambdaJ.MurmelJavaCompiler(null, null, getTmpDir());
             //var additionalEnvironment = list(cons(murmelCompiler.getSymbolTable().intern("callback"), callback));
             //murmel.init((LambdaJ.ReadSupplier)null, null, additionalEnvironment);
-            var reader = LambdaJ.makeReader(new StringReader(st.interpolate())::read, murmelCompiler.getSymbolTable(), null);
+            LambdaJ.ReadSupplier reader = new StringReader(st.interpolate())::read;
             Class<LambdaJ.MurmelProgram> murmelProgramClass = murmelCompiler.formsToJavaClass("demo", reader, null);
             var murmelProgram = murmelProgramClass.getDeclaredConstructor().newInstance();
-            murmelProgram.setReaderPrinter(null, LambdaJ.makeWriter(murmelStdout::append));
+            murmelProgram.setReaderPrinter(null, murmelStdout::append);
             murmelProgram.body();
             return murmelProgram;
         }
