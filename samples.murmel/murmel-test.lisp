@@ -517,14 +517,30 @@ multiline comment
 (deftest cond.2
   (cond ((null nil) 'yes)) 'yes)
 
-(deftest cond.2
+(deftest cond.3
   (cond ((null (null nil)) 'yes)) nil)
 
-(deftest cond.2
+(deftest cond.4
   (cond ((null 1) 'yes)) nil)
 
-(deftest cond.2
+(deftest cond.5
   (cond ((null (null 1)) 'yes)) 'yes)
+
+(deftest cond.6
+  (cond ((null 1) 'yes)
+        (t))
+  t)
+
+(deftest cond.7
+  (cond ((= 1 2))
+        ((assoc 'x '((w .4) (x . 3) (y . 2) (z . 1)))))
+  '(x . 3))
+
+(deftest cond.8
+  (multiple-value-bind (a b c)
+    (cond ((values 1 2 3)))
+    (list a b c))
+  '(1 nil nil))
 
 
 ;;; let over lambda

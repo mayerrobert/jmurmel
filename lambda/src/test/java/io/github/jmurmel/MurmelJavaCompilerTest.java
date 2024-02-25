@@ -310,6 +310,46 @@ public class MurmelJavaCompilerTest {
     }
 
     @Test
+    public void testCond2() throws Exception {
+        final MurmelProgram program = compile("(cond ((eq 's1 's2) 's3) (t))");
+        assertNotNull("failed to compile cond2 to class", program);
+        assertEquals("cond2 produced wrong result", "t", TestUtils.sexp(program.body()));
+    }
+
+    // toplevel cond will be handled by emitStmt
+    @Test
+    public void testCond3() throws Exception {
+        final MurmelProgram program = compile("(cond ((eq 's1 's2) 's3) ((eq 's4 's4)) (t nil))");
+        assertNotNull("failed to compile cond3 to class", program);
+        assertEquals("cond3 produced wrong result", "t", TestUtils.sexp(program.body()));
+    }
+
+    // non-toplevel cond will be handled by emitForm
+    @Test
+    public void testCond4() throws Exception {
+        final MurmelProgram program = compile("((lambda (x) x) (cond ((eq 's1 's2) 's3) ((eq 's4 's4)) (t nil)))");
+        assertNotNull("failed to compile cond4 to class", program);
+        assertEquals("cond4 produced wrong result", "t", TestUtils.sexp(program.body()));
+    }
+
+    // toplevel cond will be handled by emitStmt
+    @Test
+    public void testCond5() throws Exception {
+        final MurmelProgram program = compile("(cond ((= 1 2)) ((assoc 'x '((w .4) (x . 3) (y . 2) (z . 1)))))");
+        assertNotNull("failed to compile cond5 to class", program);
+        assertEquals("cond5 produced wrong result", "(x . 3)", TestUtils.sexp(program.body()));
+    }
+
+    // toplevel cond will be handled by emitStmt
+    @Test
+    public void testCond6() throws Exception {
+        final MurmelProgram program = compile("(cond ((< 1 2)))");
+        assertNotNull("failed to compile cond6 to class", program);
+        assertEquals("cond6 produced wrong result", "t", TestUtils.sexp(program.body()));
+    }
+
+
+    @Test
     public void testProgn1() throws Exception {
         final MurmelProgram program = compile("(progn)");
         assertNotNull("failed to compile progn1 to class", program);

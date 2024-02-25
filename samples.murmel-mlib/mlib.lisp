@@ -2146,10 +2146,10 @@
 ;;; If `sequence` is a list, the result is a fresh list.
 (defun copy-seq (seq)
   (cond
-    ((null seq))
+    ((null seq)    nil)
     ((consp seq)   (copy-list seq))
     ((vectorp seq) (vector-copy seq))
-    (t      (error 'simple-type-error "copy-seq - %s is not a sequence" seq))))
+    (t             (error 'simple-type-error "copy-seq - %s is not a sequence" seq))))
 
 
 ;;; = Function: length
@@ -2188,7 +2188,7 @@
              to))
 
     (cond
-      ((null seq))
+      ((null seq)               nil)
       ((consp seq)              (reverse/list seq ()))
       ((stringp seq)            (reverse/vector seq (make-array (vector-length seq) 'character) sref sset))
       ((simple-vector-p seq)    (reverse/vector seq (make-array (vector-length seq)) svref svset))
@@ -2227,13 +2227,13 @@
                      (loop (1+ left-index) (1- right-index)))))))
 
     (cond
-      ((null seq))
+      ((null seq)               nil)
       ((consp seq)              (nreverse/list seq))
       ((stringp seq)            (nreverse/vector seq sref sset))
       ((simple-vector-p seq)    (nreverse/vector seq svref svset))
       ((bit-vector-p seq)       (nreverse/vector seq bvref bvset))
       ((vectorp seq)            (nreverse/vector seq seqref seqset))
-      (t (error 'simple-type-error "nreverse - %s is not a sequence" seq)))))
+      (t                        (error 'simple-type-error "nreverse - %s is not a sequence" seq)))))
 
 
 ;;; = Function: remove-if
@@ -2264,13 +2264,13 @@
                    (setq append-to (cdr (rplacd append-to (list tmp)))))))))
 
     (cond
-      ((null seq))
+      ((null seq)                nil)
       ((consp seq)               (remove-if/list seq))
       ((stringp seq)             (list->string            (remove-if/vector seq)))
       ((simple-vector-p seq)     (list->simple-vector     (remove-if/vector seq)))
       ((simple-bit-vector-p seq) (list->bit-vector        (remove-if/vector seq)))
       ((vectorp seq)             (list->simple-vector     (remove-if/vector seq)))
-      (t (error 'simple-type-error "remove-if - %s is not a sequence" seq)))))
+      (t                         (error 'simple-type-error "remove-if - %s is not a sequence" seq)))))
 
 
 ;;; = Function: remove
@@ -2285,7 +2285,7 @@
 
 
 (defun m%list->sequence (lst result-type)
-  (cond ((null result-type)                  )
+  (cond ((null result-type)                  nil)
         ((eq result-type 'list)              lst)
         ((eq result-type 'cons)              (or lst (error 'simple-type-error "nil is not a sequence of type cons")))
         ((eq result-type 'vector)            (list->simple-vector lst))
@@ -2294,7 +2294,7 @@
         ((eq result-type 'bit-vector)        (list->bit-vector lst))
         ((eq result-type 'string)            (list->string lst))
         ((eq result-type 'simple-string)     (list->string lst))
-        (t (error "type %s is not implemented" result-type))))
+        (t                                   (error "type %s is not implemented" result-type))))
 
 
 ;;; = Function: map
@@ -2379,7 +2379,7 @@
           (if sequences
               ;; 1 sequence given
               (cond
-                ((null (setq seq (car sequences))))
+                ((null (setq seq (car sequences))) nil)
 
                 ((consp seq)
                  (let loop ((l seq))
