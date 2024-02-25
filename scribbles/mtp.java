@@ -16,16 +16,22 @@ import static io.github.jmurmel.LambdaJ.ConsCell.*;
 
 void main() throws Exception {
 
-    LambdaJ.Primitive callback = args -> "hi from Java";
+    // could use both Primitive or CompilerPrimitive
+    //LambdaJ.Primitive callback = args -> "hi from Java";
+    LambdaJ.MurmelJavaProgram.CompilerPrimitive callback = args -> "hi from Java";
 
     var murmelStdout = new StringBuffer();
 
     // create a template processor that will use a Murmel interpreter to turn Murmel code into Java Objects
     var MTP = StringTemplate.Processor.of((StringTemplate st) -> {
         var murmel = new LambdaJ();
-        var additionalEnvironment = list(cons(murmel.getSymbolTable().intern("callback"), callback));
+
+        var additionalEnvironment = list(cons(murmel.intern("callback"), callback));
+
         murmel.init((LambdaJ.ReadSupplier)null, null, additionalEnvironment);
+
         var murmelProgram = murmel.formsToInterpretedProgram(st.interpolate(), null, murmelStdout::append);
+
         murmelProgram.body();
         return murmelProgram;
     } );

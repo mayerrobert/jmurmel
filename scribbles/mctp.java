@@ -9,7 +9,7 @@ Usage: make sure jmurmel.jar and mlib.lisp are in the current directory and then
 
 See mtp.java for an alternative version that uses the interpreter.
 
- */
+*/
 
 import java.io.*;
 import java.nio.file.*;
@@ -19,20 +19,28 @@ import static io.github.jmurmel.LambdaJ.ConsCell.*;
 
 void main() throws Exception {
 
+    // could use both Primitive or CompilerPrimitive
     //LambdaJ.Primitive callback = args -> "hi from Java";
+    LambdaJ.MurmelJavaProgram.CompilerPrimitive callback = args -> "hi from Java";
 
     var murmelStdout = new StringBuffer();
 
     // create a template processor that will use a Murmel compiler to turn Murmel code into Java Objects
     var MTP = StringTemplate.Processor.of((StringTemplate st) -> {
         try {
-            var murmelCompiler = new LambdaJ.MurmelJavaCompiler(null, null, getTmpDir());
-            //var additionalEnvironment = list(cons(murmelCompiler.getSymbolTable().intern("callback"), callback));
-            //murmel.init((LambdaJ.ReadSupplier)null, null, additionalEnvironment);
+            Path tmpDir = Files.createTempDirectory("jmurmeltest");
+            tmpDir.toFile().deleteOnExit();
+            var murmelCompiler = new LambdaJ.MurmelJavaCompiler(null, null, tmpDir);
+
+            var additionalEnvironment = list(cons(murmelCompiler.intern("callback"), callback));
+
+            murmelCompiler.setCustomEnvironment(additionalEnvironment);
             LambdaJ.ReadSupplier reader = new StringReader(st.interpolate())::read;
             Class<LambdaJ.MurmelProgram> murmelProgramClass = murmelCompiler.formsToJavaClass("demo", reader, null);
+
             var murmelProgram = murmelProgramClass.getDeclaredConstructor().newInstance();
             murmelProgram.setReaderPrinter(null, murmelStdout::append);
+
             murmelProgram.body();
             return murmelProgram;
         }
@@ -55,8 +63,8 @@ void main() throws Exception {
       (princ "!")
       (terpri)
       
-      ;;(princ "Java says: ")
-      ;;(princ (callback))
+      (princ "Java says: ")
+      (princ (callback))
       
       ;; the answer, obviously
       42)
@@ -69,10 +77,4 @@ void main() throws Exception {
     System.out.format("Murmel answers %s%n", answer);
 
     System.out.format("Murmel's stdout was: %s%n", murmelStdout);
-}
-
-Path getTmpDir() throws IOException {
-    Path tmpDir = Files.createTempDirectory("jmurmeltest");
-    tmpDir.toFile().deleteOnExit();
-    return tmpDir;
 }

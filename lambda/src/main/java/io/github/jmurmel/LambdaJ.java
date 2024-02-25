@@ -2633,7 +2633,7 @@ public class LambdaJ {
         else throw new UnboundVariable("truthiness needs support for '" + T + "' or '" + QUOTE + "'");
     }
 
-    final @NotNull LambdaJSymbol intern(@NotNull String sym) {
+    public final @NotNull LambdaJSymbol intern(@NotNull String sym) {
         return symtab.intern(sym);
     }
 
@@ -3785,11 +3785,11 @@ public class LambdaJ {
 
     private Object applyCompilerPrimitive(MurmelJavaProgram.CompilerPrimitive primfn, ConsCell args, int stack, int level) {
         if (traceFunc) tracer.println(pfx(stack, level) + " #<compiler primitive> " + printSEx(args));
-        assert compiledProgram != null;
         assert values == NO_VALUES;
         try {
             final Object ret = primfn.applyCompilerPrimitive(listToArray(args));
-            if (compiledProgram.values != null) values = list(compiledProgram.values);
+            // compiledProgram could be null if primfn was a custom primitive
+            if (compiledProgram != null && compiledProgram.values != null) values = list(compiledProgram.values);
             return ret;
         }
         catch (LambdaJError e) { throw e; }
@@ -8918,14 +8918,14 @@ public class LambdaJ {
         }
 
         public final Object funcall(Object fn, Object... args) {
-            if (fn instanceof MurmelLeafFunction)    return funcall((MurmelLeafFunction)fn, args);
-            if (fn instanceof MurmelFunction)    return funcall((MurmelFunction)fn, args);
-            if (fn instanceof CompilerPrimitive) return funcall((CompilerPrimitive)fn, args);
+            if (fn instanceof MurmelLeafFunction)  return funcall((MurmelLeafFunction)fn, args);
+            if (fn instanceof MurmelFunction)      return funcall((MurmelFunction)fn, args);
+            if (fn instanceof CompilerPrimitive)   return funcall((CompilerPrimitive)fn, args);
             return funcallIntp(fn, args);
         }
 
         private Object funcallIntp(Object fn, Object[] args) {
-            if (fn instanceof Primitive)         { final Object ret = ((Primitive)fn).applyPrimitive(arraySlice(args));  afterEval();  return ret; }
+            if (fn instanceof Primitive)         { final Object ret = ((Primitive)fn).applyPrimitive(arraySlice(args));  if (intp != null) afterEval();  return ret; }
             if (fn instanceof Closure)           return interpret(fn, args);
 
             throw errorNotAFunction(fn);
@@ -9432,7 +9432,7 @@ public class LambdaJ {
 
 
         /// symbols and name mangling
-        private LambdaJSymbol intern(String symname) {
+        public LambdaJSymbol intern(String symname) {
             if (symname == null) return sNil;
             return intp.intern(symname);
         }
@@ -9595,6 +9595,10 @@ public class LambdaJ {
             return map;
         }
 
+        private ConsCell customEnvironment;
+        /** {@code customEnvironment} must be an alist (symbol . CompilerPrimitive) or (symbol . Primitive) */
+        public void setCustomEnvironment(ConsCell customEnvironment) { this.customEnvironment = customEnvironment; }
+
 
 
         /// Wrappers to compile Murmel to a Java class and optionally a .jar
@@ -9607,7 +9611,15 @@ public class LambdaJ {
         public Class <MurmelProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
             final StringWriter w = new StringWriter();
             formsToJavaSource(w, unitName, forms);
-            return javaCompiler.javaToClass(unitName, w.toString(), jarFileName);
+            final Class<MurmelProgram> ret = javaCompiler.javaToClass(unitName, w.toString(), jarFileName);
+            if (customEnvironment != null) {
+                final ArrayList<Object> fp = new ArrayList<>();
+                for (Object entry: customEnvironment) {
+                    fp.add(cdr((ConsCell)entry));
+                }
+                ret.getField("foreign").set(null, fp.toArray(new Object[0]));
+            }
+            return ret;
         }
 
 
@@ -9621,6 +9633,19 @@ public class LambdaJ {
         public void formsToJavaSource(Writer w, String unitName, ObjectReader forms) {
             quotedForms.clear();  qCounter = 0;  complexFormSeen = false;
             ConsCell predefinedEnv = null;
+            if (customEnvironment != null) {
+                int n = 0;
+                for (Object entry: customEnvironment) {
+                    final ConsCell ccEntry = (ConsCell)entry;
+                    final Object foreignFunction = cdr(ccEntry);
+                    if (foreignFunction instanceof MurmelJavaProgram.CompilerPrimitive || foreignFunction instanceof Primitive) {
+                        predefinedEnv = extenvIntern((LambdaJSymbol)car(ccEntry), "rt().foreign[" + n++ + "]", predefinedEnv);
+                    }
+                    else {
+                        throw new ProgramError(car(ccEntry) + " should be a CompilerPrimitive or Primitive");
+                    }
+                }
+            }
             for (String   global: globalvars)        predefinedEnv = extenvIntern(intern(global),   '_' + global,   predefinedEnv);
             for (String[] alias:  aliasedGlobals)    predefinedEnv = extenvIntern(intern(alias[0]), alias[1], predefinedEnv);
             for (Map.Entry<LambdaJSymbol, String> entry: primitivesBySymbol.entrySet()) predefinedEnv = extenvprim(entry.getKey(), entry.getValue(), predefinedEnv);
@@ -9644,6 +9669,7 @@ public class LambdaJ {
                        + "import io.github.jmurmel.LambdaJ.*;\n\n"
                        + "@SuppressWarnings(\"unchecked\")\n"
                        + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
+                       + "    public static Object[] foreign;\n"
                        + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
                                                                   + "    public static void main(String[] args) {\n"
                                                                   + "        final ").append(clsName).append(" program = new ").append(clsName).append("();\n"

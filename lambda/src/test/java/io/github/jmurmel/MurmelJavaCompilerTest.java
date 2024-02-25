@@ -711,6 +711,14 @@ public class MurmelJavaCompilerTest {
 
 
 
+    @Test
+    public void testCustomEnv() throws Exception {
+        final String source = "(1+ (javaprim))";
+        final MurmelProgram program = compile(source, true);
+        assertNotNull("failed to compile customenv to class:", program);
+        assertEquals("customenv produced wrong result", 42L, program.body());
+    }
+
     static void compileAndRun(String source, Object expectedResult) throws Exception {
         final MurmelProgram program = compile(source);
         final Object actualResult = program.body();
@@ -724,7 +732,16 @@ public class MurmelJavaCompilerTest {
     }
 
     private static MurmelProgram compile(String source) throws Exception {
+        return compile(source, false);
+    }
+
+    private static MurmelProgram compile(String source, boolean doCustomEnv) throws Exception {
         final MurmelJavaCompiler c = new MurmelJavaCompiler(null, null, TestUtils.getTmpDir());
+        if (doCustomEnv) {
+            final MurmelJavaProgram.CompilerPrimitive p = args -> 41;
+            final ConsCell customEnv = ConsCell.list(ConsCell.cons(c.getSymbolTable().intern("javaprim"), p));
+            c.setCustomEnvironment(customEnv);
+        }
 
         final ReadSupplier reader = new StringReader(source)::read;
 
