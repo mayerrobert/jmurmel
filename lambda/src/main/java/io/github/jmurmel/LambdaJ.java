@@ -5765,14 +5765,10 @@ public class LambdaJ {
             final Object fileSpec = car(args);
             args = requireList("read-textfile-lines", cdr(args));
             try {
-                final Charset cs = args == null ? StandardCharsets.UTF_8 : Charset.forName(requireString("read-textfile-lines", car(args)));
+                final Charset cs = getCharset("read-textfile-lines", args);
                 final List<String> ret;
-                if (fileSpec == sT) {
-                    ret = JavaUtil.readStrings(System.in, cs);
-                }
-                else {
-                    ret = Files.readAllLines(Paths.get(requireString("read-textfile-lines", fileSpec)), cs);
-                }
+                if (fileSpec == sT) ret = JavaUtil.readStrings(System.in, cs);
+                else ret = Files.readAllLines(Paths.get(requireString("read-textfile-lines", fileSpec)), cs);
                 return ret.toArray();
             }
             catch (Exception e) {
@@ -5785,15 +5781,10 @@ public class LambdaJ {
             final Object fileSpec = car(args);
             args = requireList("read-textfile", cdr(args));
             try {
-                final Charset cs = args == null ? StandardCharsets.UTF_8 : Charset.forName(requireString("read-textfile", car(args)));
+                final Charset cs = getCharset("read-textfile", args);
                 CharSequence s;
-                if (fileSpec == sT) {
-                    s = JavaUtil.readString(System.in, cs);
-                }
-                else {
-                    final Path p = Paths.get(requireString("read-textfile", fileSpec));
-                    s = JavaUtil.readString(p, cs);
-                }
+                if (fileSpec == sT) s = JavaUtil.readString(System.in, cs);
+                else s = JavaUtil.readString(Paths.get(requireString("read-textfile", fileSpec)), cs);
 
                 args = requireList("read-textfile", cdr(args));
                 final boolean translateLineend = args == null || car(args) != null;
@@ -5803,6 +5794,10 @@ public class LambdaJ {
             catch (Exception e) {
                 throw wrap(e);
             }
+        }
+
+        private static Charset getCharset(String func, ConsCell args) {
+            return car(args) == null ? StandardCharsets.UTF_8 : Charset.forName(requireString(func, car(args)));
         }
 
         /** (write-textfile-lines filenamestr string-sequence  [appendp [charset [translate-lineend-p]]]) -> nil */
@@ -12096,8 +12091,9 @@ final class JavaUtil {
         try (Reader r = new InputStreamReader(is, cs)) {
             final StringBuilder ret = new StringBuilder(4096);
             final char[] buf = new char[4096];
-            while (r.read(buf) != -1) {
-                ret.append(buf);
+            int nRead;
+            while ((nRead = r.read(buf)) != -1) {
+                ret.append(buf, 0, nRead);
             }
             return ret;
         }
