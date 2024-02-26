@@ -72,6 +72,11 @@ mvn compile findbugs:findbugs findbugs:gui -pl lambda
 mvn package -Pcoverage -pl lambda
     build JMurmel and run tests with JaCoCo, test execution coverage results will be in lambda/target/site/jacoco
 
+mvn modernizer:modernizer
+    "Modernizer Maven Plugin detects uses of legacy APIs which modern Java versions supersede."
+    See https://github.com/gaul/modernizer-maven-plugin for more info
+
+
 mvn test -Ppitest -pl lambda
     run mutation testing c/o https://pitest.org/, see lambda/target/pit-reports/index.html for test coverage results.
     PIT likes Java heap memory, if it goes too slow then you might consider increasing the value for -Xmx in .mvn/jvm.config

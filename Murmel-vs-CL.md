@@ -69,6 +69,7 @@ or works after some massaging which may or may not introduce some `#+murmel`.
 * no `defstruct`
 * no CLOS (Murmel has some conditions related stuff, though)
 * various other global variables and functions from the ANSI spec are missing
+* `destructuring-bind` doesn't handle nested lists
 
 ### System
 
