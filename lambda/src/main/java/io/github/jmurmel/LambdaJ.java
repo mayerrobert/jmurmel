@@ -8465,7 +8465,7 @@ public class LambdaJ {
         public final Object makeHash      (Object... args)      { clrValues(); varargsMinMax(MAKE_HASH_TABLE, args, 0, 2);
                                                                   return makeHashTable(symtab, nth(0, args), args.length > 1 ? toNonnegInt(MAKE_HASH_TABLE, args[1]) : DEFAULT_HASH_SIZE); }
 
-        public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args, 2, 3);  values = hashref(args[0], args[1], args.length > 2 ? args[2] : NO_DEFAULT_VALUE); return values[0]; }
+        public final Object _hashref      (Object... args)      { varargsMinMax("hashref", args, 2, 3);               return retn(hashref(args[0], args[1], args.length > 2 ? args[2] : NO_DEFAULT_VALUE)); }
         public final Object _hashset      (Object... args)      { clrValues(); varargsMinMax("hashset", args, 2, 3);  return hashset(arraySlice(args)); }
         public final Object hashTableCount(Object... args)      { clrValues(); oneArg("hash-table-count", args);      return LambdaJ.Subr.hashTableCount(args[0]); }
         public final Object _clrhash      (Object... args)      { clrValues(); oneArg("clrhash", args);               return LambdaJ.Subr.clrhash(args[0]); }
@@ -8486,14 +8486,14 @@ public class LambdaJ {
             if (it.hasNext()) return new CompilerIteratorGenerator() {
                 private Map.Entry<Object,Object> entry;
                 @Override public Object applyCompilerPrimitive(Object... args) {
-                    if (it.hasNext()) { entry = it.next(); final ConsCell tuple = ConsCell.cons(getKey.apply(entry), entry.getValue()); values = new Object[] { tuple, sT }; return tuple; }
-                    else { entry = null;  values = new Object[] { null, null };  return null; }
+                    if (it.hasNext()) { entry = it.next(); final ConsCell tuple = ConsCell.cons(getKey.apply(entry), entry.getValue()); return ret2(tuple, sT); }
+                    else { entry = null;  return ret2(null, null); }
                 }
                 @Override public Object set(Object value) { if (entry != null) { entry.setValue(value); return value; } else throw new SimpleError("no such element"); }
                 @Override public boolean remove() { it.remove(); entry = null; return true; }
                 @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<hash-table generator>"); }
             };
-            else return new CompilerIteratorGenerator() { @Override public Object applyCompilerPrimitive(Object... args) { values = new Object[] { null, null };  return null; }
+            else return new CompilerIteratorGenerator() { @Override public Object applyCompilerPrimitive(Object... args) { return ret2(null, null); }
                                                           @Override public void printSEx(WriteConsumer out, boolean ignored) { out.print("#<empty hash-table generator>"); } };
         }
 
@@ -8628,7 +8628,8 @@ public class LambdaJ {
         private static boolean noSecondArgOrNotNull(Object[] args) { return args.length < 2 || args[1] != null; }
 
 
-        private Object retn(Object[] _values) { assert _values.length > 1; values = _values; return _values[0]; }
+        private Object retn(Object[] _values) { values = _values; return _values[0]; }
+        private Object ret2(Object prim, Object v2) { values = new Object[] { prim, v2 }; return prim; }
 
         public final boolean clrValues(boolean b) { clrValues(); return b; }
         public final Object  clrValues(Object o)  { clrValues(); return o; }
@@ -9045,8 +9046,7 @@ public class LambdaJ {
             }
             catch (ReturnException e) { throw e; }
             catch (Exception e) {
-                values = new Object[] { errorObj, new LambdaJError(e, true, loc) };
-                return errorObj;
+                return ret2(errorObj, new LambdaJError(e, true, loc));
             }
             finally { conditionHandler.setForTry(oldHandler); }
         }
