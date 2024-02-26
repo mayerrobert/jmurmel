@@ -55,59 +55,41 @@ jobs:
         key: ${{ runner.os }}-maven-${{ hashFiles('**/pom.xml') }}
 
     - name: Build with Maven
-      run: mvn -V -B clean install site --file pom.xml -Djdk.console=jdk.jshell -Djavac.target=`echo "${{ matrix.java }}" | sed -e "s/-ea//g"`
+      run: |
+        mvn -V -B clean install site --file pom.xml -Djdk.console=jdk.jshell -Djavac.target=`echo "${{ matrix.java }}" | sed -e "s/-ea//g"` \
+          && cp lambda/target/jmurmel.jar . \
+          && cp samples.murmel-mlib/mlib.lisp .
 
-    - name: Upload Jar
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+    - name: Upload Jar, mlib, docs
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
       with:
         name: jmurmel-temurin-${{ matrix.java }}
         path: |
-          lambda/target/jmurmel.jar
-
-    - name: Upload docs
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-      with:
-        name: jmurmel-temurin-${{ matrix.java }}
-        path: |
+          jmurmel.jar
+          mlib.lisp
           murmel-langref.md
           mlib.md
           murmel-langref.html
           mlib.html
           LICENSE
 
-    - name: Upload mlib
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-      with:
-        name: jmurmel-temurin-${{ matrix.java }}
-        path: |
-          samples.murmel-mlib/mlib.lisp
 
     - name: Create W64 launcher
       if: ${{ matrix.java == '8' }}
-      run: mvn -V -B package -pl scripts -Dlaunch4j.skip=false
+      run: |
+        mvn -V -B package -pl scripts -Dlaunch4j.skip=false \
+          && cp scripts/target/jmurmel.exe . \
+          && cp samples.murmel-mlib/mlib.lisp .
 
-    - name: Upload launch4j exe
+
+    - name: Upload launch4j exe, mlib, docs
       if: ${{ matrix.java == '8' }}
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
+      uses: actions/upload-artifact@5d5d22a31266ced268874388b861e4b58bb5c2f3 # v4.3.1
       with:
         name: jmurmel-w64-slim
         path: |
-          scripts/target/jmurmel.exe
-
-    - name: Upload launch4j mlib
-      if: ${{ matrix.java == '8' }}
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-      with:
-        name: jmurmel-w64-slim
-        path: |
-          samples.murmel-mlib/mlib.lisp
-
-    - name: Upload launch4j docs
-      if: ${{ matrix.java == '8' }}
-      uses: actions/upload-artifact@a8a3f3ad30e3422c9c7b888a15615d19a852ae32 # v3.1.3
-      with:
-        name: jmurmel-w64-slim
-        path: |
+          jmurmel.exe
+          mlib.lisp
           murmel-langref.md
           mlib.md
           murmel-langref.html
