@@ -38,7 +38,7 @@ jobs:
 
       - name: Restore Maven repo
         id: restore-maven
-        uses: actions/cache/restore@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        uses: actions/cache/restore@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
         with:
           path: ~/.m2/repository
           key: ${{ runner.os }}-graalvm-maven-${{ hashFiles('**/pom.xml') }}
@@ -64,7 +64,7 @@ jobs:
 
       - name: Save Maven repo
         id: cache-maven
-        uses: actions/cache/save@13aacd865c20de90d75de3b17ebe84f7a17d57d2 # v4.0.0
+        uses: actions/cache/save@ab5e6d0c87105b4c9c2047343972218f562e4319 # v4.0.1
         with:
           path: ~/.m2/repository
           key: ${{ steps.restore-maven.outputs.cache-primary-key }}
