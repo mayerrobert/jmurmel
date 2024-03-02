@@ -1,5 +1,6 @@
 
 Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
+released: 2024-03-02
 
  * changed/ fixed cond clauses w/o body to return the primary result of the test-form (was: nil)
  * changed printing of conditions: (write cnd nil) will only print the message, (write cnd t)
