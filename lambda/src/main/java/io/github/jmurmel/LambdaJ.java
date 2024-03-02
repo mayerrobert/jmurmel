@@ -2458,11 +2458,11 @@ public class LambdaJ {
         sWriteLines("write-textfile-lines", Features.HAVE_IO, 2, 4)    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeTextfileLines(args); } },
         sWriteString("write-textfile", Features.HAVE_IO, 2, 5)         { @Override Object apply(LambdaJ intp, ConsCell args) { return writeTextfile(args); } },
         sWriteToString("write-to-string", Features.HAVE_IO, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return writeToString(car(args), cdr(args) == null || cadr(args) != null); } },
-        sWrite("write", Features.HAVE_IO, 1, 3)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(caddr(args), intp.getLispPrinter()), car(args), cdr(args) == null || cadr(args) != null); } },
-        sWriteln("writeln", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(caddr(args), intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
-        sLnwrite("lnwrite", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(caddr(args), intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
-        sFormat("format", Features.HAVE_UTIL, 2, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.getLispPrinter(car(args), null), intp.have(Features.HAVE_IO), args); } },
-        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(car(args), null), intp.have(Features.HAVE_IO), args); } },
+        sWrite("write", Features.HAVE_IO, 1, 3)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(args, 2, intp.getLispPrinter()), car(args), cdr(args) == null || cadr(args) != null); } },
+        sWriteln("writeln", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
+        sLnwrite("lnwrite", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
+        sFormat("format", Features.HAVE_UTIL, 2, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
+        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
 
         // misc
         sValues(VALUES, Features.HAVE_XTRA, -1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { if (args != null && cdr(args) == null) intp.values = NO_VALUES; else intp.values = args; return car(args); } },
@@ -6422,7 +6422,10 @@ public class LambdaJ {
     /** return the current stdout */
     public ObjectWriter getLispPrinter() { return lispPrinter; }
 
-    ObjectWriter getLispPrinter(Object consumer, ObjectWriter defaultIfNull) {
+    ObjectWriter getLispPrinter(ConsCell args, int nth, ObjectWriter defaultIfNull) {
+        final ConsCell ccDest = requireList("write", nthcdr(nth, args));
+        if (ccDest == null) return defaultIfNull;
+        final Object consumer = car(ccDest);
         if (consumer == null) return defaultIfNull;
         if (consumer == sT) return lispPrinter;
         if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { wrap0(e); } });
@@ -8046,8 +8049,9 @@ public class LambdaJ {
         }
 
         private ObjectWriter getLispPrinter(Object[] args, int nth, ObjectWriter defaultIfNull) {
-            final Object consumer;
-            if (nth >= args.length || (consumer = args[nth]) == null) return defaultIfNull;
+            if (nth >= args.length) return defaultIfNull;
+            final Object consumer = args[nth];
+            if (consumer == null) return defaultIfNull;
             if (consumer == sT) return lispPrinter;
             if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { wrap0(e); } });
             throw new SimpleTypeError("cannot coerce %s into a printer", printSEx(consumer));

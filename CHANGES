@@ -11,6 +11,7 @@ Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
   'translate-lineend-p' controls translating from/to OS-dependent lineend character (sequence)s
  * changed read-textfile, read-textfile-lines, write-textfile, write-textfile-lines:
    the symbol t as a filename indicates "stdin"
+ * changed write, writeln, lnwrite: "nil" is no longer an alias for stdout, only "t" is
 
  * added #1= style labelled forms to the reader
  * added tailrecursion->loop transformation for compiled Murmel:

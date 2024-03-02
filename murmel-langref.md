@@ -1194,12 +1194,11 @@ provides.
 
 ## I/O
 
-### read, write, writeln, lnwrite
+### read
 
     (read eof-obj?) -> obj
-    (write   obj  [print-escape-p [dest]]) -> obj
-    (writeln [obj [print-escape-p [dest]]]) -> obj
-    (lnwrite [obj [print-escape-p [dest]]]) -> obj
+
+Read an S-expression from stdin.
 
 `read` w/o an argument will throw an error when encountering EOF.
 If an optional argument was given then EOF does not throw an error
@@ -1217,13 +1216,22 @@ but
 Note that if an EOF occurs while reading an S-expression an error
 will be thrown even when `eof-obj` was used. 
 
+
+### write, writeln, lnwrite
+
+    (write   obj  [print-escape-p [dest]]) -> obj
+    (writeln [obj [print-escape-p [dest]]]) -> obj
+    (lnwrite [obj [print-escape-p [dest]]]) -> obj
+
+Write a Lisp object as an S-expression to `dest`.
+
 `write` accepts an optional boolean argument `print-escape-p`.
 `writeln` and `lnwrite` accept an optional argument `obj`
 and an optional boolean argument `print-escape-p`.
 
 `write`, `writeln` and `lnwrite` accept an optional argument `dest`
-which may be `nil`, `t` or an adjustable string.
-`nil` and `t` means: write to stdout, else write to `dest`.
+which may be `t` or an adjustable string.
+`t` means: write to stdout, else write to `dest`.
 (Implementation note: any Java object implementing `java.lang.Appendable`
 is acceptable.)
 
