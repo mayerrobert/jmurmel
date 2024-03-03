@@ -581,6 +581,14 @@ multiline comment
 (deftest labels.3
   (x) 123)
 
+(labels ((l1 () 1)
+         (l2 () 2.0))
+  (defun f_() (+ (l1) (l2)))
+  (defun f1_() (l1)))
+
+(deftest labels.4
+  (list (f_) (f1_)) '(3.0 1))
+
 
 ;;; catch, throw
 (deftest catch.1 (catch 'dummy-tag 1 2 (throw 'dummy-tag 3) 4)  3)

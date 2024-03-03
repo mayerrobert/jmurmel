@@ -2768,3 +2768,5 @@ formsToInterpretedProgram macht ein CallProgram, dessen konstruktor speichert nu
 MurmelProgram.setReaderPrinter überladen mit ReadSupplier/WriteConsumer statt ObjectReader/ObjectWriter
 
 formsToJavaClass überladen mit ReadSupplier statt ObjectReader
+
+defun könnte auch in labels body erlaubt sein

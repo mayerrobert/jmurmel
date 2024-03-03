@@ -1,4 +1,9 @@
 
+Changes in JMurmel-1.4.7 relative to JMurmel-1.4.6
+
+ * changed defun/ define: are now allowed inside labels forms
+
+
 Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
 released: 2024-03-02
 

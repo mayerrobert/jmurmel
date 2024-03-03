@@ -9791,6 +9791,7 @@ public class LambdaJ {
                         return globalEnv;
                     }
 
+                    case sLabels:
                     case sLet:
                     case sLetStar:
                     case sLetrec: {
@@ -9813,10 +9814,8 @@ public class LambdaJ {
                     case sLoad: {
                         final ConsCell ccArgs = listOrMalformed(LOAD, cdr(ccForm));
                         oneArg(LOAD, ccArgs);
-                        if (ccForm instanceof SExpConsCell) {
-                            final SExpConsCell sExpConsCell = (SExpConsCell)ccForm;
-                            intp.currentSource = sExpConsCell.path();
-                        } // todo unschoener hack
+                        // todo unschoener hack
+                        if (ccForm instanceof SExpConsCell) intp.currentSource = ((SExpConsCell)ccForm).path();
                         globalEnv = loadFile(LOAD, ret, car(ccArgs), globalEnv, bodyForms, globals);
                         return globalEnv;
                     }
@@ -9888,6 +9887,9 @@ public class LambdaJ {
                 globalEnv = defineToJava(ret, ConsCell.list(intern(DEFINE), symbol, null), globalEnv, rsfx);
                 globals.append("        case \"").append(symbol).append("\": return ").append(javasym(symbol, globalEnv)).append(";\n");
                 break;
+
+            case sLabels:
+                return toplevelLetBody(ret, globals, globalEnv, (ConsCell)cddr(ccForm), rsfx+1);
 
             case sLet:
             case sLetStar:

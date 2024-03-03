@@ -1,6 +1,22 @@
+JMurmel> (labels ((l1 () 1)
+(l2 () 2)))
+
+==> nil
+JMurmel> :java nil t
+
+Error: error - internal error - formToJava: caught exception java.lang.NullPointerException: null
+error occurred in line 1:1..2:10: (labels ((l1 nil 1) (l2 nil 2)))
+
+-> defmacro sollte in labels erlaubt sein
+-> labels ohne body (oder nur mit defmacro) sollte der compiler nach nil übersetzen
+
+
+webserver in kawa mit netty + jooby: https://github.com/eatonphil/jvm-lisp-examples/blob/main/kawa/main.scm
+
 compiler: kamma die logik für multiple-values umdrehen?
 -> nicht wegputzen wenn mans nicht braucht
    -> sondern values wird nur belegt wenn ein flag true ist, und nur multiple-value-bind/ multiple-value-call (/ noch was?) setzen das auf true (und nach der values form gleich wieder auf false)
+   -> was passiert im repl?
 
 zyklen erkennen: https://coredumped.dev/2024/02/23/cycles-all-way-down/
 -> list-length hat Floyd’s cycle detection, gibt aber noch Brent’s algorithm für zyklen in trees siehe https://en.wikipedia.org/wiki/Cycle_detection#Brent's_algorithm
