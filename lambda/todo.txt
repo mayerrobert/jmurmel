@@ -1,8 +1,6 @@
-JMurmel> (labels ((l1 () 1)
-(l2 () 2)))
+ConsCell und ConsCell? in das array mit bejannten JFFI arguments aufnehmen
 
-==> nil
-JMurmel> :java nil t
+einfacher repl in CL: https://www.cliki.net/repl
 
 Error: error - internal error - formToJava: caught exception java.lang.NullPointerException: null
 error occurred in line 1:1..2:10: (labels ((l1 nil 1) (l2 nil 2)))
@@ -17,6 +15,8 @@ compiler: kamma die logik für multiple-values umdrehen?
 -> nicht wegputzen wenn mans nicht braucht
    -> sondern values wird nur belegt wenn ein flag true ist, und nur multiple-value-bind/ multiple-value-call (/ noch was?) setzen das auf true (und nach der values form gleich wieder auf false)
    -> was passiert im repl?
+      -> toplevel beginnt mit flag = true, damit sollte der repl passen, und auch aufruf von body() aus Java heraus
+
 
 zyklen erkennen: https://coredumped.dev/2024/02/23/cycles-all-way-down/
 -> list-length hat Floyd’s cycle detection, gibt aber noch Brent’s algorithm für zyklen in trees siehe https://en.wikipedia.org/wiki/Cycle_detection#Brent's_algorithm

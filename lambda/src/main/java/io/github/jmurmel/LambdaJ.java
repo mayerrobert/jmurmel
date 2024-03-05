@@ -9869,7 +9869,7 @@ public class LambdaJ {
         }
 
         private ConsCell toplevelLetBody(WrappingWriter ret, StringBuilder globals, ConsCell globalEnv, ConsCell ccBodyForms, int rsfx) {
-            for (Object letbodyform : ccBodyForms) {
+            if (ccBodyForms != null) for (Object letbodyform : ccBodyForms) {
                 if (consp(letbodyform)) globalEnv = toplevelLet(ret, globals, globalEnv, (ConsCell)letbodyform, rsfx+1);
             }
             return globalEnv;

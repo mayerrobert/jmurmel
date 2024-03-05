@@ -2770,3 +2770,9 @@ MurmelProgram.setReaderPrinter überladen mit ReadSupplier/WriteConsumer statt O
 formsToJavaClass überladen mit ReadSupplier statt ObjectReader
 
 defun könnte auch in labels body erlaubt sein
+
+
+JMurmel> (labels ((l1 () 1)
+                  (l2 () 2)))
+==> nil
+JMurmel> :java nil t
