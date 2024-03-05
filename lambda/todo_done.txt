@@ -2776,3 +2776,9 @@ JMurmel> (labels ((l1 () 1)
                   (l2 () 2)))
 ==> nil
 JMurmel> :java nil t
+
+Error: error - internal error - formToJava: caught exception java.lang.NullPointerException: null
+error occurred in line 1:1..2:10: (labels ((l1 nil 1) (l2 nil 2)))
+
+
+ConsCell und ConsCell? in das array mit bekannten JFFI arguments aufnehmen

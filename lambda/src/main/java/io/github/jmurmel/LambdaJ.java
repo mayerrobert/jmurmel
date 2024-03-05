@@ -6268,10 +6268,14 @@ public class LambdaJ {
             putWithAlias("String?...",      new Object[] { String[].class,       "requireStringOrNull", (UnaryOperator<Object>)(MurmelJavaProgram::requireStringOrNull) });
 
             putWithUtilAlias("Comparator",  new Object[] { Comparator.class,     "java.util.Comparator.class.cast", (UnaryOperator<Object>)(Comparator.class::cast) });
+
+            putWithMurmelAlias("ConsCell?", new Object[] { ConsCell.class,       "requireList",         (UnaryOperator<Object>)(MurmelJavaProgram::requireList) });
+            putWithMurmelAlias("ConsCell",  new Object[] { ConsCell.class,       "requireCons",         (UnaryOperator<Object>)(MurmelJavaProgram::requireCons) });
         }
 
         private static void putWithAlias(String clsName, Object[] entry) { classByName.put(clsName, entry); classByName.put("java.lang." + clsName, entry); }
         private static void putWithUtilAlias(String clsName, Object[] entry) { classByName.put(clsName, entry); classByName.put("java.util." + clsName, entry); }
+        private static void putWithMurmelAlias(String clsName, Object[] entry) { classByName.put(clsName, entry); classByName.put("io.github.jmurmel.LambdaJ." + clsName, entry); }
 
         /** find and load the class given by the (possibly abbreviated) name {@code clsName} */
         private static Class<?> findClass(String clsName) throws ClassNotFoundException {
@@ -8229,11 +8233,11 @@ public class LambdaJ {
         public final ConsCell _cons(Object car, Object cdr) { clrValues(); return ConsCell.cons(car, cdr); } // also used by generated code
 
         public final ConsCell _rplaca (Object... args)           { twoArgs(RPLACA, args);  return _rplaca(args[0], args[1]); }
-        public final ConsCell _rplaca(Object l, Object newCar)   { clrValues(); return requireCons(RPLACA, l).rplaca(newCar); }
+        public final ConsCell _rplaca(Object l, Object newCar)   { clrValues(); return Chk.requireCons(RPLACA, l).rplaca(newCar); }
         public final ConsCell _rplaca(ConsCell l, Object newCar) { clrValues(); return l.rplaca(newCar); }
 
         public final ConsCell _rplacd (Object... args)           { twoArgs(RPLACD, args);  return _rplacd(args[0], args[1]); }
-        public final ConsCell _rplacd(Object l, Object newCdr)   { clrValues(); return requireCons(RPLACD, l).rplacd(newCdr); }
+        public final ConsCell _rplacd(Object l, Object newCdr)   { clrValues(); return Chk.requireCons(RPLACD, l).rplacd(newCdr); }
         public final ConsCell _rplacd(ConsCell l, Object newCdr) { clrValues(); return l.rplacd(newCdr); }
 
         public final ConsCell _list    (Object... args) { clrValues(); return ConsCell.list(args); }
@@ -8744,6 +8748,12 @@ public class LambdaJ {
         }
 
         /** used by JFFI and generated inline JFFI */
+        public static ConsCell requireCons(Object lst) {
+            if (!consp(lst)) errorNotACons(lst);
+            return (ConsCell)lst;
+        }
+
+        /** used by JFFI and generated inline JFFI */
         public static Character requireChar(Object o) {
             if (!characterp(o)) errorNotACharacter(o);
             return (Character)o;
@@ -9057,7 +9067,8 @@ public class LambdaJ {
         private static RuntimeException errorNotANumber(Object n) { throw new SimpleTypeError("not a number: %s", printSEx(n)); }
         private static RuntimeException errorNotABit(Object n) { throw new SimpleTypeError("not a bit: %s", printSEx(n)); }
         private static RuntimeException errorNotAnArrayIndex(Object n) { throw new SimpleTypeError("invalid array index/ size: %s", printSEx(n)); }
-        private static void errorNotAList(Object s)   { throw new SimpleTypeError("not a cons/list: %s", printSEx(s)); }
+        private static void errorNotAList(Object s)   { throw new SimpleTypeError("not a list: %s", printSEx(s)); }
+        private static void errorNotACons(Object s)   { throw new SimpleTypeError("not a cons: %s", printSEx(s)); }
         private static void errorNotACharacter(Object s) { throw new SimpleTypeError("not a character: %s", printSEx(s)); }
         private static void errorNotAString(Object s) { throw new SimpleTypeError("not a string: %s", printSEx(s)); }
         private static RuntimeException errorNotAFunction(Object fn) { throw LambdaJ.errorNotAFunction("not a function: %s", printSEx(fn)); }

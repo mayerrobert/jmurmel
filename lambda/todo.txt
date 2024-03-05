@@ -1,12 +1,6 @@
-ConsCell und ConsCell? in das array mit bejannten JFFI arguments aufnehmen
-
 einfacher repl in CL: https://www.cliki.net/repl
 
-Error: error - internal error - formToJava: caught exception java.lang.NullPointerException: null
-error occurred in line 1:1..2:10: (labels ((l1 nil 1) (l2 nil 2)))
-
 -> defmacro sollte in labels erlaubt sein
--> labels ohne body (oder nur mit defmacro) sollte der compiler nach nil übersetzen
 
 
 webserver in kawa mit netty + jooby: https://github.com/eatonphil/jvm-lisp-examples/blob/main/kawa/main.scm

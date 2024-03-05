@@ -5,6 +5,7 @@ import static org.junit.Assert.*;
 import java.io.Reader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.util.function.Function;
 
 import org.junit.Test;
 import io.github.jmurmel.LambdaJ.*;
@@ -758,6 +759,34 @@ public class MurmelJavaCompilerTest {
         assertNotNull("failed to compile customenv to class:", program);
         assertEquals("customenv produced wrong result", 42L, program.body());
     }
+
+
+
+    public static long sum(ConsCell lst) {
+        long ret = 0;
+        for (Object elem: lst)
+            ret += (Long)elem; return ret;
+    }
+
+    // invoking through a global variable will go through the trampoline
+    @Test
+    public void testConsCellFFI() throws Exception {
+        final String source = "(define sum (jmethod \"io.github.jmurmel.MurmelJavaCompilerTest\" \"sum\" \"ConsCell\")) (sum '(1 2 3))";
+        final MurmelProgram program = compile(source, true);
+        assertNotNull("failed to compile conscelljffi to class:", program);
+        assertEquals("conscelljffi produced wrong result", 6L, program.body());
+    }
+
+    // invoking through a global variable won't go through the trampoline
+    @Test
+    public void testConsCellFFI2() throws Exception {
+        final String source = "(defmacro sum(lst) `((jmethod \"io.github.jmurmel.MurmelJavaCompilerTest\" \"sum\" \"ConsCell\") ,lst)) (sum '(1 2 3))";
+        final MurmelProgram program = compile(source, true);
+        assertNotNull("failed to compile conscelljffi to class:", program);
+        assertEquals("conscelljffi produced wrong result", 6L, program.body());
+    }
+
+
 
     static void compileAndRun(String source, Object expectedResult) throws Exception {
         final MurmelProgram program = compile(source);
