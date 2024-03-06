@@ -10,6 +10,7 @@ compiler: kamma die logik für multiple-values umdrehen?
    -> sondern values wird nur belegt wenn ein flag true ist, und nur multiple-value-bind/ multiple-value-call (/ noch was?) setzen das auf true (und nach der values form gleich wieder auf false)
    -> was passiert im repl?
       -> toplevel beginnt mit flag = true, damit sollte der repl passen, und auch aufruf von body() aus Java heraus
+         -> aber nur die letzte form
 
 
 zyklen erkennen: https://coredumped.dev/2024/02/23/cycles-all-way-down/

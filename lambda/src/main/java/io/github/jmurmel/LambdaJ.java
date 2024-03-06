@@ -7111,7 +7111,6 @@ public class LambdaJ {
             private final LambdaJSymbol result1, result2, result3;
             private final LambdaJSymbol values1, values2, values3;
 
-            private final Object eof = "EOF";
             private final List<Object> history;
             private SExpressionReader parser;
             private ObjectWriter outWriter;
@@ -7122,7 +7121,6 @@ public class LambdaJ {
 
             private final boolean replVars;
             private final Object bye;
-            private final Runnable initReplVars;
 
             Repl(@NotNull ReadSupplier consoleReader, @NotNull Appendable stdout, @NotNull LambdaJ interpreter, boolean isInit, boolean echo,
                  List<Object> prevHistory, String[] args, String consoleCharsetName) {
@@ -7131,27 +7129,28 @@ public class LambdaJ {
                 this.isInit = isInit;
                 this.echo = echo;
                 this.args = args;
-                cmdQuit = interpreter.intern(":q");
-                cmdHelp = interpreter.intern(":h");
-                cmdDesc = interpreter.intern(":desc");
-                cmdEcho = interpreter.intern(":echo");
-                cmdNoEcho = interpreter.intern(":noecho");
-                cmdEnv = interpreter.intern(":env");
-                cmdMacros = interpreter.intern(":macros");
-                cmdRes = interpreter.intern(":res");
-                cmdList = interpreter.intern(":l");
-                cmdWrite = interpreter.intern(":w");
-                cmdJava = interpreter.intern(":java");
-                cmdRun = interpreter.intern(":r");
-                cmdJar = interpreter.intern(":jar");
 
-                define = interpreter.intern(DEFINE);
-                setq = interpreter.intern(SETQ);
-                quote = interpreter.intern(QUOTE);
-                form0 = interpreter.intern("@-");
-                form1 = interpreter.intern("@+");
-                form2 = interpreter.intern("@++");
-                form3 = interpreter.intern("@+++");
+                cmdQuit   = interpreter.intern(":q");
+                cmdHelp   = interpreter.intern(":h");
+                cmdDesc   = interpreter.intern(":desc");
+                cmdEcho   = interpreter.intern(":echo");
+                cmdNoEcho = interpreter.intern(":noecho");
+                cmdEnv    = interpreter.intern(":env");
+                cmdMacros = interpreter.intern(":macros");
+                cmdRes    = interpreter.intern(":res");
+                cmdList   = interpreter.intern(":l");
+                cmdWrite  = interpreter.intern(":w");
+                cmdJava   = interpreter.intern(":java");
+                cmdRun    = interpreter.intern(":r");
+                cmdJar    = interpreter.intern(":jar");
+
+                define  = interpreter.intern(DEFINE);
+                setq    = interpreter.intern(SETQ);
+                quote   = interpreter.intern(QUOTE);
+                form0   = interpreter.intern("@-");
+                form1   = interpreter.intern("@+");
+                form2   = interpreter.intern("@++");
+                form3   = interpreter.intern("@+++");
                 result1 = interpreter.intern("@*");
                 result2 = interpreter.intern("@**");
                 result3 = interpreter.intern("@***");
@@ -7171,27 +7170,28 @@ public class LambdaJ {
 
                 replVars = interpreter.have(Features.HAVE_XTRA) && interpreter.have(Features.HAVE_DEFINE);
                 bye = new Object();
-                initReplVars = () -> {
-                    for (Object v : new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3 }) {
-                        interpreter.eval(ConsCell.list(define, v, null), null);
-                    }
-                    interpreter.eval(ConsCell.list(define,
-                                                   interpreter.intern("quit"),
-                                                   (Primitive)a -> { throw new ReturnException(bye, 0, (Object[])null); }),
-                                     null);
-                };
 
                 if (isInit) {
                     interpreter.resetCounters();
                     parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.getSymbolTable(), interpreter.featuresEnvEntry,
                                                    echo ? echoingSupplier : nonechoingSupplier, null);
                     outWriter = interpreter.getLispPrinter();
-                    if (replVars) initReplVars.run();
+                    if (replVars) initReplVars();
                 }
             }
 
-            /** read one form (or :command) from the stdin that was passed to the constructor Repl(), write results to stdout, formatted in REPL-style with "==>" or "-->".
-             *  This may block if reading from stdin blocks. If stdin is exhausted (returns -1) then a bye message is followed by throw EXIT_SUCCESS.
+            private void initReplVars() {
+                for (Object v : new Object[] { form0, form1, form2, form3, result1, result2, result3, values1, values2, values3 }) {
+                    interpreter.eval(ConsCell.list(define, v, null), null);
+                }
+                interpreter.eval(ConsCell.list(define,
+                                               interpreter.intern("quit"),
+                                               (Primitive)a -> { throw new ReturnException(bye, 0, (Object[])null); }),
+                                 null);
+            }
+
+            /** read one form (or :command) from the stdin that was passed to the constructor Repl(), write results to stdout, formatted in REPL-style with "==&gt;" or " -&gt;".
+             *  This may block if reading from stdin blocks. If stdin is exhausted (returns -1) then a bye message is printed followed by throw EXIT_SUCCESS.
              *  The command ":q" or form "(quit)" will throw the exception EXIT_SUCCESS, if "istty" is false then any error will throw EXIT_RUNTIME_ERROR. */
             void oneForm(boolean istty, String nl) {
                 final LambdaJ interpreter = this.interpreter;
@@ -7203,12 +7203,13 @@ public class LambdaJ {
                     outWriter = makeWriter(stdout);
                     interpreter.init(parser, outWriter, null);
                     if (args != null) injectCommandlineArgs(interpreter, args);
-                    if (replVars) initReplVars.run();
+                    if (replVars) initReplVars();
                     isInit = true;
                 }
 
                 try {
                     if (istty) parser.resetPos();
+                    final Object eof = "EOF";
                     final Object exp = parser.readObj(true, eof);
 
                     if (exp != null) {
@@ -7260,7 +7261,7 @@ public class LambdaJ {
                         }
                     }
 
-                    if (replVars) interpreter.eval(ConsCell.list(setq, form0, ConsCell.list(quote, exp)), null);
+                    if (replVars) interpreter.eval(ConsCell.list(setq, form3, form2, form2, form1, form1, form0, form0, ConsCell.list(quote, exp)), null);
 
                     interpreter.values = NO_VALUES;
                     final long tStart = System.nanoTime();
@@ -7271,17 +7272,8 @@ public class LambdaJ {
                     history.add(exp);
 
                     if (replVars) {
-                        interpreter.eval(ConsCell.list(setq, form3, form2), null);
-                        interpreter.eval(ConsCell.list(setq, form2, form1), null);
-                        interpreter.eval(ConsCell.list(setq, form1, form0), null);
-
-                        interpreter.eval(ConsCell.list(setq, result3, result2), null);
-                        interpreter.eval(ConsCell.list(setq, result2, result1), null);
-                        interpreter.eval(ConsCell.list(setq, result1, ConsCell.list(quote, result)), null);
-
-                        interpreter.eval(ConsCell.list(setq, values3, values2), null);
-                        interpreter.eval(ConsCell.list(setq, values2, values1), null);
-                        interpreter.eval(ConsCell.list(setq, values1, ConsCell.list(quote, resultMv == NO_VALUES ? ConsCell.list(result) : resultMv)), null);
+                        interpreter.eval(ConsCell.list(setq, result3, result2, result2, result1, result1, ConsCell.list(quote, result)), null);
+                        interpreter.eval(ConsCell.list(setq, values3, values2, values2, values1, values1, ConsCell.list(quote, resultMv == NO_VALUES ? ConsCell.list(result) : resultMv)), null);
                     }
 
                     stdout.print(nl);
@@ -7922,7 +7914,7 @@ public class LambdaJ {
             outBuffer = out;
         }
 
-        /** eval all forms in the String "forms" and return a String consisting of the forms' output and their results prepended by "==&gt;" or multiple "--&gt;".
+        /** eval all forms in the String "forms" and return a String consisting of the forms' output and their results prepended by "==&gt;" or multiple " -&gt;".
          *  The returned String looks like REPL output. A prompt is NOT displayed.
          *  
          *  @throws Cli.Exit if ":q" was passed as a form */
