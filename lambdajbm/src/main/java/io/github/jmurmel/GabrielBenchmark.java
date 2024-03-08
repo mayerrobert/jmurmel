@@ -37,13 +37,13 @@ public class GabrielBenchmark {
 
     private static final String[] ALL_FILES = {
     "all.lisp",
-    "000_lib",
-    "00_tak_apo",
+    "000_lib.lisp",
+    "00_tak_apo.lisp",
     "3.01_tak.lisp",
-    "3.01_takeuchi",
-    "3.02_stak",
-    "3.04_takl",
-    "3.10_deriv",
+    "3.01_takeuchi.lisp",
+    "3.02_stak.lisp",
+    "3.04_takl.lisp",
+    "3.10_deriv.lisp",
     };
 
     private static Path prog;
@@ -62,13 +62,13 @@ public class GabrielBenchmark {
         final StringBuilder sb = new StringBuilder();
         for (String fileName: ALL_FILES) {
             final Path p = Paths.get("../samples.murmel/gabriel/" + fileName);
-            sb.append(JavaUtil.readString(prog, StandardCharsets.UTF_8));
+            sb.append(JavaUtil.readString(p, StandardCharsets.UTF_8));
         }
         allSourceFiles = sb.toString();
 
         final LambdaJ.MurmelJavaCompiler c = new LambdaJ.MurmelJavaCompiler(null, null, LambdaJBenchmark.getTmpDir());
         final Reader reader = new StringReader(source);
-        final LambdaJ.ObjectReader parser = new LambdaJ.SExpressionReader(reader::read, c.getSymbolTable(), null, prog);
+        final LambdaJ.ObjectReader parser = new LambdaJ.SExpressionReader(reader::read, c.getSymbolTable(), c.intp.featuresEnvEntry, prog);
         final Class<LambdaJ.MurmelProgram> murmelClass = c.formsToJavaClass("Test", parser, null);
         compiled =  murmelClass.getDeclaredConstructor().newInstance();
 
@@ -98,6 +98,7 @@ public class GabrielBenchmark {
 
     public static void main(String[] args) throws Exception {
         setup();
-        new GabrielBenchmark().readAndInterpret();
+        System.out.format("interpreted result: %s%n", new GabrielBenchmark().readAndInterpret());
+        System.out.format("compiled result:    %s%n", new GabrielBenchmark().readAndInterpret());
     }
 }
