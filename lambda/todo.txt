@@ -1,6 +1,6 @@
 einfacher repl in CL: https://www.cliki.net/repl
 
--> defmacro sollte in labels erlaubt sein
+-> define/ defun und defmacro sollte in labels erlaubt sein
 
 
 webserver in kawa mit netty + jooby: https://github.com/eatonphil/jvm-lisp-examples/blob/main/kawa/main.scm
