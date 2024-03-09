@@ -6,7 +6,7 @@
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
 interpreter/ compiler compatible with Java8..22 that can be used standalone as well as embedded.**
 
-Currently weighing in at ~430kB (size of the compiled jmurmel.jar file
+Currently weighing in at ~460kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
 or one single Java source file.
 
@@ -78,12 +78,15 @@ for a first peek at JMurmel (compiling Murmel won't work, though, only the inter
 
 **Optional: building from source**
 
-Clone the repo and build using maven:
+Pre-requisites: JDK8 or higher (8..22-ea is being tested), optionally: maven
+
+Clone the repo and build using maven
+(this will use the maven wrapper included in the repo, a local maven installation is not required):
 
     C:\> git clone https://github.com/mayerrobert/jmurmel.git
     ...
     C:\> cd jmurmel
-    C:\jmurmel> mvn package
+    C:\jmurmel> mvnw package
 
 The resulting jar will end up in `lambda\target\jmurmel.jar`
 
@@ -98,18 +101,19 @@ Make sure you have Java 8+ installed (Java 8 is minimum, Java 21 is preferred).
     OpenJDK Runtime Environment (AdoptOpenJDK)(build 1.8.0_252-b09)
     OpenJDK 64-Bit Server VM (AdoptOpenJDK)(build 25.252-b09, mixed mode)
 
-With `jmurmel.jar` in the current directory start JMurmel with the following command
+With `jmurmel.jar` (and preferably `mlib.lisp`) in the current directory start JMurmel with the following command
 
     C:\> java -jar jmurmel.jar
 
-At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look like this:
+At the REPL prompt enter e.g. `(write "Hello, World!")` and hit `ENTER`,
+your screen should look like this:
 
     D:\jmurmel\lambda\target>java -jar jmurmel.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
 
     JMurmel> (write "Hello, World!")
     "Hello, World!"
-    ==> t
+    ==> "Hello, World!"
     JMurmel>
 
 You just wrote and ran a Murmel program!
@@ -408,18 +412,19 @@ JMurmel supports the special forms:
 * `defun` ... `(<symbol> (<params>*) <bodyform>*)`, e.g. `(defun addone (n) (+ n 1))`
 * `let, let <symbol> ` (i.e. named let)`, let*, letrec, progn`
 * `setq`
-* `defmacro`
+* `defmacro`, `macrolet` ... define global and local macros
 * `throw, catch, unwind-protect`
 * `multiple-value-call, multiple-value-bind`
 * `declaim, load, require, provide`
 
-The environment contains the symbols `nil`, `t`, `pi`, `*command-line-argument-list*`
+The environment contains the symbols `nil`, `t`, `pi`, `*command-line-argument-list*`,
+`*condition-handler*`, `*features*`, `*random-state*`
 and the functions
 
 * `cons, car, cdr, rplaca, rplacd`
 * `apply` ... works similar to Scheme, e.g. `(apply + '(1 2 3))` or `(apply + (cons 2 (cons 3 nil)))`
 * `eval, eq, eql, null, atom`
-* `consp, listp, functionp, floatp, integerp, numberp, characterp, stringp, symbolp, vectorp`
+* `consp, listp, functionp, floatp, integerp, numberp, characterp, stringp, symbolp, vectorp, random-state-p`
 
 * `assq, assoc, append, list, list*`
 * `vector, svref, svset, svlength, make-array, simple-vector->list, list->simple-vector`
@@ -431,9 +436,11 @@ and the functions
 
 * `char-code, code-char, string=, string->list, list->string`
 
-* `gensym, macroexpand-1, trace, untrace`
+* `values, gensym, macroexpand-1, trace, untrace, random, make-random-state`
 
-For more functions (including turtle graphics and functions to call Java)
+* ...
+
+For more functions (including bitvectors, hashtables, turtle graphics and functions to call Java)
 and more details on the language supported see [murmel-langref.md](murmel-langref.md).
 
 Tail calls including tail recursive calls are optimized.
@@ -449,7 +456,8 @@ E.g. the S-expression `(/ 1 -0)` is valid and will yield `-Infinity`.
 
 The data types currently supported are symbols, pairs (i.e. lists),
 numbers (represented as Java Double or Long),
-characters and vectors (character vectors aka strings, bitvectors and vectors that can contain any data).
+characters, vectors (character vectors aka strings, bitvectors and vectors that can contain any data)
+and hashtables.
 String literals are 2000 chars max length.
 
 Most of these features can be disabled using commandline arguments.
@@ -544,10 +552,10 @@ Example session with pure LISP:
 
 JMurmel comes with:
 
-* a parser that reads S-expressions composed of lists, vectors, symbols, doubles, longs, characters and strings.
-* Math support for Longs and Doubles
-* (Very) simple I/O
-* Some support for strings
+* a parser that reads S-expressions composed of symbols, lists, doubles, longs, characters, vectors, hashtables and strings.
+* math support for Longs and Doubles
+* simple console and file I/O
+* some support for strings, vectors and hashtables
 
 However:
 

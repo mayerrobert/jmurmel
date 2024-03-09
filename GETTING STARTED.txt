@@ -4,8 +4,8 @@ Getting started
 
 To run your first Murmel program use these steps:
 
-Make sure you have Java 8+ installed (Java 8 is minimum, Java 17 is preferred
-as it is considerably faster). JDK (including tools.jar) is preferred over JRE,
+Make sure you have Java 8+ installed (Java 8 is minimum, Java 21 is preferred).
+JDK (including tools.jar) is preferred over JRE,
 without tools.jar only interpreter mode is possible.
 
 Entering `java -version` at a command prompt
@@ -22,14 +22,15 @@ with the following command:
 
     C:\> java -jar jmurmel.jar
 
-At the REPL prompt enter e.g. `(write "Hello, World!")`, your screen should look like this:
+At the REPL prompt enter e.g. `(write "Hello, World!")` and hit `ENTER`,
+your screen should look like this:
 
     D:\jmurmel\lambda\target>java -jar jmurmel.jar
     Enter a Murmel form or :command (or enter :h for command help or :q to exit):
 
     JMurmel> (write "Hello, World!")
     "Hello, World!"
-    ==> t
+    ==> "Hello, World!"
     JMurmel>
 
 You just wrote and ran a Murmel program! Now take it from there,
