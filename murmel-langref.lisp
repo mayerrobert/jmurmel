@@ -674,7 +674,7 @@ pi ; ==> 3.141592653589793
 
 ;;; = (macrolet ((symbol params docstring? forms)\*) forms\*) -> result
 ;
-; Since: 1.4.6
+; Since: 1.4.7
 ;
 ; `macrolet` defines local macros and executes `forms` using the local definitions.
 ; It is an error to shadow local macros with a local function (see `labels`)
