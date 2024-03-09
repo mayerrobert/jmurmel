@@ -470,7 +470,7 @@ pi ; ==> 3.141592653589793
 ; may not be used as a function nor as a variable:
 ;
 ;     nil, t,
-;     lambda, quote, cond, labels, if, define, defun, let, let*, letrec,
+;     lambda, quote, cond, labels, if, define, defun, let, let*, letrec, macrolet,
 ;     setq, progn, catch, thwrow, unwind-protect, try,
 ;     multiple-value-bind, multiple-value-call,
 ;     defmacro, declaim, load, require, provide
@@ -670,6 +670,16 @@ pi ; ==> 3.141592653589793
 ; That way a let-bound variable could be a recursive lambda.
 
 (letrec ((x 1) (y (+ x 1))) (write y))
+
+
+;;; = (macrolet ((symbol params docstring? forms)\*) forms\*) -> result
+;
+; Since: 1.4.6
+;
+; `macrolet` defines local macros and executes `forms` using the local definitions.
+; It is an error to shadow local macros with a local function (see `labels`)
+; or with a named-let loop label.
+; A docstring if given will be ignored.
 
 
 ;;; = (catch tagform forms\*) -> result

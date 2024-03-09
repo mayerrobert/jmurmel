@@ -1,3 +1,5 @@
+vielleicht doch nochmal scheme macros ansehen? https://www.reddit.com/r/Common_Lisp/comments/1b95lj6/schemelike_macros_for_cl/
+
 einfacher repl in CL: https://www.cliki.net/repl
 
 -> define/ defun und defmacro sollte in labels erlaubt sein

@@ -354,12 +354,11 @@ multiline comment
   (defun f* () (setq n (1+ n))))
 (deftest let.15 (list (f*) (f*) (f*)) '(1 2 3))
 
-;(deftest let.16
-;  (progn
-;    (let ((n 0))
-;      (defun f () (setq n (1+ n))))
-;    (list (f) (f) (f)))
-;  '(1 2 3))
+(let ((n 0))
+  (defun lol () (setq n (1+ n))))
+(deftest let.16
+  (list (lol) (lol) (lol))
+  '(1 2 3))
 
 (let ((a 1) (b 2))
   (define *g2* (+ 0.0 a b)))
@@ -508,6 +507,13 @@ multiline comment
 
 (deftest if-char.1
   (if #\1 'yes)  'yes)
+
+
+;;; test macrolet
+(deftest macrolet.1
+  (macrolet ((m () 1))
+    (m))
+  1)
 
 
 ;;; test cond

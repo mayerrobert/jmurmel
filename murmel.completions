@@ -23,6 +23,7 @@ defmacro
 let
 let*
 letrec
+macrolet
 catch
 throw
 unwind-protect
