@@ -520,73 +520,69 @@
 ;;; If `n` is zero, the atom that terminates list is returned.
 ;;; If `n` is greater than or equal to the number of cons cells in list,
 ;;; the result is `lst`.
-(defmacro m%last0-macro ()
-  `(let loop ((rest lst))
-     (if (consp rest)
-         (loop (cdr rest))
-         rest)))
+(macrolet ((m%last0-macro ()
+             `(let loop ((rest lst))
+                   (if (consp rest)
+                       (loop (cdr rest))
+                       rest)))
 
-(defun m%last0 (lst)
-  (m%last0-macro))
+           (m%last1-macro ()
+             `(let loop ((rest lst))
+                   (if (consp (cdr rest))
+                       (loop (cdr rest))
+                       rest)))
 
-(defmacro m%last1-macro ()
-  `(let loop ((rest lst))
-     (if (consp (cdr rest))
-         (loop (cdr rest))
-         rest)))
+           ;; m%lastn-macro won't work for n <= 0.
+           ;; This causes no ill effect because the code below avoids this,
+           ;; and then m%lastn-macro is undefined so that user code doesn't see it.
+           (m%lastn-macro ()
+             (let ((scan (gensym "scan"))
+                   (pop (gensym "pop")))
+               `(let ((returned-lst lst)
+                      (checked-lst lst)
+                      (n n))
+                  (let ,scan ()
+                       (setq checked-lst (cdr checked-lst))
+                       (if (atom checked-lst)
 
-(defun m%last1 (lst)
-  (m%last1-macro))
+                           returned-lst
 
-;; m%lastn-macro won't work for n <= 0.
-;; This causes no ill effect because the code below avoids this,
-;; and then m%lastn-macro is undefined so that user code doesn't see it.
-(defmacro m%lastn-macro ()
-  (let ((scan (gensym "scan"))
-        (pop (gensym "pop")))
-    `(let ((returned-lst lst)
-           (checked-lst lst)
-           (n n))
-       (let ,scan ()
-         (setq checked-lst (cdr checked-lst))
-         (if (atom checked-lst)
+                           (if (= (setq n (1- n)) 0)
+                               (let ,pop ()
+                                    (setq returned-lst (cdr returned-lst)
+                                          checked-lst (cdr checked-lst))
+                                    (if (atom checked-lst)
+                                        returned-lst
+                                        (,pop)))
+                 (,scan))))))))
 
-             returned-lst
+  (defun m%last0 (lst)
+    (m%last0-macro))
 
-             (if (= (setq n (1- n)) 0)
-                 (let ,pop ()
-                   (setq returned-lst (cdr returned-lst))
-                   (setq checked-lst (cdr checked-lst))
-                   (if (atom checked-lst)
-                       returned-lst
-                       (,pop)))
-                 (,scan)))))))
+  (defun m%last1 (lst)
+    (m%last1-macro))
 
-(defun m%lastn (lst n)
-  (setq n (m%nonneg-integer-number n))
-  (cond
-    ((= n 1) (m%last1-macro))
-    ((> n 1) (m%lastn-macro))
-    (t       (m%last0-macro))))
+  (defun m%lastn (lst n)
+    (setq n (m%nonneg-integer-number n))
+    (cond
+      ((= n 1) (m%last1-macro))
+      ((> n 1) (m%lastn-macro))
+      (t       (m%last0-macro))))
 
-(defun last (lst . n)
-  (if n
-      (m%lastn lst (car n))
-      (m%last1-macro)))
+  (defun last (lst . n)
+    (if n
+        (m%lastn lst (car n))
+        (m%last1-macro)))
 
-(defmacro last (lst . n)
-  (if n
-      (if (integerp (setq n (car n)))
-          (cond
-            ((= n 1) `(m%last1 ,lst))
-            ((= 0 1) `(m%last0 ,lst))
-            (t `(m%lastn ,lst ,n)))
-          `(m%lastn ,lst ,n))
-      `(m%last1 ,lst)))
-
-(defmacro m%last0-macro)
-(defmacro m%last1-macro)
-(defmacro m%lastn-macro)
+  (defmacro last (lst . n)
+    (if n
+        (if (integerp (setq n (car n)))
+            (cond
+              ((= n 1) `(m%last1 ,lst))
+              ((= 0 1) `(m%last0 ,lst))
+              (t `(m%lastn ,lst ,n)))
+            `(m%lastn ,lst ,n))
+        `(m%last1 ,lst))))
 
 
 ;;; = Function: nconc
@@ -1143,8 +1139,8 @@
             splice)
         (when (consp head)              ; there are at least n
           (when (consp (cdr head))    ; conses
-            (setq result (list ()))
-            (setq splice result)
+            (setq result (list ())
+                  splice result)
             (do ((trail lst (cdr trail))
                  (head head (cdr head)))
                 ;; HEAD is n-1 conses ahead of TRAIL;
@@ -2090,8 +2086,8 @@
                     (values value more)
                     (if more-generators
                         (progn
-                          (setq generator (car more-generators))
-                          (setq more-generators (cdr more-generators))
+                          (setq generator (car more-generators)
+                                more-generators (cdr more-generators))
                           (generator))
                         (values nil nil))))
               (values nil nil))))
@@ -2353,17 +2349,17 @@
     (let (result-cursor set-result has-next-result result-length seq len)
       (cond
         ((consp result)
-         (setq result-cursor result)
-         (setq set-result (lambda (elem)
-                            (rplaca result-cursor elem) (setq result-cursor (cdr result-cursor))))
-         (setq has-next-result (lambda () result-cursor)))
+         (setq result-cursor result
+               set-result (lambda (elem)
+                            (rplaca result-cursor elem) (setq result-cursor (cdr result-cursor)))
+               has-next-result (lambda () result-cursor)))
 
         ((vectorp result)
-         (setq result-cursor 0)
-         (setq set-result (lambda (elem)
-                            (seqset result result-cursor elem) (setq result-cursor (1+ result-cursor))))
-         (setq has-next-result (lambda () (< result-cursor result-length)))
-         (setq result-length (vector-length result)))
+         (setq result-cursor 0
+               set-result (lambda (elem)
+                            (seqset result result-cursor elem) (setq result-cursor (1+ result-cursor)))
+               has-next-result (lambda () (< result-cursor result-length))
+               result-length (vector-length result)))
 
         (t (error 'simple-type-error "map-into: not a sequence: %s" result)))
 
