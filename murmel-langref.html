@@ -909,7 +909,7 @@ Return `t` if any of the following is true
 Examples:
 
     (eql 2 2) ; ==> t
-    (eql #\a (car "aaa")) ; ==> t
+    (eql #\a (sref "aaa" 0)) ; ==> t
     (eql -0.0 0.0) ; ==> nil
 
 ### (equal a b) -> boolean
@@ -977,12 +977,10 @@ while in Common Lisp that would signal a `type-error`.
 ### (car list) -> 1st element of list
 
     (car '(a b c)) ; ==> a
-    (car "abc") ; ==> #\a
 
 ### (cdr list) -> rest of list
 
     (cdr '(a b c)) ; ==> (b c)
-    (cdr "abc") ; ==> "bc"
 
 ### (cons e1 e2) -> conscell
 

@@ -29,8 +29,6 @@ load/ require in expandForms könnte das load/ require durch ein progn mit dem f
 mlib: substitute ist für sequence statt list
 
 
-string als parameter für car/cdr ggf verbieten?
-
 vielleicht doch :keywords ? nicht als parameter, nur als konstanten/ enum ähnlich, expandForm könnte das ins globale environment stecken
 
 

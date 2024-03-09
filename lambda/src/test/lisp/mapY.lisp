@@ -1,7 +1,9 @@
 ;;; implement map using Y-combinator
 
-; result: (#\t #\r #\i #\s)
-; output: (empty)
+;; after car/cdr were changed to no longer accept strings this gives an error
+; error: expected a list or string argument but got "the"
+; _result: (#\t #\r #\i #\s)
+; _output: (empty)
 
 ((lambda (f n) ; this lambda is defining MAP
    ((lambda (map) (map map f n))

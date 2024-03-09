@@ -925,7 +925,8 @@ multiline comment
 ;;; - conses and lists
 
 ;;; test car, cdr
-#+murmel (progn
+;; after car/cdr were changed to no longer accept strings this gives an error
+#+ignore (progn
 (deftest car.string (car "123") #\1)
 (deftest cdr.string (cdr "123") "23")
 )

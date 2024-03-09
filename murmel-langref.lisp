@@ -901,7 +901,7 @@ pi ; ==> 3.141592653589793
 ; Examples:
 
 (eql 2 2) ; ==> t
-(eql #\a (car "aaa")) ; ==> t
+(eql #\a (sref "aaa" 0)) ; ==> t
 (eql -0.0 0.0) ; ==> nil
 
 ; = (equal a b) -> boolean
@@ -969,12 +969,10 @@ pi ; ==> 3.141592653589793
 ; = (car list) -> 1st element of list
 
 (car '(a b c)) ; ==> a
-(car "abc") ; ==> #\a
 
 ; = (cdr list) -> rest of list
 
 (cdr '(a b c)) ; ==> (b c)
-(cdr "abc") ; ==> "bc"
 
 ; = (cons e1 e2) -> conscell
 
