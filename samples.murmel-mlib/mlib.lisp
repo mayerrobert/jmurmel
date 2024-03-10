@@ -677,8 +677,7 @@
 ;;;     (member 'b '(a b c 1 2 3) (lambda (a b) (eq a b)))
 ;;;         ; => (b c 1 2 3)
 (defun member (item lst . test)
-  (let* ((tst (car test))
-         (pred (if tst tst eql)))
+  (let* ((pred (if test (car test) eql)))
     (let loop ((lst lst))
       (when lst
         (if (pred item (car lst))
@@ -711,60 +710,59 @@
   (cons (cons key datum) alist))
 
 
-(defmacro m%notany-null (lst)
-  (let ((loop (gensym "loop"))
-        (l (gensym "lst")))
-    `(let ,loop ((,l ,lst))
-       (if ,l
-           (and (car ,l) (,loop (cdr ,l)))
-           t))))
+(macrolet ((m%notany-null (lst)
+             (let ((loop (gensym "loop"))
+                   (l (gensym "lst")))
+               `(let ,loop ((,l ,lst))
+                     (if ,l
+                         (and (car ,l) (,loop (cdr ,l)))
+                         t))))
 
+           ;; Helper macros to generate defuns for the various mapXX functions
+           (m%mapx (name acc accn)
+             `(defun ,name (func lst . more-lists)
+                (if more-lists
+                    (let loop ((args (cons lst more-lists)))
+                         (when (m%notany-null args)
+                           (apply func ,(if accn (list accn 'args) 'args))
+                           (loop (unzip-tails args))))
+                    (let loop ((lst lst))
+                         (when lst
+                           (func ,(if acc (list acc 'lst) 'lst))
+                           (loop (cdr lst)))))
+                lst))
 
-;; Helper macros to generate defuns for the various mapXX functions
-(defmacro m%mapx (name acc accn)
-  `(defun ,name (func lst . more-lists)
-     (if more-lists
-         (let loop ((args (cons lst more-lists)))
-           (when (m%notany-null args)
-             (apply func ,(if accn (list accn 'args) 'args))
-             (loop (unzip-tails args))))
-         (let loop ((lst lst))
-           (when lst
-             (func ,(if acc (list acc 'lst) 'lst))
-             (loop (cdr lst)))))
-     lst))
+           (m%mapx-cons (name acc accn)
+             `(defun ,name (func lst . more-lists)
+                (let* ((result (list ())) (append-to result))
+                  (if more-lists
+                      (let loop ((args (cons lst more-lists)))
+                           (when (m%notany-null args)
+                             (setq append-to (cdr (rplacd append-to (list (apply func ,(if accn (list accn 'args) 'args))))))
+                             (loop (unzip-tails args))))
+                      (let loop ((lst lst))
+                           (when lst
+                             (setq append-to (cdr (rplacd append-to (list (func ,(if acc (list acc 'lst) 'lst))))))
+                             (loop (cdr lst)))))
 
-(defmacro m%mapx-cons (name acc accn)
-  `(defun ,name (func lst . more-lists)
-     (let* ((result (list ())) (append-to result))
-       (if more-lists
-           (let loop ((args (cons lst more-lists)))
-            (when (m%notany-null args)
-              (setq append-to (cdr (rplacd append-to (list (apply func ,(if accn (list accn 'args) 'args))))))
-              (loop (unzip-tails args))))
-           (let loop ((lst lst))
-              (when lst
-                (setq append-to (cdr (rplacd append-to (list (func ,(if acc (list acc 'lst) 'lst))))))
-                (loop (cdr lst)))))
+                  (cdr result))))
 
-       (cdr result))))
+           (m%mapx-nconc (name acc accn)
+             `(defun ,name (func lst . more-lists)
+                (let* ((result (list ())) (append-to result))
+                  (if more-lists
+                      (let loop ((args (cons lst more-lists)))
+                           (when (m%notany-null args)
+                             (setq append-to (last append-to))
+                             (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
+                             (loop (unzip-tails args))))
+                      (let loop ((lst lst))
+                           (when lst
+                             (setq append-to (last append-to))
+                             (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
+                             (loop (cdr lst)))))
 
-(defmacro m%mapx-nconc (name acc accn)
-  `(defun ,name (func lst . more-lists)
-     (let* ((result (list ())) (append-to result))
-       (if more-lists
-           (let loop ((args (cons lst more-lists)))
-             (when (m%notany-null args)
-               (setq append-to (last append-to))
-               (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
-               (loop (unzip-tails args))))
-           (let loop ((lst lst))
-             (when lst
-               (setq append-to (last append-to))
-               (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
-               (loop (cdr lst)))))
-
-       (cdr result))))
+                  (cdr result)))))
 
 
 ;;; = Function: mapcar
@@ -837,10 +835,7 @@
 ;;; which is the return value of `mapcon`.
 (m%mapx-nconc mapcon nil nil)
 
-; undef m%mapx and friends
-(defmacro m%mapx)
-(defmacro m%mapx-cons)
-(defmacro m%mapx-nconc)
+) ; (macrolet...
 
 
 ;;; = Macro: multiple-value-list
@@ -1592,17 +1587,18 @@
             #1#))))
 
 
-; Helper macro to generate defmacro's for inplace modification macros.
-(defmacro m%inplace (name noarg arg)
-  `(defmacro ,name (place . delta-form)
-     (if (symbolp place)
-         `(setq ,place ,(if delta-form `(,,@arg ,place ,@delta-form) `(,,@noarg ,place)))
-         (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
-           `(let* (,@(mapcar list vars vals)
-                   (,(car store-vars) ,(if delta-form
-                                           `(,,@arg ,reader-form ,@delta-form)
-                                           `(,,@noarg ,reader-form))))
-              ,writer-form)))))
+(macrolet (
+           ;; Helper macro to generate defmacro's for inplace modification macros.
+           (m%inplace (name noarg arg)
+             `(defmacro ,name (place . delta-form)
+                (if (symbolp place)
+                    `(setq ,place ,(if delta-form `(,,@arg ,place ,@delta-form) `(,,@noarg ,place)))
+                    (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
+                      `(let* (,@(mapcar list vars vals)
+                              (,(car store-vars) ,(if delta-form
+                                                      `(,,@arg ,reader-form ,@delta-form)
+                                                      `(,,@noarg ,reader-form))))
+                         ,writer-form))))))
 
 
 ;;; = Macro: incf, decf
@@ -1667,8 +1663,7 @@
 (m%inplace +f (identity) (+))
 (m%inplace -f (-) (-))
 
-; undef m%inplace
-(defmacro m%inplace)
+) ; (macrolet...
 
 
 ;;; = Macro: push
@@ -2539,19 +2534,19 @@
 
 
 ; Helper macro to generate defuns for every and some
-(defmacro m%mapxx (name comb lastelem)
-  `(defun ,name (pred seq . more-sequences)
-     (if more-sequences
-         (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
-               pred (let ((original pred))
-                      (lambda (val) (apply original val))))
-         (setq seq (m%scan seq)))
+(macrolet ((m%mapxx (name comb lastelem)
+             `(defun ,name (pred seq . more-sequences)
+                (if more-sequences
+                    (setq seq (apply scan-multiple (mapcar m%scan (cons seq more-sequences)))
+                          pred (let ((original pred))
+                                 (lambda (val) (apply original val))))
+                    (setq seq (m%scan seq)))
 
-     (labels ((do-step (val more)
-                (if more
-                    (,comb (pred val) (multiple-value-call do-step (seq)))
-                    ,lastelem)))
-       (multiple-value-call do-step (seq)))))
+                (labels ((do-step (val more)
+                           (if more
+                               (,comb (pred val) (multiple-value-call do-step (seq)))
+                               ,lastelem)))
+                  (multiple-value-call do-step (seq))))))
 
 
 ;;; = Function: every
@@ -2579,8 +2574,7 @@
 ;;; or `nil` if no applications yield non-nil.
 (m%mapxx some or nil)
 
-(defmacro m%mapxx)
-(defmacro m%notany-null)
+) ; (macrolet...
 
 
 ;;; = Function: notevery
