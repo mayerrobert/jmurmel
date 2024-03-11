@@ -3424,6 +3424,9 @@ public class LambdaJ {
 
             case sMultipleValueBind:
                 varargsMin(MULTIPLE_VALUE_BIND, ccArgs, 2);
+                if (car(ccArgs) == null) {
+                    return expandForm(cons(sProgn, cdr(ccArgs)), macroEnv);
+                }
                 expandForms(MULTIPLE_VALUE_BIND, cdrShallowCopyList(MULTIPLE_VALUE_BIND, ccArgs), macroEnv);
                 checkLambdaList(MULTIPLE_VALUE_BIND, car(ccArgs));
                 return ccForm;
@@ -10446,37 +10449,33 @@ public class LambdaJ {
                 case sMultipleValueBind: {
                     ConsCell extenv = env;
                     final Object varDef = car(ccArguments);
+                    assert varDef != null;
                     rsfx++;
-                    if (varDef != null) {
-                        final String prim = "prim" + rsfx;
-                        sb.append("        {\n        Object ").append(prim).append(";\n");
-                        emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx + 1, "        " + prim + " = ", null, null, -1, -1, true, false, false);
 
-                        int n = 0;
-                        if (consp(varDef)) {
-                            final ConsCell varList = (ConsCell)varDef;
-                            for (Object arg : varList) {
-                                extenv = extenvIntern((LambdaJSymbol)arg, "mv" + rsfx + '[' + n++ + ']', extenv);
-                            }
-                            if (dottedList(varList))
-                                sb.append("        Object mv").append(rsfx).append("[] = mvVarargs(").append(prim).append(", ").append(n).append(");\n");
-                            else
-                                sb.append("        Object mv").append(rsfx).append("[] = mv(").append(prim).append(", ").append(n).append(");\n");
-                        }
-                        else if (symbolp(varDef)) {
-                            extenv = extenvIntern((LambdaJSymbol)varDef, "mv" + rsfx + "[0]", extenv);
-                            sb.append("        Object mv").append(rsfx).append("[] = mvVarargs(").append(prim).append(", 1);\n");
-                        }
-                        else throw errorMalformedFmt(MULTIPLE_VALUE_BIND, "expected a list or a symbol but got %s", printSEx(varDef));
+                    final String prim = "prim" + rsfx;
+                    sb.append("        {\n        Object ").append(prim).append(";\n");
+                    emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx + 1, "        " + prim + " = ", null, null, -1, -1, true, false, false);
 
-                        // emit the body
-                        emitStmts(sb, (ConsCell)cddr(ccArguments), extenv, topEnv, rsfx, retLhs, toplevel, hasNext);
-                        sb.append("        }\n");
+                    int n = 0;
+                    if (consp(varDef)) {
+                        final ConsCell varList = (ConsCell)varDef;
+                        for (Object arg : varList) {
+                            extenv = extenvIntern(symbolOrMalformed(MULTIPLE_VALUE_BIND, arg), "mv" + rsfx + '[' + n++ + ']', extenv);
+                        }
+                        if (dottedList(varList))
+                            sb.append("        Object mv").append(rsfx).append("[] = mvVarargs(").append(prim).append(", ").append(n).append(");\n");
+                        else
+                            sb.append("        Object mv").append(rsfx).append("[] = mv(").append(prim).append(", ").append(n).append(");\n");
                     }
-                    else {
-                        // no variables. Emit the values form (for any side-effects) and the body 
-                        emitStmts(sb, (ConsCell)cdr(ccArguments), extenv, topEnv, rsfx, retLhs, toplevel, hasNext);
+                    else if (symbolp(varDef)) {
+                        extenv = extenvIntern((LambdaJSymbol)varDef, "mv" + rsfx + "[0]", extenv);
+                        sb.append("        Object mv").append(rsfx).append("[] = mvVarargs(").append(prim).append(", 1);\n");
                     }
+                    else throw errorMalformedFmt(MULTIPLE_VALUE_BIND, "expected a list or a symbol but got %s", printSEx(varDef));
+
+                    // emit the body
+                    emitStmts(sb, (ConsCell)cddr(ccArguments), extenv, topEnv, rsfx, retLhs, toplevel, hasNext);
+                    sb.append("        }\n");
 
                     return;
                 }
