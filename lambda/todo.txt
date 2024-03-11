@@ -1,8 +1,16 @@
+cons im interpreter incrementiert nCells immer, egal ob tracing aufgedreht ist oder nicht
+-> checken ob das überhaupt bremst, ggf. mit if klammern, oder 2 factories: eine zählt, die andere nicht
+
+isStmtExpr in evalStmt nochmal ansehen: ignoredX = multiple-value-call
+-> zuweisung ist unnötig
+ 
+
 vielleicht doch nochmal scheme macros ansehen? https://www.reddit.com/r/Common_Lisp/comments/1b95lj6/schemelike_macros_for_cl/
 
 einfacher repl in CL: https://www.cliki.net/repl
 
--> define/ defun und defmacro sollte in labels erlaubt sein
+define/ defun und defmacro sollte in labels erlaubt sein
+-> define/ defun geht
 
 
 webserver in kawa mit netty + jooby: https://github.com/eatonphil/jvm-lisp-examples/blob/main/kawa/main.scm
