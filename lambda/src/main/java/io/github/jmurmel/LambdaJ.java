@@ -10274,7 +10274,7 @@ public class LambdaJ {
 
                 // whether a form needs to be preceeded by "values = null;" and "... = ".
                 // This is needed before some special forms (?) and before some primitives that will be opencoded in a special way
-                isStmtExpr = isDefOrLet || !needsClrValues(symop);
+                isStmtExpr = isDefOrLet || !needsClrValues(symop) || ws == WellknownSymbol.sMultipleValueBind;
             }
             else {
                 symop = null; ws = null; isDefOrLet = isStmtExpr = false;
@@ -10454,7 +10454,7 @@ public class LambdaJ {
 
                     final String prim = "prim" + rsfx;
                     sb.append("        {\n        Object ").append(prim).append(";\n");
-                    emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx + 1, "        " + prim + " = ", null, null, -1, -1, true, false, false);
+                    emitStmt(sb, cadr(ccArguments), env, topEnv, rsfx + 1, "        " + prim + " = ", null, null, -1, -1, true, false, true);
 
                     int n = 0;
                     if (consp(varDef)) {
@@ -11079,7 +11079,7 @@ public class LambdaJ {
                 if (consp(valueForm)) {
                     final Object valueOp = car((ConsCell)valueForm);
                     if (valueOp instanceof LambdaJSymbol) {
-                        if (valueOp != intern(LAMBDA) && (valueOp == intern(VALUES) || needsClrValues((LambdaJSymbol)valueOp))) {
+                        if (valueOp != intern(LAMBDA) && (valueOp == intern(VALUES) || needsClrValues((LambdaJSymbol)valueOp))) { // todo wieso braucht values ein clrValues?
                             clrValues = "clrValues(";
                             closingParen = ")";
                         }
