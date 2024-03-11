@@ -10428,7 +10428,7 @@ public class LambdaJ {
                             extEnv = extenvIntern((LambdaJSymbol)sym, name, extEnv);
                         }
                         final ConsCell env1 = symop.wellknownSymbol == WellknownSymbol.sLet ? env : symop.wellknownSymbol == WellknownSymbol.sLetStar ? letStarEnv : letrecEnv;
-                        emitStmt(sb, cadr(ccBinding), env1, topEnv, rsfx, "        " + javasym(sym, extEnv) + " = ", null, null, -1, -1, true, false, false);
+                        if (cadr(ccBinding) != null) emitStmt(sb, cadr(ccBinding), env1, topEnv, rsfx, "        " + javasym(sym, extEnv) + " = ", null, null, -1, -1, true, false, false);
                         letStarEnv = extEnv;
                     }
 
