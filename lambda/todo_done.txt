@@ -2784,3 +2784,6 @@ error occurred in line 1:1..2:10: (labels ((l1 nil 1) (l2 nil 2)))
 ConsCell und ConsCell? in das array mit bekannten JFFI arguments aufnehmen
 
 string als parameter für car/cdr ggf verbieten?
+
+isStmtExpr in evalStmt nochmal ansehen: ignoredX = multiple-value-call
+-> zuweisung ist unnötig

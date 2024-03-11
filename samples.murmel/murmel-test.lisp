@@ -732,6 +732,9 @@ multiline comment
 (deftest mvc.4 (multiple-value-call #'+ (values 1 2) 3.0 (values 4 5)) 15.0)
 (deftest mvc.5 (multiple-value-call (lambda (a b #+murmel . #-murmel &rest c) (list* a b c)) 1 (values 2 3 4 5)) '(1 2 3 4 5))
 (deftest mvc.6 (multiple-value-call #'+ 1.0 2 3 (values) 4) 10.0)
+(deftest mvc.7
+  (let (x y) (setq x (values 1 2) y (multiple-value-call #'list 11)) (list x y))
+  '(1 (11)))
 
 
 ; *******************************************************************

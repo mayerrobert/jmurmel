@@ -3544,12 +3544,12 @@ public class LambdaJ {
 
             pairs = (ConsCell) cdr(pairs);
             final Object value = eval(car(pairs), env, stack, level, traceLvl);
+            values = NO_VALUES;
             if (envEntry == null) extendGlobal(symbol, value);
             else envEntry.rplacd(value);
             res = value;
             pairs = (ConsCell) cdr(pairs);
         }
-        values = NO_VALUES;
         return res;
     }
 
@@ -10252,7 +10252,8 @@ public class LambdaJ {
             if (atom(form)) {
                 if (clearValues) emitClearValues(sb);
                 sb.append(retLhs);
-                emitForm(sb, form, env, topEnv, rsfx, !toplevel && !hasNext);
+                if (form != null) emitForm(sb, form, env, topEnv, rsfx, !toplevel && !hasNext);
+                else sb.append("null"); // emitForm() emits "(Object)null", this avoids lots of unneeded casts
                 sb.append(";\n");
                 return;
             }
@@ -10274,7 +10275,7 @@ public class LambdaJ {
 
                 // whether a form needs to be preceeded by "values = null;" and "... = ".
                 // This is needed before some special forms (?) and before some primitives that will be opencoded in a special way
-                isStmtExpr = isDefOrLet || !needsClrValues(symop) || ws == WellknownSymbol.sMultipleValueBind;
+                isStmtExpr = isDefOrLet || !needsClrValues(symop);
             }
             else {
                 symop = null; ws = null; isDefOrLet = isStmtExpr = false;
@@ -11079,7 +11080,7 @@ public class LambdaJ {
                 if (consp(valueForm)) {
                     final Object valueOp = car((ConsCell)valueForm);
                     if (valueOp instanceof LambdaJSymbol) {
-                        if (valueOp != intern(LAMBDA) && (valueOp == intern(VALUES) || needsClrValues((LambdaJSymbol)valueOp))) { // todo wieso braucht values ein clrValues?
+                        if (valueOp != intern(LAMBDA) && (valueOp == intern(VALUES) || needsClrValues((LambdaJSymbol)valueOp))) {
                             clrValues = "clrValues(";
                             closingParen = ")";
                         }
@@ -11116,7 +11117,9 @@ public class LambdaJ {
                 || ws == WellknownSymbol.sCond
                 || ws == WellknownSymbol.sSetQ
                 || ws == WellknownSymbol.sProgn
-                || ws == WellknownSymbol.sCatch)
+                || ws == WellknownSymbol.sCatch
+                || ws == WellknownSymbol.sMultipleValueBind
+                || ws == WellknownSymbol.sMultipleValueCall)
                 return false;
             if (ws == WellknownSymbol.interned || ws == WellknownSymbol.notInterned) return false;
 

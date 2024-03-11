@@ -1,8 +1,5 @@
 cons im interpreter incrementiert nCells immer, egal ob tracing aufgedreht ist oder nicht
 -> checken ob das überhaupt bremst, ggf. mit if klammern, oder 2 factories: eine zählt, die andere nicht
-
-isStmtExpr in evalStmt nochmal ansehen: ignoredX = multiple-value-call
--> zuweisung ist unnötig
  
 
 vielleicht doch nochmal scheme macros ansehen? https://www.reddit.com/r/Common_Lisp/comments/1b95lj6/schemelike_macros_for_cl/
