@@ -2542,8 +2542,10 @@ public class LambdaJ {
 
         private final int min, max;
         private final Features feature;
-        public final boolean stmtExpr;       // true for primitives that will be emitted by the compiler as a stmt expression, i.e. preceeding "values = null;" or "result =" is not needed
-        public final boolean singleValues;   // true for primitives that will be emitted by the compiler to clear multiple values
+        /** true for primitives that will be emitted by the compiler as a stmt expression, i.e. preceeding "values = null;" or "result =" is not needed */
+        public final boolean stmtExpr;
+        /** true for primitives that will be emitted by the compiler to clear multiple values */
+        public final boolean singleValues;
 
         WellknownSymbol(String sym, WellknownSymbolKind kind) {
             assert kind != WellknownSymbolKind.PRIM;
@@ -6007,6 +6009,19 @@ public class LambdaJ {
             return car(arg);
         }
 
+        static Object writeln(ObjectWriter lispPrinter, Object arg) {
+            if (lispPrinter == null) throw errorUnsupported("writeln", "%s: lispStdout is " + NIL);
+            lispPrinter.printObj(arg, false);
+            lispPrinter.printEol();
+            return arg;
+        }
+
+        static Object writeln(ObjectWriter lispPrinter) {
+            if (lispPrinter == null) throw errorUnsupported("writeln", "%s: lispStdout is " + NIL);
+            lispPrinter.printEol();
+            return null;
+        }
+
         static Object lnwrite(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
             if (lispPrinter == null) throw errorUnsupported("lnwrite", "%s: lispStdout is " + NIL);
             lispPrinter.printEol();
@@ -8584,9 +8599,14 @@ public class LambdaJ {
         public final Object writeTextfileLines(Object... args)  { clrValues(); varargsMinMax("write-textfile-lines", args, 2, 4); return LambdaJ.Subr.writeTextfileLines(arraySlice(args)); }
         public final Object writeTextfile     (Object... args)  { clrValues(); varargsMinMax("write-textfile",       args, 2, 5); return LambdaJ.Subr.writeTextfile(arraySlice(args)); }
         public final Object writeToString     (Object... args)  { clrValues(); varargs1_2("write-to-string",         args);       return LambdaJ.Subr.writeToString(args[0], noSecondArgOrNotNull(args)); }
+
         public final Object _write            (Object... args)  { clrValues(); varargsMinMax("write",                args, 1, 3); return LambdaJ.Subr.write  (getLispPrinter(args, 2, lispPrinter), args[0], noSecondArgOrNotNull(args)); }
+        public final Object writeStdout       (Object arg)      { clrValues();                                                    return LambdaJ.Subr.write  (lispPrinter, arg, false); }
 
         public final Object _writeln          (Object... args)  { clrValues(); varargsMinMax("writeln",              args, 0, 3); return LambdaJ.Subr.writeln(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
+        public final Object writelnStdout     ()                { clrValues();                                                    return LambdaJ.Subr.writeln(lispPrinter); }
+        public final Object writelnStdout     (Object arg)      { clrValues();                                                    return LambdaJ.Subr.writeln(lispPrinter, arg); }
+
         public final Object _lnwrite          (Object... args)  { clrValues(); varargsMinMax("lnwrite",              args, 0, 3); return LambdaJ.Subr.lnwrite(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
 
         public final Object format            (Object... args)  { clrValues(); varargs2("format",                    args);       return LambdaJ.Subr.format(getLispPrinter(args, 0, null), true, arraySlice(args)); }
@@ -11542,6 +11562,25 @@ public class LambdaJ {
                 case 4:  emitCallPrimitive(sb, "error4", args, env, topEnv, rsfx); return true;
                 default: emitCallPrimitive(sb, "errorN", args, env, topEnv, rsfx); return true;
                 }
+            // special handling for writing to stdout, possibly using fewer args and avoiding allocating a varargs array    
+            case sWrite: {
+                final Object escape = cdr(args) == null ? sT : cadr(args);
+                final Object dest = caddr(args);
+                if (escape == null && (dest == null || dest == sT)) { emitCallPrimitive(sb, "writeStdout", ConsCell.list(car(args)), env, topEnv, rsfx); return true; }
+                break;
+            }
+            case sWriteln: {
+                if (args == null) { sb.append("writelnStdout()"); return true; }
+                else {
+                    final Object escape = cdr(args) == null ? sT : cadr(args);
+                    final Object dest = caddr(args);
+                    if (escape == null && (dest == null || dest == sT)) {
+                        if ("".equals(car(args))) sb.append("writelnStdout()");
+                        else emitCallPrimitive(sb, "writelnStdout", ConsCell.list(car(args)), env, topEnv, rsfx);
+                        return true;
+                    }
+                }
+            }
             default:
                 break;
             }
