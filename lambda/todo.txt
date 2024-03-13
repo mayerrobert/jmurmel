@@ -1,6 +1,11 @@
+wieso verbietet der compiler re-define/defun?
+
+die feature flags könnten ggf. "protocols" (siehe http://metamodular.com/protocol.pdf) aus/ einblenden
+-> zusammenspielende typen und funktionen sind ein "protocol"
+
 cons im interpreter incrementiert nCells immer, egal ob tracing aufgedreht ist oder nicht
 -> checken ob das überhaupt bremst, ggf. mit if klammern, oder 2 factories: eine zählt, die andere nicht
- 
+
 
 vielleicht doch nochmal scheme macros ansehen? https://www.reddit.com/r/Common_Lisp/comments/1b95lj6/schemelike_macros_for_cl/
 
