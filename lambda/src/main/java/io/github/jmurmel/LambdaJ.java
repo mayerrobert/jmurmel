@@ -4118,6 +4118,10 @@ public class LambdaJ {
                                                           : carCdrError(CAR, o); }
 
     static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
+    static Object   caar(Object c)     { return c == null ? null : car(car(c)); }
+
+    static Object   caaar(ConsCell c)  { return c == null ? null : car(car(car(c))); }
+    static Object   caaar(Object c)    { return c == null ? null : car(car(car(c))); }
 
     static Object   cadr(ConsCell c)   { return c == null ? null : car(cdr(c)); }
     static Object   cadr(Object o)     { return o == null ? null : car(cdr(o)); }
@@ -4125,7 +4129,7 @@ public class LambdaJ {
     //static Object   cadar(ConsCell c)  { return c == null ? null : car(cdar(c)); }
 
     static Object   caddr(ConsCell c)  { return c == null ? null : car(cddr(c)); }
-    //static Object   caddr(Object c)    { return c == null ? null : car(cddr(c)); }
+    static Object   caddr(Object c)    { return c == null ? null : car(cddr(c)); }
 
     static Object   cadddr(ConsCell o) { return o == null ? null : car(cdddr(o)); }
 
@@ -4142,6 +4146,7 @@ public class LambdaJ {
     static Object   cddr(Object o)     { return o == null ? null : cdr(cdr(o)); }
 
     static Object   cdddr(ConsCell o)  { return o == null ? null : cdr(cddr(o)); }
+    static Object   cdddr(Object o)    { return o == null ? null : cdr(cddr(o)); }
 
     // todo ggf. spezialfall arrayslice behandeln
     private static Object   nthcdr(int n, Object list) {
@@ -8313,9 +8318,24 @@ public class LambdaJ {
         public final Object _car       (Object l)       { clrValues(); return LambdaJ.car(l); } // also used by generated code
         public final Object _car       (ConsCell l)     { clrValues(); return LambdaJ.car(l); }
 
+        public final Object caar       (Object l)       { clrValues(); return LambdaJ.caar(l); } // used by generated code
+        public final Object caar       (ConsCell l)     { clrValues(); return LambdaJ.caar(l); } // used by generated code
+        public final Object caaar      (Object l)       { clrValues(); return LambdaJ.caaar(l); } // used by generated code
+        public final Object caaar      (ConsCell l)     { clrValues(); return LambdaJ.caaar(l); } // used by generated code
+
+        public final Object cadr       (Object l)       { clrValues(); return LambdaJ.cadr(l); } // used by generated code
+        public final Object cadr       (ConsCell l)     { clrValues(); return LambdaJ.cadr(l); } // used by generated code
+        public final Object caddr      (Object l)       { clrValues(); return LambdaJ.caddr(l); } // used by generated code
+        public final Object caddr      (ConsCell l)     { clrValues(); return LambdaJ.caddr(l); } // used by generated code
+
         public final Object _cdr       (Object... args) { oneArg(CDR,       args); return _cdr(args[0]); }
         public final Object _cdr       (Object l)       { clrValues(); return LambdaJ.cdr(l); } // also used by generated code
         public final Object _cdr       (ConsCell l)     { clrValues(); return LambdaJ.cdr(l); }
+
+        public final Object cddr       (Object l)       { clrValues(); return LambdaJ.cddr(l); } // used by generated code
+        public final Object cddr       (ConsCell l)     { clrValues(); return LambdaJ.cddr(l); } // used by generated code
+        public final Object cdddr      (Object l)       { clrValues(); return LambdaJ.cdddr(l); } // used by generated code
+        public final Object cdddr      (ConsCell l)     { clrValues(); return LambdaJ.cdddr(l); } // used by generated code
 
         public final ConsCell _cons   (Object... args)      { twoArgs(CONS,     args); return _cons(args[0], args[1]); }
         public final ConsCell _cons(Object car, Object cdr) { clrValues(); return ConsCell.cons(car, cdr); } // also used by generated code
@@ -11495,6 +11515,45 @@ public class LambdaJ {
             final WellknownSymbol prim = op.wellknownSymbol;
 
             switch (prim) {
+            case sCar: {
+                if (consp(car(args)) && caar(args) == intern(CDR)) {
+                    ConsCell arg = (ConsCell)cdar(args);
+                    if (consp(car(arg)) && caar(arg) == intern(CDR)) {
+                        arg = (ConsCell)cdar(arg);
+                        sb.append("caddr(");
+                    }
+                    else sb.append("cadr(");
+                    emitForm(sb, car(arg), env, topEnv, rsfx, false);
+                    sb.append(')');
+                    return true;
+                }
+                else if (consp(car(args)) && caar(args) == intern(CAR)) {
+                    ConsCell arg = (ConsCell)cdar(args);
+                    if (consp(car(arg)) && caar(arg) == intern(CAR)) {
+                        arg = (ConsCell)cdar(arg);
+                        sb.append("caaar(");
+                    }
+                    else sb.append("caar(");
+                    emitForm(sb, car(arg), env, topEnv, rsfx, false);
+                    sb.append(')');
+                    return true;
+                }
+                break;
+            }
+            case sCdr: {
+                if (consp(car(args)) && caar(args) == intern(CDR)) {
+                    ConsCell arg = (ConsCell)cdar(args);
+                    if (consp(car(arg)) && caar(arg) == intern(CDR)) {
+                        arg = (ConsCell)cdar(arg);
+                        sb.append("cdddr(");
+                    }
+                    else sb.append("cddr(");
+                    emitForm(sb, car(arg), env, topEnv, rsfx, false);
+                    sb.append(')');
+                    return true;
+                }
+                break;
+            }
             case sAdd: assert !prim.stmtExpr; emitAddDbl(sb, "+", 0.0, args, env, topEnv, rsfx); return true;
             case sMul: assert !prim.stmtExpr; emitAddDbl(sb, "*", 1.0, args, env, topEnv, rsfx); return true;
             case sSub: assert !prim.stmtExpr; emitSubDbl(sb, "-", 0.0, args, env, topEnv, rsfx); return true;
