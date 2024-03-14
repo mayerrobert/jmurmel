@@ -9539,17 +9539,23 @@ public class LambdaJ {
         private final JavaCompilerHelper javaCompiler;
         final @NotNull LambdaJ intp;
 
-        private final LambdaJSymbol sApply, sEval, sLambda, sList;
+        private final LambdaJSymbol sQuote, sDefine, sApply, sEval, sLambda, sList, sCar, sCdr, sJmethod, sValues;
 
         public MurmelJavaCompiler(SymbolTable st, Path libDir, Path outPath) {
             final LambdaJ intp = new LambdaJ(Features.HAVE_ALL_LEXC.bits(), TraceLevel.TRC_NONE, null, st, null, null, null, libDir);
             intp.init(NULL_READCHARS, System.out::print, null);
             this.intp = intp;
 
+            sQuote = intern(QUOTE);
+            sDefine = intern(DEFINE);
             sApply = intern(APPLY);
             sEval = intern(EVAL);
             sLambda = intern(LAMBDA);
             sList = intern(LIST);
+            sCar = intern(CAR);
+            sCdr = intern(CDR);
+            sJmethod = intern(JMETHOD);
+            sValues = intern(VALUES);
 
             this.javaCompiler = outPath == null ? null : new JavaCompilerHelper(outPath);
 
@@ -9887,7 +9893,7 @@ public class LambdaJ {
                     switch (((LambdaJSymbol)op).wellknownSymbol) {
 
                     case sDefine: {
-                        if (!complexFormSeen) complexFormSeen = consp(caddr(ccForm)) && intern("jmethod") != car(caddr(ccForm));
+                        if (!complexFormSeen) complexFormSeen = consp(caddr(ccForm)) && sJmethod != car(caddr(ccForm));
                         globalEnv = defineToJava(ret, ccForm, globalEnv, 0);
                         intp.eval(ccForm, null);
                         if (complexFormSeen) bodyForms.add(ccForm);
@@ -10013,7 +10019,7 @@ public class LambdaJ {
             case sDefine:
             case sDefun:
                 final Object symbol = cadr(ccForm);
-                globalEnv = defineToJava(ret, ConsCell.list(intern(DEFINE), symbol, null), globalEnv, rsfx);
+                globalEnv = defineToJava(ret, ConsCell.list(sDefine, symbol, null), globalEnv, rsfx);
                 globals.append("        case \"").append(symbol).append("\": return ").append(javasym(symbol, globalEnv)).append(";\n");
                 break;
 
@@ -10279,7 +10285,7 @@ public class LambdaJ {
                     return; // must be dead code
                 }
                 containingForm = (ConsCell)form;
-                if (symbolEq(car(form), QUOTE)) {
+                if (car(form) == sQuote) {
                     noteDead(form);
                     return; // must be dead code
                 }
@@ -10824,7 +10830,7 @@ public class LambdaJ {
                         /// * special case (hack) for calling macroexpand-1: only quoted forms are supported which can be performed a compile time
                         if (symbolEq(symop, "macroexpand-1")) {
                             oneArg("macroexpand-1", ccArguments);
-                            if (!consp(car(ccArguments)) || !symbolEq(caar(ccArguments), QUOTE)) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
+                            if (!consp(car(ccArguments)) || caar(ccArguments) != sQuote) errorNotImplemented("general macroexpand-1 is not implemented, only quoted forms are: (macroexpand-1 '...");
                             final Object expandedForm, expanded;
                             final Object maybeMacroCall = car((ConsCell)cdar(ccArguments));
                             if (consp(maybeMacroCall)) { expandedForm = macroexpandImpl(intp, (ConsCell)maybeMacroCall, null); expanded = cadr(intp.values) == sT ? "rt()._t" : "null"; }
@@ -10838,7 +10844,7 @@ public class LambdaJ {
                     }
                 }
 
-                if (intp.speed >= 1 && consp(op) && symbolEq(car(op), JMETHOD)
+                if (intp.speed >= 1 && consp(op) && car(op) == sJmethod
                     && emitJmethod(sb, listOrMalformed(JMETHOD + " application", cdr(op)), env, topEnv, rsfx, true, ccArguments)) {
                     return;
                 }
@@ -10916,7 +10922,7 @@ public class LambdaJ {
         private boolean singleValueForm(Object form) {
             if (atom(form)) return true;
             final ConsCell ccForm = (ConsCell)form;
-            if (symbolEq(car(ccForm), "quote")) return true;
+            if (car(ccForm) == sQuote) return true;
             final ConsCell ccArgs = (ConsCell)cdr(ccForm);
 
             final Object lhs = car(ccArgs), rhs = cadr(ccArgs);
@@ -11120,7 +11126,7 @@ public class LambdaJ {
                 if (consp(valueForm)) {
                     final Object valueOp = car((ConsCell)valueForm);
                     if (valueOp instanceof LambdaJSymbol) {
-                        if (valueOp != intern(LAMBDA) && (valueOp == intern(VALUES) || needsClrValues((LambdaJSymbol)valueOp))) {
+                        if (valueOp != sLambda && (valueOp == sValues || needsClrValues((LambdaJSymbol)valueOp))) {
                             clrValues = "clrValues(";
                             closingParen = ")";
                         }
@@ -11516,9 +11522,9 @@ public class LambdaJ {
 
             switch (prim) {
             case sCar: {
-                if (consp(car(args)) && caar(args) == intern(CDR)) {
+                if (consp(car(args)) && caar(args) == sCdr) {
                     ConsCell arg = (ConsCell)cdar(args);
-                    if (consp(car(arg)) && caar(arg) == intern(CDR)) {
+                    if (consp(car(arg)) && caar(arg) == sCdr) {
                         arg = (ConsCell)cdar(arg);
                         sb.append("caddr(");
                     }
@@ -11527,9 +11533,9 @@ public class LambdaJ {
                     sb.append(')');
                     return true;
                 }
-                else if (consp(car(args)) && caar(args) == intern(CAR)) {
+                else if (consp(car(args)) && caar(args) == sCar) {
                     ConsCell arg = (ConsCell)cdar(args);
-                    if (consp(car(arg)) && caar(arg) == intern(CAR)) {
+                    if (consp(car(arg)) && caar(arg) == sCar) {
                         arg = (ConsCell)cdar(arg);
                         sb.append("caaar(");
                     }
@@ -11541,9 +11547,9 @@ public class LambdaJ {
                 break;
             }
             case sCdr: {
-                if (consp(car(args)) && caar(args) == intern(CDR)) {
+                if (consp(car(args)) && caar(args) == sCdr) {
                     ConsCell arg = (ConsCell)cdar(args);
-                    if (consp(car(arg)) && caar(arg) == intern(CDR)) {
+                    if (consp(car(arg)) && caar(arg) == sCdr) {
                         arg = (ConsCell)cdar(arg);
                         sb.append("cdddr(");
                     }
@@ -11752,7 +11758,7 @@ public class LambdaJ {
 
         /** barf if form cannot eval to a number */
         private void checkNonNumber(String func, Object form) {
-            if (form == null || form instanceof Character || vectorp(form) || consp(form) && symbolEq(car(form), QUOTE)) errorNotANumber(func, form);
+            if (form == null || form instanceof Character || vectorp(form) || consp(form) && car(form) == sQuote) errorNotANumber(func, form);
         }
 
         /** argCount is number of arguments at compiletime if known or -1 for check at runtime */
