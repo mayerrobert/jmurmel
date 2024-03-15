@@ -4141,6 +4141,7 @@ public class LambdaJ {
                                                           : carCdrError(CDR, o); }
 
     static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }
+    static Object   cdar(Object o)     { return o == null ? null : cdr(car(o)); }
 
     static Object   cddr(ConsCell c)   { return c == null ? null : cdr(cdr(c)); }
     static Object   cddr(Object o)     { return o == null ? null : cdr(cdr(o)); }
@@ -8332,6 +8333,8 @@ public class LambdaJ {
         public final Object _cdr       (Object l)       { clrValues(); return LambdaJ.cdr(l); } // also used by generated code
         public final Object _cdr       (ConsCell l)     { clrValues(); return LambdaJ.cdr(l); }
 
+        public final Object cdar       (Object l)       { clrValues(); return LambdaJ.cdar(l); } // used by generated code
+        public final Object cdar       (ConsCell l)     { clrValues(); return LambdaJ.cdar(l); } // used by generated code
         public final Object cddr       (Object l)       { clrValues(); return LambdaJ.cddr(l); } // used by generated code
         public final Object cddr       (ConsCell l)     { clrValues(); return LambdaJ.cddr(l); } // used by generated code
         public final Object cdddr      (Object l)       { clrValues(); return LambdaJ.cdddr(l); } // used by generated code
@@ -10065,8 +10068,8 @@ public class LambdaJ {
 
                 final boolean isComplex = consp(caddr(form));
                 sb.append("    private Object define").append(javasym).append("() {\n");
-                emitClearValues(sb, form);
                 if (isComplex) {
+                    emitClearValues(sb, form);
                     sb.append("        try {\n"
                               + "        ").append(javasym).append(" = new CompilerGlobal(");
                     emitForm(sb, caddr(form), env, env, 0, false);
@@ -10074,6 +10077,7 @@ public class LambdaJ {
                               + "        catch (Exception e) { rterror(e); }\n");
                 }
                 else {
+                    emitLoc(sb, form, 40);
                     sb.append("        ").append(javasym).append(" = new CompilerGlobal(");
                     emitForm(sb, caddr(form), env, env, 0, false);
                     sb.append(");\n");
@@ -11533,7 +11537,7 @@ public class LambdaJ {
                     sb.append(')');
                     return true;
                 }
-                else if (consp(car(args)) && caar(args) == sCar) {
+                if (consp(car(args)) && caar(args) == sCar) {
                     ConsCell arg = (ConsCell)cdar(args);
                     if (consp(car(arg)) && caar(arg) == sCar) {
                         arg = (ConsCell)cdar(arg);
@@ -11554,6 +11558,17 @@ public class LambdaJ {
                         sb.append("cdddr(");
                     }
                     else sb.append("cddr(");
+                    emitForm(sb, car(arg), env, topEnv, rsfx, false);
+                    sb.append(')');
+                    return true;
+                }
+                if (consp(car(args)) && caar(args) == sCar) {
+                    ConsCell arg = (ConsCell)cdar(args);
+                    /*if (consp(car(arg)) && caar(arg) == sCar) {
+                        arg = (ConsCell)cdar(arg);
+                        sb.append("cdaar(");
+                    }
+                    else*/ sb.append("cdar(");
                     emitForm(sb, car(arg), env, topEnv, rsfx, false);
                     sb.append(')');
                     return true;
