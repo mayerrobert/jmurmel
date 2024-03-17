@@ -27,6 +27,8 @@ or works after some massaging which may or may not introduce some `#+murmel`.
 * `format`'s syntax currently is different, e.g. Murmel: `%s` vs. CL: `~A`
 * `load` and `require` are performed at compile time
 * some functions have different parameters because Murmel doesn't have keyword arguments, see "Omissions" below
+* CL's `dolist` and `dotimes` allow zero or one result form,
+  Murmel's `dolist`, `dotimes` and `dovector` allow zero or more result forms (as do `do` and `do*`)
 
 
 ## Extensions:

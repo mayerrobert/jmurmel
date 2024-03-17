@@ -10006,6 +10006,7 @@ public class LambdaJ {
             return globalEnv;
         }
 
+        /** process the bodyforms of a toplevel labels/ let/ let* / letrec/ multiple-value-bind */
         private ConsCell toplevelLetBody(WrappingWriter ret, StringBuilder globals, ConsCell globalEnv, ConsCell ccBodyForms, int rsfx) {
             if (ccBodyForms != null) for (Object letbodyform : ccBodyForms) {
                 if (consp(letbodyform)) globalEnv = toplevelLet(ret, globals, globalEnv, (ConsCell)letbodyform, rsfx+1);
@@ -10013,6 +10014,7 @@ public class LambdaJ {
             return globalEnv;
         }
 
+        /** process one bodyform of a toplevel labels/ let/ let* / letrec/ multiple-value-bind */
         private ConsCell toplevelLet(WrappingWriter ret, StringBuilder globals, ConsCell globalEnv, ConsCell ccForm, int rsfx) {
             containingForm = ccForm;
             final Object op = car(ccForm);

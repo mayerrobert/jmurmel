@@ -1,3 +1,18 @@
+das "let" in named lets umbenamsen in nlet/nlet*/nletrec?
+-> würd sich nicht mehr mit CL beissen. letrec kömmt ma lassen weil das gibts in CL nicht
+-> ggf. fallen einige ifs im interpreter weg
+-> könnte zu code duplication führen
+-> checken wie serapeum's named let heisst: "nlet" (hat aber einschränkungen, named let* gibts nicht
+
+do/ do* haben in CL und Murmel 1 oder mehrere result forms
+dolist/ dotimes haben in CL eine result form, in Murmel 1 oder mehrere result forms
+-> CL ist uneinheitlich, Murmel ein einheitliches superset
+   -> ggf. Murmel umstellen dass es einheitlich nur eine result form geben darf?
+   -> oder lassen. Beim portieren Murmel->CL würds halt fehler geben, muss man für CL ein progn einbauen
+   -> oder ein flag "--warn-extensions" und das dann gibts ein note bei dolist/ dotimes mit mehr als 1 resultform?
+      sollte dann bei allen inkompatiblen extensions warnen
+
+
 wieso verbietet der compiler re-define/defun?
 
 die feature flags könnten ggf. "protocols" (siehe http://metamodular.com/protocol.pdf) aus/ einblenden
