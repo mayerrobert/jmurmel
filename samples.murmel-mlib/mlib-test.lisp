@@ -679,6 +679,19 @@
   (dotimes (i 10 (incf i) i) 1 2 3) => 11
 )
 
+;; test whether the lifetime of the loop variable is the loop or the iteration,
+;; iow if one loop variable will be re-used.
+;; In CL this is implementation dependent,
+;; in Murmel the loop variable currently is being re-used, which may change in the future.
+(tests dotimes.3
+  (let (x)
+    (dotimes (i 3)
+      (when (= i 0)
+        (setq x (lambda () i)))
+      (writeln i))
+    (#-murmel funcall x))
+  => 3)
+    
 
 ;; test dolist
 (tests dolist

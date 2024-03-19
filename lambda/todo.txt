@@ -1,3 +1,6 @@
+deftest namedlet.8: the lifetime of i differs interpreter vs compiler
+
+
 das "let" in named lets umbenamsen in nlet/nlet*/nletrec?
 -> würd sich nicht mehr mit CL beissen. letrec kömmt ma lassen weil das gibts in CL nicht
 -> ggf. fallen einige ifs im interpreter weg

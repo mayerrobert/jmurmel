@@ -398,6 +398,18 @@ multiline comment
 (deftest namedlet.7
          (letrec loop ((a 3) (b 1)) (list a (if (= 0 a) b (loop (1- a) (1+ b))) a b))
          '(3 (2 (1 (0 4 0 4) 1 3) 2 2) 3 1))
+
+;; todo the lifetime of i differs interpreter vs compiler
+#+ignore
+(deftest namedlet.8
+         (let (x)
+           (let loop ((i 3))
+             (if (= i 3)
+                 (setq x (lambda () i)))
+             (if (> i 0)
+                 (loop (1- i))))
+           (x))
+         3)
 )
 
 
