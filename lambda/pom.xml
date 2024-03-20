@@ -47,6 +47,7 @@
             <id>from-22</id>
             <activation>
                 <jdk>[22,)</jdk>
+                <jdk>[23,)</jdk>
             </activation>
             <build>
                 <plugins>
