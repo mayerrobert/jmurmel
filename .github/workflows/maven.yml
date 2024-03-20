@@ -36,7 +36,7 @@ jobs:
     continue-on-error: true
     strategy:
       matrix:
-        java: [ '8', '17', '21', '22-ea', '23-ea' ]
+        java: [ '8', '17', '21', '22-ea' ]
     name: Java ${{ matrix.Java }} CI
 
     steps:
