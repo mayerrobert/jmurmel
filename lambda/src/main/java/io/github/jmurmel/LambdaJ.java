@@ -9009,7 +9009,7 @@ public class LambdaJ {
             catch (Exception e) {
                 fling(e);
                 //noinspection ConstantConditions because fling() doesn't return
-                throw null;
+                throw null /*notreached*/;
             }
         }
 
@@ -9034,7 +9034,7 @@ public class LambdaJ {
             catch (Exception e) {
                 fling(e);
                 //noinspection ConstantConditions because fling() doesn't return
-                throw null;
+                throw null /*notreached*/;
             }
             finally { if (cleanups != null) runCleanups(cleanups); }
         }
