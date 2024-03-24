@@ -73,6 +73,7 @@
 ;;;
 ;;; - conses and lists
 ;;;     - [circular-list](#function-circular-list)
+;;;     - [mappend](#function-mappend)
 ;;; - iteration
 ;;;     - [doplist](#macro-doplist)
 ;;; - higher order
@@ -715,7 +716,7 @@
                    (l (gensym "lst")))
                `(let ,loop ((,l ,lst))
                      (if ,l
-                         (and (car ,l) (,loop (cdr ,l)))
+                         (when (car ,l) (,loop (cdr ,l)))
                          t))))
 
            ;; Helper macros to generate defuns for the various mapXX functions
@@ -762,7 +763,29 @@
                              (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
                              (loop (cdr lst)))))
 
-                  (cdr result)))))
+                  (cdr result))))
+
+           (m%mapx-append (name acc accn)
+             `(defun ,name (func lst . more-lists)
+                (let* ((result (list ())) (append-to result))
+                  (if more-lists
+                      (let loop ((args (cons lst more-lists)))
+                           (when (m%notany-null args)
+                             (let loop ((r (apply func ,(if accn (list accn 'args) 'args))))
+                               #1=(if (consp r)
+                                      (progn
+                                        (setq append-to (cdr (rplacd append-to (list (car r)))))
+                                        (loop (cdr r)))
+                                      (rplacd append-to r))) ; r may be nil in which case this is a nop, or the last cdr of a dotted list
+                             (loop (unzip-tails args))))
+                      (let loop ((lst lst))
+                           (when lst
+                             (let loop ((r (func ,(if acc (list acc 'lst) 'lst))))
+                               #1#)
+                             (loop (cdr lst)))))
+
+                  (cdr result))))
+           )
 
 
 ;;; = Function: mapcar
@@ -818,7 +841,7 @@
 ;;; `function` must accept as many arguments as lists are given,
 ;;; and will applied to subsequent items of the given lists.
 ;;;
-;;; All function application results will be concatenated to a list
+;;; All function application results will be concatenated (as if by nconc) to a list
 ;;; which is the return value of `mapcan`.
 (m%mapx-nconc mapcan car unzip)
 
@@ -831,9 +854,27 @@
 ;;; `function` must accept as many arguments as lists are given,
 ;;; and will applied to subsequent tails of the given lists.
 ;;;
-;;; All function application results will be concatenated to a list
+;;; All function application results will be concatenated (as if by nconc) to a list
 ;;; which is the return value of `mapcon`.
 (m%mapx-nconc mapcon nil nil)
+
+
+; Alexandria: conses and lists ****************************************
+;;; = Function: mappend
+;;;     (mappend function list+) -> appended-results
+;;;
+;;; Since: 1.4.7
+;;;
+;;; `function` must accept as many arguments as lists are given,
+;;; and will applied to subsequent items of the given lists.
+;;;
+;;; All function application results will be concatenated to a list
+;;; which is the return value of `mappend`.
+;;; `function` must return a list which will not be mutated by `mappend`.
+;;;
+;;; `mappend` can be thought of as a non-destructive version of `mapcan`.
+(m%mapx-append mappend car unzip)
+
 
 ) ; (macrolet...
 

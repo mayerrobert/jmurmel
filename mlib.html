@@ -74,6 +74,7 @@ functions and macros inspired by [Alexandria](https://alexandria.common-lisp.dev
 
 - conses and lists
     - [circular-list](#function-circular-list)
+    - [mappend](#function-mappend)
 - iteration
     - [doplist](#macro-doplist)
 - higher order
@@ -403,7 +404,7 @@ Since: 1.1
 `function` must accept as many arguments as lists are given,
 and will applied to subsequent items of the given lists.
 
-All function application results will be concatenated to a list
+All function application results will be concatenated (as if by nconc) to a list
 which is the return value of `mapcan`.
 
 ### Function: mapcon
@@ -414,8 +415,22 @@ Since: 1.1
 `function` must accept as many arguments as lists are given,
 and will applied to subsequent tails of the given lists.
 
-All function application results will be concatenated to a list
+All function application results will be concatenated (as if by nconc) to a list
 which is the return value of `mapcon`.
+
+### Function: mappend
+    (mappend function list+) -> appended-results
+
+Since: 1.4.7
+
+`function` must accept as many arguments as lists are given,
+and will applied to subsequent items of the given lists.
+
+All function application results will be concatenated to a list
+which is the return value of `mappend`.
+`function` must return a list which will not be mutated by `mappend`.
+
+`mappend` can be thought of as a non-destructive version of `mapcan`.
 
 ### Macro: multiple-value-list
 

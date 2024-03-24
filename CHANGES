@@ -6,6 +6,8 @@ Changes in JMurmel-1.4.7 relative to JMurmel-1.4.6
 
  * added macrolet
 
+ * mlib: added mappend
+
  * fixed setq with multiple assignments and multiple-value-call
 
 

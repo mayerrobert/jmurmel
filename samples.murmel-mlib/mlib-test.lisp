@@ -45,6 +45,13 @@
 (defun circular-list (&rest elements)
   (let ((cycle (copy-list elements)))
     (nconc cycle cycle)))
+
+;; from alexandria
+(defun mappend (function &rest lists)
+  "Applies FUNCTION to respective element(s) of each LIST, appending all the
+all the result list to a single list. FUNCTION must return a list."
+  (loop for results in (apply #'mapcar function lists)
+        append results))
 )
 
 
@@ -640,6 +647,31 @@
 ;; test mapcon
 (tests mapcon
   (mapcon #'list '(1 2 3 4)) =>  ((1 2 3 4) (2 3 4) (3 4) (4))
+)
+
+
+;; test mappend
+(tests mappend
+  (mappend (lambda (x y) (if (null x) nil (list x y)))
+          '(nil nil nil d e)
+          '(1 2 3 4 5 6))
+    =>  (D 4 E 5)
+
+  (mappend (lambda (x) (and (numberp x) (list x)))
+          '(a 1 b c 3 4 d 5))
+    =>  (1 3 4 5)
+
+  (mappend (lambda (x) (cons x x)) '(1 2 3 4 5))
+   => (1 2 3 4 5 . 5)
+
+  (mappend (lambda (x) (list x)) '(1 2 3 4 5))
+   => (1 2 3 4 5)
+
+  (let ((l (list 1 2 3)) tmp)
+    (setq tmp (mappend (lambda (x) l) l)) ; using mapcan this would be an endless loop of nconc'ing to l
+    (setf (cdr l) 22) ; shouldn't affect tmp
+    tmp)
+  => (1 2 3 1 2 3 1 2 3)
 )
 
 

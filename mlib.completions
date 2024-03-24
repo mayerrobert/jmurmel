@@ -70,6 +70,7 @@ mapl
 mapc
 maplist
 mapcar
+mappend
 unzip-tails
 unzip
 reverse
