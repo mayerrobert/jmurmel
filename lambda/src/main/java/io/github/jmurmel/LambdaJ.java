@@ -2213,7 +2213,7 @@ public class LambdaJ {
 
     /// Symboltable
     private final @NotNull SymbolTable symtab;
-    public SymbolTable getSymbolTable() { return symtab; }
+    public @NotNull SymbolTable getSymbolTable() { return symtab; }
 
     private static final Object UNASSIGNED = "#<value is not assigned>";          // only relevant in letrec
     static final ConsCell NO_VALUES = new ListConsCell("no multiple values", null);
@@ -2579,6 +2579,7 @@ public class LambdaJ {
             singleValues = stmtExpr && !isMv(sym);
         }
 
+        @SuppressWarnings("BooleanMethodIsAlwaysInverted")
         private static boolean isMv(String sym) {
             return "hashref".equals(sym) || "macroexpand-1".equals(sym) || "read-from-string".equals(sym) || "values".equals(sym);
         }
@@ -3163,16 +3164,10 @@ public class LambdaJ {
     static class MacroEntry {
         LambdaJSymbol sym;
         Closure macroFun;
-        Object macroSym;
 
         MacroEntry(LambdaJSymbol sym, Closure macroFun) {
             this.sym = sym;
             this.macroFun = macroFun;
-        }
-
-        MacroEntry(LambdaJSymbol sym, Object macroSym) {
-            this.sym = sym;
-            this.macroSym = macroSym;
         }
     }
 
@@ -3183,11 +3178,6 @@ public class LambdaJ {
         void addMacroFun(LambdaJSymbol sym, Closure macroFun) {
             adjust(size+1);
             entries[size-1] = new MacroEntry(sym, macroFun);
-        }
-
-        void addMacroSym(LambdaJSymbol sym, Object macroSym) {
-            adjust(size+1);
-            entries[size-1] = new MacroEntry(sym, macroSym);
         }
 
         MacroEntry get(LambdaJSymbol sym) {
@@ -3204,8 +3194,7 @@ public class LambdaJ {
             for (int n = size; n > newSize; --n) {
                 entries[n - 1] = null;
             }
-            if (newSize > entries.length) entries = Arrays.copyOf(entries, size * 2);
-            else if (entries.length > 16 && entries.length < newSize / 2) entries = Arrays.copyOf(entries, size * 2);
+            if (newSize > entries.length) entries = Arrays.copyOf(entries, entries.length * 2);
 
             size = newSize;
         }
@@ -9565,14 +9554,14 @@ public class LambdaJ {
             primitivesBySymbol = makePrimitivesBySymbol();
         }
 
-        public SymbolTable getSymbolTable() { return intp.getSymbolTable(); }
+        public @NotNull SymbolTable getSymbolTable() { return intp.getSymbolTable(); }
 
         private void note(String msg) { System.err.println("; Note - " + (containingForm == null ? "" : containingForm.lineInfo()) + msg); }
         private void noteDead(Object form) { note("removing dead code " + (form == null ? "" : printSEx(form, true))); }
 
 
         /// symbols and name mangling
-        public LambdaJSymbol intern(String symname) {
+        public @NotNull LambdaJSymbol intern(String symname) {
             if (symname == null) return sNil;
             return intp.intern(symname);
         }
@@ -9583,7 +9572,7 @@ public class LambdaJ {
         }
 
         /** replace chars that are not letters */
-        private static String mangle(String symname, int sfx) {
+        private static @NotNull String mangle(String symname, int sfx) {
             final int len = symname.length();
             final StringBuilder mangled = new StringBuilder(Math.max(len+10, 16));
             mangled.append('_');
@@ -9596,7 +9585,7 @@ public class LambdaJ {
             return mangled.toString();
         }
 
-        private String mangleFunctionName(String symname, int sfx) {
+        private @NotNull String mangleFunctionName(String symname, int sfx) {
             return mangle(currentFunctionName.substring(1) + symname, sfx);
         }
 
@@ -9604,17 +9593,17 @@ public class LambdaJ {
         /// environment
         /** extend the environment by putting (symbol mangledsymname) in front of {@code prev},
          *  symbols that are reserved words throw an error. */
-        private static ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
+        private static @NotNull ConsCell extenv(String func, Object symbol, int sfx, ConsCell prev) {
             final LambdaJSymbol sym = LambdaJ.symbolOrMalformed(func, symbol);
             return extenvIntern(sym, mangle(sym.toString(), sfx), prev);
         }
 
         /** extend environment w/o reserved word check */
-        private static ConsCell extenvIntern(LambdaJSymbol sym, String javaName, ConsCell env) {
+        private static @NotNull ConsCell extenvIntern(LambdaJSymbol sym, String javaName, ConsCell env) {
             return cons(cons(sym, javaName), env);
         }
 
-        private static ConsCell extenvprim(LambdaJSymbol sym, String javaName, ConsCell env) {
+        private static @NotNull ConsCell extenvprim(LambdaJSymbol sym, String javaName, ConsCell env) {
             return extenvIntern(sym, "((CompilerPrimitive)rt()::" + javaName + ')', env);
         }
 
@@ -9626,7 +9615,7 @@ public class LambdaJ {
 
         /** return {@code form} as a Java expression */
         private ConsCell containingForm;
-        private String javasym(Object form, ConsCell env) {
+        private @NotNull String javasym(Object form, ConsCell env) {
             if (form == null || form == sNil) return "(Object)null";
             final ConsCell symentry = fastassq(form, env);
             if (symentry == null) {
@@ -9719,7 +9708,7 @@ public class LambdaJ {
         + "rgb-to-pixel@rgbToPixel" + "\n" + "hsb-to-pixel@hsbToPixel";
 
         /** maps symbol -> javaNameAsString */
-        private final Map<LambdaJSymbol, String> primitivesBySymbol;
+        private final @NotNull Map<LambdaJSymbol, String> primitivesBySymbol;
 
         private Map<LambdaJSymbol, String>  makePrimitivesBySymbol() {
             final String[] primitives = MurmelJavaCompiler.primitives.split("\n");
@@ -9745,11 +9734,11 @@ public class LambdaJ {
         /// Wrappers to compile Murmel to a Java class and optionally a .jar
 
         /** Compile the Murmel compilation unit {@code forms} to a Java class for a standalone application with a "public static void main()" */
-        public Class <MurmelProgram> formsToJavaClass(String unitName, ReadSupplier forms, String jarFileName) throws Exception {
+        public @NotNull Class<MurmelProgram> formsToJavaClass(String unitName, ReadSupplier forms, String jarFileName) throws Exception {
             return formsToJavaClass(unitName, makeReader(forms, getSymbolTable(), intp.featuresEnvEntry), null);
         }
 
-        public Class <MurmelProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
+        public @NotNull Class <MurmelProgram> formsToJavaClass(String unitName, ObjectReader forms, String jarFileName) throws Exception {
             final StringWriter w = new StringWriter();
             formsToJavaSource(w, unitName, forms);
             final Class<MurmelProgram> ret = javaCompiler.javaToClass(unitName, w.toString(), jarFileName);
@@ -11173,9 +11162,8 @@ public class LambdaJ {
                 || ws == WellknownSymbol.sMultipleValueBind
                 || ws == WellknownSymbol.sMultipleValueCall)
                 return false;
-            if (ws == WellknownSymbol.interned || ws == WellknownSymbol.notInterned) return false;
 
-            return true;
+            return ws != WellknownSymbol.interned && ws != WellknownSymbol.notInterned;
         }
 
         /** args = (((symbol (sym...) form...)...) form...) */
@@ -11565,7 +11553,7 @@ public class LambdaJ {
                     return true;
                 }
                 if (consp(car(args)) && caar(args) == sCar) {
-                    ConsCell arg = (ConsCell)cdar(args);
+                    final ConsCell arg = (ConsCell)cdar(args);
                     /*if (consp(car(arg)) && caar(arg) == sCar) {
                         arg = (ConsCell)cdar(arg);
                         sb.append("cdaar(");
@@ -12389,7 +12377,7 @@ final class JavaCompilerHelper {
     }
 
     @SuppressWarnings("unchecked")
-    Class<LambdaJ.MurmelProgram> javaToClass(String className, String javaSource, String jarFileName) throws Exception {
+    @NotNull Class<LambdaJ.MurmelProgram> javaToClass(String className, String javaSource, String jarFileName) throws Exception {
         final Class<LambdaJ.MurmelProgram> program = (Class<LambdaJ.MurmelProgram>) javaToClass(className, javaSource);
         if (jarFileName == null) {
             cleanup();
@@ -12450,7 +12438,7 @@ final class JavaCompilerHelper {
     }
 
     /** Compile Java sourcecode of class {@code className} to Java bytecode */
-    Class<?> javaToClass(String className, String javaSource) throws Exception {
+    @NotNull Class<?> javaToClass(String className, String javaSource) throws Exception {
         final JavaCompiler comp = ToolProvider.getSystemJavaCompiler();
         if (comp == null) throw new LambdaJ.LambdaJError(true, "compilation of class %s failed. No compiler is provided in this environment. Perhaps you are running on a JRE rather than a JDK?", className);
         try (StandardJavaFileManager fm = comp.getStandardFileManager(null, null, null)) {
