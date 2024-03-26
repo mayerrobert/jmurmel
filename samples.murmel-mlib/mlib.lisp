@@ -73,7 +73,7 @@
 ;;;
 ;;; - conses and lists
 ;;;     - [circular-list](#function-circular-list)
-;;;     - [mappend](#function-mappend)
+;;;     - [mappend](#function-mappend), [mappend-tails](#function-mappend-tails)
 ;;; - iteration
 ;;;     - [doplist](#macro-doplist)
 ;;; - higher order
@@ -872,8 +872,29 @@
 ;;; which is the return value of `mappend`.
 ;;; `function` must return a list which will not be mutated by `mappend`.
 ;;;
-;;; `mappend` can be thought of as a non-destructive version of `mapcan`.
+;;; `mappend` works similar to Alexandria's `mappend` and
+;;; can be thought of as a non-destructive version of `mapcan`,
+;;; i.e. `mappend` combines the results of applying `function`
+;;; by the use of `append` rather than `nconc`.
 (m%mapx-append mappend car unzip)
+
+
+;;; = Function: mappend-tails
+;;;     (mappend-tails function list+) -> appended-results
+;;;
+;;; Since: 1.4.7
+;;;
+;;; `function` must accept as many arguments as lists are given,
+;;; and will applied to subsequent tails of the given lists.
+;;;
+;;; All function application results will be concatenated to a list
+;;; which is the return value of `mappend-tails`.
+;;; `function` must return a list which will not be mutated by `mappend`.
+;;;
+;;; `mappend-tails` can be thought of as a non-destructive version of `mapcon`,
+;;; i.e. `mappend-tails` combines the results of applying `function`
+;;; by the use of `append` rather than `nconc`.
+(m%mapx-append mappend-tails nil nil)
 
 
 ) ; (macrolet...

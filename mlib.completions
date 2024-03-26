@@ -71,6 +71,7 @@ mapc
 maplist
 mapcar
 mappend
+mappend-tails
 unzip-tails
 unzip
 reverse

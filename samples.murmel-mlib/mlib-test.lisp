@@ -48,9 +48,15 @@
 
 ;; from alexandria
 (defun mappend (function &rest lists)
-  "Applies FUNCTION to respective element(s) of each LIST, appending all the
+  "Applies FUNCTION to respective element(s) of each LIST, appending
 all the result list to a single list. FUNCTION must return a list."
   (loop for results in (apply #'mapcar function lists)
+        append results))
+
+(defun mappend-tails (function &rest lists)
+  "Applies FUNCTION to respective tail(s) of each LIST, appending
+all the result list to a single list. FUNCTION must return a list."
+  (loop for results in (apply #'maplist function lists)
         append results))
 )
 
@@ -672,6 +678,13 @@ all the result list to a single list. FUNCTION must return a list."
     (setf (cdr l) 22) ; shouldn't affect tmp
     tmp)
   => (1 2 3 1 2 3 1 2 3)
+)
+
+
+;; test mappend-tails
+(tests mappend-tails
+  (mappend-tails #'list '(1 2 3 4) '(1 2) '(1 2 3))
+  =>  ((1 2 3 4) (1 2) (1 2 3) (2 3 4) (2) (2 3))
 )
 
 
