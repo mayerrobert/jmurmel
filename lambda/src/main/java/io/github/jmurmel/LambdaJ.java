@@ -8341,6 +8341,10 @@ public class LambdaJ {
         public final ConsCell _rplacd(ConsCell l, Object newCdr) { clrValues(); return l.rplacd(newCdr); }
 
         public final ConsCell _list    (Object... args) { clrValues(); return ConsCell.list(args); }
+        public final ConsCell list2(Object o1, Object o2) { clrValues(); return ConsCell.cons(o1, ConsCell.cons(o2, null)); }
+        public final ConsCell list3(Object o1, Object o2, Object o3) { clrValues(); return ConsCell.cons(o1, ConsCell.cons(o2, ConsCell.cons(o3, null))); }
+        public final ConsCell list4(Object o1, Object o2, Object o3, Object o4) { clrValues(); return ConsCell.cons(o1, ConsCell.cons(o2, ConsCell.cons(o3, ConsCell.cons(o4, null)))); }
+        public final ConsCell list5(Object o1, Object o2, Object o3, Object o4, Object o5) { clrValues(); return ConsCell.cons(o1, ConsCell.cons(o2, ConsCell.cons(o3, ConsCell.cons(o4, ConsCell.cons(o5, null))))); }
         public final Object   listStar (Object... args) { clrValues(); varargs1(LISTSTAR, args); return ConsCell.listStar(args); }
         public final Object   listStar0(Object... args) { clrValues();                           return ConsCell.listStar(args); }
         public final Object   _append  (Object... args) {
@@ -11606,9 +11610,13 @@ public class LambdaJ {
                 if (cdr(args) == null) { emitForm(sb, car(args), env, topEnv, rsfx, false); return true; }
                 break;
             case sList:
-                if (args == null) { sb.append("clrValues(null)");  return true; }
-                if (cdr(args) == null) { // one arg
-                    sb.append("_cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true;
+                switch (listLength(args)) {
+                case 0: { sb.append("clrValues(null)");  return true; }
+                case 1: { sb.append("_cons(");  emitForm(sb, car(args), env, topEnv, rsfx, false);  sb.append(", null)");  return true; }
+                case 2: { emitCallPrimitive(sb, "list2", args, env, topEnv, rsfx);  return true; }
+                case 3: { emitCallPrimitive(sb, "list3", args, env, topEnv, rsfx);  return true; }
+                case 4: { emitCallPrimitive(sb, "list4", args, env, topEnv, rsfx);  return true; }
+                case 5: { emitCallPrimitive(sb, "list5", args, env, topEnv, rsfx);  return true; }
                 }
                 break;
             case sListStar:
