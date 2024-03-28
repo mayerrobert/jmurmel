@@ -1,3 +1,15 @@
+MethodHandles, JIT, inlining, indy:
+https://jornvernee.github.io/methodhandles/2024/01/19/methodhandle-primer.html
+https://github.com/forax/exotic/blob/master/src/main/java/com.github.forax.exotic/MostlyConstant.java
+
+
+https://news.ycombinator.com/item?id=39815714
+-> vielleicht (vector-push-front vec item) und (vector-pop-front vec)?
+   -> ginge nur bei adjustable vector
+   -> und/ oder (vector-add vec item pos) und (vector-delete vec pos) -> item
+      heisst: vector-add bekommt einen zus opt parameter, vector-delete wäre neu
+-> vector-delete in CL: https://news.ycombinator.com/item?id=39816525
+
 deftest namedlet.8: the lifetime of i differs interpreter vs compiler
 
 
@@ -5,7 +17,8 @@ das "let" in named lets umbenamsen in nlet/nlet*/nletrec?
 -> würd sich nicht mehr mit CL beissen. letrec kömmt ma lassen weil das gibts in CL nicht
 -> ggf. fallen einige ifs im interpreter weg
 -> könnte zu code duplication führen
--> checken wie serapeum's named let heisst: "nlet" (hat aber einschränkungen, named let* gibts nicht
+-> checken wie serapeum's named let heisst: "nlet" (hat aber einschränkungen, named let* gibts nicht)
+-> "n" ist normalerweise das präfix für non-consing (destructive)
 
 do/ do* haben in CL und Murmel 1 oder mehrere result forms
 dolist/ dotimes haben in CL eine result form, in Murmel 1 oder mehrere result forms
