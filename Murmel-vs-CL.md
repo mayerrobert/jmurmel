@@ -52,17 +52,15 @@ or works after some massaging which may or may not introduce some `#+murmel`.
 * no special handling for `:keywords`
 * no optional or default parameters: CL has `&optional` and `&default`,
   in Murmel the last parameter in a dotted lambda list has to be processed manually
-* no symbol macros
 * no userdefined reader macros
-* no `#.` reader macro
+* no `#.` reader macro, the reader doesn't eval anything
 * the reader rejects numbers with a trailing dot, i.e. `1.` is the integer 1 in Common Lisp but a `reader-error` in Murmel
-* the reader doesn't eval anything
 
 ### Special forms
 
 * no `eval-when`, no `load-time-value`
 * no `function`, no `tagbody/go`, no `block/return-from/return`, no `flet`, no `the`, no `locally`
-* no local macros via `macrolet` or `symbol-macrolet`
+* no symbol macros via `define-symbol-macro` or `symbol-macrolet`
 
 ### Library
 
