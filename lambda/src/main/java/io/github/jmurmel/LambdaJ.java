@@ -10365,12 +10365,14 @@ public class LambdaJ {
                         sb.append("        ");
                         if (first) first = false;
                         else sb.append("else ");
-                        final Object condExpr = car(clause), condForms = cdr(clause);
+                        final Object condExpr = car(clause);
+                        final ConsCell condForms = (ConsCell)cdr(clause);
                         if (condExpr == sT) {
                             if (condForms == null) sb.append(retLhs).append("_t;\n");
                             else {
                                 sb.append("{\n");
-                                emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext);
+                                if (cdr(condForms) == null) emitStmt(sb, car(condForms), env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext, false);
+                                else emitStmts(sb, condForms, env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext);
                                 sb.append("        }\n");
                             }
                             if (iterator.hasNext()) note("forms following default 't' form will be ignored");
@@ -10378,7 +10380,9 @@ public class LambdaJ {
                         }
                         else if (condForms != null) {
                             sb.append("if (");  emitTruthiness(sb, false, condExpr, env, topEnv, rsfx, false);  sb.append(") {\n");
-                            emitStmts(sb, (ConsCell)condForms, env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext);  sb.append("        }\n");
+                            if (cdr(condForms) == null) emitStmt(sb, car(condForms), env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext, false);
+                            else emitStmts(sb, condForms, env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext);
+                            sb.append("        }\n");
                         }
                         else {
                             sb.append("if (");  emitTruthiness(sb, false, condExpr, env, topEnv, rsfx, true);  sb.append(") ");
