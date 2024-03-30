@@ -502,8 +502,10 @@ public class LambdaJ {
 
     // artithmetic-error... java.lang.ArithmeticException
     // type-error...        java.lang.ClassCastException
-    public static class SimpleTypeError extends ClassCastException { public SimpleTypeError(String msg, Object... params) { super(fmt(msg, params)); } }
-    public static class InvalidIndexError extends IndexOutOfBoundsException { public InvalidIndexError(String msg, Object... params) { super(fmt(msg, params)); } }
+    public static class SimpleTypeError extends ClassCastException { public SimpleTypeError(String msg) { super(msg); }
+                                                                     public SimpleTypeError(String msg, Object... params) { super(fmt(msg, params)); }}
+    public static class InvalidIndexError extends IndexOutOfBoundsException { public InvalidIndexError(String msg) { super(msg); }
+                                                                              public InvalidIndexError(String msg, Object... params) { super(fmt(msg, params)); } }
     // file-error...        java.nio.file.InvalidPathException
 
     // stream-error...      java.io.IOException
