@@ -2269,8 +2269,9 @@ public class LambdaJ {
         public static final String LIST = "list" /* list as a function NOT type */, LISTSTAR = "list*", APPEND = "append", ASSQ = "assq", ASSOC = "assoc";
 
         // vectors, sequences
-        public static final String VECTOR = "vector" /* vector as a function and type */, VECT = "vect";
+        public static final String VECTOR = "vector" /* vector as a function and type */, VECT = "vect", VECTOR_FILL = "vector-fill";
         public static final String MAKE_ARRAY = "make-array";
+        public static final String SEQSET = "seqset";
 
         // Hash tables
         public static final String HASH = "hash", MAKE_HASH_TABLE = "make-hash-table";
@@ -2407,7 +2408,7 @@ public class LambdaJ {
         sMakeArray(MAKE_ARRAY, Features.HAVE_VECTOR, 1, 3)             { @Override Object apply(LambdaJ intp, ConsCell args) { return makeArray(intp.sBit, intp.sCharacter, args); } },
         sVectorAdd("vector-add", Features.HAVE_VECTOR, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorAdd(car(args), cadr(args)); } },
         sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args), cadr(args) != null); } },
-        sVectorFill("vector-fill", Features.HAVE_VECTOR, 2, 4)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
+        sVectorFill(VECTOR_FILL, Features.HAVE_VECTOR, 2, 4)           { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
 
         sVectorLength("vector-length", Features.HAVE_VECTOR, 1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorLength(car(args)); } },
         sVectorToList("vector->list", Features.HAVE_VECTOR, 1)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorToList(intp, car(args)); } },
@@ -2440,7 +2441,7 @@ public class LambdaJ {
         sListToBv("list->bit-vector", Features.HAVE_VECTOR, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToBitVector(car(args), cadr(args) != null); } },
 
         sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
-        sSeqSet("seqset", Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt("seqset", cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
+        sSeqSet(SEQSET, Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt(SEQSET, cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // Hash tables
         sHash(HASH, Features.HAVE_HASH, -1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.getSymbolTable(), args); } },
@@ -5320,20 +5321,20 @@ public class LambdaJ {
             final int length = (int)vectorLength(vector);
             int start = 0, end = length;
             if (_start != null) {
-                start = requireIntegralNumber("vector-fill", _start, 0, length).intValue();
+                start = requireIntegralNumber(VECTOR_FILL, _start, 0, length).intValue();
                 if (_end != null) {
-                    end = requireIntegralNumber("vector-fill", _end, start+1, length).intValue();
+                    end = requireIntegralNumber(VECTOR_FILL, _end, start+1, length).intValue();
                 }
             }
 
             if (vector instanceof Object[])      { Arrays.fill((Object[])vector, start, end, value); return vector; }
-            if (vector instanceof boolean[])     { Arrays.fill((boolean[])vector, start, end, requireBit("vector-fill", value)); return vector; }
-            if (vector instanceof Bitvector)     { ((Bitvector)vector).fill(requireBit("vector-fill", value)); return vector; }
-            if (vector instanceof char[])        { Arrays.fill((char[])vector, start, end, requireChar("vector-fill", value)); return vector; }
-            if (vector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)vector; final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
-            if (vector instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)vector;   final char c = requireChar("vector-fill", value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
+            if (vector instanceof boolean[])     { Arrays.fill((boolean[])vector, start, end, requireBit(VECTOR_FILL, value)); return vector; }
+            if (vector instanceof Bitvector)     { ((Bitvector)vector).fill(requireBit(VECTOR_FILL, value)); return vector; }
+            if (vector instanceof char[])        { Arrays.fill((char[])vector, start, end, requireChar(VECTOR_FILL, value)); return vector; }
+            if (vector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)vector; final char c = requireChar(VECTOR_FILL, value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
+            if (vector instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)vector;   final char c = requireChar(VECTOR_FILL, value); for (int i = start; i < end; i++) (sb).setCharAt(i, c); return vector; }
             if (vector instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)vector; for (int i = start; i < end; i++) list.set(i, value); return vector; }
-            throw errorNotAVector("vector-fill", vector);
+            throw errorNotAVector(VECTOR_FILL, vector);
         }
 
         @SuppressWarnings("unchecked")
@@ -5567,23 +5568,23 @@ public class LambdaJ {
             checkSequenceBounds(maybeSeq, idx);
             if (maybeSeq instanceof ConsCell)      return ((ConsCell)maybeSeq).eltset(newValue, idx);
             if (maybeSeq instanceof Object[])      { final Object[]  arry = (Object[])maybeSeq;  if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = newValue; }
-            if (maybeSeq instanceof char[])        { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar("seqset", newValue); }
+            if (maybeSeq instanceof char[])        { final char[]    arry = (char[])maybeSeq;    if (idx >= arry.length) errorIndexTooLarge(idx, arry.length); return arry[(int)idx] = requireChar(SEQSET, newValue); }
             if (maybeSeq instanceof boolean[])     { final boolean[] arry = (boolean[])maybeSeq; if (idx >= arry.length) errorIndexTooLarge(idx, arry.length);
-                                                     final int newBit = requireIntegralNumber("seqset", newValue, 0, 1).intValue();
+                                                     final int newBit = requireIntegralNumber(SEQSET, newValue, 0, 1).intValue();
                                                      if (newBit == 0) { arry[(int)idx] = false; return 0L; }
                                                      if (newBit == 1) { arry[(int)idx] = true;  return 1L; }
-                                                     throw errorNotABit("seqset", newValue); }
-            if (maybeSeq instanceof Bitvector)     { final Bitvector bv = (Bitvector)maybeSeq; if (idx >= bv.size()) errorIndexTooLarge(idx, bv.size()); bv.set((int)idx, requireBit("seqset", newValue));
+                                                     throw errorNotABit(SEQSET, newValue); }
+            if (maybeSeq instanceof Bitvector)     { final Bitvector bv = (Bitvector)maybeSeq; if (idx >= bv.size()) errorIndexTooLarge(idx, bv.size()); bv.set((int)idx, requireBit(SEQSET, newValue));
                                                     return newValue; }
             if (maybeSeq instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
-                                                     final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
+                                                     final Character c = requireChar(SEQSET, newValue); sb.setCharAt((int)idx, c);
                                                      return newValue; }
             if (maybeSeq instanceof StringBuffer)  { final StringBuffer sb = (StringBuffer)maybeSeq; if (idx >= sb.length()) errorIndexTooLarge(idx, sb.length());
-                                                     final Character c = requireChar("seqset", newValue); sb.setCharAt((int)idx, c);
+                                                     final Character c = requireChar(SEQSET, newValue); sb.setCharAt((int)idx, c);
                                                      return newValue; }
             if (maybeSeq instanceof List)          { @SuppressWarnings("rawtypes") final List list = (List)maybeSeq; if (idx >= list.size()) errorIndexTooLarge(idx, list.size()); list.set((int)idx, newValue);
                                                      return newValue; }
-            throw errorInternal("seqset: unknown object type %s or not implemented", maybeSeq);
+            throw errorInternal(SEQSET+": unknown object type %s or not implemented", maybeSeq);
         }
 
 
@@ -8461,7 +8462,7 @@ public class LambdaJ {
                                                              return LambdaJ.Subr.makeArray(sBit, sCharacter, arraySlice(args)); }
         public final long     vectorLength(Object... args) { clrValues(); oneArg("vector-length", args); return LambdaJ.Subr.vectorLength(args[0]); }
         public final Object   vectorCopy  (Object... args) { clrValues(); varargs1_2("vector-copy", args);   return LambdaJ.Subr.vectorCopy(args[0], secondArgNotNull(args)); }
-        public final Object   vectorFill  (Object... args) { clrValues(); varargsMinMax("vector-fill", args, 2, 4);
+        public final Object   vectorFill  (Object... args) { clrValues(); varargsMinMax(VECTOR_FILL, args, 2, 4);
                                                              return LambdaJ.Subr.vectorFill(args[0], args[1], nth(2, args), nth(3, args)); }
         public final long     vectorAdd   (Object... args) { clrValues(); twoArgs("vector-add", args); return LambdaJ.Subr.vectorAdd(args[0], args[1]); }
         public final Object   vectorToList (Object... args) {
@@ -8564,7 +8565,7 @@ public class LambdaJ {
         }
 
         public final Object _seqref       (Object... args)      { clrValues(); twoArgs("seqref",   args); return LambdaJ.Subr.seqref(args[0], toArrayIndex(args[1])); }
-        public final Object _seqset       (Object... args)      { clrValues(); threeArgs("seqset", args); return LambdaJ.Subr.seqset(args[0], toArrayIndex(args[1]), args[2]); }
+        public final Object _seqset       (Object... args)      { clrValues(); threeArgs(SEQSET, args); return LambdaJ.Subr.seqset(args[0], toArrayIndex(args[1]), args[2]); }
 
 
         // Hashtables
@@ -9404,7 +9405,7 @@ public class LambdaJ {
 
             case "vector-length": return (CompilerPrimitive)this::vectorLength;
             case "vector-copy": return (CompilerPrimitive)this::vectorCopy;
-            case "vector-fill": return (CompilerPrimitive)this::vectorFill;
+            case VECTOR_FILL: return (CompilerPrimitive)this::vectorFill;
             case "vector-add": return (CompilerPrimitive)this::vectorAdd;
             case "vector->list": return (CompilerPrimitive)this::vectorToList;
             case "list->vector": return (CompilerPrimitive)this::listToVector;
@@ -9436,7 +9437,7 @@ public class LambdaJ {
             case "list->bit-vector": return (CompilerPrimitive)this::listToBitVector;
 
             case "seqref": return (CompilerPrimitive)this::_seqref;
-            case "seqset": return (CompilerPrimitive)this::_seqset;
+            case SEQSET: return (CompilerPrimitive)this::_seqset;
 
             // Hash tables
             case HASH: return (CompilerPrimitive)this::_hash;
@@ -9670,7 +9671,7 @@ public class LambdaJ {
         CAR + "\n" +CDR + "\n" +CONS + "\n" +RPLACA + "\n" +RPLACD + "\n"
         + /*"apply",*/ EVAL + "\n" +EQ + "\n" +EQL + "\n" +EQUAL + "\n" +NULL + "\n" +"read" + "\n" +"write" + "\n" +"writeln" + "\n" +"lnwrite" + "\n"
         + ATOM + "\n" +CONSP + "\n" +FUNCTIONP + "\n" +LISTP + "\n" +SYMBOLP + "\n" +NUMBERP + "\n" +STRINGP + "\n" +CHARACTERP + "\n" +INTEGERP + "\n" +FLOATP + "\n" +VECTORP + "\n" +TYPEP + "\n"
-        + ASSOC + "\n" +ASSQ + "\n" +LIST + "\n" +VECT + "\n" +VECTOR + "\n" +"seqref" + "\n" +"seqset" + "\n" +"svref" + "\n" +"svset" + "\n" +"svlength" + "\n" +"string" + "\n" +"slength" + "\n" +"sref" + "\n" +"sset" + "\n" +"bvref" + "\n" +"bvset" + "\n" +"bvlength" + "\n"
+        + ASSOC + "\n" +ASSQ + "\n" +LIST + "\n" +VECT + "\n" +VECTOR + "\n" +"seqref" + "\n" + SEQSET + "\n" +"svref" + "\n" +"svset" + "\n" +"svlength" + "\n" +"string" + "\n" +"slength" + "\n" +"sref" + "\n" +"sset" + "\n" +"bvref" + "\n" +"bvset" + "\n" +"bvlength" + "\n"
         + APPEND + "\n" +VALUES + "\n"
         + "round" + "\n" +"floor" + "\n" +"ceiling" + "\n" +"truncate" + "\n"
         + "fround" + "\n" +"ffloor" + "\n" +"fceiling" + "\n" +"ftruncate" + "\n"
@@ -9688,7 +9689,7 @@ public class LambdaJ {
         + ADJUSTABLE_ARRAY_P+"@adjustableArrayP" + "\n" + "vector-add@vectorAdd" + "\n"
         + "vector->list@vectorToList" + "\n" + "list->vector@listToVector" + "\n" + "simple-vector->list@simpleVectorToList" + "\n" + "list->simple-vector@listToSimpleVector" + "\n"
         + "bit-vector->list@bitVectorToList" + "\n" + "list->bit-vector@listToBitVector" + "\n"
-        + "vector-length@vectorLength" + "\n" + "vector-copy@vectorCopy" + "\n" + "vector-fill@vectorFill" + "\n"
+        + "vector-length@vectorLength" + "\n" + "vector-copy@vectorCopy" + "\n" + VECTOR_FILL+"@vectorFill" + "\n"
         + SIMPLE_VECTOR_P+"@svectorp" + "\n" + SIMPLE_STRING_P+"@sstringp" + "\n" + RANDOM_STATE_P+"@_randomstatep" + "\n" + "make-random-state@makeRandomState" + "\n"
         + BIT_VECTOR_P+"@bitvectorp" + "\n" + "bv=@bvEq" + "\n" + SIMPLE_BIT_VECTOR_P+"@sbitvectorp" + "\n" + HASH_TABLE_P+"@hashtablep" + "\n" + MAKE_ARRAY+"@makeArray" + "\n"
         + HASH+"@_hash" + "\n" + MAKE_HASH_TABLE+"@makeHash" + "\n" + "hashref@_hashref" + "\n" + "hashset@_hashset" + "\n"
