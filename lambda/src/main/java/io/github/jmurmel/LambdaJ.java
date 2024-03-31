@@ -10370,12 +10370,13 @@ public class LambdaJ {
                         else sb.append("else ");
                         final Object condExpr = car(clause);
                         final ConsCell condForms = (ConsCell)cdr(clause);
+                        final boolean moreCondForms = cdr(condForms) != null;
                         if (condExpr == sT) {
                             if (condForms == null) sb.append(retLhs).append("_t;\n");
                             else {
                                 sb.append("{\n");
-                                if (cdr(condForms) == null) emitStmt(sb, car(condForms), env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext, false);
-                                else emitStmts(sb, condForms, env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext);
+                                emitStmt(sb, car(condForms), env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, moreCondForms || hasNext, false);
+                                if (moreCondForms) emitStmts(sb, (ConsCell)cdr(condForms), env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext);
                                 sb.append("        }\n");
                             }
                             if (iterator.hasNext()) note("forms following default 't' form will be ignored");
@@ -10383,8 +10384,8 @@ public class LambdaJ {
                         }
                         else if (condForms != null) {
                             sb.append("if (");  emitTruthiness(sb, false, condExpr, env, topEnv, rsfx, false);  sb.append(") {\n");
-                            if (cdr(condForms) == null) emitStmt(sb, car(condForms), env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext, false);
-                            else emitStmts(sb, condForms, env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext);
+                            emitStmt(sb, car(condForms), env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, moreCondForms || hasNext, false);
+                            if (moreCondForms) emitStmts(sb, (ConsCell)cdr(condForms), env, topEnv, rsfx, retLhs, recur, recurArgs, minParams, maxParams, toplevel, hasNext);
                             sb.append("        }\n");
                         }
                         else {
