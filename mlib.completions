@@ -55,6 +55,7 @@ princ
 prin1
 terpri
 write-char
+concatenate
 map
 map-into
 reduce

@@ -52,6 +52,7 @@
 ;;;     - [elt](#function-elt), [copy-seq](#function-copy-seq), [length](#function-length)
 ;;;     - [reverse](#function-reverse), [nreverse](#function-nreverse)
 ;;;     - [remove-if](#function-remove-if), [remove](#function-remove)
+;;;     - [concatenate](#function-concatenate)
 ;;;     - [map](#function-map), [map-into](#function-map-into), [reduce](#function-reduce)
 
 ;;; - hash tables
@@ -2337,17 +2338,39 @@
   (remove-if (lambda (x) (eql x elem)) seq))
 
 
-(defun m%list->sequence (lst result-type)
-  (cond ((null result-type)                  nil)
-        ((eq result-type 'list)              lst)
-        ((eq result-type 'cons)              (or lst (error 'simple-type-error "nil is not a sequence of type cons")))
-        ((eq result-type 'vector)            (list->simple-vector lst))
-        ((eq result-type 'simple-vector)     (list->simple-vector lst))
-        ((eq result-type 'simple-bit-vector) (list->bit-vector lst))
-        ((eq result-type 'bit-vector)        (list->bit-vector lst))
-        ((eq result-type 'string)            (list->string lst))
-        ((eq result-type 'simple-string)     (list->string lst))
-        (t                                   (error "type %s is not implemented" result-type))))
+(labels ((m%list->sequence (lst result-type)
+           (cond ((null result-type)                  nil)
+                 ((eq result-type 'list)              lst)
+                 ((eq result-type 'cons)              (or lst (error 'simple-type-error "nil is not a sequence of type cons")))
+                 ((eq result-type 'vector)            (list->simple-vector lst))
+                 ((eq result-type 'simple-vector)     (list->simple-vector lst))
+                 ((eq result-type 'simple-bit-vector) (list->bit-vector lst))
+                 ((eq result-type 'bit-vector)        (list->bit-vector lst))
+                 ((eq result-type 'string)            (list->string lst))
+                 ((eq result-type 'simple-string)     (list->string lst))
+                 (t                                   (error "type %s is not implemented" result-type)))))
+
+
+;;; = Function: concatenate
+;;;     (concatenate result-type sequences*) -> result-sequence
+;;;
+;;; Since 1.4.7
+;;;
+;;; `concatenate` returns a sequence that contains all the individual elements
+;;; of all the sequences in the order that they are supplied.
+;;; The sequence is of type result-type, which must be a subtype of type sequence.
+;;;
+;;; All of the sequences are copied from; the result does not share any structure
+;;; with any of the sequences.
+(defun concatenate (result-type . sequences)
+  (let ((result (list nil))) 
+    (let* loop ((sequences sequences)
+                (append-to result))
+      (when sequences
+        (dogenerator (x (scan (car sequences)))
+          (setq append-to (m%rplacd append-to (list x))))
+        (loop (cdr sequences) append-to)))
+    (m%list->sequence (cdr result) result-type)))
 
 
 ;;; = Function: map
@@ -2386,6 +2409,8 @@
                    (func val)
                    (multiple-value-call collect (seq)))))
         (multiple-value-call collect (seq)))))
+
+) ; labels
 
 
 ;;; = Function: map-into

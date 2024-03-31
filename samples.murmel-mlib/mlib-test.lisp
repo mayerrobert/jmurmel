@@ -1147,6 +1147,15 @@ all the result list to a single list. FUNCTION must return a list."
 )
 
 
+;; test concatenate
+(tests concatenate
+  (concatenate 'string "all" " " "together" " " "now") =>  "all together now"
+  (concatenate 'list "ABC" '(d e f) #(1 2 3) #*1011)
+  =>  (#\A #\B #\C D E F 1 2 3 1 0 1 1)
+  (concatenate 'list) =>  NIL
+)
+
+
 ;; test map
 (tests map
   (map 'string #'(lambda (x y)

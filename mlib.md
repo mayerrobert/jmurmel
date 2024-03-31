@@ -48,6 +48,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [elt](#function-elt), [copy-seq](#function-copy-seq), [length](#function-length)
     - [reverse](#function-reverse), [nreverse](#function-nreverse)
     - [remove-if](#function-remove-if), [remove](#function-remove)
+    - [concatenate](#function-concatenate)
     - [map](#function-map), [map-into](#function-map-into), [reduce](#function-reduce)
 - hash tables
     - [gethash](#function-gethash), [remhash](#function-remhash), [maphash](#function-maphash)
@@ -900,6 +901,18 @@ Since: 1.1
 
 Return a fresh sequence without occurrences of `elem`.
 An occurrence is determined by `eql`.
+
+### Function: concatenate
+    (concatenate result-type sequences*) -> result-sequence
+
+Since 1.4.7
+
+`concatenate` returns a sequence that contains all the individual elements
+of all the sequences in the order that they are supplied.
+The sequence is of type result-type, which must be a subtype of type sequence.
+
+All of the sequences are copied from; the result does not share any structure
+with any of the sequences.
 
 ### Function: map
     (map result-type function sequences+) -> result
