@@ -10415,7 +10415,8 @@ public class LambdaJ {
                         for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
                             if (hasNext || cddr(pairs) != null) sb.append("        ");
                             else sb.append(retLhs);
-                            emitSetq(sb, pairs, env, topEnv, rsfx);
+                            final boolean needsClrValues = !hasNext && cddr(pairs) == null; // the last assignment may need clrValues()
+                            emitSetq(sb, pairs, env, topEnv, rsfx, needsClrValues);
                             sb.append(";\n");
                         }
                     }
@@ -10682,13 +10683,13 @@ public class LambdaJ {
                     case sSetQ: {
                         if (ccArguments == null) sb.append("(Object)null"); // must cast to Object in case it will be used as the only argument to a vararg function
                         else if (cddr(ccArguments) == null)
-                            emitSetq(sb, ccArguments, env, topEnv, rsfx);
+                            emitSetq(sb, ccArguments, env, topEnv, rsfx, true);
                         else {
                             sb.append("((Supplier<Object>)(() -> {\n");
                             String javaName = null;
                             for (Object pairs = ccArguments; pairs != null; pairs = cddr(pairs)) {
                                 sb.append("        ");
-                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx - 1);
+                                javaName = emitSetq(sb, pairs, env, topEnv, rsfx - 1, true);
                                 sb.append(";\n");
                             }
                             sb.append("        return ").append(javaName).append(";})).get()");
@@ -11119,7 +11120,7 @@ public class LambdaJ {
             }
         }
 
-        private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx) {
+        private String emitSetq(WrappingWriter sb, Object pairs, ConsCell env, ConsCell topEnv, int rsfx, boolean _clrValues) {
             final LambdaJSymbol symbol = LambdaJ.symbolOrMalformed(SETQ, car(pairs));
             final String javaName = javasym(symbol, env);
 
@@ -11129,7 +11130,7 @@ public class LambdaJ {
             notAPrimitive(SETQ, symbol, javaName);
 
             String clrValues = "", closingParen = "";
-            if (cddr(pairs) == null) {
+            if (_clrValues && cddr(pairs) == null) {
                 if (consp(valueForm)) {
                     final Object valueOp = car((ConsCell)valueForm);
                     if (valueOp instanceof LambdaJSymbol) {
