@@ -9534,6 +9534,7 @@ public class LambdaJ {
     ///
     public static class MurmelJavaCompiler {
         private static final boolean USE_SWITCH_EXPR = JavaUtil.jvmVersion() >= 14;
+        private static final String ARGSEP = ",\n        ";
 
         private final JavaCompilerHelper javaCompiler;
         final @NotNull LambdaJ intp;
@@ -10860,7 +10861,7 @@ public class LambdaJ {
                 emitForm(sb, op, env, topEnv, rsfx, false);
                 if (ccArguments != null) {
                     for (Object arg: ccArguments) {
-                        sb.append("\n        , ");
+                        sb.append(ARGSEP);
                         emitForm(sb, arg, env, topEnv, rsfx, false);
                     }
                 }
@@ -11235,7 +11236,7 @@ public class LambdaJ {
 
             if (ccBindings != null) {
                 for (Object binding : ccBindings) {
-                    sb.append("\n        , ");
+                    sb.append(ARGSEP);
                     emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
             }
@@ -11396,7 +11397,7 @@ public class LambdaJ {
 
             if (bindings != null)
                 for (Object binding: (ConsCell)bindings) {
-                    sb.append("\n        , ");
+                    sb.append(ARGSEP);
                     if (letStar) sb.append("(Object)null");
                     else emitForm(sb, cadr(binding), env, topEnv, rsfx, false);
                 }
@@ -11859,7 +11860,7 @@ public class LambdaJ {
                     String conv = null;
                     for (Object arg : ccArguments) {
                         if (first) first = false;
-                        else sb.append("\n        , ");
+                        else sb.append(ARGSEP);
                         if (!m.isVarArgs() || i - startArg < paramTypeNames.size()) conv = (String) JFFI.classByName.get(paramTypeNames.get(i-startArg))[1];
                         if (conv == null) emitForm(sb, arg, env, topEnv, rsfx, false);
                         else { sb.append(conv).append('(');  emitForm(sb, arg, env, topEnv, rsfx, false);  sb.append(')'); }
@@ -11890,7 +11891,7 @@ public class LambdaJ {
                     if (m.isVarArgs()) {
                         for (int i = startArg; i < params.length + startArg - 1; i++) {
                             if (first) first = false;
-                            else sb.append("\n        , ");
+                            else sb.append(ARGSEP);
                             final Object[] desc = JFFI.classByName.get(paramTypeNames.get(i - startArg));
                             if (desc == null) sb.append("args[").append(i).append(']');
                             else sb.append(desc[1]).append("(args[").append(i).append("])");
@@ -11907,7 +11908,7 @@ public class LambdaJ {
                     else {
                         for (int i = startArg; i < params.length + startArg; i++) {
                             if (first) first = false;
-                            else sb.append("\n        , ");
+                            else sb.append(ARGSEP);
                             final String conv = (String)JFFI.classByName.get(paramTypeNames.get(i - startArg))[1];
                             if (conv == null) sb.append("args[").append(i).append(']');
                             else sb.append(conv).append("(args[").append(i).append("])");
