@@ -4284,14 +4284,11 @@ public class LambdaJ {
         return null;
     }
 
-    /** faster assq for internal use for environment lookup. ccList must be a proper list that only contains cons cells. */
+    /** faster assq w/o checks for internal use for environment lookup. ccList must be a proper list that only contains cons cells. */
     static ConsCell fastassq(Object atom, ConsCell ccList) {
-        //int n = 0;
         for (; ccList != null; ccList = (ConsCell)ccList.cdr()) {
-            //n++;
             final ConsCell ccEntry = (ConsCell)ccList.car();
             if (atom == ccEntry.car()) {
-                //if (n >= 20) System.out.printf("assq: %s %d%n", atom, n);
                 return ccEntry;
             }
         }
@@ -6820,12 +6817,14 @@ public class LambdaJ {
         }
 
         static final Exit EXIT_SUCCESS =       new Exit(0);
-
         static final Exit EXIT_PROGRAM_ERROR = new Exit(1);
-
         static final Exit EXIT_CMDLINE_ERROR = new Exit(128);
         static final Exit EXIT_IO_ERROR =      new Exit(129);
         static final Exit EXIT_RUNTIME_ERROR = new Exit(255);
+
+        static InputStream REPL_IN = System.in;
+        static PrintStream REPL_OUT = System.out;
+        static PrintStream REPL_ERR = System.err;
 
         static int mainInternal(String[] args) {
             try {
@@ -6835,7 +6834,7 @@ public class LambdaJ {
                 final boolean scriptFlagError;
                 if (script && (hasFlag("--repl", args, false) || hasFlag("--tty", args, false) || hasFlag("--eval", args, false))) {
                     scriptFlagError = true;
-                    System.err.println("LambdaJ: when using --script neither --repl nor --tty nor --eval may be used as well");
+                    REPL_ERR.println("LambdaJ: when using --script neither --repl nor --tty nor --eval may be used as well");
                 }
                 else scriptFlagError = false;
 
@@ -6858,7 +6857,7 @@ public class LambdaJ {
                 final String immediateForms = flagValues("--eval", args);
 
                 if (argError(args) || error || scriptFlagError) {
-                    System.err.println("LambdaJ: exiting because of previous errors.");
+                    REPL_ERR.println("LambdaJ: exiting because of previous errors.");
                     throw EXIT_CMDLINE_ERROR;
                 }
 
@@ -6879,7 +6878,7 @@ public class LambdaJ {
                             Object result = null;
                             for (String fileName : files) {
                                 if ("--".equals(fileName)) continue;
-                                if (verbose) System.out.println("interpreting " + fileName + "...");
+                                if (verbose) REPL_OUT.println("interpreting " + fileName + "...");
                                 final Path p = Paths.get(fileName);
                                 result = interpretStream(interpreter, ReadSupplier.of(p), p, printResult, history);
                             }
@@ -6887,8 +6886,8 @@ public class LambdaJ {
                                 result = interpretStream(interpreter, new StringReadSupplier(immediateForms), null, printResult, history);
                             }
                             if (finalResult && !printResult && result != null) {
-                                System.out.println();
-                                System.out.println("==> " + printSEx(result));
+                                REPL_OUT.println();
+                                REPL_OUT.println("==> " + printSEx(result));
                             }
                             if (script) exit(result);
                             break;
@@ -6908,7 +6907,7 @@ public class LambdaJ {
                     }
                 }
                 catch (IOException e) {
-                    System.err.println();  System.err.println(e);
+                    REPL_ERR.println();  REPL_ERR.println(e);
                     throw EXIT_IO_ERROR;
                 }
                 interpreter.currentSource = null;
@@ -6923,24 +6922,25 @@ public class LambdaJ {
                     if (action == Action.INTERPRET) {
                         interpreter.init(NULL_READCHARS, NULL_WRITECHARS, null);
                         injectCommandlineArgs(interpreter, args);
-                        final Object result = interpretStream(interpreter, new InputStreamReader(System.in, consoleCharset)::read, null, printResult, null);
+                        final Object result = interpretStream(interpreter, new InputStreamReader(REPL_IN, consoleCharset)::read, null, printResult, null);
                         if (finalResult && !printResult && result != null) {
-                            System.out.println();
-                            System.out.println("==> " + printSEx(result));
+                            REPL_OUT.println();
+                            REPL_OUT.print("==> ");
+                            REPL_OUT.println(printSEx(result));
                         }
                     }
                     else {
-                        final SExpressionReader parser = interpreter.makeReader(new InputStreamReader(System.in, consoleCharset)::read, null);
+                        final SExpressionReader parser = interpreter.makeReader(new InputStreamReader(REPL_IN, consoleCharset)::read, null);
 
                         switch (action) {
                         case TO_JAVA:
                             final boolean successJava = compileToJava(StandardCharsets.UTF_8, interpreter.getSymbolTable(), interpreter.libDir, parser, clsName, outDir);
-                            if (successJava) System.out.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
+                            if (successJava) REPL_OUT.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
                             break;
                         case TO_JAR:
                             final String outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
                             final boolean successJar = compileToJar(interpreter.getSymbolTable(), libPath, parser, clsName, outFile);
-                            if (successJar) System.out.println("compiled stdin to " + outFile);
+                            if (successJar) REPL_OUT.println("compiled stdin to " + outFile);
                             break;
                         case COMPILE_AND_RUN:
                             compileAndRunForms(parser, args, interpreter, false, finalResult);
@@ -6973,8 +6973,8 @@ public class LambdaJ {
                 final ObjectReader reader = interpreter.getLispReader();
                 reader.setInput(prog, fileName);
                 interpreter.currentSource = fileName;
-                final ObjectReader inReader = new SExpressionReader(interpreter.features, TraceLevel.TRC_NONE, null, interpreter.getSymbolTable(), interpreter.featuresEnvEntry, System.in::read, null);
-                final ObjectWriter outWriter = makeWriter(System.out::print);
+                final ObjectReader inReader = new SExpressionReader(interpreter.features, TraceLevel.TRC_NONE, null, interpreter.getSymbolTable(), interpreter.featuresEnvEntry, REPL_IN::read, null);
+                final ObjectWriter outWriter = makeWriter(REPL_OUT::print);
                 interpreter.setReaderPrinter(inReader, outWriter);
                 final Object eof = "EOF";
                 Object result = null;
@@ -6987,8 +6987,8 @@ public class LambdaJ {
                     result = interpreter.expandAndEval(form, null);
                     interpreter.traceStats(tStart);
                     if (printResult) {
-                        System.out.println();
-                        System.out.print("==> "); outWriter.printObj(result, true); System.out.println();
+                        REPL_OUT.println();
+                        REPL_OUT.print("==> "); outWriter.printObj(result, true); REPL_OUT.println();
                     }
                 }
                 return result;
@@ -7014,7 +7014,7 @@ public class LambdaJ {
                 if (outDir == null) outDir = ".";
                 outFile = outDir + '/' + clsName + ".java";
             }
-            if (success) System.out.println("compiled " + files.size() + " file(s) to " + outFile);
+            if (success) REPL_OUT.println("compiled " + files.size() + " file(s) to " + outFile);
             return success;
         }
 
@@ -7028,7 +7028,7 @@ public class LambdaJ {
             final Path tmpDir;
             try { tmpDir = getTmpDir(); }
             catch (IOException e) {
-                System.out.println("history NOT run as Java - cannot get/ create tmp directory: " + e.getMessage());
+                REPL_OUT.println("history NOT run as Java - cannot get/ create tmp directory: " + e.getMessage());
                 if (!repl) throw EXIT_IO_ERROR;
                 return null;
             }
@@ -7052,16 +7052,16 @@ public class LambdaJ {
                 }
 
                 if (repl || finalResult && result != null) {
-                    System.out.println();
+                    REPL_OUT.println();
 
                     if (repl && ((MurmelJavaProgram)prg).values != null) {
                         for (Object value : ((MurmelJavaProgram)prg).values) {
-                            System.out.print(" -> ");
+                            REPL_OUT.print(" -> ");
                             prg.getLispPrinter().printObj(value, true);
-                            System.out.println();
+                            REPL_OUT.println();
                         }
                     }
-                    else { System.out.print("==> ");  prg.getLispPrinter().printObj(result, true);  System.out.println(); }
+                    else { REPL_OUT.print("==> ");  prg.getLispPrinter().printObj(result, true);  REPL_OUT.println(); }
                 }
 
                 return result;
@@ -7069,17 +7069,17 @@ public class LambdaJ {
             catch (LambdaJError e) {
                 if (repl) {
                     final String msg = (prg != null ? "runtime error" : "error") + location(prg) + ": " + e.getMessage();
-                    System.out.println("history NOT run as Java - " + msg);
+                    REPL_OUT.println("history NOT run as Java - " + msg);
                 }
                 else Repl.errorExit(e);
             }
             catch (Throwable t) {
                 final String loc = location(prg);
                 if (repl) {
-                    System.out.println("history NOT run as Java - " + (prg != null ? "runtime error" : "error") + loc + ":");
-                    t.printStackTrace(System.out);
+                    REPL_OUT.println("history NOT run as Java - " + (prg != null ? "runtime error" : "error") + loc + ":");
+                    t.printStackTrace(REPL_OUT);
                 }
-                else System.err.println("Caught Throwable" + loc + ": " + t);
+                else REPL_ERR.println("Caught Throwable" + loc + ": " + t);
             }
             if (!repl) throw EXIT_RUNTIME_ERROR;
             return null;
@@ -7103,7 +7103,7 @@ public class LambdaJ {
         private static boolean compileToJava(Charset charset, MurmelJavaCompiler c, ObjectReader history, Object className, Object filename) {
             final String clsName = className == null ? "MurmelProgram" : className.toString();
             if (filename == sT) {
-                c.formsToJavaSource(new OutputStreamWriter(System.out, charset), clsName, history);
+                c.formsToJavaSource(new OutputStreamWriter(REPL_OUT, charset), clsName, history);
                 return true;
             }
 
@@ -7115,26 +7115,26 @@ public class LambdaJ {
                 if (p.getParent() != null) Files.createDirectories(p.getParent());
             }
             catch (Exception e) {
-                System.out.println("NOT compiled to Java - error: ");
-                e.printStackTrace(System.out);
+                REPL_OUT.println("NOT compiled to Java - error: ");
+                e.printStackTrace(REPL_OUT);
                 return false;
             }
 
             final CharsetEncoder encoder = StandardCharsets.UTF_8.newEncoder();
             try (OutputStream os = Files.newOutputStream(p);
                  WrappingWriter writer = new WrappingWriter(new BufferedWriter(new OutputStreamWriter(os, encoder)))) {
-                System.out.println("compiling...");
+                REPL_OUT.println("compiling...");
                 c.formsToJavaSource(writer, clsName, history);
-                System.out.println("compiled to Java file '" + p + '\'');
+                REPL_OUT.println("compiled to Java file '" + p + '\'');
                 return true;
             }
             catch (LambdaJError e) {
-                System.out.println("NOT compiled to Java - error: " + e.getMessage());
+                REPL_OUT.println("NOT compiled to Java - error: " + e.getMessage());
                 return false;
             }
             catch (Exception e) {
-                System.out.println("NOT compiled to Java - error: ");
-                e.printStackTrace(System.out);
+                REPL_OUT.println("NOT compiled to Java - error: ");
+                e.printStackTrace(REPL_OUT);
                 return false;
             }
         }
@@ -7142,7 +7142,7 @@ public class LambdaJ {
         static boolean compileToJar(SymbolTable st, Path libDir, ObjectReader history, Object className, Object jarFile) {
             final Path tmpDir;
             try { tmpDir = getTmpDir(); }
-            catch (IOException e) { System.out.println("NOT compiled to .jar - cannot get/ create tmp directory: " + e.getMessage()); return false; }
+            catch (IOException e) { REPL_OUT.println("NOT compiled to .jar - cannot get/ create tmp directory: " + e.getMessage()); return false; }
 
             return compileToJar(new MurmelJavaCompiler(st, libDir, tmpDir), history, className, jarFile);
         }
@@ -7151,18 +7151,18 @@ public class LambdaJ {
             try {
                 final String jarFileName = jarFile == null ? "a.jar" : jarFile.toString();
                 final String clsName = className == null ? "MurmelProgram" : className.toString();
-                System.out.println("compiling...");
+                REPL_OUT.println("compiling...");
                 c.formsToJavaClass(clsName, history, jarFileName);
-                System.out.println("compiled to .jar file '" + jarFileName + '\'');
+                REPL_OUT.println("compiled to .jar file '" + jarFileName + '\'');
                 return true;
             }
             catch (LambdaJError e) {
-                System.out.println("NOT compiled to .jar - error: " + e.getMessage());
+                REPL_OUT.println("NOT compiled to .jar - error: " + e.getMessage());
                 return false;
             }
             catch (Exception e) {
-                System.out.println("NOT compiled to .jar - error: ");
-                e.printStackTrace(System.out);
+                REPL_OUT.println("NOT compiled to .jar - error: ");
+                e.printStackTrace(REPL_OUT);
                 return false;
             }
         }
@@ -7176,16 +7176,16 @@ public class LambdaJ {
             if (consoleCharsetName == null) consoleCharsetName = "UTF-8";
             final Charset consoleCharset = Charset.forName(consoleCharsetName);
 
-            final Repl repl = new Repl(new InputStreamReader(System.in, consoleCharset)::read, System.out, interpreter, isInit, echo, prevHistory, args, consoleCharsetName);
+            final Repl repl = new Repl(new InputStreamReader(REPL_IN, consoleCharset)::read, REPL_OUT, interpreter, isInit, echo, prevHistory, args, consoleCharsetName);
             if (!echo) {
-                System.out.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
-                System.out.println();
+                REPL_OUT.println("Enter a Murmel form or :command (or enter :h for command help or :q to exit):");
+                REPL_OUT.println();
             }
 
             for (;;) {
                 if (!repl.echo) {
-                    System.out.print("JMurmel> ");
-                    if (istty) System.out.flush();
+                    REPL_OUT.print("JMurmel> ");
+                    if (istty) REPL_OUT.flush();
                 }
 
                 repl.oneForm(istty, System.lineSeparator());
@@ -7433,8 +7433,8 @@ public class LambdaJ {
             }
 
             static Object errorExit(Object e) {
-                System.err.println();
-                System.err.println("Error: " + LambdaJ.printSEx(e, true));
+                REPL_ERR.println();
+                REPL_ERR.println("Error: " + LambdaJ.printSEx(e, true));
                 throw EXIT_RUNTIME_ERROR;
             }
 
@@ -7522,7 +7522,7 @@ public class LambdaJ {
                 if ("--".equals(arg)) return false;
                 if ("--script".equals(arg)) {
                     if (args.length <= i+1) {
-                        System.err.println("LambdaJ: commandline argument --script requires one filename");
+                        REPL_ERR.println("LambdaJ: commandline argument --script requires one filename");
                         args[i] = null; // consume the arg
                         return true;
                     }
@@ -7542,14 +7542,14 @@ public class LambdaJ {
 
             if (hasFlag("--help", args) || hasFlag("--usage", args)) {
                 showVersion();
-                System.out.println();
+                REPL_OUT.println();
                 showUsage();
                 throw EXIT_SUCCESS;
             }
 
             if (hasFlag("--help-features", args)) {
                 showVersion();
-                System.out.println();
+                REPL_OUT.println();
                 showFeatureUsage();
                 throw EXIT_SUCCESS;
             }
@@ -7635,7 +7635,7 @@ public class LambdaJ {
                 if ("--".equals(arg)) return null;
                 if (flag.equals(arg)) {
                     if (args.length < i+2) {
-                        System.err.println("LambdaJ: commandline argument " + flag + " requires a value");
+                        REPL_ERR.println("LambdaJ: commandline argument " + flag + " requires a value");
                         return null;
                     }
                     args[i] = null; // consume the arg
@@ -7653,7 +7653,7 @@ public class LambdaJ {
                 if ("--".equals(arg)) return null;
                 if (flag.equals(arg)) {
                     if (args.length < i + 2) {
-                        System.err.println("LambdaJ: commandline argument " + flag + " requires a value");
+                        REPL_ERR.println("LambdaJ: commandline argument " + flag + " requires a value");
                         return null;
                     }
                     args[i] = null; // consume the arg
@@ -7676,8 +7676,8 @@ public class LambdaJ {
             for (String arg: args) {
                 if ("--".equals(arg)) return err;
                 if (arg != null && arg.startsWith("-")) {
-                    System.err.println("LambdaJ: unknown or duplicate commandline argument " + arg + " or missing value");
-                    System.err.println("use '--help' to show available commandline arguments");
+                    REPL_ERR.println("LambdaJ: unknown or duplicate commandline argument " + arg + " or missing value");
+                    REPL_ERR.println("use '--help' to show available commandline arguments");
                     err = true;
                 }
             }
@@ -7719,12 +7719,12 @@ public class LambdaJ {
 
         /// functions that print info to the screen
         private static void showVersion() {
-            System.out.println(ENGINE_VERSION);
+            REPL_OUT.println(ENGINE_VERSION);
         }
 
         // for updating the usage message edit the file usage.txt and copy/paste its contents here between double quotes
         private static void showUsage() {
-            System.out.println("Usage:\n"
+            REPL_OUT.println("Usage:\n"
                                + "\n"
                                + "java -jar jmurmel.jar <commandline flags>... <source files>...\n"
                                + "java -jar jmurmel.jar <commandline flags>... <source files>... '--' args-for-program\n"
@@ -7796,7 +7796,7 @@ public class LambdaJ {
         }
 
         private static void showFeatureUsage() {
-            System.out.println("Feature flags:\n"
+            REPL_OUT.println("Feature flags:\n"
                                + "\n"
                                + "--no-ffi ......  no functions 'jmethod' or 'jproxy'\n"
                                + "--no-gui ......  no turtle or bitmap graphics\n"
@@ -7883,17 +7883,17 @@ public class LambdaJ {
             try {
                 final Path libPath = Paths.get(libDir).toAbsolutePath();
                 if (!Files.isDirectory(libPath)) {
-                    System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not a directory");
+                    REPL_ERR.println("LambdaJ: invalid value for --libdir: " + libDir + " is not a directory");
                     throw EXIT_CMDLINE_ERROR;
                 }
                 if (!Files.isReadable(libPath)) {
-                    System.err.println("LambdaJ: invalid value for --libdir: " + libDir + " is not readable");
+                    REPL_ERR.println("LambdaJ: invalid value for --libdir: " + libDir + " is not readable");
                     throw EXIT_CMDLINE_ERROR;
                 }
                 return libPath;
             }
             catch (Exception e) {
-                System.err.println("LambdaJ: cannot process --libdir: " + libDir + ": " + e.getMessage());
+                REPL_ERR.println("LambdaJ: cannot process --libdir: " + libDir + ": " + e.getMessage());
                 throw EXIT_CMDLINE_ERROR;
             }
         }
@@ -7926,7 +7926,7 @@ public class LambdaJ {
                 reader = null;
                 if (old != null) old.close();
                 final Path p = paths.next();
-                if (verbose) System.out.println("parsing " + p + "...");
+                if (verbose) REPL_OUT.println("parsing " + p + "...");
                 reader = Files.newBufferedReader(p);
                 delegate.setInput(this, p);
                 intp.currentSource = p;
@@ -7936,7 +7936,7 @@ public class LambdaJ {
                 final Reader old = reader;
                 reader = null;
                 if (old != null) old.close();
-                if (verbose) System.out.println("parsing commandline forms...");
+                if (verbose) REPL_OUT.println("parsing commandline forms...");
                 reader = new StringReader(forms);
                 forms = null;
                 delegate.setInput(this, null);

@@ -67,15 +67,16 @@ public class CmdlineTest {
     @Test(dataProvider = "test")
     public void testMain(String name, String[] args, String stdIn, int expectRc, String expectStdout, String expectStderr) {
         final InputStream oldStdin = System.in;
-        if (stdIn != null) System.setIn(new ByteArrayInputStream(stdIn.getBytes(StandardCharsets.UTF_8)));
+        if (stdIn != null) LambdaJ.Cli.REPL_IN = new ByteArrayInputStream(stdIn.getBytes(StandardCharsets.UTF_8));
 
         final PrintStream oldStdout = System.out;
         final ByteArrayOutputStream captureStdout = new ByteArrayOutputStream();
         System.setOut(new PrintStream(captureStdout));
+        LambdaJ.Cli.REPL_OUT = new PrintStream(captureStdout);
 
         final PrintStream oldStderr = System.err;
         final ByteArrayOutputStream captureStderr = new ByteArrayOutputStream();
-        System.setErr(new PrintStream(captureStderr));
+        LambdaJ.Cli.REPL_ERR = new PrintStream(captureStderr);
 
         final int rc = LambdaJ.Cli.mainInternal(args);
 
@@ -89,9 +90,10 @@ public class CmdlineTest {
 
         Assert.assertEquals(rc, expectRc, name + " wrong exitlevel");
 
-        if (stdIn != null) System.setIn(oldStdin);
+        if (stdIn != null) LambdaJ.Cli.REPL_IN = oldStdin;
         System.setOut(oldStdout);
-        System.setErr(oldStderr);
+        LambdaJ.Cli.REPL_OUT = oldStdout;
+        LambdaJ.Cli.REPL_ERR = oldStderr;
     }
 
 
