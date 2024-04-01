@@ -3194,8 +3194,8 @@ public class LambdaJ {
         void reset(int mark) { adjust(mark); }
         
         private void adjust(int newSize) {
-            for (int n = size; n > newSize; --n) {
-                entries[n - 1] = null;
+            for (int n = newSize; n < size; ++n) {
+                entries[n] = null;
             }
             if (newSize > entries.length) entries = Arrays.copyOf(entries, entries.length * 2);
 
