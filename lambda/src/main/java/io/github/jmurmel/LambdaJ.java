@@ -5069,6 +5069,17 @@ public class LambdaJ {
             return incNumber(n);
         }
 
+        static Number incinc(Object n) {
+            if (n instanceof Long) {
+                final long l;
+                if ((l = (Long)n) >= MOST_POSITIVE_FIXNUM_VAL-1) errorNotAFixnum("1+: overflow, integer result does not fit in a fixnum");
+                return l + 2;
+            }
+            if (n instanceof Double) return ((Double)n) + 2;
+            incNumber(n);
+            return incNumber(n);
+        }
+
         private static Number incNumber(Object n) {
             if (n instanceof Byte) return ((Byte)n).intValue() + 1;
             if (n instanceof Short) return ((Short)n).intValue() + 1;
@@ -8410,6 +8421,7 @@ public class LambdaJ {
 
         public final Number   inc      (Object... args) { clrValues(); oneArg("1+", args); return LambdaJ.Subr.inc(args[0]); }
         public final Number   inc      (Object arg)     { clrValues();                     return LambdaJ.Subr.inc(arg); }
+        public final Number   incinc   (Object arg)     { clrValues();                     return LambdaJ.Subr.incinc(arg); }
         public final Number   dec      (Object... args) { clrValues(); oneArg("1-", args); return LambdaJ.Subr.dec(args[0]); }
         public final Number   dec      (Object arg)     { clrValues();                     return LambdaJ.Subr.dec(arg); }
 
@@ -11668,6 +11680,13 @@ public class LambdaJ {
                         return true;
                     }
                 }
+            }
+            case sInc: {
+                if (consp(car(args)) && caar(args) == intern("1+")) {
+                    emitCallPrimitive(sb, "incinc", (ConsCell)cdar(args), env, topEnv, rsfx);
+                    return true;
+                }
+                break;
             }
             default:
                 break;
