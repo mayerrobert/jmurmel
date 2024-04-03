@@ -264,11 +264,11 @@ containing the `cdr`s of each such list.
 See also: [unzip](#function-unzip).
 
 ### Function: list-length
-    (list-length list-or-string) -> length
+    (list-length list) -> length
 
 Since: 1.1
 
-Returns the length of `list-or-string` if it is a string or proper list.
+Returns the length of `list` if it is a string or proper list.
 Returns `nil` if `list-or-string` is a circular list.
 
 ### Function: last
