@@ -166,7 +166,7 @@
     (progn
       (inc-failed)
       (write msg)
-      #+murmel (format t " tequal test failed, expected '%s', got unexpected result '%s'%n" expected-result result)
+      #+murmel (format t " tequal test failed, expected '%s', got unexpected result '%s'%n" (write-to-string expected-result) (write-to-string result))
       #-murmel (format t " tequal test failed, expected '~A', got unexpected result '~A'~%" expected-result result))))
 
 
@@ -1158,6 +1158,26 @@ multiline comment
        (copy (vector-copy vec)))
   (deftest vector-copy.1 (adjustable-array-p vec) t)
   (deftest vector-copy.2 (adjustable-array-p copy) nil))
+
+
+;;; test vector-add with position
+#+murmel
+(let ((vec (vector-copy #(0 1 2 3 4 5) t))
+      (str (vector-copy "012345"       t))
+      (bv  (vector-copy #*010101       t)))
+  (deftest vector-add.vec.1 (vector-add vec 22 2)   2)
+  (deftest vector-add.vec.2 vec #(0 1 22 2 3 4 5))
+  (deftest vector-add.vec.3 (signals-error (vector-add vec 0 20) invalid-index-error)    t)
+
+  (deftest vector-add.str.1 (vector-add str #\A 2)   2)
+  (deftest vector-add.str.2 str "01A2345")
+  (deftest vector-add.str.3 (signals-error (vector-add str #\A 20) invalid-index-error)  t)
+
+  (deftest vector-add.bv.1 (vector-add bv 1 2)   2)
+  (deftest vector-add.bv.2 bv #*0110101)
+  (deftest vector-add.bv.3 (vector-add bv 1 20)  20) ; adjustable bitvectors allow adding elements at a pos > size
+  (deftest vector-add.bv.4 bv #*011010100000000000001)
+)
 
 
 ;;; test make-array, vector-fill

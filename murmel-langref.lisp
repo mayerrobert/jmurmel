@@ -1053,13 +1053,14 @@ pi ; ==> 3.141592653589793
 ;     (vector-length v) -> length
 ;     (vector-copy v [adjustablep]) -> fresh-copy
 ;     (vector-fill v new-elem) -> vector
-;     (vector-add v elem) -> 0-position-of-added-element
+;     (vector-add v elem [pos]) -> position-of-added-element
 ;     (vector->list v) -> list
 ;     (list->vector lst [adjustablep]) -> vector
 ;
 ; Since: 1.3
 ;
-; `vector-add` is similar to CL's `vector-push-extend` but with swapped parameters.
+; `vector-add` is similar to CL's `vector-push-extend` but with swapped parameters,
+; and Murmel's `vector-add` accepts an optional parameter `pos`.
 
 ; = svlength, svref, svset, vector
 ;

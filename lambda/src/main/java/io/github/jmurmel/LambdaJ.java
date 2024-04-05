@@ -2408,7 +2408,7 @@ public class LambdaJ {
 
         // vectors, sequences
         sMakeArray(MAKE_ARRAY, Features.HAVE_VECTOR, 1, 3)             { @Override Object apply(LambdaJ intp, ConsCell args) { return makeArray(intp.sBit, intp.sCharacter, args); } },
-        sVectorAdd("vector-add", Features.HAVE_VECTOR, 2)              { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorAdd(car(args), cadr(args)); } },
+        sVectorAdd("vector-add", Features.HAVE_VECTOR, 2, 3)           { @Override Object apply(LambdaJ intp, ConsCell args) { return cddr(args) != null ? vectorAdd(car(args), cadr(args), toNonnegInt("vector-add", caddr(args))) : vectorAdd(car(args), cadr(args)); } },
         sVectorCopy("vector-copy", Features.HAVE_VECTOR, 1, 2)         { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorCopy(car(args), cadr(args) != null); } },
         sVectorFill(VECTOR_FILL, Features.HAVE_VECTOR, 2, 4)           { @Override Object apply(LambdaJ intp, ConsCell args) { return vectorFill(car(args), cadr(args), caddr(args), cadddr(args)); } },
 
@@ -2443,7 +2443,7 @@ public class LambdaJ {
         sListToBv("list->bit-vector", Features.HAVE_VECTOR, 1, 2)      { @Override Object apply(LambdaJ intp, ConsCell args) { return listToBitVector(car(args), cadr(args) != null); } },
 
         sSeqRef("seqref", Features.HAVE_VECTOR, 2)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqref(car(args), toNonnegInt("seqref", cadr(args))); } }, // todo nicht auf int begrenzen wg. list
-        sSeqSet(SEQSET, Features.HAVE_VECTOR, 3)                     { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt(SEQSET, cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
+        sSeqSet(SEQSET, Features.HAVE_VECTOR, 3)                       { @Override Object apply(LambdaJ intp, ConsCell args) { return seqset(car(args), toNonnegInt(SEQSET, cadr(args)), caddr(args)); } }, // todo nicht auf int begrenzen wg. list
 
         // Hash tables
         sHash(HASH, Features.HAVE_HASH, -1)                            { @Override Object apply(LambdaJ intp, ConsCell args) { return hash(intp.getSymbolTable(), args); } },
@@ -5228,6 +5228,11 @@ public class LambdaJ {
 
             int size() { return size; }
             long add(boolean value) { if (value) bitSet.set(size); size++; return size - 1; }
+            void add(int pos, boolean value) {
+                for (int i = bitSet.length(); i > pos; --i) bitSet.set(i, bitSet.get(i - 1));
+                bitSet.set(pos, value);
+                size = Math.max(size, pos) + 1;
+            }
             long get(int idx) { return bitSet.get(idx) ? 1L : 0L; }
             void set(int idx, boolean val) { bitSet.set(idx, val); }
 
@@ -5355,6 +5360,17 @@ public class LambdaJ {
             if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; return bv.add(requireBit("vector-add", newValue)); }
             if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(newValue); return l.size() - 1; }
             throw errorInternal("vector-add: unknown object type %s", maybeVector);
+        }
+
+        @SuppressWarnings("unchecked")
+        static long vectorAdd(Object maybeVector, Object newValue, int pos) {
+            if (!adjustableArrayP(maybeVector)) throw new InvalidIndexError("vector-add: not an adjustable " + VECTOR + ": %s", printSEx(maybeVector));
+            else if (maybeVector instanceof StringBuilder) { final StringBuilder sb = (StringBuilder)maybeVector; sb.insert(pos, requireChar("vector-add", newValue)); }
+            else if (maybeVector instanceof StringBuffer) { final StringBuffer sb = (StringBuffer)maybeVector; sb.insert(pos, requireChar("vector-add", newValue)); }
+            else if (maybeVector instanceof Bitvector) { final Bitvector bv = (Bitvector)maybeVector; bv.add(pos, requireBit("vector-add", newValue)); }
+            else if (maybeVector instanceof List) { @SuppressWarnings("rawtypes") final List l = (List)maybeVector; l.add(pos, newValue); }
+            else throw errorInternal("vector-add: unknown object type %s", maybeVector);
+            return pos;
         }
 
         static Object vectorToList(LambdaJ intp, Object maybeVector) {
@@ -8478,7 +8494,9 @@ public class LambdaJ {
         public final Object   vectorCopy  (Object... args) { clrValues(); varargs1_2("vector-copy", args);   return LambdaJ.Subr.vectorCopy(args[0], secondArgNotNull(args)); }
         public final Object   vectorFill  (Object... args) { clrValues(); varargsMinMax(VECTOR_FILL, args, 2, 4);
                                                              return LambdaJ.Subr.vectorFill(args[0], args[1], nth(2, args), nth(3, args)); }
-        public final long     vectorAdd   (Object... args) { clrValues(); twoArgs("vector-add", args); return LambdaJ.Subr.vectorAdd(args[0], args[1]); }
+        public final long     vectorAdd   (Object... args) { clrValues(); varargsMinMax("vector-add", args, 2, 3);
+                                                             if (args.length == 3) return LambdaJ.Subr.vectorAdd(args[0], args[1], toArrayIndex(args[2]));
+                                                             return LambdaJ.Subr.vectorAdd(args[0], args[1]); }
         public final Object   vectorToList (Object... args) {
             clrValues(); oneArg("vector->list", args);
             final Object maybeVector = args[0];

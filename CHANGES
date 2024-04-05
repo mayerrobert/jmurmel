@@ -3,6 +3,7 @@ Changes in JMurmel-1.4.7 relative to JMurmel-1.4.6
 
  * changed defun/ define: are now allowed inside labels forms
  * changed car/ cdr: no longer accept strings
+ * changed vector-add: add an optional argument "pos"
 
  * added macrolet
 
