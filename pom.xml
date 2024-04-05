@@ -82,7 +82,7 @@
         <maven-project-info-reports-plugin.version>3.5.0</maven-project-info-reports-plugin.version>
         <maven-jxr-plugin.version>3.3.2</maven-jxr-plugin.version>
         <maven-dependency-plugin.version>3.6.1</maven-dependency-plugin.version>
-        <maven-source-plugin.version>3.3.0</maven-source-plugin.version>
+        <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
         <jdepend-plugin.version>2.0</jdepend-plugin.version>
         <versions-plugin.version>2.16.2</versions-plugin.version>
