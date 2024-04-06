@@ -121,6 +121,7 @@ make-array
 vector-length
 vector-copy
 vector-add
+vector-remove
 vector->list
 list->vector
 

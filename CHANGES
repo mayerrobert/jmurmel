@@ -6,6 +6,7 @@ Changes in JMurmel-1.4.7 relative to JMurmel-1.4.6
  * changed vector-add: add an optional argument "pos"
 
  * added macrolet
+ * added vector-remove
 
  * mlib: added mappend, mappend-tails, concatenate
 

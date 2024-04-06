@@ -21,9 +21,11 @@ https://github.com/forax/exotic/blob/master/src/main/java/com.github.forax.exoti
 https://news.ycombinator.com/item?id=39815714
 -> vielleicht (vector-push-front vec item) und (vector-pop-front vec)?
    -> ginge nur bei adjustable vector
-   -> und/ oder (vector-add vec item pos) und (vector-delete vec pos) -> item
+   -> und/ oder (vector-add vec item pos) und (vector-remove vec pos [n-elements]) -> item
       heisst: vector-add bekommt einen zus opt parameter, vector-delete wäre neu
 -> vector-delete in CL: https://news.ycombinator.com/item?id=39816525
+-> sollte vector-add auch einen vector/ sequence akzeptieren? weil z.b. StringBuilder.insert() kann das
+-> sollten push/pop auch (adjustable?) vector akzeptieren? oder sequence-push/ sequence-pop?
 
 deftest namedlet.8: the lifetime of i differs interpreter vs compiler
 

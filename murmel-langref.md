@@ -1060,6 +1060,14 @@ Since: 1.3
 `vector-add` is similar to CL's `vector-push-extend` but with swapped parameters,
 and Murmel's `vector-add` accepts an optional parameter `pos`.
 
+### vector-remove
+    (vector-remove adjustable-vector pos) -> removed-element
+
+Since: 1.4.7
+
+`vector-remove` removes the element at index `pos`, moves the following elements
+and decreases the vector's size.
+
 ### svlength, svref, svset, vector
 
 Since: 1.3
