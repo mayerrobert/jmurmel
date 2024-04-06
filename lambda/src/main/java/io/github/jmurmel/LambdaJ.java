@@ -5288,6 +5288,15 @@ public class LambdaJ {
             throw new SimpleTypeError(MAKE_ARRAY + ": unsupported or invalid type specification %s", printSEx(type)); // todo sbcl akzeptiert alles als :element-type
         }
 
+        static Object makeArray(LambdaJSymbol sBit, LambdaJSymbol sCharacter, Object _size, Object type) {
+            final int size = toNonnegInt(MAKE_ARRAY, _size);
+
+            if (type == sT) return new Object[size];
+            if (type == sBit) return new boolean[size];
+            if (type == sCharacter) return new char[size];
+            throw new SimpleTypeError(MAKE_ARRAY + ": unsupported or invalid type specification %s", printSEx(type)); // todo sbcl akzeptiert alles als :element-type
+        }
+
 
         static long vectorLength(Object maybeVector) {
             if (maybeVector instanceof Object[])     return ((Object[])maybeVector).length;
@@ -8490,6 +8499,9 @@ public class LambdaJ {
         public final Object   makeArray(Object... args)    { clrValues(); varargsMinMax(MAKE_ARRAY, args, 1, 3);
                                                              if (args.length == 1) return new Object[toArrayIndex(args[0])];
                                                              return LambdaJ.Subr.makeArray(sBit, sCharacter, arraySlice(args)); }
+        public final Object   makeArray1(Object size)      { clrValues(); return new Object[toArrayIndex(size)]; }
+        public final Object   makeArray2(Object size, Object type) { clrValues(); return LambdaJ.Subr.makeArray(sBit, sCharacter, size, type); }
+        public final Object   makeArray3(Object size, Object type, Object cap) { clrValues(); return LambdaJ.Subr.makeArray(sBit, sCharacter, ConsCell.list(size, type, cap)); }
         public final long     vectorLength(Object... args) { clrValues(); oneArg("vector-length", args); return LambdaJ.Subr.vectorLength(args[0]); }
         public final Object   vectorCopy  (Object... args) { clrValues(); varargs1_2("vector-copy", args);   return LambdaJ.Subr.vectorCopy(args[0], secondArgNotNull(args)); }
         public final Object   vectorFill  (Object... args) { clrValues(); varargsMinMax(VECTOR_FILL, args, 2, 4);
@@ -11679,6 +11691,15 @@ public class LambdaJ {
                 case 3:  emitCallPrimitive(sb, "error3", args, env, topEnv, rsfx); return true;
                 case 4:  emitCallPrimitive(sb, "error4", args, env, topEnv, rsfx); return true;
                 default: emitCallPrimitive(sb, "errorN", args, env, topEnv, rsfx); return true;
+                }
+            case sMakeArray:
+                switch (listLength(args)) {
+                case 1:  emitCallPrimitive(sb, "makeArray1", args, env, topEnv, rsfx); return true;
+                case 2:  if (cadr(args) == sT) emitCallPrimitive(sb, "makeArray1", ConsCell.cons(car(args), null), env, topEnv, rsfx);
+                         else emitCallPrimitive(sb, "makeArray2", args, env, topEnv, rsfx);
+                         return true;
+                case 3:  emitCallPrimitive(sb, "makeArray3", args, env, topEnv, rsfx); return true;
+                default: break;
                 }
             // special handling for writing to stdout, possibly using fewer args and avoiding allocating a varargs array    
             case sWrite: {
