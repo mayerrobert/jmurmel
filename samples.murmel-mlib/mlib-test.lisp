@@ -910,7 +910,7 @@ all the result list to a single list. FUNCTION must return a list."
 (define llst nil)
 
 (tests push-pop
-  (setq llst '(nil)) =>  (NIL)
+  (setq llst (list nil)) =>  (NIL)
   (push 1 (car llst)) =>  (1)
   llst =>  ((1))
   (push 1 (car llst)) =>  (1 1)
@@ -972,6 +972,26 @@ all the result list to a single list. FUNCTION must return a list."
   (pop (cddr (place llst))) => 2
   llst => (1 11 3)
   ctr => 1
+)
+
+(tests push-evalorder
+  (setq llst (list '())) => (nil)
+  (with-output-to-string (s)
+    (push (progn (princ "1" s) 'ref-1)
+          (car (progn (princ "2" s) llst)))) => "12"
+  llst => ((ref-1))
+
+  (let (x)
+     (push (setq x (list 'a))
+           (car (setq x (list 'b))))
+      x)
+  =>  (((A) . B))
+
+  (setq llst (list (list 'ref-1))) => ((ref-1))
+  (with-output-to-string (s)
+    (pushnew (progn (princ "1" s) 'ref-1)
+             (car (progn (princ "2" s) llst)))) => "12"
+  llst => ((ref-1))
 )
 
 

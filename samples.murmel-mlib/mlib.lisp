@@ -1740,9 +1740,11 @@
   (if (symbolp place)
       `(setq ,place (cons ,item ,place))
       (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
-        `(let* (,@(mapcar list vars vals)
-                (,(car store-vars) (cons ,item ,reader-form)))
-           ,writer-form))))
+        (let ((tmpitem (gensym "item")))
+          `(let* ((,tmpitem ,item) ; eval item before place, see http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/sec_5-1-1-1-1.html
+                  ,@(mapcar list vars vals)
+                  (,(car store-vars) (cons ,tmpitem ,reader-form)))
+             ,writer-form)))))
 
 
 ;;; = Macro: pushnew
@@ -1758,9 +1760,11 @@
   (if (symbolp place)
       `(setq ,place (adjoin ,item ,place ,@test))
       (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
-        `(let* (,@(mapcar list vars vals)
-                (,(car store-vars) (adjoin ,item ,reader-form ,@test)))
-           ,writer-form))))
+        (let ((tmpitem (gensym "item")))
+          `(let* ((,tmpitem ,item) ; eval item before place, see http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/sec_5-1-1-1-1.html
+                  ,@(mapcar list vars vals)
+                  (,(car store-vars) (adjoin ,tmpitem ,reader-form ,@test)))
+             ,writer-form)))))
 
 
 ;;; = Macro: pop
@@ -1780,7 +1784,7 @@
         (destructuring-bind (vars vals new writer-form reader-form) (get-setf-expansion place)
           `(let* (,@(mapcar list vars vals)
                   (,@new (cdr ,reader-form))
-                    (,result (car ,reader-form)))
+                  (,result (car ,reader-form)))
              ,writer-form
              ,result)))))
 
