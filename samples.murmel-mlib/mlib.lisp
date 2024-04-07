@@ -1650,16 +1650,19 @@
             #1#))))
 
 
+(defun xsubtract (l r) (- r l))
+(defun xdivide   (l r) (/ r l))
+
 (macrolet (
            ;; Helper macro to generate defmacro's for inplace modification macros.
            (m%inplace (name noarg arg)
              `(defmacro ,name (place . delta-form)
                 (if (symbolp place)
-                    `(setq ,place ,(if delta-form `(,,@arg ,place ,@delta-form) `(,,@noarg ,place)))
+                    `(setq ,place ,(if delta-form `(,,@arg ,@delta-form ,place) `(,,@noarg ,place)))
                     (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion place)
                       `(let* (,@(mapcar list vars vals)
                               (,(car store-vars) ,(if delta-form
-                                                      `(,,@arg ,reader-form ,@delta-form)
+                                                      `(,,@arg ,@delta-form ,reader-form)
                                                       `(,,@noarg ,reader-form))))
                          ,writer-form))))))
 
@@ -1680,7 +1683,7 @@
 ;;; Without `delta-form` the return type of `incf` and `decf` will be
 ;;; the type of the number in `place`, otherwise the return type will be float.
 (m%inplace incf ('1+) ('+))
-(m%inplace decf ('1-) ('-))
+(m%inplace decf ('1-) ('xsubtract))
 
 
 ;;; = Macro: *f, /f
@@ -1701,8 +1704,8 @@
 ;;;
 ;;; Without `delta-form` the return type of `*f` will be
 ;;; the type of the number in `place`, otherwise the return type will be float.
-(m%inplace *f (identity) (*))
-(m%inplace /f (/) (/))
+(m%inplace *f ('identity) ('*))
+(m%inplace /f ('/) ('xdivide))
 
 
 ;;; = Macro: +f, -f
@@ -1723,8 +1726,8 @@
 ;;;
 ;;; Without `delta-form` the return type of `+f` will be
 ;;; the type of the number in `place`, otherwise the return type will be float.
-(m%inplace +f (identity) (+))
-(m%inplace -f (-) (-))
+(m%inplace +f ('identity) ('+))
+(m%inplace -f ('-) ('xsubtract))
 
 ) ; (macrolet...
 

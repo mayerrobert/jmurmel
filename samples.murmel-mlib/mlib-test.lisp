@@ -906,6 +906,13 @@ all the result list to a single list. FUNCTION must return a list."
 )
 
 
+;; test evaluation order w/ incf, decf
+(tests inplace.evalorder
+  (let ((i 10.0)) (decf i (decf i))) => 0.0
+  (let ((i 10.0)) (incf i (incf i)))   => 22.0
+)
+
+
 ;; test push, pop
 (define llst nil)
 

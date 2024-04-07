@@ -1,12 +1,3 @@
-mlib: bei z.b. decf ist die eval reihenfolge anders, siehe CLHS 5.1.3 http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/sec_5-1-3.html
-siehe auch sbcl/src/code/primordial-extensions.lisp
-;; Define "exchanged subtract" So that DECF on a symbol requires no LET binding:
-;;  (DECF I (EXPR)) -> (SETQ I (XSUBTRACT (EXPR) I))
-;; which meets the CLHS 5.1.3 requirement to eval (EXPR) prior to reading
-;; the old value of I. Formerly in 'setf' but too late to avoid full calls.
-(declaim (inline xsubtract))
-(defun xsubtract (a b) (- b a))
--> ist vielleicht nur relevant wenns "define-modify-macro" gibt?!
 
 closures im compiler haben ein problem: die closure hält eine referenz auf den gesamten stackframe (das Object... array)
 und damit auf alle variablen und nicht nur auf die variablen über die eigentlich geclosed wird.
