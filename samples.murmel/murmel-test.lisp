@@ -1165,6 +1165,7 @@ multiline comment
 (let ((vec (vector-copy #(0 1 2 3 4 5) t))
       (str (vector-copy "012345"       t))
       (bv  (vector-copy #*010101       t)))
+
   (deftest vector-add.vec.1 (vector-add vec 22 2)   2)
   (deftest vector-add.vec.2 vec #(0 1 22 2 3 4 5))
   (deftest vector-add.vec.3 (signals-error (vector-add vec 0 20) invalid-index-error)    t)
@@ -1177,6 +1178,29 @@ multiline comment
   (deftest vector-add.bv.2 bv #*0110101)
   (deftest vector-add.bv.3 (vector-add bv 1 20)  20) ; adjustable bitvectors allow adding elements at a pos > size
   (deftest vector-add.bv.4 bv #*011010100000000000001)
+)
+
+
+;;; test vector-remove
+#+murmel
+(let ((vec (vector-copy #(0 1 2 3 4 5) t))
+      (str (vector-copy "012345"       t))
+      (bv  (vector-copy #*010101       t)))
+
+  (deftest vector-remove.1 (vector-remove vec 2) 2)
+  (deftest vector-remove.2 vec #(0 1 3 4 5))
+  (deftest vector-remove.3 (signals-error (vector-remove vec -3) type-error) t)
+  (deftest vector-remove.4 (signals-error (vector-remove vec 6)  invalid-index-error) t)
+
+  (deftest vector-remove.5 (vector-remove str 2) #\2)
+  (deftest vector-remove.6 str "01345")
+  (deftest vector-remove.7 (signals-error (vector-remove str -3) type-error) t)
+  (deftest vector-remove.8 (signals-error (vector-remove str 6)  invalid-index-error) t)
+
+  (deftest vector-remove.10 (vector-remove bv 2) 0)
+  (deftest vector-remove.11 bv #*01101)
+  (deftest vector-remove.12 (signals-error (vector-remove bv -3) type-error) t)
+  (deftest vector-remove.13 (vector-remove bv 6)  0) ; adjustable bitvectors allow removing elements at a pos > size
 )
 
 
