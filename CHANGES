@@ -11,6 +11,7 @@ Changes in JMurmel-1.4.7 relative to JMurmel-1.4.6
  * mlib: added mappend, mappend-tails, concatenate
 
  * fixed setq with multiple assignments and multiple-value-call
+ * fixed evaluation order in push and pushnew
 
 
 Changes in JMurmel-1.4.6 relative to JMurmel-1.4.5
