@@ -5235,6 +5235,7 @@ public class LambdaJ {
                 size = Math.max(size, pos) + 1;
             }
             long remove(int pos) {
+                if (pos >= size) errorIndexTooLarge(pos, size);
                 final long ret = get(pos);
                 for (int i = pos; i < bitSet.length() - 1; i++) bitSet.set(i, bitSet.get(i + 1));
                 bitSet.clear(bitSet.length() - 1);

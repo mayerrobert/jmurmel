@@ -1200,7 +1200,7 @@ multiline comment
   (deftest vector-remove.10 (vector-remove bv 2) 0)
   (deftest vector-remove.11 bv #*01101)
   (deftest vector-remove.12 (signals-error (vector-remove bv -3) type-error) t)
-  (deftest vector-remove.13 (vector-remove bv 6)  0) ; adjustable bitvectors allow removing elements at a pos > size
+  (deftest vector-remove.13 (signals-error (vector-remove bv 6)  invalid-index-error) t)
 )
 
 
