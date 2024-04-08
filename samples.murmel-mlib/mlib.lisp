@@ -2354,16 +2354,20 @@
 
 
 (labels ((m%list->sequence (lst result-type)
-           (cond ((null result-type)                  nil)
+           (cond ((eq result-type 'null)              (when lst
+                                                        (error 'simple-type-error "cannot create a sequence of type null w/ length > 0"))
+                                                      nil)
                  ((eq result-type 'list)              lst)
-                 ((eq result-type 'cons)              (or lst (error 'simple-type-error "nil is not a sequence of type cons")))
+                 ((eq result-type 'cons)              (unless lst
+                                                        (error 'simple-type-error "cannot create a sequence of type cons w/ length 0"))
+                                                      lst)
                  ((eq result-type 'vector)            (list->simple-vector lst))
                  ((eq result-type 'simple-vector)     (list->simple-vector lst))
                  ((eq result-type 'simple-bit-vector) (list->bit-vector lst))
                  ((eq result-type 'bit-vector)        (list->bit-vector lst))
                  ((eq result-type 'string)            (list->string lst))
                  ((eq result-type 'simple-string)     (list->string lst))
-                 (t                                   (error "type %s is not implemented" result-type)))))
+                 (t                                   (error 'simple-type-error "%s is a bad type specifier for sequences" result-type)))))
 
 
 ;;; = Function: concatenate

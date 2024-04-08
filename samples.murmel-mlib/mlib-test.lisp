@@ -112,7 +112,7 @@ all the result list to a single list. FUNCTION must return a list."
 ;;;     (deftest test-name
 ;;;       form1 expected-result)
 (defmacro deftest (name form expected-result)
-  `(append (assert-equal ',(caddr l) ,(cadr l))))
+  `(assert-equal ',expected-result ,form ',name))
 
 
 ;;; Macro to check if given condition is thrown
@@ -1180,6 +1180,11 @@ all the result list to a single list. FUNCTION must return a list."
   (concatenate 'list "ABC" '(d e f) #(1 2 3) #*1011)
   =>  (#\A #\B #\C D E F 1 2 3 1 0 1 1)
   (concatenate 'list) =>  NIL
+
+  (concatenate 'null) => nil
+  (signals-error (concatenate 'null "123") type-error) => t
+
+  (concatenate 'string) => ""
 )
 
 
@@ -1203,7 +1208,14 @@ all the result list to a single list. FUNCTION must return a list."
   (map 'string
        #'(lambda (x) (if (oddp x) #\1 #\0))
        (cp (make-array 4 #-murmel :element-type t #-murmel :adjustable t) '(1 2 3 4))) =>  "1010"
+
+  (map 'null #'list '()) => NIL
 )
+
+#-sbcl
+(deftest map-null
+  (signals-error (map 'null #'- '(1.0 2.0 3.0 4.0)) simple-type-error)  t)
+
 
 (let ((seq (list (vector 1) (vector 2) (vector 3))))
   (tests map
