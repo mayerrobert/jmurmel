@@ -641,10 +641,13 @@ all the result list to a single list. FUNCTION must return a list."
 
   (mapcan (lambda (x) (cons x x)) '(1 2 3 4 5))
    => (1 2 3 4 5 . 5)
+)
 
+#-sbcl
+(tests mapcan.2
   ; not sure if the function returning an atom is valid
-  ; but SBCL and ABCL accept this, too
-  ; SBCL 2.4.0 gives an error
+  ; but older SBCL and ABCL accept this, too.
+  ; SBCL 2.4.0+ gives an error
   (mapcan (lambda (x) x) '(1 2 3 4 5))
    => 5
 )
@@ -667,9 +670,6 @@ all the result list to a single list. FUNCTION must return a list."
           '(a 1 b c 3 4 d 5))
     =>  (1 3 4 5)
 
-  (mappend (lambda (x) (cons x x)) '(1 2 3 4 5))
-   => (1 2 3 4 5 . 5)
-
   (mappend (lambda (x) (list x)) '(1 2 3 4 5))
    => (1 2 3 4 5)
 
@@ -680,6 +680,13 @@ all the result list to a single list. FUNCTION must return a list."
   => (1 2 3 1 2 3 1 2 3)
 )
 
+#-sbcl
+(tests mappend.2
+  ;; this should probably be a type-error as appending onto a dotted list shouldn't work
+  ;; sbcl 2.4.0+ signals an error (IMO rightfully), older sbcl versions and abcl accept this
+  (mappend (lambda (x) (cons x x)) '(1 2 3 4 5))
+   => (1 2 3 4 5 . 5)
+)
 
 ;; test mappend-tails
 (tests mappend-tails
@@ -1212,10 +1219,9 @@ all the result list to a single list. FUNCTION must return a list."
   (map 'null #'list '()) => NIL
 )
 
-#-sbcl
+;; only with sbcl 2.4.4+ the "map" form will throw as it should
 (deftest map-null
-  (signals-error (map 'null #'- '(1.0 2.0 3.0 4.0)) simple-type-error)  t)
-
+  (signals-error (map 'null #'- '(1.0 2.0 3.0 4.0)) type-error)  t)
 
 (let ((seq (list (vector 1) (vector 2) (vector 3))))
   (tests map
