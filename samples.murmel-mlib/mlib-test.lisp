@@ -650,6 +650,11 @@ all the result list to a single list. FUNCTION must return a list."
   ; SBCL 2.4.0+ gives an error
   (mapcan (lambda (x) x) '(1 2 3 4 5))
    => 5
+
+)
+
+(tests mapcan.3
+  (mapcan (lambda (x) (cons x x)) '(1 2 3 4 5)) => (1 2 3 4 5 . 5)
 )
 
 
@@ -680,18 +685,18 @@ all the result list to a single list. FUNCTION must return a list."
   => (1 2 3 1 2 3 1 2 3)
 )
 
-#-sbcl
+#-abcl
 (tests mappend.2
   ;; this should probably be a type-error as appending onto a dotted list shouldn't work
   ;; sbcl 2.4.0+ signals an error (IMO rightfully), older sbcl versions and abcl accept this
-  (mappend (lambda (x) (cons x x)) '(1 2 3 4 5))
-   => (1 2 3 4 5 . 5)
+  (signals-error (mappend (lambda (x) (cons x x)) '(1 2 3 4 5)) type-error) => t
 )
 
 ;; test mappend-tails
 (tests mappend-tails
-  (mappend-tails #'list '(1 2 3 4) '(1 2) '(1 2 3))
-  =>  ((1 2 3 4) (1 2) (1 2 3) (2 3 4) (2) (2 3))
+  (mappend-tails #'list '(1 2 3 4) '(1 2) '(1 2 3)) => ((1 2 3 4) (1 2) (1 2 3) (2 3 4) (2) (2 3))
+
+  (mappend-tails (lambda (x) (cons x x)) '(1 2 3))  => ((1 2 3) 1 2 3 (2 3) 2 3 (3) 3)
 )
 
 

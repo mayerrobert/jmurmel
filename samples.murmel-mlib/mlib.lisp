@@ -777,7 +777,7 @@
                                       (progn
                                         (setq append-to (cdr (rplacd append-to (list (car r)))))
                                         (loop (cdr r)))
-                                      (rplacd append-to r))) ; r may be nil in which case this is a nop, or the last cdr of a dotted list
+                                      (if r (error 'simple-type-error "the value %s is not of type list" r))))
                              (loop (unzip-tails args))))
                       (let loop ((lst lst))
                            (when lst
