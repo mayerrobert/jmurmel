@@ -992,6 +992,11 @@ multiline comment
 (deftest append.5 (append nil '(1 2 3) nil '(4 5 6))  '(1 2 3 4 5 6))
 (deftest append.6 (append nil '(1 2 3) nil '(4 5 6))  '(1 2 3 4 5 6))
 
+; need to write the result or else SBCL will optimize everything away including the error
+(deftest append.7 (signals-error (write (append nil '(1 2 3 . 4) nil '(4 5 6))) type-error)  t)
+(deftest append.8 (signals-error (write (append nil '(1 2 3 . 4) nil)) type-error)  t)
+(deftest append.9 (signals-error (write (append '(1 2 3 . 4) nil)) type-error)  t)
+
 
 ;;; test assq
 (deftest assq.1 (assq 'a-key '((key-1 1) (key-2 2) (a-key 3) (key-4 4)))     '(a-key 3))
@@ -1433,7 +1438,7 @@ multiline comment
 ;;; test read-from-string
 (deftest read-from-string.1 (read-from-string "1") 1)
 (deftest read-from-string.2 (eq 'x (read-from-string "x")) t)              ; read-from-string should intern symbols in the right symboltable
-(deftest read-from-string.3 (read-from-string "#+murmel 1 #+sbcl 1 2") 1)  ; read-from-string should honor feature-expressions
+(deftest read-from-string.3 (read-from-string "#+murmel 1 #-murmel 1 2") 1)  ; read-from-string should honor feature-expressions
 (deftest read-from-string.4
   (progn
     (setq *features* (cons ':test *features*))

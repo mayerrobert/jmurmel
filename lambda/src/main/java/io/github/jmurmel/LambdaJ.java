@@ -4949,19 +4949,24 @@ public class LambdaJ {
             if (!listp(car(args))) throw new SimpleTypeError(APPEND + ": first argument %s is not a list", printSEx(car(args)));
 
             while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
+            if (args == null) return null;
+            if (cdr(args) == null) return car(args);
 
+            final ConsCell ret = intp.cons(null, null);
+            ConsCell appendTo = ret;
             ConsCell current = args;
-            CountingListBuilder lb = null;
             for (; cdr(current) != null; current = (ConsCell)cdr(current)) {
                 final Object o = car(current);
                 if (o == null) continue;
                 if (!consp(o)) throw new SimpleTypeError(APPEND + ": argument is not a list: %s", printSEx(o));
-                if (lb == null) lb = intp.new CountingListBuilder();
-                for (Object obj: (ConsCell)o) lb.append(obj);
+                for (ConsCell obj = (ConsCell)o; obj != null; obj = requireList(APPEND, cdr(obj))) {
+                    final ConsCell next = intp.cons(car(obj), null);
+                    appendTo.rplacd(next);
+                    appendTo = next;
+                }
             }
-            if (lb == null) return car(args);
-            lb.appendLast(car(current));
-            return lb.first();
+            appendTo.rplacd(car(current));
+            return ret.cdr();
         }
 
         /** return the cons whose car is eql to {@code atom}
@@ -8415,19 +8420,26 @@ public class LambdaJ {
 
             nArgs--;
             int first = 0;
-            while (first < nArgs && args[first] == null) first++; // skip leading nil args if any
+            while (first < nArgs && args[first] == null)
+                ++first; // skip leading nil args if any
+            if (first == nArgs)
+                return args[first];
 
-            ListBuilder lb = null;
-            for (int i = first; i < nArgs; i++) {
-                final Object o = args[i];
+            final ConsCell ret = ConsCell.cons(null, null);
+            ConsCell appendTo = ret;
+            int current = first;
+            for (; current < nArgs; current++) {
+                final Object o = args[current];
                 if (o == null) continue;
-                if (!consp(o)) throw new SimpleTypeError(APPEND + ": argument %d is not a list: %s", i+1, printSEx(o));
-                if (lb == null) lb = new ListBuilder();
-                for (Object obj: (ConsCell)o) lb.append(obj);
+                if (!consp(o)) throw new SimpleTypeError(APPEND + ": argument %d is not a list: %s", current +1, printSEx(o));
+                for (ConsCell obj = (ConsCell)o; obj != null; obj = requireList(cdr(obj))) {
+                    final ConsCell next = ConsCell.cons(car(obj), null);
+                    appendTo.rplacd(next);
+                    appendTo = next;
+                }
             }
-            if (lb == null) return args[first];
-            lb.appendLast(args[nArgs]);
-            return lb.first();
+            appendTo.rplacd(args[current]);
+            return ret.cdr();
         }
         public final ConsCell _assq    (Object... args) { clrValues(); twoArgs(ASSQ, args); return assq(args[0], args[1]); }
         public final ConsCell _assoc   (Object... args) { clrValues(); twoArgs(ASSOC, args); return assoc(args[0], args[1]); }

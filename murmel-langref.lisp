@@ -1002,14 +1002,13 @@ pi ; ==> 3.141592653589793
 ; = (append lists\*) -> list
 ;
 ; `append` nondestructively append it's arguments. All arguments except the last
-; are shallow copied, all arguments except the last must be lists.
+; are shallow copied, all arguments except the last must be proper lists.
 
 (append)                    ; ==> nil
 (append 'a)                 ; ==> a
 (append '(a b) 'c)          ; ==> (a b . c)
 (append '(a b) '(c d))      ; ==> (a b c d)
-(append '(a . b) '(c d))    ; ==> (a b c d)
-(append '(a . b) '(c . d))  ; ==> (a b c . d)
+(append '(a b) '(c . d))    ; ==> (a b c . d)
 
 ; = (assq key alist) -> cons or nil
 ;

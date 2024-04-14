@@ -27,6 +27,6 @@ public class AppendTest {
     // CL gibt den fehler "the value b ist not of type list"
     @Test
     public void dottedListSymbol() {
-        LambdaJTest.runTest("dottedListSymbol", "(append '(a . b) 'c)", "(a b . c)", null);
+        LambdaJTest.runErrorTest("dottedListSymbol", "(append '(a . b) 'c)", "append: expected a list argument");
     }
 }
