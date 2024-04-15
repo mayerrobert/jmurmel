@@ -4942,14 +4942,12 @@ public class LambdaJ {
         }
 
         /** append args non destructively, all args except the last are shallow copied (list structure is copied, contents is not),
-         *  all args except the last must be a list */
+         *  all args except the last must be a proper list */
         static Object append(LambdaJ intp, ConsCell args) {
-            if (args == null) return null;
-            if (cdr(args) == null) return car(args);
-            if (!listp(car(args))) throw new SimpleTypeError(APPEND + ": first argument %s is not a list", printSEx(car(args)));
+            if (cdr(args) == null) return car(args); // this also covers "if (args == null) return null;"
+            if (!listp(car(args))) throw new SimpleTypeError(APPEND + ": first argument is not a list: %s", printSEx(car(args)));
 
             while (args != null && car(args) == null) args = (ConsCell)cdr(args); // skip leading nil args if any
-            if (args == null) return null;
             if (cdr(args) == null) return car(args);
 
             final ConsCell ret = intp.cons(null, null);
@@ -8416,7 +8414,7 @@ public class LambdaJ {
             int nArgs;
             if (args == null || (nArgs = args.length) == 0) return null;
             if (nArgs == 1) return args[0];
-            if (!listp(args[0])) throw new SimpleTypeError(APPEND + ": first argument %s is not a list", printSEx(args[0]));
+            if (!listp(args[0])) throw new SimpleTypeError(APPEND + ": first argument is not a list: %s", printSEx(args[0]));
 
             nArgs--;
             int first = 0;
@@ -8431,7 +8429,7 @@ public class LambdaJ {
             for (; current < nArgs; current++) {
                 final Object o = args[current];
                 if (o == null) continue;
-                if (!consp(o)) throw new SimpleTypeError(APPEND + ": argument %d is not a list: %s", current +1, printSEx(o));
+                if (!consp(o)) throw new SimpleTypeError(APPEND + ": argument is not a list: %s", printSEx(o));
                 for (ConsCell obj = (ConsCell)o; obj != null; obj = requireList(cdr(obj))) {
                     final ConsCell next = ConsCell.cons(car(obj), null);
                     appendTo.rplacd(next);
