@@ -10139,7 +10139,7 @@ public class LambdaJ {
                     return env;
                 }
 
-                final boolean isComplex = consp(caddr(form));
+                final boolean isComplex = consp(caddr(form)) && car(caddr(form)) != sQuote;
                 sb.append("    private Object define").append(javasym).append("() {\n");
                 if (isComplex) {
                     emitClearValues(sb, form);
