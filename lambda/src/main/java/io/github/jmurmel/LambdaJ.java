@@ -912,16 +912,13 @@ public class LambdaJ {
             this.arry = arry;  this.offset = offset;
         }
 
-        /** {@link #arraySlice} should be preferred because it will return {@code null} instead of an "null" ArraySlice */
-        private ArraySlice(@NotNull ArraySlice slice) {
-            assert /*slice.arry != null &&*/ slice.offset < slice.arry.length;
-            this.arry = slice.arry;  offset = slice.offset + 1;
-        }
+        private ArraySlice(@NotNull ArraySlice slice, int n) { this.arry = slice.arry;  offset = slice.offset + n; }
 
         @Override public Object car() { return arry[offset]; }
         @Override public @NotNull ConsCell rplaca(Object car) { arry[offset] = car; return this; }
 
-        @Override public Object cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this); }
+        @Override public Object cdr() { return arry.length <= offset+1 ? null : new ArraySlice(this, 1); }
+        Object nthcdr(int idx) { return arry.length <= offset+idx ? null : new ArraySlice(this, idx); }
 
         @Override public Object elt(long idx) {
             checkSequenceBounds(idx);
@@ -4142,10 +4139,10 @@ public class LambdaJ {
     static Object   cdddr(ConsCell o)  { return o == null ? null : cdr(cddr(o)); }
     static Object   cdddr(Object o)    { return o == null ? null : cdr(cddr(o)); }
 
-    // todo ggf. spezialfall arrayslice behandeln
     private static Object   nthcdr(int n, Object list) {
         if (list == null) return null;
         if (n <= 0) return list;
+        if (list instanceof ArraySlice) return ((ArraySlice)list).nthcdr(n);
         for (; list != null && n-- > 0; list = cdr(list)) /* nothing */;
         return list;
     }
