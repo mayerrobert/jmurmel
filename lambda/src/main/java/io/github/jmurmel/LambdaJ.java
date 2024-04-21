@@ -4190,7 +4190,43 @@ public class LambdaJ {
         TypeSpec(String name, Predicate<Object> pred, Consumer<String> thrower) { this.name = name; this.pred = pred; this.thrower = thrower; }
     }
     private static final TypeSpec[] TYPE_SPECS = {
-    new TypeSpec("simple-error", o -> o instanceof SimpleError, msg -> { throw new SimpleError(msg); }),
+    new TypeSpec("t", o ->  true, null),
+    new TypeSpec(NULL, Objects::isNull, null),
+
+    new TypeSpec(CONS, LambdaJ::consp, null),
+    new TypeSpec(ATOM, LambdaJ::atom, null),
+    new TypeSpec("symbol", LambdaJ::symbolp, null),
+
+    new TypeSpec("number", LambdaJ::numberp, null),
+    new TypeSpec("float", LambdaJ::floatp, null),
+    new TypeSpec("integer", LambdaJ::integerp, null),
+    new TypeSpec("bit", o -> {
+        if (!integerp(o)) return false;
+        if (o instanceof BigInteger) return false;
+        final long l = ((Number)o).longValue();
+        return l == 0 || l == 1;
+    }, null),
+
+    new TypeSpec("character", LambdaJ::characterp, null),
+
+    new TypeSpec("random-state", LambdaJ::randomstatep, null),
+
+    new TypeSpec(VECTOR, LambdaJ::vectorp, null),
+    new TypeSpec("simple-vector", LambdaJ::svectorp, null),
+    new TypeSpec("string", LambdaJ::stringp, null),
+    new TypeSpec("simple-string", LambdaJ::sstringp, null),
+    new TypeSpec("bit-vector", LambdaJ::bitvectorp, null),
+    new TypeSpec("simple-bit-vector", LambdaJ::sbitvectorp, null),
+
+    new TypeSpec("hash-table", LambdaJ::hashtablep, null),
+
+    //new TypeSpec("function", o ->  intp == null ? functionp0(o) : intp.functionp(o), null),
+
+    new TypeSpec(LIST, LambdaJ::listp, null),
+    new TypeSpec("sequence", o ->  listp(o) || vectorp(o), null),
+
+
+    new TypeSpec("simple-error",        o -> o instanceof SimpleError, msg -> { throw new SimpleError(msg); }),
 
     new TypeSpec("unbound-variable",    o -> o instanceof UnboundVariable, msg -> { throw new UnboundVariable(msg);  }),
     new TypeSpec("undefined-function",  o -> o instanceof UndefinedFunction, msg -> { throw new UndefinedFunction(msg);  }),
@@ -4214,14 +4250,14 @@ public class LambdaJ {
 
 
     // extends IOException
-    new TypeSpec("end-of-file",  o -> o instanceof EOFException, msg -> wrap0(new EOFException(msg))),
-    new TypeSpec("reader-error", o -> o instanceof ReaderError,  msg -> wrap0(new ReaderError(msg))),
-    new TypeSpec("stream-error", o -> o instanceof IOException,  msg -> wrap0(new IOException(msg))),
+    new TypeSpec("end-of-file",         o -> o instanceof EOFException, msg -> wrap0(new EOFException(msg))),
+    new TypeSpec("reader-error",        o -> o instanceof ReaderError,  msg -> wrap0(new ReaderError(msg))),
+    new TypeSpec("stream-error",        o -> o instanceof IOException,  msg -> wrap0(new IOException(msg))),
 
 
     // extends Throwable
-    new TypeSpec("error", o -> o instanceof Exception, msg -> wrap0(new Exception(msg))),
-    new TypeSpec("condition", o -> o instanceof Throwable, msg -> wrap0(new Throwable(msg))),
+    new TypeSpec("error",               o -> o instanceof Exception, msg -> wrap0(new Exception(msg))),
+    new TypeSpec("condition",           o -> o instanceof Throwable, msg -> wrap0(new Throwable(msg))),
     };
 
     Map<LambdaJSymbol, TypeSpec> typeSpecs;
@@ -4859,50 +4895,13 @@ public class LambdaJ {
         /// logic, predicates
 
         static boolean typep(SymbolTable st, @Null LambdaJ intp, @NotNull Map<LambdaJSymbol, TypeSpec> typeSpecs, @Null Object o, @Null Object typespec) {
-            if (typespec == LambdaJ.sT) return true;
-            if (typespec == st.intern(NULL)) return null == o;
-
-            if (typespec == st.intern(CONS)) return consp(o);
-            if (typespec == st.intern(ATOM)) return atom(o);
-            if (typespec == st.intern("symbol")) return symbolp(o);
-
-            if (typespec == st.intern("number")) return numberp(o);
-            if (typespec == st.intern("float")) return floatp(o);
-            if (typespec == st.intern("integer")) return integerp(o);
-            if (typespec == st.intern("bit")) {
-                if (!integerp(o)) return false;
-                if (o instanceof BigInteger) return false;
-                final long l = ((Number)o).longValue();
-                return l == 0 || l == 1;
-            }
-
-            if (typespec == st.intern("character")) return characterp(o);
-
-            if (typespec == st.intern("random-state")) return randomstatep(o);
-
-            if (typespec == st.intern(VECTOR)) return vectorp(o);
-            if (typespec == st.intern("simple-vector")) return svectorp(o);
-            if (typespec == st.intern("string")) return stringp(o);
-            if (typespec == st.intern("simple-string")) return sstringp(o);
-            if (typespec == st.intern("bit-vector")) return bitvectorp(o);
-            if (typespec == st.intern("simple-bit-vector")) return sbitvectorp(o);
-
-            if (typespec == st.intern("hash-table")) return hashtablep(o);
-
-            if (typespec == st.intern("function")) return intp == null ? functionp0(o) : intp.functionp(o);
-
-            if (typespec == st.intern(LIST)) return listp(o);
-            if (typespec == st.intern("sequence")) return listp(o) || vectorp(o);
-
-            if (o == null) return false; // the object nil aka () is of type null or list or sequence or t which we have already checked
-
-            // conditions
-            if (o.getClass() == LambdaJError.class) o = ((LambdaJError)o).getCause();
+            if (o != null && o.getClass() == LambdaJError.class) o = ((LambdaJError)o).getCause();
 
             @SuppressWarnings("SuspiciousMethodCalls")
             final TypeSpec murmelTypeSpec = typeSpecs.get(typespec);
             if (murmelTypeSpec != null) return murmelTypeSpec.pred.test(o);
 
+            if (typespec == st.intern("function")) return intp == null ? functionp0(o) : intp.functionp(o);
 
             // todo Class.forName().isAssignableFrom() probieren falls JFFI aufgedreht ist
 

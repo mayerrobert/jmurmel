@@ -1555,9 +1555,9 @@ multiline comment
 (deftest read-error.2  (typep (get-condition (read-from-string "|xyxxy"))          'end-of-file) t)   ; | not closed
 (deftest read-error.3  (typep (get-condition (read-from-string "\"xyxxy"))         'end-of-file) t)   ; " not closed
 
-(deftest read-error.4  (typep (get-condition (read-from-string "#\\Bla"))          'reader-error) t)  ; invalid character name
-(deftest read-error.5  (typep (get-condition (read-from-string "#b123"))           'reader-error) t)  ; invalid base2
-(deftest read-error.6  (typep (get-condition (read-from-string "#o123a"))          'reader-error) t)  ; invalid base2
+(deftest read-error.4  (typep (get-condition (read-from-string "#\\Bla"))          #-abcl 'reader-error #+abcl 'error) t)  ; invalid character name
+(deftest read-error.5  (typep (get-condition (read-from-string "#b123"))           #-abcl 'reader-error #+abcl 'error) t)  ; invalid base2
+(deftest read-error.6  (typep (get-condition (read-from-string "#o123a"))          #-abcl 'reader-error #+abcl 'error) t)  ; invalid base2
 (deftest read-error.7  (typep (get-condition (read-from-string "#*012"))           'reader-error) t)  ; invalid bit
 (deftest read-error.8  (typep (get-condition (read-from-string "#@"))              'reader-error) t)  ; no dispatch function
 
@@ -1565,10 +1565,17 @@ multiline comment
 (deftest read-error.10 (typep (get-condition (read-from-string "#+(xyxxy 1 2 3)")) 'simple-error) t)  ; unknown featureexpression
 
 (deftest read-error.11 (typep (get-condition (read-from-string "(xyxxy . )"))      'reader-error) t)  ; nothing after . in list
+#-abcl ;; abcl 1.9.2 doesn't signal
 (deftest read-error.12 (typep (get-condition (read-from-string "(xyxxy . 1 2)"))   'reader-error) t)  ; more than one object after . in list
 (deftest read-error.13 (typep (get-condition (read-from-string ")"))               'reader-error) t)  ; unmatched )
 (deftest read-error.14 (typep (get-condition (read-from-string ","))               'reader-error) t)  ; , not inside a backquote
 (deftest read-error.15 (typep (get-condition (read-from-string "`,@aaa"))          'reader-error) t)  ; , not inside a backquote
+
+
+#-sbcl ;; sbcl swallows this error
+(deftest typep.1 (signals-error (typep nil 'xyxxy) error) t) 
+(deftest typep.2 (signals-error (typep 1 'xyxxy) error) t) 
+
 
 
 ;;; Java FFI: tests some functions with objects Java classes that are not normally used in Murmel
