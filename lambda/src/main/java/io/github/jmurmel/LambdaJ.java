@@ -4097,14 +4097,12 @@ public class LambdaJ {
 
     final   ListConsCell acons(Object key, Object datum, ConsCell alist) { return cons(cons(key, datum), alist); }
 
-    private static Object carCdrError(@NotNull String func, @NotNull Object o) { throw errorArgTypeError("list or string", func, o); }
+    private static Object carCdrError(@NotNull String func, @NotNull Object o) { throw errorArgTypeError("list", func, o); }
 
     static Object   car(ConsCell c)    { return c == null ? null : c.car(); }
     static Object   car(Object o)      { return o == null ? null
                                                           : o instanceof ListConsCell ? ((ListConsCell)o).car()
                                                           : o instanceof ConsCell ? ((ConsCell)o).car()
-                                                          //: o instanceof CharSequence ? ((CharSequence)o).length() == 0 ? null : ((CharSequence)o).charAt(0)
-                                                          //: o instanceof char[] ? ((char[])o).length == 0 ? null : ((char[])o)[0]
                                                           : carCdrError(CAR, o); }
 
     static Object   caar(ConsCell c)   { return c == null ? null : car(car(c)); }
@@ -4127,7 +4125,6 @@ public class LambdaJ {
     static Object   cdr(Object o)      { return o == null ? null
                                                           : o instanceof ListConsCell ? ((ListConsCell)o).cdr()
                                                           : o instanceof ConsCell ? ((ConsCell)o).cdr()
-                                                          //: o instanceof String ? ((String)o).length() <= 1 ? null : ((String)o).substring(1)
                                                           : carCdrError(CDR, o); }
 
     static Object   cdar(ConsCell c)   { return c == null ? null : cdr(car(c)); }

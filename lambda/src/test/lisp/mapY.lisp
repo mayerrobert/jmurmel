@@ -1,7 +1,7 @@
 ;;; implement map using Y-combinator
 
 ;; after car/cdr were changed to no longer accept strings this gives an error
-; error: expected a list or string argument but got "the"
+; error: expected a list argument but got "the"
 ; _result: (#\t #\r #\i #\s)
 ; _output: (empty)
 
