@@ -751,20 +751,27 @@
 
            (m%mapx-nconc (name acc accn)
              `(defun ,name (func lst . more-lists)
-                (let* ((result (list ())) (append-to result))
-                  (if more-lists
-                      (let loop ((args (cons lst more-lists)))
-                           (when (m%notany-null args)
-                             (setq append-to (last append-to))
-                             (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
-                             (loop (unzip-tails args))))
-                      (let loop ((lst lst))
-                           (when lst
-                             (setq append-to (last append-to))
-                             (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
-                             (loop (cdr lst)))))
+                (labels ((m%last (lst)
+                           ;; returns the last cdr, similar to `last` but errors if the last cdr is a dotted pair
+                           ;;(if (consp (cdr lst))  ;; with this instead of the next line Murmel is somewhat sloppy re: mapcon/ mapcon, see https://gitlab.common-lisp.net/cmucl/cmucl/-/issues/196
+                           (if (cdr lst)
+                               (m%last (cdr lst))
+                               lst)))
 
-                  (cdr result))))
+                  (let* ((result (list ())) (append-to result))
+                    (if more-lists
+                        (let loop ((args (cons lst more-lists)))
+                             (when (m%notany-null args)
+                               (setq append-to (m%last append-to))
+                               (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
+                               (loop (unzip-tails args))))
+                        (let loop ((lst lst))
+                             (when lst
+                               (setq append-to (m%last append-to))
+                               (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
+                               (loop (cdr lst)))))
+
+                    (cdr result)))))
 
            (m%mapx-append (name acc accn)
              `(defun ,name (func lst . more-lists)

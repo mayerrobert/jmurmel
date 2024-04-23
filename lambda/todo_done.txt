@@ -2798,3 +2798,7 @@ siehe auch sbcl/src/code/primordial-extensions.lisp
 (declaim (inline xsubtract))
 (defun xsubtract (a b) (- b a))
 -> ist vielleicht nur relevant wenns "define-modify-macro" gibt?!
+
+
+mapcan, mapcon edge cases: https://gitlab.common-lisp.net/cmucl/cmucl/-/issues/196
+-> mlib machts wsl. falsch
