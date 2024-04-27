@@ -10263,15 +10263,6 @@ public class LambdaJ {
                 emitSelf = maybeRecursive;
             }
 
-            sb.append("new ").append(intf).append("() {\n");
-            if (emitSelf) sb.append("        private final ").append(intf).append(" ").append(javasym).append(" = this;\n");
-            sb.append("        public final Object apply(Object... args").append(rsfx).append(") {\n"
-                    + "        return ").append(javasym).append("(args").append(rsfx).append(");\n        }\n" 
-                    + "        private Object ").append(javasym).append("(Object[] args").append(rsfx).append(") {\n");
-            final ConsCell extenv = params(func, sb, params, env, rsfx, symbol.toString(), true);
-            final String ret = "ret" + rsfx;
-            sb.append("        Object ").append(ret).append(";\n");
-            if (maybeRecursive) sb.append("        ").append(javasym).append(": while (true) {\n");
             final int minParams, maxParams;
             if (params == null) {
                 minParams = maxParams = 0;
@@ -10286,9 +10277,27 @@ public class LambdaJ {
             else {
                 minParams = maxParams = listLength((ConsCell)params);
             }
-            emitStmts(sb, body, extenv, topEnv, rsfx, "        " + ret + " = ", symbol, "args" + rsfx, minParams, maxParams, false, false);
-            if (maybeRecursive) sb.append("        break;\n        }\n");
-            sb.append("        return ").append(ret).append(";\n");
+
+            sb.append("new ").append(intf).append("() {\n");
+            if (emitSelf) sb.append("        private final ").append(intf).append(" ").append(javasym).append(" = this;\n");
+            sb.append("        public final Object apply(Object... args").append(rsfx).append(") {\n"
+                    + "        return ").append(javasym).append("(args").append(rsfx).append(");\n        }\n" 
+                    + "        private Object ").append(javasym).append("(Object[] args").append(rsfx).append(") {\n");
+            final ConsCell extenv = params(func, sb, params, env, rsfx, symbol.toString(), true);
+
+            if (cdr(body) == null) {
+                if (maybeRecursive) sb.append("        ").append(javasym).append(": while (true) {\n");
+                emitStmts(sb, body, extenv, topEnv, rsfx, "        return ", symbol, "args" + rsfx, minParams, maxParams, false, false);
+                if (maybeRecursive) sb.append("        }\n");
+            }
+            else {
+                final String ret = "ret" + rsfx;
+                sb.append("        Object ").append(ret).append(";\n");
+                if (maybeRecursive) sb.append("        ").append(javasym).append(": while (true) {\n");
+                emitStmts(sb, body, extenv, topEnv, rsfx, "        " + ret + " = ", symbol, "args" + rsfx, minParams, maxParams, false, false);
+                if (maybeRecursive) sb.append("        break;\n        }\n");
+                sb.append("        return ").append(ret).append(";\n");
+            }
             sb.append("        } }");
 
             currentFunctionName = prevName;
