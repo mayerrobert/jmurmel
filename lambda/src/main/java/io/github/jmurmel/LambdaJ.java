@@ -9874,7 +9874,7 @@ public class LambdaJ {
             ret.append("import java.util.function.Function;\n"
                        + "import java.util.function.Supplier;\n"
                        + "import io.github.jmurmel.LambdaJ.*;\n\n"
-                       + "@SuppressWarnings(\"unchecked\")\n"
+                       + "@SuppressWarnings({\"unchecked\", \"UnnecessaryContinue\", \"UnusedLabel\", \"LoopStatementThatDoesntLoop\", \"IfStatementWithNegatedCondition\", \"ConstantConditions\", \"UnusedAssignment\", \"UnusedReturnValue\"})\n"
                        + "public class ").append(clsName).append(" extends MurmelJavaProgram {\n"
                        + "    public static Object[] foreign;\n"
                        + "    protected ").append(clsName).append(" rt() { return this; }\n\n"
