@@ -44,7 +44,6 @@ dynamic
 
 nil
 pi
-
 array-dimension-limit
 most-positive-fixnum
 most-negative-fixnum
@@ -52,6 +51,7 @@ internal-time-units-per-second
 
 *command-line-argument-list*
 *features*
+
 *condition-handler*
 *random-state*
 

@@ -4,6 +4,9 @@ und damit auf alle variablen und nicht nur auf die variablen über die eigentlic
 -> dadurch kann der gc variablen die in keiner closure benötigt werden nicht freigeben -> speicherleck oder zumindest unnötiger speicherverbrauch 
 
 
+constants, globals und per-thread globals richtig unterscheiden/ behandeln v.a. im interpreter
+
+
 MethodHandles, JIT, inlining, indy:
 https://jornvernee.github.io/methodhandles/2024/01/19/methodhandle-primer.html
 https://github.com/forax/exotic/blob/master/src/main/java/com.github.forax.exotic/MostlyConstant.java

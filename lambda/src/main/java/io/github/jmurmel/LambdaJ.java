@@ -2240,12 +2240,18 @@ public class LambdaJ {
         public static final String OPTIMIZE = "optimize", SPEED = "speed", DEBUG = "debug";
 
         // predefined global variables
+        // constants
         public static final String T = "t", NIL = "nil";
         public static final String PI = "pi", DYNAMIC = "dynamic";
-        public static final String FEATURES = "*features*", CONDITION_HANDLER = "*condition-handler*", RANDOM_STATE = "*random-state*";
         public static final String MOST_POSITIVE_FIXNUM = "most-positive-fixnum", MOST_NEGATIVE_FIXNUM = "most-negative-fixnum", ARRAY_DIMENSION_LIMIT = "array-dimension-limit";
         public static final String INTERNAL_TIME_UNITS_PER_SECOND = "internal-time-units-per-second";
+
+        // variables
         public static final String COMMAND_LINE_ARGUMENT_LIST = "*command-line-argument-list*";
+        public static final String FEATURES = "*features*";
+
+        // dynamic (per thread) variables
+        public static final String CONDITION_HANDLER = "*condition-handler*", RANDOM_STATE = "*random-state*";
 
         // basic primitives
         public static final String APPLY = "apply";
