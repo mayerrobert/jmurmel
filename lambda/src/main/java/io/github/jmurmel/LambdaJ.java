@@ -11597,8 +11597,8 @@ public class LambdaJ {
                 if (applyOp == sList) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(')'); return true; }
 
                 if (applyOp != sApply) { // apply needs special treatment for TCO
-                    final String javaName = primitivesBySymbol.get(op);
-                    if (javaName != null) { opencodeApplyHelper(sb, javaName,  applyArg, env, topEnv, rsfx);  return true; }
+                    final String javaName = primitivesBySymbol.get(applyOp);
+                    if (javaName != null) { sb.append(javaName).append("(toArray("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append("))"); return true; }
                 }
 
                 sb.append(isLast ? "tailcall" : "funcall").append("((MurmelFunction)rt()::apply, ");
@@ -11775,12 +11775,6 @@ public class LambdaJ {
             if (javaName != null) { emitCallPrimitive(sb, javaName, args, env, topEnv, rsfx);  return true; }
 
             return false;
-        }
-
-        private void opencodeApplyHelper(WrappingWriter sb, String func, Object args, ConsCell env, ConsCell topEnv, int rsfx) {
-            sb.append(func).append("(toArray(");
-            emitForm(sb, args, env, topEnv, rsfx, false);
-            sb.append("))");
         }
 
         /** 2 args: divide 2 numbers and apply {@code javaOp} to the result,
