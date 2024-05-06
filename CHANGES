@@ -1,5 +1,6 @@
 
 Changes in JMurmel-1.4.7 relative to JMurmel-1.4.6
+released: 2024-05-06
 
  * changed defun/ define: are now allowed inside labels forms
  * changed car/ cdr: no longer accept strings
