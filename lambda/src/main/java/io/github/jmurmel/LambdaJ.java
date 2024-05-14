@@ -2037,7 +2037,6 @@ public class LambdaJ {
             if (cdr(xCons) == null)
                 return qq_expand_list(op);
 
-            //return list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons)));
             return optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons)));
         }
 
@@ -2083,7 +2082,6 @@ public class LambdaJ {
             if (cdr(xCons) == null)
                 return list(sList, qq_expand_list(op));
 
-            //return list(sList, list(sAppend, qq_expand_list(op), qq_expand(cdr(xCons))));
             final ConsCell combined = optimizedAppend(qq_expand_list(op), qq_expand(cdr(xCons)));
             if (car(combined) == sQuote) return list(sQuote, cdr(combined));
             return list(sList, combined);
@@ -2146,6 +2144,8 @@ public class LambdaJ {
                         if (carRhs == sList)  return new ListConsCell(sList, new ListConsCell(x, cdr(rhs)));
                         if (carRhs == sListStar
                             || carRhs == sCons) return new ListConsCell(sListStar, new ListConsCell(x, cdr(rhs)));
+                        if (carRhs == sUnquote_splice)
+                            return list(sAppend, lhs, rhs); // don't optimize
                     }
 
                     return list(sCons, x, rhs);

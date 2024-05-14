@@ -55,6 +55,7 @@
                                 <argument>--libdir</argument>
                                 <argument>.</argument>
                                 <argument>mlib-test.lisp</argument>
+                                <argument>backq-test.lisp</argument>
                             </arguments>
                         </configuration>
                     </execution>
