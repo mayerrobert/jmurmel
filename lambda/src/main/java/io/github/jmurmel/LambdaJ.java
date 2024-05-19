@@ -2068,8 +2068,11 @@ public class LambdaJ {
             if (op == sUnquote)
                 return list(sList, cadr(xCons));
 
-            if (op == sUnquote_splice)
-                return cadr(xCons);
+            if (op == sUnquote_splice) {
+                final Object arg = cadr(xCons);
+                if (symbolp(arg)) return arg;
+                return list(sAppend, arg);
+            }
 
             if (op == sQuasiquote)
                 return qq_expand_list(qq_expand(cadr(xCons)));

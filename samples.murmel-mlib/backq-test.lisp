@@ -1,4 +1,4 @@
-;;;; More backquote tests.
+;;;; More backquote tests from sbcl backq.pure.lisp.
 
 ;;; This file is valid Common Lisp as well as Murmel
 ;;; with mlib.lisp. Some #+/#- feature expressions
@@ -20,9 +20,6 @@
 ;;; - won't work with compiled Murmel because the compiler only has a limited eval
 ;;; - contains some occurrences of #'. These are needed
 ;;;   for CL compatibility, #' is ignored by murmel.
-;;; - may contain some mutation of quoted forms which will break some tests
-;;;   when compiling with SBCL (and mutating quoted forms i.e. constants
-;;;   is bad style...), I think I fixed all, though.
 
 #+murmel (require "mlib")
 
@@ -36,29 +33,10 @@
   (terpri)
   o)
 
-(defmacro sref (str idx) `(aref ,str ,idx))
-
 (defmacro try (form &optional errorobj)
   (let ((ex (gensym)))
     `(handler-case ,form
                    (condition (,ex) (values ,errorobj ,ex)))))
-
-(defun circular-list (&rest elements)
-  (let ((cycle (copy-list elements)))
-    (nconc cycle cycle)))
-
-;; from alexandria
-(defun mappend (function &rest lists)
-  "Applies FUNCTION to respective element(s) of each LIST, appending
-all the result list to a single list. FUNCTION must return a list."
-  (loop for results in (apply #'mapcar function lists)
-        append results))
-
-(defun mappend-tails (function &rest lists)
-  "Applies FUNCTION to respective tail(s) of each LIST, appending
-all the result list to a single list. FUNCTION must return a list."
-  (loop for results in (apply #'maplist function lists)
-        append results))
 )
 
 
@@ -174,14 +152,12 @@ all the result list to a single list. FUNCTION must return a list."
     ("``(FOO ,',@*S*)" . (foo (append *x* *y*)))
     ("``(FOO ,@,*P*)" . (foo a b c))
     ("``(FOO ,@',*R*)" . (foo append *x* *y*))
-    ;; The following expression produces different result under LW.
+    ;; backq.pure.lisp says: The following expression produces different result under LW.
     ("``(FOO . ,,@*Q*)" . (foo a b c sqrt 9))    ; fails on ecl
-    ;; These three did not work.
-    #-murmel
-    ("``(FOO ,@',@*S*)" . (foo append *x* *y*))  ; todo currently broken: can't splice here
+    ;; backq.pure.lisp says: These three did not work.
+    ("``(FOO ,@',@*S*)" . (foo append *x* *y*))
     ("``(FOO ,@,@*Q*)" . (foo a b c sqrt 9))     ; fails on ecl
-    #-murmel
-    ("``(,@,@*QQQ*)" . (3.0 5.0 4.0 6.0))        ; fails on ecl, todo currently broken: can't splice here
+    ("``(,@,@*QQQ*)" . (3.0 5.0 4.0 6.0))        ; fails on ecl
     ))
 
 (mapc (lambda (test)
