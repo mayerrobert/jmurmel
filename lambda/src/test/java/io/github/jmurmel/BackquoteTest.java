@@ -158,6 +158,42 @@ public class BackquoteTest {
         assertExpansion("``a", "(quote (quote a))");
     }
 
+    @Test
+    public void testNested1() {
+        eval("(let ((q '(r s))) ``(foo ,@,@q))", "(cons (quote foo) (append r s))");
+        assertExpansion("(let ((q '(r s))) ``(foo ,@,@q))", "(let ((q (quote (r s)))) (list (quote cons) (quote (quote foo)) (cons (quote append) q)))");
+    }
+
+    @Test
+    public void testNested2() {
+        eval("(let ((q '(r s))) ``(foo . ,,@q))", "(append (quote (foo)) r s)");
+        assertExpansion("(let ((q '(r s))) ``(foo . ,,@q))", "(let ((q (quote (r s)))) (list* (quote append) (list (quote quote) (quote (foo))) q))");
+    }
+
+    @Test
+    public void testNested3() {
+        eval("(let ((q '(r s))) ``(foo ,,@q))", "(list (quote foo) r s)");
+        assertExpansion("(let ((q '(r s))) ``(foo ,,@q))", "(let ((q (quote (r s)))) (list* (quote list) (quote (quote foo)) q))");
+    }
+
+    @Test
+    public void testNested4() {
+        eval("(let ((q '(r s))) ``(,@,@q))", "(append r s)");
+        assertExpansion("(let ((q '(r s))) ``(,@,@q))", "(let ((q (quote (r s)))) (cons (quote append) q))");
+    }
+
+    @Test
+    public void testNested5() {
+        eval("(let ((q '(r s))) ``(,@,@q ,@,@q))", "(append r s r s)");
+        assertExpansion("(let ((q '(r s))) ``(,@,@q ,@,@q))", "(let ((q (quote (r s)))) (cons (quote append) (append q q)))");
+    }
+
+    @Test
+    public void testNested6() {
+        eval("(let ((q '(r s))) ``(,@,@q ,@,@q ,@,@q))", "(append r s r s r s)");
+        assertExpansion("(let ((q '(r s))) ``(,@,@q ,@,@q ,@,@q))", "(let ((q (quote (r s)))) (cons (quote append) (append q q q)))");
+    }
+
     // ``(aaa ,bbb ,,ccc) =>
     @Test
     public void testX() {
@@ -182,6 +218,11 @@ public class BackquoteTest {
     @Test
     public void testMultiSplice() {
         assertExpansion("`(,@a ,@b ,@c ,@d)", "(append a b c d)");
+    }
+
+    @Test
+    public void testMultiSplice2() {
+        assertExpansion("``(,,@a ,,@b ,,@c ,,@d)", "(cons (quote list) (append a b c d))");
     }
 
     @Test

@@ -2128,6 +2128,9 @@ public class LambdaJ {
          * (append (list lhsX) (cons rhsX...))   -> (list* lhsX rhsX...)
          * (append (list lhsX) rhs)              -> (cons lhsX rhs)
          *
+         * (append (append lhsX) (append rhsX...)) -> (append lhsX rhsX...)
+         * (append (append lhsX) rhsX...)        -> (append lhsX rhsX...)
+         *
          * (append lhs (list rhsX))              -> (append lhs (cons rhsX nil))
          */
         private ConsCell optimizedAppend(Object lhs, Object rhs) {
@@ -2165,6 +2168,17 @@ public class LambdaJ {
                     }
 
                     return list(sCons, cadr(lhs), rhs);
+                }
+
+                if (car(lhs) == sAppend) {
+                    assert cddr(lhs) == null : "expected a single argument append call but got " + lhs;
+
+                    if (consp(rhs)) {
+                        final Object carRhs = car(rhs);
+                        if (carRhs == sAppend) return new ListConsCell(sAppend, new ListConsCell(cadr(lhs), cdr(rhs)));
+                    }
+
+                    return list(sAppend, cadr(lhs), rhs);
                 }
             }
 
