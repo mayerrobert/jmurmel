@@ -2057,8 +2057,6 @@ public class LambdaJ {
                 (t `'(,x))))
         */
         private Object qq_expand_list(Object x) {
-            if (x == null)
-                return list(sQuote, new ListConsCell(null, null));
             if (atom(x))
                 return list(sQuote, new ListConsCell(x, null));
 
@@ -2071,6 +2069,10 @@ public class LambdaJ {
             if (op == sUnquote_splice) {
                 final Object arg = cadr(xCons);
                 if (symbolp(arg)) return arg;
+                if (consp(arg)) {
+                    final Object argOp = car(arg);
+                    if (argOp != sUnquote_splice && argOp != sQuote) return arg;
+                }
                 return list(sAppend, arg);
             }
 

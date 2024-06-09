@@ -119,6 +119,24 @@ public class BackquoteTest {
         assertExpansion("`(a ,@l b)", "(cons (quote a) (append l (quote (b))))");
     }
 
+    @Test
+    public void testBQuotedListSplicedList2() {
+        eval("(define l '(1.0 2.0)) `(a ,@l)", "(a 1.0 2.0)");
+        assertExpansion("`(a ,@l)", "(cons (quote a) l)");
+    }
+
+    @Test
+    public void testBQuotedListSplicedFunc() {
+        eval("(defun l () '(1.0 2.0)) `(a ,@(l))", "(a 1.0 2.0)");
+        assertExpansion("`(a ,@(l))", "(cons (quote a) (l))");
+    }
+
+    @Test
+    public void testBQuotedListSplicedFunc2() {
+        eval("(defun l (p1 p2) '(1.0 2.0)) `(a ,@(l 1 2))", "(a 1.0 2.0)");
+        assertExpansion("`(a ,@(l p1 p2))", "(cons (quote a) (l p1 p2))");
+    }
+
     // sample from CLHS
     // http://www.lispworks.com/documentation/HyperSpec/Body/02_df.htm
     // Murmel: (define       a "A") (define       c "C") (define       d '("D" "DD"))   `((,a b) ,c ,@d)  ==> (("A" b) "C" "D" "DD")
