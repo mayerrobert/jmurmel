@@ -3,6 +3,8 @@ Changes in JMurmel-1.4.8 relative to JMurmel-1.4.7
 
  * fixes around nested backquotes
 
+ * fixed mlib: evaluation order in psetf forms
+
 
 Changes in JMurmel-1.4.7 relative to JMurmel-1.4.6
 released: 2024-05-06

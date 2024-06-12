@@ -446,7 +446,7 @@ and will applied to subsequent tails of the given lists.
 
 All function application results will be concatenated to a list
 which is the return value of `mappend-tails`.
-`function` must return a list which will not be mutated by `mappend`.
+`function` must return a list which will not be mutated by `mappend-tails`.
 
 `mappend-tails` can be thought of as a non-destructive version of `mapcon`,
 i.e. `mappend-tails` combines the results of applying `function`
@@ -646,9 +646,7 @@ is the value that is supposed to go into that place.
 
 If more than one pair is supplied then the assignments of new values to places are done in parallel.
 
-Similar to CL's `psetf` except: Murmel's `psetf`'s return value is the multiple-values
-returned by the storing form for the last place, or nil if there are no pairs,
-similar to `setf`.
+Similar to CL's `psetf`.
 
 ### Macro: incf, decf
     (incf place delta-form*) -> new-value

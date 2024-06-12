@@ -897,7 +897,7 @@
 ;;;
 ;;; All function application results will be concatenated to a list
 ;;; which is the return value of `mappend-tails`.
-;;; `function` must return a list which will not be mutated by `mappend`.
+;;; `function` must return a list which will not be mutated by `mappend-tails`.
 ;;;
 ;;; `mappend-tails` can be thought of as a non-destructive version of `mapcon`,
 ;;; i.e. `mappend-tails` combines the results of applying `function`
@@ -1605,56 +1605,24 @@
 ;;;
 ;;; If more than one pair is supplied then the assignments of new values to places are done in parallel.
 ;;;
-;;; Similar to CL's `psetf` except: Murmel's `psetf`'s return value is the multiple-values
-;;; returned by the storing form for the last place, or nil if there are no pairs,
-;;; similar to `setf`.
+;;; Similar to CL's `psetf`.
 (defmacro psetf pairs
-  (labels ((%make-bindings (pairs append-to)
-             (if pairs
-                 (if (cdr pairs)
-                     (let ((place (car pairs)) (value-form (cadr pairs)))
-                       (if (and (consp place) (eq 'values (car place)))
-                           (progn
-                             (if (cddr place)
-                                 (rplacd append-to (list (list* place value-form  (mapcar (lambda (x) (gensym)) (cdr place)))))
-                                 (rplacd append-to (list (list (cadr place) value-form (gensym)))))
-                             (%make-bindings (cddr pairs) (cdr append-to)))
-                           (progn
-                             (rplacd append-to (list (list place value-form (gensym))))
-                             (%make-bindings (cddr pairs) (cdr append-to)))))
-                     #1=(error "odd number of arguments to psetf"))))
-
-           (make-bindings (pairs)
-             (let ((head (list ())))
-               (%make-bindings pairs head)
-               (cdr head)))
-
-           (maybe-values (vars)
-             (if (cdr vars)
-                 `(values ,@vars)
-                 (car vars))))
-
-    (if pairs
-        (if (cdr pairs)
-            (if (cddr pairs)
-                (let* ((bindings (make-bindings pairs)))
-                  `(let ,(apply append (mapcar cddr bindings))
-                     ,@(let ((head (list ())))
-                         (let loop ((bindings bindings) (append-to head))
-                           (when bindings
-                             (destructuring-bind (place value-form . vars) (car bindings)
-                               (rplacd append-to (list `(setf ,(maybe-values vars) ,value-form))))
-                             (loop (cdr bindings) (cdr append-to))))
-                         (cdr head))
-                     ,@(let ((head (list ())))
-                         (let loop ((bindings bindings) (append-to head))
-                           (when bindings
-                             (destructuring-bind (place value-form . vars) (car bindings)
-                               (rplacd append-to (list `(setf ,place ,(maybe-values vars)))))
-                             (loop (cdr bindings) (cdr append-to))))
-                         (cdr head))))
-                `(setf ,(car pairs) ,@(cdr pairs)))
-            #1#))))
+  (let ((body (list ())))
+    (let loop ((pairs pairs) (append-to body))
+      (if pairs
+          (progn
+            (unless (cdr pairs) (error 'program-error "odd number of arguments to psetf"))
+            (let ((place (car pairs))
+                  (values-form (cadr pairs)))
+              (destructuring-bind (vars vals stores setter reader) (get-setf-expansion place)
+                (if vars
+                    `(let* ,(mapcar list vars vals)
+                       #1=(multiple-value-bind ,stores ,values-form
+                            ,(loop (cddr pairs) (cdr (rplacd append-to (list setter))))))
+                    `#1#))))
+          `(progn
+             ,@(cdr body)
+             nil)))))
 
 
 (macrolet (

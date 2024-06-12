@@ -872,7 +872,6 @@ all the result list to a single list. FUNCTION must return a list."
 )
 
 
-;#+broken
 (tests psetf
   (let (a b c)
     (setq a 1)
@@ -884,15 +883,13 @@ all the result list to a single list. FUNCTION must return a list."
     (let ((a 11) (b 22))
       (multiple-value-bind (x y z) (psetf (values a b) (mv) b a)
         (list a b x y z))))
-  => #+murmel (1 11 11 nil nil)
-     #-murmel (1 11 nil nil nil)
+  => (1 11 nil nil nil)
 
   (labels ((mv () (values 1 2 3)))
     (let ((a 11) (b 22))
       (multiple-value-bind (x y z) (psetf a 111 b 222 (values a b) (mv))
         (list a b x y z))))
-  => #+murmel (1 2 1   2   nil)
-     #-murmel (1 2 nil nil nil)
+  => (1 2 nil nil nil)
 )
 
 

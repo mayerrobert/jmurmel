@@ -2802,3 +2802,24 @@ siehe auch sbcl/src/code/primordial-extensions.lisp
 
 mapcan, mapcon edge cases: https://gitlab.common-lisp.net/cmucl/cmucl/-/issues/196
 -> mlib machts wsl. falsch
+
+
+psetf evaluiert komplexe forms in der falschen reihenfolge:
+
+JMurmel> (macroexpand-1 '(psetf (car x) (car a) (car y) (car b) (car z) (car c)))
+ -> (let (#:gensym #:gensym #:gensym) (setf #:gensym (car a)) (setf #:gensym (car b)) (setf #:gensym (car c)) (setf (car x) #:gensym) (setf (car y) #:gensym) (setf (car z) #:gensym))
+ -> t
+
+SBCL:
+* (macroexpand-1 '(psetf (car x) (car a) (car y) (car b) (car z) (car c)))
+(LET* ((#:X167 X)
+       (#:NEW166 (CAR A))
+       (#:Y169 Y)
+       (#:NEW168 (CAR B))
+       (#:Z171 Z)
+       (#:NEW170 (CAR C)))
+  (SB-KERNEL:%RPLACA #:X167 #:NEW166)
+  (SB-KERNEL:%RPLACA #:Y169 #:NEW168)
+  (SB-KERNEL:%RPLACA #:Z171 #:NEW170)
+  NIL)
+T
