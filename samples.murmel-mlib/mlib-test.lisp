@@ -890,6 +890,17 @@ all the result list to a single list. FUNCTION must return a list."
       (multiple-value-bind (x y z) (psetf a 111 b 222 (values a b) (mv))
         (list a b x y z))))
   => (1 2 nil nil nil)
+
+  (let ((a (list 1))
+        (b (list nil))
+        (c (list nil))
+        x)
+    (labels ((aa () (push 'a x) a)
+             (bb () (push 'b x) b)
+             (cc () (push 'c x) c))
+      (psetf (car (aa)) (1+ (car (aa))) (car (bb)) (car (aa)) (car (cc)) (car (bb)))
+      (list a b c x)))
+  => ((2) (1) (nil) (b c a b a a))
 )
 
 

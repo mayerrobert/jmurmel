@@ -1615,11 +1615,23 @@
             (let ((place (car pairs))
                   (values-form (cadr pairs)))
               (destructuring-bind (vars vals stores setter reader) (get-setf-expansion place)
-                (if vars
-                    `(let* ,(mapcar list vars vals)
-                       #1=(multiple-value-bind ,stores ,values-form
-                            ,(loop (cddr pairs) (cdr (rplacd append-to (list setter))))))
-                    `#1#))))
+                (cond ((and vars (cdr stores))
+                       `(let ,(mapcar list vars vals)
+                          #1=(multiple-value-bind ,stores ,values-form
+                               #2=,(loop (cddr pairs) (cdr (rplacd append-to (list setter)))))))
+
+                      (vars
+                       `(let (,@(mapcar list vars vals)
+                              (,(car stores) ,values-form))
+                          #2#))
+
+                      ((cdr stores)
+                       `#1#)
+
+                      (t
+                       `(let ((,(car stores) ,values-form))
+                          #2#))))))
+
           `(progn
              ,@(cdr body)
              nil)))))
