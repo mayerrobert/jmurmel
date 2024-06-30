@@ -869,6 +869,24 @@ all the result list to a single list. FUNCTION must return a list."
       (multiple-value-bind (x y z) (setf (values a b) (mv))
         (list x y z))))
   => (1 2 nil)
+
+  (let (a b)
+    (multiple-value-bind (x y z) (setf (values (values a b)) (values (values 1 2)))
+      (list x y z a b)))
+  => (1 nil nil 1 nil)
+
+  (let ((a (list nil))
+        (b (list nil))
+        (x (list 1))
+        (y (list 11))
+        z)
+    (labels ((aa () (push 'a z) a)
+             (bb () (push 'b z) b)
+             (xx () (push 'x z) x)
+             (yy () (push 'y z) y))
+      (setf (values (car (aa)) (car (bb))) (values (car (xx)) (car (yy))))
+      (list a b x y z)))
+  => ((1) (11) (1) (11) (y x b a))
 )
 
 

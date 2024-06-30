@@ -1483,20 +1483,34 @@
                  (hashref ,tmp1 ,tmp2)))
 
               ((eq 'values op)
-               (let* ((vars (mapcar (lambda (x) (gensym)) args)))
-                 `(nil
-                   nil
-                   ,vars
-                   (values ,@(let* loop ((ret (list ()))
-                                         (append-to ret)
-                                         (vals args)
-                                         (vars vars))
-                                (if vals
-                                    (progn
-                                      (rplacd append-to (list (list 'setf (car vals) (car vars))))
-                                      (loop ret (cdr append-to) (cdr vals) (cdr vars)))
-                                    (cdr ret))))
-                   ,place)))
+               (let* ((vars (list ()))    (append-vars vars)
+                      (vals (list ()))    (append-vals vals)
+                      (stores (list ()))  (append-stores stores)
+                      (setter (list ()))  (append-setter setter)
+                      (reader (list ()))  (append-reader reader))
+                 (dolist (arg args)
+                   (destructuring-bind (vars vals store-vars writer-form reader-form) (get-setf-expansion arg)
+                     (when vars
+                       (rplacd append-vars vars)
+                       (setq append-vars (cdr append-vars))
+
+                       (rplacd append-vals vals)
+                       (setq append-vals (cdr append-vals)))
+
+                     (rplacd append-stores store-vars)
+                     (setq append-stores (cdr append-stores))
+
+                     (rplacd append-setter (list writer-form))
+                     (setq append-setter (cdr append-setter))
+
+                     (rplacd append-reader (list reader-form))
+                     (setq append-reader (cdr append-reader))))
+
+                 `(,(cdr vars)
+                   ,(cdr vals)
+                   ,(cdr stores)
+                   (values ,@(cdr setter))
+                   (values ,@(cdr reader)))))
 
               (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, hashref, gethash, svref, bvref, bit, sref char and values are supported for 'place', got %s" place))))))))
 
@@ -1573,7 +1587,13 @@
                       ((eq 'gethash op)
                        `(hashset ,(car (cddar args)) ,(cadar args) ,#3#))
 
-                      ((eq 'values op)
+                      ;; if the assignment target is a values form with only symbols
+                      ((and (eq 'values op)
+                            (let loop ((places #2#))
+                              (if places
+                                (when (symbolp (car places))
+                                  (loop (cdr places)))
+                                t)))
                        (let* ((vars (mapcar (lambda (x) (gensym)) #2#)))
                          `(multiple-value-bind ,vars ,#3#
                             (values ,@(let* loop ((ret (list ()))
@@ -1582,7 +1602,7 @@
                                                   (vars vars))
                                         (if places
                                             (progn
-                                              (rplacd append-to (list (list 'setf (car places) (car vars))))
+                                              (rplacd append-to (list (list 'setq (car places) (car vars))))
                                               (loop ret (cdr append-to) (cdr places) (cdr vars)))
                                             (cdr ret)))))))
 
