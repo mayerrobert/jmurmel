@@ -922,6 +922,30 @@ all the result list to a single list. FUNCTION must return a list."
 )
 
 
+(tests shiftf
+  (let* ((a 1) (aa 11) (b 2) (bb 22))
+    (multiple-value-bind (c cc) (shiftf (values a aa) (values b bb) (values 3 33))
+      (list a aa b bb c cc)))
+  => (2 22 3 33 1 11)
+
+  (let ((a (list 1))
+        (b (list nil))
+        (c (list nil))
+        x)
+    (labels ((aa () (push 'a x) a)
+             (bb () (push 'b x) b)
+             (cc () (push 'c x) c))
+      (list
+       (shiftf (car (aa))
+               (car (bb))
+               (car (aa))
+               (car (cc))
+               (car (bb)))
+       a b c x)))
+  => (1 (NIL) (1) (NIL) (B C A B A))
+)
+
+
 ;; test incf, decf
 (define n 0)
 (tests inplace

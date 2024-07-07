@@ -47,7 +47,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - places
     - [destructuring-bind](#macro-destructuring-bind)
     - [get-setf-expansion](#function-get-setf-expansion)
-    - [setf](#macro-setf), [psetf](#macro-psetf), [incf, decf](#macro-incf-decf)
+    - [setf](#macro-setf), [psetf](#macro-psetf), [shiftf](#macro-shiftf), [incf, decf](#macro-incf-decf)
     - [push](#macro-push), [pop](#macro-pop), [pushnew](#macro-pushnew)
 - numbers, characters
     - [abs](#function-abs), [min](#function-min), [max](#function-max), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
@@ -637,7 +637,7 @@ knows a corresponding setting form, which currently are:
 - values
 
 ### Macro: psetf
-    (psetf pair*) -> result
+    (psetf pair*) -> nil
 
 Since: 1.4.6
 
@@ -647,6 +647,16 @@ is the value that is supposed to go into that place.
 If more than one pair is supplied then the assignments of new values to places are done in parallel.
 
 Similar to CL's `psetf`.
+
+### Macro: shiftf
+    (shiftf place+ newvalue) -> old-values-1
+
+Since: 1.4.8
+
+`shiftf` modifies the values of each place by storing newvalue into the last place,
+and shifting the values of the second through the last place into the remaining places.
+
+Similar to CL's `shiftf`.
 
 ### Macro: incf, decf
     (incf place delta-form*) -> new-value
