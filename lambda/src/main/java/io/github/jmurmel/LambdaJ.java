@@ -7003,34 +7003,40 @@ public class LambdaJ {
                     final String consoleCharsetName = System.getProperty("sun.stdout.encoding");
                     final Charset consoleCharset = consoleCharsetName == null ? StandardCharsets.UTF_8 : Charset.forName(consoleCharsetName);
 
-                    if (action == Action.INTERPRET) {
-                        interpreter.init(NULL_READCHARS, NULL_WRITECHARS, null);
-                        injectCommandlineArgs(interpreter, args);
-                        final Object result = interpretStream(interpreter, new InputStreamReader(REPL_IN, consoleCharset)::read, null, printResult, null);
-                        if (finalResult && !printResult && result != null) {
-                            REPL_OUT.println();
-                            REPL_OUT.print("==> ");
-                            REPL_OUT.println(printSEx(result));
+                    try (InputStreamReader inputStreamReader = new InputStreamReader(REPL_IN, consoleCharset)) {
+                        if (action == Action.INTERPRET) {
+                            interpreter.init(NULL_READCHARS, NULL_WRITECHARS, null);
+                            injectCommandlineArgs(interpreter, args);
+                            final Object result = interpretStream(interpreter, inputStreamReader::read, null, printResult, null);
+                            if (finalResult && !printResult && result != null) {
+                                REPL_OUT.println();
+                                REPL_OUT.print("==> ");
+                                REPL_OUT.println(printSEx(result));
+                            }
+                        }
+                        else {
+                            final SExpressionReader parser = interpreter.makeReader(inputStreamReader::read, null);
+
+                            switch (action) {
+                            case TO_JAVA:
+                                final boolean successJava = compileToJava(StandardCharsets.UTF_8, interpreter.getSymbolTable(), interpreter.libDir, parser, clsName, outDir);
+                                if (successJava) REPL_OUT.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
+                                break;
+                            case TO_JAR:
+                                final String outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
+                                final boolean successJar = compileToJar(interpreter.getSymbolTable(), libPath, parser, clsName, outFile);
+                                if (successJar) REPL_OUT.println("compiled stdin to " + outFile);
+                                break;
+                            case COMPILE_AND_RUN:
+                                compileAndRunForms(parser, args, interpreter, false, finalResult);
+                                break;
+                            default:
+                                assert false : "can't happen";
+                            }
                         }
                     }
-                    else {
-                        final SExpressionReader parser = interpreter.makeReader(new InputStreamReader(REPL_IN, consoleCharset)::read, null);
-
-                        switch (action) {
-                        case TO_JAVA:
-                            final boolean successJava = compileToJava(StandardCharsets.UTF_8, interpreter.getSymbolTable(), interpreter.libDir, parser, clsName, outDir);
-                            if (successJava) REPL_OUT.println("compiled stdin to " + (clsName == null ? "MurmelProgram" : clsName));
-                            break;
-                        case TO_JAR:
-                            final String outFile = outDir != null ? outDir + "/a.jar" : "a.jar";
-                            final boolean successJar = compileToJar(interpreter.getSymbolTable(), libPath, parser, clsName, outFile);
-                            if (successJar) REPL_OUT.println("compiled stdin to " + outFile);
-                            break;
-                        case COMPILE_AND_RUN:
-                            compileAndRunForms(parser, args, interpreter, false, finalResult);
-                            break;
-                        default: assert false : "can't happen";
-                        }
+                    catch (IOException e) {
+                        REPL_ERR.println();  REPL_ERR.println(e);
                     }
                 }
             }
