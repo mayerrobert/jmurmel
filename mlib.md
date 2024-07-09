@@ -38,7 +38,8 @@ mlib provides the following Common Lisp-like functions and macros:
 - places
     - [destructuring-bind](#macro-destructuring-bind)
     - [get-setf-expansion](#function-get-setf-expansion)
-    - [setf](#macro-setf), [psetf](#macro-psetf), [shiftf](#macro-shiftf), [incf, decf](#macro-incf-decf)
+    - [setf](#macro-setf), [psetf](#macro-psetf), [shiftf](#macro-shiftf), [rotatef](#macro-rotatef)
+    - [incf, decf](#macro-incf-decf)
     - [push](#macro-push), [pop](#macro-pop), [pushnew](#macro-pushnew)
 - numbers, characters
     - [abs](#function-abs), [min](#function-min), [max](#function-max), [zerop](#function-zerop), [evenp](#function-evenp), [oddp](#function-oddp)
@@ -648,6 +649,18 @@ Since: 1.4.8
 and shifting the values of the second through the last place into the remaining places.
 
 Similar to CL's `shiftf`.
+
+### Macro: rotatef
+    (rotatef place*) -> nil
+
+Since: 1.4.8
+
+`rotatef` modifies the values of each place by rotating values from one place into another.
+
+If a place produces more values than there are store variables, the extra values are ignored.
+If a place produces fewer values than there are store variables, the missing values are set to `nil`.
+
+Similar to CL's `rotatef`.
 
 ### Macro: incf, decf
     (incf place delta-form*) -> new-value

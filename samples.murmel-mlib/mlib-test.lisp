@@ -929,8 +929,8 @@ all the result list to a single list. FUNCTION must return a list."
   => (2 22 3 33 1 11)
 
   (let ((a (list 1))
-        (b (list nil))
-        (c (list nil))
+        (b (list 2))
+        (c (list 3))
         x)
     (labels ((aa () (push 'a x) a)
              (bb () (push 'b x) b)
@@ -942,7 +942,69 @@ all the result list to a single list. FUNCTION must return a list."
                (car (cc))
                (car (bb)))
        a b c x)))
-  => (1 (NIL) (1) (NIL) (B C A B A))
+  => (1 (3) (1) (2) (B C A B A))
+)
+
+
+#+murmel (progn (define :foo ':foo) (define :bar ':bar))
+(tests rotatef
+  ;; from CLHS
+  (let ((n 0)
+        (x (list 'a 'b 'c 'd 'e 'f 'g)))
+    (rotatef (nth (incf n) x)
+             (nth (incf n) x)
+             (nth (incf n) x))
+    x)
+  => (A C D B E F G)
+
+  (let ((a 1) (b 2) (c 3) (d 4))
+    (rotatef (values a b) (values c d))
+    (list a b c d))
+  => (3 4 1 2)
+
+  ;; from ansi-test rotatef.6
+  (let* ((x (list 'a 'b))
+         (y (list 'c 'd))
+         (z 'e))
+    (rotatef (car x) (car y) z)
+    (list x y z))
+  => ((c b) (e d) a)
+
+  ;; from ansi-test rotatef.16
+;  (let* ((x (vector 'a 'b))
+;         (y (vector 'c 'd))
+;         (z 'e))
+;    (rotatef (svref x 0) (svref y 0) z)
+;    (list x y z))
+;  => (#(c b) #(e d) a)
+
+  ;; from ansi-test rotatef.17
+  (let* ((x (copy-seq #*11000))
+         (y (copy-seq #*11100))
+         (z 1))
+    (rotatef (bit x 1) (bit y 3) z)
+    (list x y z))
+  => (#*10000 #*11110 1)
+
+  ;; from ansi-test rotatef.18
+  (let* ((x (copy-seq "abcde"))
+         (y (copy-seq "fghij"))
+         (z #\X))
+    (rotatef (char x 1) (char y 2) z)
+    (list x y z))
+  => ("ahcde" "fgXij" #\b)
+
+  ;; from ansi-test rotatef.34
+  (let* ((ht1 (make-hash-table))
+         (ht2 (make-hash-table))
+         (k1 :foo) (v1 1)
+         (k2 :bar) (v2 2)
+         (z 3))
+    (setf (gethash k1 ht1) v1
+          (gethash k2 ht2) v2)
+    (rotatef z (gethash k1 ht1) (gethash k2 ht2))
+    (list z (gethash k1 ht1) (gethash k2 ht2)))
+  => (1 2 3)
 )
 
 

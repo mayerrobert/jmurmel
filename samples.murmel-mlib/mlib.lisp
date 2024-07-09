@@ -40,7 +40,8 @@
 ;;; - places
 ;;;     - [destructuring-bind](#macro-destructuring-bind)
 ;;;     - [get-setf-expansion](#function-get-setf-expansion)
-;;;     - [setf](#macro-setf), [psetf](#macro-psetf), [shiftf](#macro-shiftf), [incf, decf](#macro-incf-decf)
+;;;     - [setf](#macro-setf), [psetf](#macro-psetf), [shiftf](#macro-shiftf), [rotatef](#macro-rotatef)
+;;;     - [incf, decf](#macro-incf-decf)
 ;;;     - [push](#macro-push), [pop](#macro-pop), [pushnew](#macro-pushnew)
 
 ;;; - numbers, characters
@@ -1692,6 +1693,40 @@
                        ,@(cdr body)
                        ,prev-setter
                        (values ,@out))))))))))
+
+
+;;; = Macro: rotatef
+;;;     (rotatef place*) -> nil
+;;;
+;;; Since: 1.4.8
+;;;
+;;; `rotatef` modifies the values of each place by rotating values from one place into another.
+;;;
+;;; If a place produces more values than there are store variables, the extra values are ignored.
+;;; If a place produces fewer values than there are store variables, the missing values are set to `nil`.
+;;;
+;;; Similar to CL's `rotatef`.
+(defmacro rotatef places
+  (let* ((body (list ()))
+         (append-to body))
+
+    (destructuring-bind (vars vals stores setter first-reader) (get-setf-expansion (car places))
+      (let ((out (mapcar (lambda (x) (gensym "out")) stores)))
+        `(let* ,(mapcar list vars vals)
+           ,(let loop ((prev-stores stores) (prev-setter setter) (l (cdr places)) (append-to append-to))
+
+              (destructuring-bind (vars vals stores setter reader) (get-setf-expansion (car l))
+                `(let* ,(mapcar list vars vals)
+                   (multiple-value-bind ,prev-stores ,reader
+                     ,(if (cdr l)
+
+                          (loop stores setter (cdr l) (cdr (rplacd append-to (list prev-setter))))
+
+                          `(multiple-value-bind ,stores ,first-reader
+                             ,@(cdr body)
+                             ,prev-setter
+                             ,setter
+                             nil)))))))))))
 
 
 (macrolet (
