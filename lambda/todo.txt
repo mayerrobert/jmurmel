@@ -1,3 +1,5 @@
+wieso verbietet der compiler re-define/defun?
+
 
 closures im compiler haben ein problem: die closure hält eine referenz auf den gesamten stackframe (das Object... array)
 und damit auf alle variablen und nicht nur auf die variablen über die eigentlich geclosed wird.
@@ -40,8 +42,6 @@ dolist/ dotimes haben in CL eine result form, in Murmel 1 oder mehrere result fo
    -> oder ein flag "--warn-extensions" und das dann gibts ein note bei dolist/ dotimes mit mehr als 1 resultform?
       sollte dann bei allen inkompatiblen extensions warnen
 
-
-wieso verbietet der compiler re-define/defun?
 
 die feature flags könnten ggf. "protocols" (siehe http://metamodular.com/protocol.pdf) aus/ einblenden
 -> zusammenspielende typen und funktionen sind ein "protocol"
