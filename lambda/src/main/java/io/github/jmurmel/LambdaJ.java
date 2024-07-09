@@ -1133,7 +1133,7 @@ public class LambdaJ {
             internWellknown(DEFMACRO);
             internWellknown(IF);
             internWellknown(LET);
-            internWellknown(LETSTAR);
+            symtab.intern(sLetStar);
             internWellknown(LETREC);
             internWellknown(MACROLET);
 
@@ -2311,7 +2311,8 @@ public class LambdaJ {
     /** well known symbols for the reserved symbols t, nil and dynamic, and for some special operators.
      *  Depending on the features given to {@link LambdaJ#LambdaJ} these may be interned into the symbol table. */
     static final LambdaJSymbol sT = new LambdaJSymbol(T, true), sNil = new LambdaJSymbol(NIL, true),
-                               sLambda = new LambdaJSymbol(LAMBDA, true), sLambdaDynamic = new LambdaJSymbol(LAMBDA_DYNAMIC, true), sProgn = new LambdaJSymbol(PROGN, true);
+                               sLambda = new LambdaJSymbol(LAMBDA, true), sLambdaDynamic = new LambdaJSymbol(LAMBDA_DYNAMIC, true),
+                               sLetStar = new LambdaJSymbol(LETSTAR, true), sProgn = new LambdaJSymbol(PROGN, true);
 
     /** some more well known symbols. These symbols are not reserved, the LambdaJSymbol objects could be used to store a macro closure, so the symbols must be instance members of LambdaJ. */
     final LambdaJSymbol sDynamic, sBit, sCharacter, sConditionHandler, sRandomState;
@@ -3443,6 +3444,12 @@ public class LambdaJ {
                 varargsMin(MULTIPLE_VALUE_BIND, ccArgs, 2);
                 if (car(ccArgs) == null) {
                     return expandForm(cons(sProgn, cdr(ccArgs)), macroEnv);
+                }
+                else if (consp(car(ccArgs)) && cdar(ccArgs) == null) {
+                    // transform multiple-value-bind forms binding a single variable into a let* form
+                    final ConsCell binding = cons(caar(ccArgs), cons(cadr(ccArgs), null));
+                    final Object letForm = ConsCell.listStar(sLetStar, cons(binding, null), cddr(ccArgs));
+                    return expandForm(letForm, macroEnv);
                 }
                 expandForms(MULTIPLE_VALUE_BIND, cdrShallowCopyList(MULTIPLE_VALUE_BIND, ccArgs), macroEnv);
                 checkLambdaList(MULTIPLE_VALUE_BIND, car(ccArgs));
