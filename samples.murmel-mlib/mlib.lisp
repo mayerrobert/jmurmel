@@ -1707,26 +1707,28 @@
 ;;;
 ;;; Similar to CL's `rotatef`.
 (defmacro rotatef places
-  (let* ((body (list ()))
-         (append-to body))
+  (if (cdr places)
+      (let* ((body (list ()))
+             (append-to body))
 
-    (destructuring-bind (vars vals stores setter first-reader) (get-setf-expansion (car places))
-      (let ((out (mapcar (lambda (x) (gensym "out")) stores)))
-        `(let* ,(mapcar list vars vals)
-           ,(let loop ((prev-stores stores) (prev-setter setter) (l (cdr places)) (append-to append-to))
+        (destructuring-bind (vars vals stores setter first-reader) (get-setf-expansion (car places))
+          (let ((out (mapcar (lambda (x) (gensym "out")) stores)))
+            `(let* ,(mapcar list vars vals)
+               ,(let loop ((prev-stores stores) (prev-setter setter) (l (cdr places)) (append-to append-to))
 
-              (destructuring-bind (vars vals stores setter reader) (get-setf-expansion (car l))
-                `(let* ,(mapcar list vars vals)
-                   (multiple-value-bind ,prev-stores ,reader
-                     ,(if (cdr l)
+                  (destructuring-bind (vars vals stores setter reader) (get-setf-expansion (car l))
+                    `(let* ,(mapcar list vars vals)
+                       (multiple-value-bind ,prev-stores ,reader
+                         ,(if (cdr l)
 
-                          (loop stores setter (cdr l) (cdr (rplacd append-to (list prev-setter))))
+                              (loop stores setter (cdr l) (cdr (rplacd append-to (list prev-setter))))
 
-                          `(multiple-value-bind ,stores ,first-reader
-                             ,@(cdr body)
-                             ,prev-setter
-                             ,setter
-                             nil)))))))))))
+                              `(multiple-value-bind ,stores ,first-reader
+                                 ,@(cdr body)
+                                 ,prev-setter
+                                 ,setter
+                                 nil))))))))))
+      nil))
 
 
 (macrolet (

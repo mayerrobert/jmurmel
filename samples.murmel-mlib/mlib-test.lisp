@@ -948,6 +948,12 @@ all the result list to a single list. FUNCTION must return a list."
 
 #+murmel (progn (define :foo ':foo) (define :bar ':bar))
 (tests rotatef
+  (rotatef) => nil
+
+  (let ((a 1))
+    (list (rotatef a) a))
+  => (nil 1)
+
   ;; from CLHS
   (let ((n 0)
         (x (list 'a 'b 'c 'd 'e 'f 'g)))
