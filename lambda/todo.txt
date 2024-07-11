@@ -1,6 +1,10 @@
 wieso verbietet der compiler re-define/defun?
 
 
+https://github.com/jOOQ/jOOR/blob/main/jOOR-java-8/src/main/java/org/joor/Compile.java hat ggf. einen gschickteren in-memory-compiler
+v.a. gschickteren ClassFileManager
+
+
 closures im compiler haben ein problem: die closure hält eine referenz auf den gesamten stackframe (das Object... array)
 und damit auf alle variablen und nicht nur auf die variablen über die eigentlich geclosed wird.
 -> dadurch kann der gc variablen die in keiner closure benötigt werden nicht freigeben -> speicherleck oder zumindest unnötiger speicherverbrauch 
@@ -17,10 +21,11 @@ https://github.com/forax/exotic/blob/master/src/main/java/com.github.forax.exoti
 https://news.ycombinator.com/item?id=39815714
 -> vielleicht (vector-push-front vec item) und (vector-pop-front vec)?
    -> ginge nur bei adjustable vector
-   -> und/ oder (vector-add vec item pos) und (vector-remove vec pos [n-elements]) -> item
+   -> und/ oder (vector-add vec item pos) und (vector-delete vec pos [n-elements]) -> item
       heisst: vector-add bekommt einen zus opt parameter, vector-delete wäre neu
 -> vector-delete in CL: https://news.ycombinator.com/item?id=39816525
 -> sollte vector-add auch einen vector/ sequence akzeptieren? weil z.b. StringBuilder.insert() kann das
+   -> nur sinnvoll wenn der elementtyp bekannt ist, sonst weiss man nicht ob die sequence das element ist das geadded werden soll  oder jedes element einzeln
 -> sollten push/pop auch (adjustable?) vector akzeptieren? oder sequence-push/ sequence-pop?
 
 deftest namedlet.8: the lifetime of i differs interpreter vs compiler
