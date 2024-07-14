@@ -736,6 +736,8 @@ multiline comment
   (define *g5* (+ a b)))
 (deftest mvb.10 *g5* 3.0)
 
+(deftest mvb.11 (multiple-value-bind (a b) (if t (values 1 2) (values 11 22)) (list a b)) '(1 2))
+
 
 ;;; multiple-value-call
 (deftest mvc.1 (multiple-value-call #'+) #+murmel 0.0 #-murmel 0)
