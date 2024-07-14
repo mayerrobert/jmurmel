@@ -6,6 +6,7 @@ Changes in JMurmel-1.4.8 relative to JMurmel-1.4.7
  * mlib: added shiftf, rotatef
 
  * fixed mlib: evaluation order in setf and psetf forms
+ * fixed mlib: various fixes re: value forms as places
 
 
 Changes in JMurmel-1.4.7 relative to JMurmel-1.4.6

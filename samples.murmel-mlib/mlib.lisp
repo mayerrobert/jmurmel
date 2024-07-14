@@ -1752,7 +1752,8 @@
                                                           ((atom (car delta-form))
                                                            `(,,@arg ,reader-form ,@delta-form))
                                                           (t
-                                                           `(,,@arg ,reader-form ,tmp)))))
+                                                           `(,,@arg ,reader-form ,tmp))))
+                                ,@(cdr store-vars)) ; bind remaining store-vars to nil as per "CLHS 5.1.2.3 VALUES Forms as Places"
                            ,writer-form)))))))
 
 
@@ -1835,7 +1836,8 @@
         (let ((tmpitem (gensym "item")))
           `(let* ((,tmpitem ,item) ; eval item before place, see http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/sec_5-1-1-1-1.html
                   ,@(mapcar list vars vals)
-                  (,(car store-vars) (cons ,tmpitem ,reader-form)))
+                  (,(car store-vars) (cons ,tmpitem ,reader-form))
+                  ,@(cdr store-vars)) ; bind remaining store-vars to nil as per "CLHS 5.1.2.3 VALUES Forms as Places"
              ,writer-form)))))
 
 
@@ -1855,7 +1857,8 @@
         (let ((tmpitem (gensym "item")))
           `(let* ((,tmpitem ,item) ; eval item before place, see http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/sec_5-1-1-1-1.html
                   ,@(mapcar list vars vals)
-                  (,(car store-vars) (adjoin ,tmpitem ,reader-form ,@test)))
+                  (,(car store-vars) (adjoin ,tmpitem ,reader-form ,@test))
+                  ,@(cdr store-vars)) ; bind remaining store-vars to nil as per "CLHS 5.1.2.3 VALUES Forms as Places"
              ,writer-form)))))
 
 
@@ -1875,7 +1878,8 @@
            ,result)
         (destructuring-bind (vars vals new writer-form reader-form) (get-setf-expansion place)
           `(let* (,@(mapcar list vars vals)
-                  (,@new (cdr ,reader-form))
+                  (,(car new) (cdr ,reader-form))
+                  ,@(cdr new) ; bind remaining store-vars to nil as per "CLHS 5.1.2.3 VALUES Forms as Places"
                   (,result (car ,reader-form)))
              ,writer-form
              ,result)))))

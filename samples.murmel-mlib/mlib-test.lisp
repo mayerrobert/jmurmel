@@ -1047,6 +1047,15 @@ all the result list to a single list. FUNCTION must return a list."
 )
 
 
+#-abcl ; abcl chokes on that
+(tests incf-values  
+  (let ((a 1) (b 2))
+    (incf (values a b))
+    (list a b))
+  => (2 nil)
+)
+
+
 ;; test evaluation order w/ incf, decf
 (tests inplace.evalorder
   (let ((i 10.0)) (decf i (decf i))) => 0.0
@@ -1152,6 +1161,24 @@ all the result list to a single list. FUNCTION must return a list."
 )
 
 
+#-abcl ; abcl chokes on these
+(tests push-pop-values
+  (let (l1 l2)
+    (list
+      (push 1 (values l1 l2))
+      l1
+      l2))
+  => ((1) (1) nil)
+
+  (let ((l1 '(1 11)) (l2 '(2 22)))
+    (list
+      (pop (values l1 l2))
+      l1
+      l2))
+  => (1 (11) nil)
+)
+
+
 (tests pushnew
  (setq x '(a (b c) d)) =>  (A (B C) D)
  (pushnew 5 (cadr x)) =>  (5 B C)
@@ -1167,6 +1194,17 @@ all the result list to a single list. FUNCTION must return a list."
 
  ;(pushnew '(1) lst :key #'car) =>  ((1) (2) (1) (1 2) (1 2 3))             ; CL has :key, Murmel does not
  (pushnew '(1) lst #-murmel :test (lambda (l r) (eql (car l) (car r)))) =>  ((1) (2) (1) (1 2) (1 2 3))
+)
+
+
+#-abcl ; abcl chokes on that
+(tests pushnew-values
+  (let ((l1 '(1)) (l2 '(2)))
+    (list
+      (pushnew 1 (values l1 l2))
+      l1
+      l2))
+  => ((1) (1) nil)
 )
 
 
