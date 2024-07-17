@@ -5,11 +5,11 @@
         <groupId>io.github.jmurmel</groupId>
         <artifactId>jmurmel-all</artifactId>
         <relativePath>../pom.xml</relativePath>
-        <version>1.4.8-SNAPSHOT</version>
+        <version>1.4.8</version>
     </parent>
 
     <artifactId>scripts</artifactId>
-    <version>1.4.8-SNAPSHOT</version>
+    <version>1.4.8</version>
     <packaging>pom</packaging>
 
     <properties>

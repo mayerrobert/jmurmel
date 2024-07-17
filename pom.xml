@@ -3,7 +3,7 @@
 
     <groupId>io.github.jmurmel</groupId>
     <artifactId>jmurmel-all</artifactId>
-    <version>1.4.8-SNAPSHOT</version>
+    <version>1.4.8</version>
     <packaging>pom</packaging>
 
     <description>Murmel interpreter/ compiler</description>
@@ -20,7 +20,7 @@
         <url>https://github.com/mayerrobert/jmurmel/blob/master</url>
         <connection>scm:git:git://github.com/mayerrobert/jmurmel.git</connection>
         <developerConnection>scm:git:git@github.com:mayerrobert/jmurmel.git</developerConnection>
-        <tag>HEAD</tag>
+        <tag>jmurmel-all-1.4.8</tag>
     </scm>
 
     <properties>
@@ -329,7 +329,7 @@
                                 <requireMavenVersion>
                                     <version>3.6.3</version>
                                 </requireMavenVersion>
-                                <requirePluginVersions/>
+                                <requirePluginVersions />
                             </rules>
                         </configuration>
                     </execution>
