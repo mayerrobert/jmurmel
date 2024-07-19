@@ -242,7 +242,7 @@
 
 
 ;;; = Macro: case
-;;;      (case keyform (keys forms*)* (t forms*)?) -> result
+;;;      (case keyform (keys forms*)* [(t forms*)]) -> result
 ;;;
 ;;; Since: 1.1
 ;;;
@@ -293,7 +293,7 @@
 
 
 ;;; = Macro: typecase
-;;;      (typecase keyform (type forms*)* (t forms*)?) -> result
+;;;      (typecase keyform (type forms*)* [(t forms*)]) -> result
 ;;;
 ;;; Since: 1.3
 ;;;
@@ -513,7 +513,7 @@
 
 
 ;;; = Function: last
-;;;     (last lst n?) -> tail
+;;;     (last lst [n]) -> tail
 ;;;
 ;;; Since: 1.2
 ;;;
@@ -1185,7 +1185,7 @@
 
 
 ;;; = Function: butlast
-;;;     (butlast lst n?) -> result-list
+;;;     (butlast lst [n]) -> result-list
 ;;;
 ;;; Since: 1.4.5
 ;;;
@@ -1218,7 +1218,7 @@
 
 
 ;;; = Function: nbutlast
-;;;     (nbutlast lst n?) -> result-list
+;;;     (nbutlast lst [n]) -> result-list
 ;;;
 ;;; Since: 1.4.5
 ;;;
@@ -1660,7 +1660,7 @@
 
 
 ;;; = Macro: shiftf
-;;;     (shiftf place+ newvalue) -> old-values-1
+;;;     (shiftf place+ newvalues) -> old-values-1
 ;;;
 ;;; Since: 1.4.8
 ;;;
@@ -1758,8 +1758,8 @@
 
 
 ;;; = Macro: incf, decf
-;;;     (incf place delta-form*) -> new-value
-;;;     (decf place delta-form*) -> new-value
+;;;     (incf place [delta-form]) -> new-value
+;;;     (decf place [delta-form]) -> new-value
 ;;;
 ;;; Since: 1.1
 ;;;
@@ -1777,8 +1777,8 @@
 
 
 ;;; = Macro: *f, /f
-;;;     (*f place delta-form*) -> new-value
-;;;     (/f place delta-form*) -> new-value
+;;;     (*f place [delta-form]) -> new-value
+;;;     (/f place [delta-form]) -> new-value
 ;;;
 ;;; Since: 1.1
 ;;;
@@ -1799,16 +1799,16 @@
 
 
 ;;; = Macro: +f, -f
-;;;     (+f place delta-form*) -> new-value
-;;;     (-f place delta-form*) -> new-value
+;;;     (+f place [delta-form]) -> new-value
+;;;     (-f place [delta-form]) -> new-value
 ;;;
 ;;; Since: 1.1
 ;;;
 ;;; `+f` and `+f` are used for adding and subtracting
 ;;; to/ from the value of `place`, respectively.
 ;;;
-;;; The delta is added (in the case of `*f`) to
-;;; or subtracted (in the case of `/f`) from the number in `place`
+;;; The delta is added (in the case of `+f`) to
+;;; or subtracted (in the case of `-f`) from the number in `place`
 ;;; and the result is stored in `place`.
 ;;;
 ;;; Without `delta-form` `-f` will return the negation of the number in `place`,

@@ -500,7 +500,7 @@ pi ; ==> 3.141592653589793
 
 ;;; == Additional Special Forms =======
 
-;;; = (define symbol optional-object?) -> symbol
+;;; = (define symbol [optional-object]) -> symbol
 ;
 ; `define` binds symbols in the global environment with
 ; memory locations that hold values.
@@ -519,7 +519,7 @@ pi ; ==> 3.141592653589793
 
 ; `define` forms can appear inside toplevel `let, let*, letrec, multiple-value-bind` forms.
 
-;;; = (defun symbol (params\*) docstring? forms\*) -> symbol
+;;; = (defun symbol (params\*) [docstring] forms\*) -> symbol
 ;
 ; `defun` is a shorthand for defining functions:
 ;
@@ -550,7 +550,7 @@ pi ; ==> 3.141592653589793
 (pre-decrement-counter)  ; ==> 1
 (peek-counter)  ; ==> 1
 
-;;; = (defmacro name (params\*) docstring? forms\*) -> symbol<br/>(defmacro name) -> prev-name
+;;; = (defmacro name (params\*) [docstring] forms\*) -> symbol<br/>(defmacro name) -> prev-name
 ;
 ; `defmacro` defines a macro, similar to CL's `defmacro`.
 ; Macros are somewhat similar to functions:
@@ -585,7 +585,7 @@ pi ; ==> 3.141592653589793
 (let ((b nil) (c nil))
   (setq a 1 b 2 c (+ a b))) ; ==> 3.0
 
-;;; = (if condform form optionalform?) -> result
+;;; = (if condform form [optionalform]) -> result
 
 (if nil 'YASSS! 'OHNOOO!!!) ; ==> OHNOOO!!!
 
@@ -593,12 +593,12 @@ pi ; ==> 3.141592653589793
 
 (if t (progn (write 'abc) (write 'def)))
 
-;;; = (cond (condform forms\*)\* (t forms\*)?) -> result
+;;; = (cond (condform forms\*)\* [(t forms\*)]) -> result
 
 ;;; = (labels ((symbol (params\*) forms\*)\*) forms\*) -> result
 ;
 
-;;; = (let optsymbol? ((symbol bindingform)\*) bodyforms\*) -> result
+;;; = (let [optsymbol] ((symbol bindingform)\*) bodyforms\*) -> result
 ;
 ; Works similar to CL's `let` with the addition
 ; of Scheme's "named let".
@@ -634,7 +634,7 @@ pi ; ==> 3.141592653589793
 (f)
 ; will print `(1 . 2)(11 . 1)(1 . 2)`.
 
-;;; = (let* optsymbol? ((symbol bindingform)\*) bodyforms\*) -> result
+;;; = (let* [optsymbol] ((symbol bindingform)\*) bodyforms\*) -> result
 ;
 ; Works like `let` (see above) with the addition:
 ; each `bindingform` "sees" the previous symbols. If multiple
@@ -661,7 +661,7 @@ pi ; ==> 3.141592653589793
 (let* dynamic ((*g* 'temp)) (fun)) ; fun will write temp
 *g* ; ==> 'global
 
-;;; = (letrec optsybol? ((symbol bindingform)\*) bodyforms\*) -> result
+;;; = (letrec [optsybol] ((symbol bindingform)\*) bodyforms\*) -> result
 ;
 ; `letrec` works like `let` and `let*` except each bindingform "sees"
 ; all other let symbols as well as it's own symbol.
@@ -672,7 +672,7 @@ pi ; ==> 3.141592653589793
 (letrec ((x 1) (y (+ x 1))) (write y))
 
 
-;;; = (macrolet ((symbol params docstring? forms)\*) forms\*) -> result
+;;; = (macrolet ((symbol params [docstring] forms)\*) forms\*) -> result
 ;
 ; Since: 1.4.7
 ;
@@ -1215,7 +1215,7 @@ pi ; ==> 3.141592653589793
 
 ; = read
 ;
-;     (read eof-obj?) -> obj
+;     (read [eof-obj]) -> obj
 ;
 ; Read an S-expression from stdin.
 ;
@@ -1268,7 +1268,7 @@ pi ; ==> 3.141592653589793
 (writeln "Hello, World!" nil)
 
 
-; = (write-to-string obj print-escape-p?) -> result-string
+; = (write-to-string obj [print-escape-p]) -> result-string
 ;
 ; Since: 1.4
 ;
@@ -1537,13 +1537,13 @@ pi ; ==> 3.141592653589793
 (< 1 2 3.0 4 5.0) ; ==> t
 (< 1 2 3 3 4 5)   ; ==> nil
 
-; = (random limit random-state?) -> random-number
+; = (random limit [random-state]) -> random-number
 ;
 ; Since: 1.4.3
 ;
 ; Similar to CL's `random`.
 
-; = (make-random-state state?) -> new-state
+; = (make-random-state [state]) -> new-state
 ;
 ; Since: 1.4.3
 ;
