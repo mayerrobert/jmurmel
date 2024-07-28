@@ -53,7 +53,5 @@
 (time
   (let ((store (make-array (+winSize+))))
     (dotimes (i (+msgCount+)) (push-message store i))
-    #+murmel (jformat t "Worst push time: %.3f ms%n" (* *worst* 1e3))
-    #-murmel (format t "Worst push time: ~,3F ms~%" (* *worst* 1e3))
-  )
+    (format t "Worst push time: ~,3F ms~%" (* *worst* 1e3)))
 )

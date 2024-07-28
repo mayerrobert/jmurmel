@@ -131,8 +131,7 @@
 (define *s* '((append *x* *y*)))
 
 (defun test-double-backquote (expression value)
-  #+murmel (jformat t "%nTesting: %s... " expression)
-  #-murmel (format t "~&Testing: ~A... " expression)
+  (format t "~&Testing: ~A... " expression)
 
   (assert-equal value
                 (eval (eval (read-from-string expression))))

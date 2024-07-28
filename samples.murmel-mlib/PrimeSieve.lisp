@@ -94,9 +94,5 @@
 
 (let* ((duration (/ (- (get-internal-real-time) *start*) internal-time-units-per-second))
        (avg (/ duration *passes*)))
-  #+murmel (jformat t "passes: %d, count: %d, avg: %f%n" *passes* (floor (count-primes)) avg)
-  #+murmel (jformat t "murmel;%d;%f;1;algorithm=base,faithful=no,bits=unknown%n" *passes* duration)
-
-  #-murmel (format t "passes: ~d, count: ~d, avg: ~f~%" *passes* (count-primes) avg)
-  #-murmel (format t "sbcl;~d;~f;1;algorithm=base,faithful=no,bits=unknown~%" *passes* duration)
-  )
+  (format t "passes: ~d, count: ~d, avg: ~f~%" *passes* (count-primes) avg)
+  (format t "array;~d;~f;1;algorithm=base,faithful=no,bits=unknown~%" *passes* duration))

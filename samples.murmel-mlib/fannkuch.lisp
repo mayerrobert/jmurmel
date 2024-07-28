@@ -44,8 +44,7 @@
                                 (setf (svref perm m) temp)))))))
 
         (do-iter n))
-      #-murmel (format t "~s~%Pfannkuchen(~s) = ~s~%" csum n fmax)
-      #+murmel (jformat t "%s%nPfannkuchen(%s) = %s%n" csum n fmax)
+      (format t "~s~%Pfannkuchen(~s) = ~s~%" csum n fmax)
       ))
 
 
