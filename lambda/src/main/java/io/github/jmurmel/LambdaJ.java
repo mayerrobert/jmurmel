@@ -12050,13 +12050,13 @@ public class LambdaJ {
 
 
         private void emitVectorLiteral(WrappingWriter sb, Object form) {
-            if (form instanceof String) { emitStringLiteral(sb, (String)form); }
+            if (form instanceof CharSequence) { emitStringLiteral(sb, (CharSequence)form); }
             else if (form instanceof Object[]) { emitSimpleVectorLiteral(sb, (Object[])form); }
             else if (form instanceof boolean[]) { emitSimpleBitVectorLiteral(sb, (boolean[])form); }
             else errorInternal("emitVectorLiteral: " + VECTOR + " type %s is not implemented", form.toString());
         }
 
-        private static void emitStringLiteral(WrappingWriter sb, String form) { sb.append('"'); stringToJava(sb, form, -1); sb.append('"'); }
+        private static void emitStringLiteral(WrappingWriter sb, CharSequence form) { sb.append('"'); stringToJava(sb, form, -1); sb.append('"'); }
 
         private void emitSimpleVectorLiteral(WrappingWriter sb, Object[] form) {
             final StringWriter b = new StringWriter();
