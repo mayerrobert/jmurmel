@@ -51,7 +51,7 @@
 ; Each constructor-function will take one string argument.
 ; (Why copy&paste one line when you can create a macro that does the same :-)
 (defmacro stringarg-constructor (name class)
-  `(define ,name (jmethod ,(format nil "javax.swing.%s" class) "new" "String")))
+  `(define ,name (jmethod ,(jformat nil "javax.swing.%s" class) "new" "String")))
 
 (stringarg-constructor make-jframe "JFrame")
 (stringarg-constructor make-jlabel "JLabel")

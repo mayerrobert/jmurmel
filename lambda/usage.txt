@@ -86,7 +86,7 @@ Feature flags:
 --no-hash .....  no hash-table support
 --no-io .......  no primitive functions read, write, writeln, lnwrite,
 --no-util .....  no primitive functions consp, symbolp, listp, null, error,
-                 append, assoc, assq, list, list*, format, format-locale,
+                 append, assoc, assq, list, list*, jformat, jformat-locale,
                  no time related primitives or symbols
                  no symbol *features*
 

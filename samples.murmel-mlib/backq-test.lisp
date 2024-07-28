@@ -59,9 +59,9 @@
   (setq *success-count* (1+ *success-count*))
   (unless (equal expected actual)
     (writeln)
-    (format t "assert-equal failed: ") (writeln msg)
-    (format t "expected: ") (writeln expected t)
-    (format t "actual:   ") (writeln actual t)
+    (princ "assert-equal failed: ") (writeln msg)
+    (princ "expected: ") (writeln expected t)
+    (princ "actual:   ") (writeln actual t)
     (setq *error-count* (1+ *error-count*))
     nil))
 
@@ -131,16 +131,14 @@
 (define *s* '((append *x* *y*)))
 
 (defun test-double-backquote (expression value)
-  #+murmel (format t "Testing: %s... " expression)
+  #+murmel (jformat t "%nTesting: %s... " expression)
   #-murmel (format t "~&Testing: ~A... " expression)
 
   (assert-equal value
                 (eval (eval (read-from-string expression))))
 
-  #+murmel (format t "Ok. Look at PRINTed version: %n%s%n" (read-from-string expression))
-  #-murmel (progn
-             (format t "Ok. Look at PPRINTed version: ")
-             (pprint (read-from-string expression))))
+  (princ "Ok. Look at PPRINTed version: ")
+  (pprint (read-from-string expression)))
 
 (define *backquote-tests*
   '(("``(,,*QQ*)" . (24.0))
@@ -170,11 +168,11 @@
 ;;; print succeeded and failed tests if any
 
 (writeln) (writeln)
-(write *error-count*) (format t "/") (write *success-count*) (format t " test(s) failed")
+(write *error-count*) (princ "/") (write *success-count*) (princ " test(s) failed")
 (writeln)
 (if (= 0 *error-count*)
-      (format t "Success.")
-  (format t "Failure."))
+      (princ "Success.")
+  (princ "Failure."))
 (writeln)
 
 

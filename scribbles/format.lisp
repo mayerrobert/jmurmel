@@ -70,7 +70,7 @@
   (cl:subseq str start end))
 
 ;; limited to: transform a Java format string for floats back to a CL format string
-(defun format-locale (os locale str cl:&rest args)
+(defun jformat-locale (os locale str cl:&rest args)
   (cl:declare (cl:ignore locale))
   (cl:nsubstitute #\~ #\% str)
   (cl:nsubstitute #\, #\. str)
@@ -175,7 +175,7 @@
 ;; semi-private: used by the expansion of 'formatter'
 (defun m%print-float (arguments output-stream jformat-string)
   (if (floatp (car arguments))
-      (format-locale output-stream "en-US" jformat-string (car arguments))
+      (jformat-locale output-stream "en-US" jformat-string (car arguments))
       (write (car arguments) nil output-stream))
   (cdr arguments))
 
@@ -471,13 +471,13 @@
 
             (labels ((do-float (c arg)
                        (if (floatp arg)
-                           (format-locale output-stream "en-US" (m%float-fmtstring) arg)
+                           (jformat-locale output-stream "en-US" (m%float-fmtstring) arg)
                            (write arg nil output-stream))
                        (setq arguments (cdr arguments)))
 
                      (do-general-float (c arg)
                        (if (and (floatp arg) params)
-                           (format-locale output-stream "en-US" (m%float-fmtstring) arg)
+                           (jformat-locale output-stream "en-US" (m%float-fmtstring) arg)
                            (progn
                              (and atp (floatp arg) (>= arg 0) (write #\+ nil output-stream))
                              (write arg nil output-stream)))

@@ -56,7 +56,7 @@ public class LambdaJBenchmark {
             "(labels ((factTR (n a)\r\n" +
             "                 (cond ((= n 0) a)\r\n" +
             "                       (t (factTR (- n 1) (* n a))))))\r\n" +
-            "        (format-locale nil \"en-US\" \"Factorial of 50 is %g\" (factTR 50.0 1.0)))";
+            "        (jformat-locale nil \"en-US\" \"Factorial of 50 is %g\" (factTR 50.0 1.0)))";
 
     public static final String TAK =
             "(labels ((tak´ (x y z)\n"

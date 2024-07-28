@@ -90,7 +90,7 @@
 (defun armsp (n)
   "Return true if 'n' is an Armstrong number."
   (labels ((number->digit-list (n)
-             (string->list (format nil "%d" n)))
+             (string->list (jformat nil "%d" n)))
            (char->number (c)
              (- (char-code c) (char-code #\0))))
 

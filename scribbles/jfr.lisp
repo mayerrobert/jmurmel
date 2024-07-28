@@ -142,7 +142,7 @@
     (testfunc i)
     (if (< i 10)
          (loop (1+ i))
-      (jfr-end event (format nil "The loop is done, %d iterations" i)))))
+      (jfr-end event (jformat nil "The loop is done, %d iterations" i)))))
 
 
 

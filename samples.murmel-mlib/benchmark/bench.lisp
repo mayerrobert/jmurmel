@@ -76,15 +76,13 @@
 (defun do-bench (name f ref)
   (setq *min* 1e30 *max* 0)
 
-  (format t
-          #+murmel "%s result: %s%n"
-          #-murmel "~A result: ~A~%"
-          name (#-murmel funcall f))
+  #+murmel (jformat t "%s result: %s%n" name (f))
+  #-murmel (format t "~A result: ~A~%" name (funcall f))
 
   (if (> *warmup-duration* 0)
     (progn
       (do-run f 1 (+ (get-internal-real-time) (* *warmup-duration* internal-time-units-per-second)) nil)
-      (format t "warmup done.")
+      (princ "warmup done.")
       #+murmel (writeln)
       #-murmel (terpri)))
 
@@ -102,7 +100,7 @@
          (iterations-per-second (/ count elapsed-seconds))
          (seconds-per-iteration (/ elapsed-seconds count))
          (weighted-avg (/ seconds-per-iteration ref 0.001)))
-    (format t
+    (#+murmel jformat #-murmel format t
             #+murmel "%s: did %d iterations in %g seconds walltime, %g iterations/second, avg/min/max %g/%g/%g milliseconds/iteration%n"
             #-murmel "~A: did ~D iterations in ~F seconds walltime, ~F iterations/second, avg/min/max ~F/~F/~F milliseconds/iteration~%"
             name count elapsed-seconds iterations-per-second (* 1000 seconds-per-iteration) (/ *min* internal-per-ms *count-per-try*) (/ *max* internal-per-ms *count-per-try*))

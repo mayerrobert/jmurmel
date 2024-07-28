@@ -166,7 +166,7 @@
     (progn
       (inc-failed)
       (write msg)
-      #+murmel (format t " tequal test failed, expected '%s', got unexpected result '%s'%n" (write-to-string expected-result) (write-to-string result))
+      #+murmel (jformat t " tequal test failed, expected '%s', got unexpected result '%s'%n" (write-to-string expected-result) (write-to-string result))
       #-murmel (format t " tequal test failed, expected '~A', got unexpected result '~A'~%" expected-result result))))
 
 
@@ -766,8 +766,8 @@ multiline comment
 (deftest eval.2 (#-murmel funcall intp) '|hello from interpreter|)
 
 #+murmel
-(deftest eval.3 ((eval '(lambda (x) (format nil "%s" x))) '|interpreted format|) "interpreted format")
-(deftest eval.4 (#-murmel funcall (eval '(lambda (x) (format nil #+murmel "%s" #-murmel "~A" x))) '|interpreted format|) "interpreted format")
+(deftest eval.3 ((eval '(lambda (x) (jformat nil "%s" x))) '|interpreted jformat|) "interpreted jformat")
+(deftest eval.4 (#-murmel funcall (eval '(lambda (x) (#+murmel jformat #-murmel format nil #+murmel "%s" #-murmel "~A" x))) '|interpreted format|) "interpreted format")
 
 ; invoke x in the tailposition. This used to break the compiler.
 (deftest eval.5
@@ -916,7 +916,7 @@ multiline comment
                       (predicate (car predicates))
                       (expected (car expected-results))
                       (actual (apply predicate (list value))))
-                 #+murmel (assert-equal expected actual (format nil "(%s %s)" name value))
+                 #+murmel (assert-equal expected actual (jformat nil "(%s %s)" name value))
 
                  #-murmel (assert-equal expected actual (format nil "(~A ~A)" name value))
 
@@ -960,13 +960,13 @@ multiline comment
 
 #+murmel (progn  ; sbcl stackoverflows on these
 (define *l* (list 1 2 3 4 5))
-(deftest rplaca.1 (format nil "%s" (rplaca (cdr *l*) *l*)) "((1 #<this list> 3 4 5) 3 4 5)")
-(deftest rplaca.2 (format nil "%s" *l*) "(1 #<this list> 3 4 5)")
+(deftest rplaca.1 (jformat nil "%s" (rplaca (cdr *l*) *l*)) "((1 #<this list> 3 4 5) 3 4 5)")
+(deftest rplaca.2 (jformat nil "%s" *l*) "(1 #<this list> 3 4 5)")
 
 ; test modifying the varargs parameter which in compiled code is different from a regular ConsCell based list
 (defun func l
   (rplaca (cdr l) l)
-  (format nil "%s" l))
+  (jformat nil "%s" l))
 (deftest rplaca.3 (func 11 22 33 44 55) "(11 #<this list> 33 44 55)")
 )
 
@@ -1546,7 +1546,7 @@ multiline comment
 (labels ((looop (cnd-types) ; can't use "loop" because of CL's "Lock on package COMMON-LISP"
            (if cnd-types
                (let ((cnd-type (car cnd-types)))
-                 ;;(format t "condition %s%n" cnd-type)
+                 ;;(jformat t "condition %s%n" cnd-type)
                  (deftest cnd.X.1 (typep (get-condition (error cnd-type)) cnd-type) t)
                  (deftest cnd.X.2 (typep (get-condition (fling cnd-type)) cnd-type) t)
                  (looop (cdr cnd-types))))))
@@ -1574,9 +1574,10 @@ multiline comment
 (deftest read-error.15 (typep (get-condition (read-from-string "`,@aaa"))          'reader-error) t)  ; , not inside a backquote
 
 
-#-sbcl ;; sbcl swallows this error
-(deftest typep.1 (signals-error (typep nil 'xyxxy) error) t) 
-(deftest typep.2 (signals-error (typep 1 'xyxxy) error) t) 
+#-sbcl ;; sbcl swallows these errors
+(progn
+  (deftest typep.1 (signals-error (typep nil 'xyxxy) error) t) 
+  (deftest typep.2 (signals-error (typep 1 'xyxxy) error) t)) 
 
 
 
@@ -1725,10 +1726,12 @@ multiline comment
 
 ; *******************************************************************
 ;;; Print tests summary
-(write *failed*) (format t "/") (write *count*) (format t " test(s) failed")
+(write *failed*) (write "/" #-murmel :escape nil) (write *count*) (write " test(s) failed" #-murmel :escape nil)
 (writeln)
-(if (= 0 *failed*)
-    (format t "Success.")
-    (format t "Failure."))
+(write
+  (if (= 0 *failed*)
+      "Success."
+      "Failure.")
+  #-murmel :escape nil)
 
 #+murmel (if (> *failed* 0) (error "%d/%d errors" *failed* *count*))

@@ -80,9 +80,9 @@ all the result list to a single list. FUNCTION must return a list."
   (setq *success-count* (1+ *success-count*))
   (unless (equal expected actual)
     (writeln)
-    (format t "assert-equal failed: ") (writeln msg)
-    (format t "expected: ") (writeln expected t)
-    (format t "actual:   ") (writeln actual t)
+    (princ "assert-equal failed: ") (writeln msg)
+    (princ "expected: ") (writeln expected t)
+    (princ "actual:   ") (writeln actual t)
     (setq *error-count* (1+ *error-count*))
     nil))
 
@@ -770,7 +770,7 @@ all the result list to a single list. FUNCTION must return a list."
   (dolist (temp-one '(1 2 3 4)) #-murmel (declare (ignore temp-one)) (inc-var temp-two)) => nil
   temp-two => 4
 
-  (dolist (x '(a b c d)) (write x) (format t " ")) => nil ; >>  A B C D , => NIL
+  (dolist (x '(a b c d)) (write x) (princ " ")) => nil ; >>  A B C D , => NIL
 
   (dolist (x '(1 2 3)) 'last-form)         => nil
   (dolist (x '(1 2 3) 'result) 'last-form) => result
@@ -1975,11 +1975,11 @@ all the result list to a single list. FUNCTION must return a list."
 ;;; print succeeded and failed tests if any
 
 (writeln) (writeln)
-(write *error-count*) (format t "/") (write *success-count*) (format t " test(s) failed")
+(write *error-count*) (princ "/") (write *success-count*) (princ " test(s) failed")
 (writeln)
 (if (= 0 *error-count*)
-      (format t "Success.")
-  (format t "Failure."))
+      (princ "Success.")
+  (princ "Failure."))
 (writeln)
 
 

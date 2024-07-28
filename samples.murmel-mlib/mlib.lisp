@@ -2948,7 +2948,7 @@
          (tend-run (get-internal-run-time))
          (secs-real (/ (- tend-real tstart-real) internal-time-units-per-second))
          (secs-run  (/ (- tend-run  tstart-run) internal-time-units-per-second)))
-    (format t "Evaluation took:%n  %g seconds of real time%n  %g seconds of total run time%n" secs-real secs-run)
+    (jformat t "Evaluation took:%n  %g seconds of real time%n  %g seconds of total run time%n" secs-real secs-run)
     result))
 
 

@@ -45,7 +45,7 @@
 
         (do-iter n))
       #-murmel (format t "~s~%Pfannkuchen(~s) = ~s~%" csum n fmax)
-      #+murmel (format t "%s%nPfannkuchen(%s) = %s%n" csum n fmax)
+      #+murmel (jformat t "%s%nPfannkuchen(%s) = %s%n" csum n fmax)
       ))
 
 

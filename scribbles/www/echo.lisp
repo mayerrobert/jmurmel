@@ -37,15 +37,15 @@
 
 (writeln "<HTML>" nil)
 
-(format t "<p>Remote address: %s%n" *remote-address*)
-(format t "<p>Request method: %s%n" *request-method*)
-(format t "<p>Query string: ")
+(jformat t "<p>Remote address: %s%n" *remote-address*)
+(jformat t "<p>Request method: %s%n" *request-method*)
+(jformat t "<p>Query string: ")
 (write-escaped-string *query-string*)
 (writeln)
 
-(format t "<p>Request URI: ")
+(write "<p>Request URI: " nil)
 (write-escaped-string *request-uri*)
 (writeln)
 
-(format t "<p>Request headers: ")
+(write "<p>Request headers: " nil)
 (write *request-headers*)

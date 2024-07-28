@@ -369,9 +369,9 @@ A [Quine](http://rosettacode.org/wiki/Quine#Lisp)
     ==> ((lambda (x) (list x (list (quote quote) x))) (quote (lambda (x) (list x (list (quote quote) x)))))
     JMurmel>
 
-write, format
+write, jformat
 
-    JMurmel> (write (format nil "%s, World!%n" "Hello") nil)
+    JMurmel> (write (jformat nil "%s, World!%n" "Hello") nil)
     Hello, World!
     
     ==> "Hello, World!
@@ -383,7 +383,7 @@ Tail recursion, locale dependent number formatting
                               (if (= n 0)
                                   a
                                   (factTR (- n 1) (* n a)))))
-     (write (format-locale nil "en-US" "Factorial of 50 is %g" (factTR 50 1))))
+     (write (jformat-locale nil "en-US" "Factorial of 50 is %g" (factTR 50 1))))
     "Factorial of 50 is 3.04141e+64"
     ==> t
 
@@ -408,7 +408,7 @@ JMurmel supports the special forms:
 * `define` ... inserts a (symbol value) pair into the top level environment, returns `value`.
   E.g.
     - `(define *answer* 42)`
-    - or `(define print-answer (lambda () (write (string-format "%2.2g" *answer*))))`
+    - or `(define print-answer (lambda () (write (jformat nil "%2.2g" *answer*))))`
 * `defun` ... `(<symbol> (<params>*) <bodyform>*)`, e.g. `(defun addone (n) (+ n 1))`
 * `let, let <symbol> ` (i.e. named let)`, let*, letrec, progn`
 * `setq`

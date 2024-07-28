@@ -191,8 +191,8 @@ read
 write
 writeln
 lnwrite
-format
-format-locale
+jformat
+jformat-locale
 
 make-frame
 open-frame

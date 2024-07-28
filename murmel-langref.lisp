@@ -53,13 +53,13 @@
 ;;;
 ;;; "Hello, World!" program written in Murmel:
 
-(format t "Hello, World!")
+(jformat t "Hello, World!")
 
 ;;; The program text above when run in the REPL should print the famous
 ;;;
 ;;;     Hello, World!
 ;;;
-;;; followed by the result of `format`
+;;; followed by the result of `jformat`
 ;;;
 ;;;     ==> nil
 ;;;
@@ -199,7 +199,7 @@ t   ; ==> t
 ; > T is a symbol and the default "true" value used by predicates that
 ; > are not semi-predicates (i.e., that don’t return "meaningful" values
 ; > when they are true.) EVAL of T is T. T may not be used as a variable.
-; > T is a keyword recognized by certain functions, such as FORMAT.
+; > T is a keyword recognized by certain functions, such as JFORMAT.
 
 
 ; = internal-time-units-per-second
@@ -752,7 +752,7 @@ pi ; ==> 3.141592653589793
 ; which make up an implicit progn.
 
 (multiple-value-bind (a b) (values 'Hello\, '\ World!)
-  (format nil "%s%s" a b))
+  (jformat nil "%s%s" a b))
 ;     ==> "Hello, World!"
 
 (multiple-value-bind (a b . c) (values 1 2 3 4 5)
@@ -1342,29 +1342,29 @@ pi ; ==> 3.141592653589793
 ; will be written as the OS-dependent line-end character(-sequence).
 
 
-; = (format dest formatstr args*), (format-locale dest locale formatstr args*)
+; = (jformat dest formatstr args*), (jformat-locale dest locale formatstr args*)
 ;
 ; The first argument `dest` can be `t`, `nil` or an adjustable string.
 ;
-; `format t` writes a formatted string to stdout and returns `nil`.
-; `format`'s parameters work as with `java.lang.String.format()`
+; `jformat t` writes a formatted string to stdout and returns `nil`.
+; `jformat`'s parameters work as with `java.lang.String.jformat()`
 ; which is similar to C's `printf()`.
 
-(format t
+(jformat t
   "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-; `format-locale` works similar to format except it has an additional
+; `jformat-locale` works similar to jformat except it has an additional
 ; second string parameter that should be a locale, `nil` means use Java's
 ; default locale.
 
-(format-locale t "de-DE"
+(jformat-locale t "de-DE"
   "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
-; `format nil` and `format-locale nil` work similar
-; to `format t` and `format-locale t` except they don't write to stdout
+; `jformat nil` and `jformat-locale nil` work similar
+; to `jformat t` and `jformat-locale t` except they don't write to stdout
 ; but return the string.
 
-(format-locale nil "de-DE"
+(jformat-locale nil "de-DE"
   "a string: %s, a number: %g, a newline:%n" "The String" 3.14)
 
 

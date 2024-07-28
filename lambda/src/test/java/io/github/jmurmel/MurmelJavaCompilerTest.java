@@ -430,9 +430,9 @@ public class MurmelJavaCompilerTest {
 
     @Test
     public void testFormat() throws Exception {
-        final MurmelProgram program = compile("(format-locale nil \"de-DE\" \"Hello, World!\")");
-        assertNotNull("failed to compile format to class", program);
-        assertEquals("format produced wrong result", "\"Hello, World!\"", TestUtils.sexp(program.body()));
+        final MurmelProgram program = compile("(jformat-locale nil \"de-DE\" \"Hello, World!\")");
+        assertNotNull("failed to compile jformat to class", program);
+        assertEquals("jformat produced wrong result", "\"Hello, World!\"", TestUtils.sexp(program.body()));
     }
 
     @Test

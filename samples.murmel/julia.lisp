@@ -86,8 +86,8 @@
     (if (< x (1- w)) (xloop (1+ x))))
   
   (flush-frame)
-  (format t "CX: %g%nCX: %g%n" cx cy)
-  (format t "Used CPU: %g ms%n" (/ (- (get-internal-run-time) *start*)
+  (jformat t "CX: %g%nCX: %g%n" cx cy)
+  (jformat t "Used CPU: %g ms%n" (/ (- (get-internal-run-time) *start*)
                                    (/ internal-time-units-per-second 1000)))))
 
 (define *l* '((-0.7 . 0.27015)

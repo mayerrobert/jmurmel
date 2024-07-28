@@ -18,7 +18,7 @@
   (if l 
         (progn (writeln (car l))
                (pr-hanoi (cdr l)))
-    (format t "Done.")))
+    (jformat t "Done.")))
 
 ;;; end Murmel additions
 

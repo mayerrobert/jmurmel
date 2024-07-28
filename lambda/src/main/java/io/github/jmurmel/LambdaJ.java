@@ -2491,8 +2491,8 @@ public class LambdaJ {
         sWrite("write", Features.HAVE_IO, 1, 3)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(args, 2, intp.getLispPrinter()), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
-        sFormat("format", Features.HAVE_UTIL, 2, -1)                   { @Override Object apply(LambdaJ intp, ConsCell args) { return format(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
-        sFormatLocale("format-locale", Features.HAVE_UTIL,3,-1)        { @Override Object apply(LambdaJ intp, ConsCell args) { return formatLocale(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
+        sJFormat("jformat", Features.HAVE_UTIL, 2, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return Subr.jformat(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
+        sJFormatLocale("jformat-locale", Features.HAVE_UTIL,3,-1)      { @Override Object apply(LambdaJ intp, ConsCell args) { return jformatLocale(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
 
         // misc
         sValues(VALUES, Features.HAVE_XTRA, -1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { if (args != null && cdr(args) == null) intp.values = NO_VALUES; else intp.values = args; return car(args); } },
@@ -6111,16 +6111,16 @@ public class LambdaJ {
             return o;
         }
 
-        static String format(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
-            return format(lispPrinter, haveIO, false, a);
+        static String jformat(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
+            return jformat(lispPrinter, haveIO, false, a);
         }
 
-        static String formatLocale(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
-            return format(lispPrinter, haveIO, true, a);
+        static String jformatLocale(ObjectWriter lispPrinter, boolean haveIO, ConsCell a) {
+            return jformat(lispPrinter, haveIO, true, a);
         }
 
-        private static String format(ObjectWriter lispPrinter, boolean haveIO, boolean locale, ConsCell a) {
-            final String func = locale ? "format-locale" : "format";
+        private static String jformat(ObjectWriter lispPrinter, boolean haveIO, boolean locale, ConsCell a) {
+            final String func = locale ? "jformat-locale" : "jformat";
             varargsMin(func, a, locale ? 3 : 2);
             final boolean toString = car(a) == null;
             a = (ConsCell) cdr(a);
@@ -6153,7 +6153,7 @@ public class LambdaJ {
                 return null;
             } catch (IllegalFormatException e) {
                 // todo sbcl wirft SB-FORMAT:FORMAT-ERROR extends ERROR
-                throw new SimpleError("%s: illegal format string and/ or arguments: %s. Error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
+                throw new SimpleError("%s: illegal jformat string and/ or arguments: %s. Error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
             }
         }
 
@@ -7904,7 +7904,7 @@ public class LambdaJ {
                                + "--no-hash .....  no hash-table support\n"
                                + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"
                                + "--no-util .....  no primitive functions consp, symbolp, listp, null, error,\n"
-                               + "                 append, assoc, assq, list, list*, format, format-locale,\n"
+                               + "                 append, assoc, assq, list, list*, jformat, jformat-locale,\n"
                                + "                 no time related primitives or symbols\n"
                                + "                 no symbol *features*\n"
                                + "\n"
@@ -8303,10 +8303,10 @@ public class LambdaJ {
         //
         //     (CompilerPrimitive)rt()::add
         //
-        // muessen public sein, weil sonst gibt z.B. "(let* () (format t "hallo"))" unter Java 8u262 einen Laufzeitfehler:
+        // muessen public sein, weil sonst gibt z.B. "(let* () (jformat t "hallo"))" unter Java 8u262 einen Laufzeitfehler:
         //
         //     Exception in thread "main" java.lang.BootstrapMethodError: java.lang.IllegalAccessError:
-        //     tried to access method io.github.jmurmel.LambdaJ$MurmelJavaProgram.format([Ljava/lang/Object;)Ljava/lang/Object; from class MurmelProgram$1
+        //     tried to access method io.github.jmurmel.LambdaJ$MurmelJavaProgram.jformat([Ljava/lang/Object;)Ljava/lang/Object; from class MurmelProgram$1
         //
         // Unter Java 17 gibts den Laufzeitfehler nicht, koennte ein Java 8 bug sein. Oder Java 17 hat den Bug, weil der Zugriff nicht erlaubt sein sollte.
         // Gilt nicht fuer methoden, die "normal" aufgerufen werden wie z.B. "cons(Object,Object)", die koennen protected sein (gibt dann halt unmengen synthetische $access$ methoden).
@@ -8732,8 +8732,8 @@ public class LambdaJ {
 
         public final Object _lnwrite          (Object... args)  { clrValues(); varargsMinMax("lnwrite",              args, 0, 3); return LambdaJ.Subr.lnwrite(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
 
-        public final Object format            (Object... args)  { clrValues(); varargs2("format",                    args);       return LambdaJ.Subr.format(getLispPrinter(args, 0, null), true, arraySlice(args)); }
-        public final Object formatLocale      (Object... args)  { clrValues(); varargs3("format-locale",             args);       return LambdaJ.Subr.formatLocale(getLispPrinter(args, 0, null), true, arraySlice(args)); }
+        public final Object jformat           (Object... args)  { clrValues(); varargs2("jformat",                   args);       return LambdaJ.Subr.jformat(getLispPrinter(args, 0, null), true, arraySlice(args)); }
+        public final Object jformatLocale     (Object... args)  { clrValues(); varargs3("jformat-locale",            args);       return LambdaJ.Subr.jformatLocale(getLispPrinter(args, 0, null), true, arraySlice(args)); }
 
 
         // misc
@@ -9569,8 +9569,8 @@ public class LambdaJ {
             case "writeln": return (CompilerPrimitive)this::_writeln;
             case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
 
-            case "format": return (CompilerPrimitive)this::format;
-            case "format-locale": return (CompilerPrimitive)this::formatLocale;
+            case "jformat": return (CompilerPrimitive)this::jformat;
+            case "jformat-locale": return (CompilerPrimitive)this::jformatLocale;
 
             // misc
             case VALUES: return (CompilerPrimitive)this::_values;
@@ -9792,7 +9792,7 @@ public class LambdaJ {
         + "=@numbereq" + "\n" + "<=@le" + "\n" + "<@lt" + "\n" + ">=@ge" + "\n" + ">@gt" + "\n" + "/=@ne" + "\n"
         + "1+@inc" + "\n" + "1-@dec" + "\n"
         + "read-from-string@readFromStr" + "\n" + "read-textfile-lines@readTextfileLines" + "\n" + "read-textfile@readTextfile" + "\n"
-        + "write-textfile-lines@writeTextfileLines" + "\n" + "write-textfile@writeTextfile" + "\n" + "write-to-string@writeToString" + "\n" + "format@format" + "\n" + "format-locale@formatLocale" + "\n" + "char-code@charInt" + "\n" + "code-char@intChar" + "\n"
+        + "write-textfile-lines@writeTextfileLines" + "\n" + "write-textfile@writeTextfile" + "\n" + "write-to-string@writeToString" + "\n" + "jformat@jformat" + "\n" + "jformat-locale@jformatLocale" + "\n" + "char-code@charInt" + "\n" + "code-char@intChar" + "\n"
         + "string=@stringeq" + "\n" + "string->list@stringToList" + "\n" + "list->string@listToString" + "\n"
         + ADJUSTABLE_ARRAY_P+"@adjustableArrayP" + "\n" + "vector-add@vectorAdd" + "\n" + "vector-remove@vectorRemove" + "\n"
         + "vector->list@vectorToList" + "\n" + "list->vector@listToVector" + "\n" + "simple-vector->list@simpleVectorToList" + "\n" + "list->simple-vector@listToSimpleVector" + "\n"
