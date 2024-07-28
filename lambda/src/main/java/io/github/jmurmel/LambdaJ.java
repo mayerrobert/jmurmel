@@ -12054,7 +12054,6 @@ public class LambdaJ {
 
         private void emitVectorLiteral(WrappingWriter sb, Object form) {
             if (form instanceof CharSequence) { emitStringLiteral(sb, (CharSequence)form); }
-            else if (form instanceof char[] && ((char[])form).length == 1) { charToJava(sb, ((char[])form)[0]); }
             else if (form instanceof char[]) { emitStringLiteral(sb, String.valueOf((char[])form)); }
             else if (form instanceof Object[]) { emitSimpleVectorLiteral(sb, (Object[])form); }
             else if (form instanceof boolean[]) { emitSimpleBitVectorLiteral(sb, (boolean[])form); }
