@@ -11069,22 +11069,25 @@ public class LambdaJ {
             else if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
             else if (form instanceof Double) sb.append(Double.toString((Double) form));
             else if (form instanceof Character) {
-                final char c = (Character) form;
-                switch (c) {
-                case '\'': sb.append("'\\''"); break;
-                case '\\': sb.append("'\\\\'"); break;
-                case '\r': sb.append("'\\r'"); break;
-                case '\n': sb.append("'\\n'"); break;
-                case '\t': sb.append("'\\t'"); break;
-                default:
-                    if (c >= 32 && c < 127) sb.append('\'').append(c).append('\'');
-                    else sb.append(String.format("'\\u%04X'", (int)c));
-                }
+                charToJava(sb, (Character) form);
             }
             //else if (form instanceof String) sb.append("new String(\"").append(form).append("\")"); // new Object so that (eql "a" "a") is nil (Common Lisp allows both nil and t). otherwise the reader must intern strings as well
             else if (vectorp(form)) emitVectorLiteral(sb, form);
             else if (hashtablep(form)) emitHashLiteral(sb, form);
             else errorInternal("emitAtom: atom %s is not implemented", form.toString());
+        }
+
+        private static void charToJava(WrappingWriter sb, char c) {
+            switch (c) {
+            case '\'': sb.append("'\\''"); break;
+            case '\\': sb.append("'\\\\'"); break;
+            case '\r': sb.append("'\\r'"); break;
+            case '\n': sb.append("'\\n'"); break;
+            case '\t': sb.append("'\\t'"); break;
+            default:
+                if (c >= 32 && c < 127) sb.append('\'').append(c).append('\'');
+                else sb.append(String.format("'\\u%04X'", (int)c));
+            }
         }
 
         private static void stringToJava(WrappingWriter sb, CharSequence s, int maxlen) {
@@ -12051,6 +12054,8 @@ public class LambdaJ {
 
         private void emitVectorLiteral(WrappingWriter sb, Object form) {
             if (form instanceof CharSequence) { emitStringLiteral(sb, (CharSequence)form); }
+            else if (form instanceof char[] && ((char[])form).length == 1) { charToJava(sb, ((char[])form)[0]); }
+            else if (form instanceof char[]) { emitStringLiteral(sb, String.valueOf((char[])form)); }
             else if (form instanceof Object[]) { emitSimpleVectorLiteral(sb, (Object[])form); }
             else if (form instanceof boolean[]) { emitSimpleBitVectorLiteral(sb, (boolean[])form); }
             else errorInternal("emitVectorLiteral: " + VECTOR + " type %s is not implemented", form.toString());
