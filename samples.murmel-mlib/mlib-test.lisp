@@ -1970,6 +1970,104 @@ all the result list to a single list. FUNCTION must return a list."
 )
 
 
+;;; - format
+
+(defmacro test (expected
+                str #-murmel cl:&rest #+murmel . args)
+  `(progn
+     (assert-equal (format    nil ,str ,@args) ,expected)
+     (assert-equal (apply #'format (list nil (formatter ,str) ,@args)) ,expected)
+     ))
+
+;; no format characters
+(test "helloo"
+      "helloo")
+
+
+;; C
+(test "#\\c"
+      "~@c" #\c)
+
+
+;; B
+(test "asdf x00000000000000001111x"
+      "~a x~20,'0bx" "asdf" 15)
+
+(test "x00000000011_11_11_11x"
+      "x~20,'0,'_,2:bx" 255)
+
+
+;; O
+(test "asdf x00000000000000000017x"
+      "~a x~20,'0ox" "asdf" 15)
+
+
+;; D
+(test "asdf x00+15x"
+      "~a x~5,'0@dx" "asdf" 15)
+
+
+(test "asdf x00-15x"
+      "~a x~5,'0dx" "asdf" -15)
+
+
+;; R
+(test "x00-18x"
+      "x~12,5,'0rx" -20)
+
+(test "x00000000000000033,33x"
+      "x~4,20,'0,,2:rx" 255)
+
+(test "x0000000000000003_333x"
+      "x~4,20,'0,'_:rx" 255)
+
+(test "xHELLOOx"
+      "x~12,5,'0rx" 'HELLOO)
+
+
+;; X
+(test "asdf x*******************Fx"
+      "~a x~20,'*Xx" "asdf" 15)
+
+
+;; A
+(test "x_________________123x"
+      "x~20,1,0,'_@ax" "123")
+
+(test "x(1 2 3)*************x"
+      "x~20,,,'*ax" '(1 2 3))
+
+(test "x(1)****x"
+      "x~5,3,1,'*Ax" '(1))
+
+
+;; print 65535 with a leading sign in radix 4, group 3 digits with '_', left pad with '0' to 20 chars
+(assert-equal (with-output-to-string (s)
+                (apply (formatter "x~4,20,'0,'_:@rx") (list s 65535)))
+              "x000000000+33_333_333x")
+
+
+;; F
+(test "123.46"
+      "~5,2f" 123.456)
+
+(test "+123.46"
+      "~5,2@f" 123.456)
+
+(test #+murmel "+123.456789"
+      #-murmel "+123.45679"
+      "~@f" 123.456789)
+
+;; G
+;; ~g shows differences between CL and Murmel as CL's format may append spaces after ~g
+#+murmel
+(test "x123.456x"
+      "x~gx" 123.456)
+
+#+murmel
+(test "y+123.456y"
+      "y~@gy" 123.456)
+
 
 ;;; Summary
 ;;; print succeeded and failed tests if any
