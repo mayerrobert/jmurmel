@@ -110,7 +110,7 @@ public class LambdaJ {
 
     /// ## Public Java constants, interfaces and an exception class to use the interpreter from Java
 
-    public static final String LANGUAGE_VERSION = "1.4";
+    public static final String LANGUAGE_VERSION = "1.5";
     public static final String ENGINE_NAME = "JMurmel: Java based implementation of Murmel";
     public static final String ENGINE_VERSION;
     public static final String ENGINE_VERSION_NUM;

@@ -58,6 +58,6 @@ goto :EOF
 :inst
 REM this needs the WiX v3 Toolset, download and unzip from https://github.com/wixtoolset/wix3/releases/download/wix3112rtm/wix311-binaries.zip and add to the PATH
 
-set INST=--app-version "1.4.8.0" --copyright "Copyright (C) 2020-2024 by Robert Mayer" --description "Murmel interpreter/ compiler https://jmurmel.github.io" --license-file target\jpackage-input\LICENSE --name "JMurmel"
+set INST=--app-version "1.5.0.0" --copyright "Copyright (C) 2020-2024 by Robert Mayer" --description "Murmel interpreter/ compiler https://jmurmel.github.io" --license-file target\jpackage-input\LICENSE --name "JMurmel"
 set INST=%INST% --win-dir-chooser --win-shortcut --win-shortcut-prompt --win-per-user-install
 jpackage --verbose %JLINK% --type msi %INST% %JPACKAGE%
