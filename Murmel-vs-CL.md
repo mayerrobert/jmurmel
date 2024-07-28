@@ -24,7 +24,7 @@ or works after some massaging which may or may not introduce some `#+murmel`.
 * math functions such as `+` return a `double-float` regardless of their arguments
 * the numeric tower is tiny: no `bignum`, `ratio`, `complex`, Murmel only has `fixnum` and `double-float`
 * REPL variables are prefixed by @, e.g. `@*`
-* Murmels `jformat`'s syntax is different from CL's `format`, e.g. Murmel: `%s` vs. CL: `~A`
+* Murmels `format`'s supports only a small subset of CL's `format`'s features
 * `load` and `require` are performed at compile time
 * some functions have different parameters because Murmel doesn't have keyword arguments, see "Omissions" below
 * CL's `dolist` and `dotimes` allow zero or one result form,
