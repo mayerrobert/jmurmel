@@ -181,7 +181,7 @@ public class LambdaJ {
         /** return a string with "line x:y..xx:yy: " if {@code form} is an {@link SExpConsCell} that contains line info */
         @NotNull String lineInfo() { return ""; }
 
-        @Override public abstract ConsIterator iterator();
+        @Override @NotNull public abstract ConsIterator iterator();
 
         @Override public boolean equals(Object other) { return other instanceof ConsCell && compare(this, other, CompareMode.EQUAL) == 0; }
         @Override public int hashCode() { return sxhashSigned(100); }
@@ -6153,7 +6153,7 @@ public class LambdaJ {
                 return null;
             } catch (IllegalFormatException e) {
                 // todo sbcl wirft SB-FORMAT:FORMAT-ERROR extends ERROR
-                throw new SimpleError("%s: illegal jformat string and/ or arguments: %s. Error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
+                throw new SimpleError("%s: illegal control-string and/ or arguments: %s. Error ocurred processing the argument(s) %s", func, e.getMessage(), printSEx(a));
             }
         }
 
@@ -12188,7 +12188,7 @@ public class LambdaJ {
             else throw errorInternal(QUOTE + ": unexpected form", form);
         }
 
-        private final Map<LambdaJSymbol, String> gensyms = new IdentityHashMap<>();
+        private final @NotNull Map<LambdaJSymbol, String> gensyms = new IdentityHashMap<>();
 
         private void emitGensym(WrappingWriter sb, LambdaJSymbol sym) {
             String ref = gensyms.get(sym);
@@ -12200,7 +12200,7 @@ public class LambdaJ {
         }
 
         private int qCounter;
-        private final List<String> quotedForms = new ArrayList<>();
+        private final @NotNull List<String> quotedForms = new ArrayList<>();
 
         /** emit a reference to an existing identical constant in the constant pool
          *  or add a new one to the pool and emit a reference to that */
@@ -12210,7 +12210,7 @@ public class LambdaJ {
             else sb.append("q").append(prev);
         }
 
-        private String createReference(String s) {
+        private @NotNull String createReference(String s) {
             final String ret = "q" + qCounter++;
             quotedForms.add(s);
             return ret;
@@ -12225,7 +12225,7 @@ public class LambdaJ {
         }
 
 
-        private static ConsCell cons(Object car, Object cdr) {
+        private static @NotNull ConsCell cons(Object car, Object cdr) {
             return ConsCell.cons(car, cdr);
         }
     }
@@ -12396,7 +12396,7 @@ final class JavaUtil {
         return (int)Math.ceil(numMappings / (double)DEFAULT_LOAD_FACTOR);
     }
 
-    static <K, V> HashMap<K, V> newHashMap(int numMappings) {
+    static @NotNull <K, V> HashMap<K, V> newHashMap(int numMappings) {
         return new HashMap<>(hashMapCapacity(numMappings), DEFAULT_LOAD_FACTOR);
     }
 
@@ -12431,12 +12431,12 @@ final class JavaUtil {
         return Integer.compare(cs1.length, cs2.length);
     }
 
-    static String readString(Path p, Charset cs) throws IOException {
+    static @NotNull String readString(Path p, Charset cs) throws IOException {
         // Java11+ has Files.readString() which does one less copying than this
         return new String(Files.readAllBytes(p), cs);
     }
 
-    static CharSequence readString(InputStream is, Charset cs) throws IOException {
+    static @NotNull CharSequence readString(InputStream is, Charset cs) throws IOException {
         try (Reader r = new InputStreamReader(is, cs)) {
             final StringBuilder ret = new StringBuilder(4096);
             final char[] buf = new char[4096];
@@ -12448,7 +12448,7 @@ final class JavaUtil {
         }
     }
 
-    public static List<String> readStrings(InputStream is, Charset cs) throws IOException {
+    public static @NotNull List<String> readStrings(InputStream is, Charset cs) throws IOException {
         try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, cs))) {
             final List<String> result = new ArrayList<>();
             for (;;) {
@@ -12604,19 +12604,19 @@ final class JavaSourceFromString extends SimpleJavaFileObject {
     /**
      * The source code of this "file".
      */
-    private final String code;
+    private final @NotNull String code;
 
     /**
      * Constructs a new JavaSourceFromString.
      * @param name the name of the compilation unit represented by this file object
      * @param code the source code for the compilation unit represented by this file object
      */
-    JavaSourceFromString(String name, String code) {
+    JavaSourceFromString(String name, @NotNull String code) {
         super(URI.create("string:///" + name.replace('.','/') + Kind.SOURCE.extension), Kind.SOURCE);
         this.code = code;
     }
 
-    @Override public CharSequence getCharContent(boolean ignoreEncodingErrors) {
+    @Override @NotNull public CharSequence getCharContent(boolean ignoreEncodingErrors) {
         return code;
     }
 }
@@ -12627,7 +12627,7 @@ final class MurmelClassLoader extends ClassLoader {
     MurmelClassLoader(@NotNull Path outPath) { //noinspection ConstantConditions 
                                                assert outPath != null; this.outPath = outPath; }
 
-    @Override public Class<?> findClass(String name) throws ClassNotFoundException {
+    @Override @NotNull public Class<?> findClass(String name) throws ClassNotFoundException {
         try {
             final byte[] ba = getBytes(name);
             if (ba == null) return super.findClass(name);
@@ -12800,11 +12800,11 @@ final class WrappingWriter extends Writer {
         return this;
     }
 
-    public           WrappingWriter append(String s)       { write(s); return this; }
-    public           WrappingWriter append(int n)          { write(String.valueOf(n)); return this; }
-    public           WrappingWriter append(long l)         { write(String.valueOf(l)); return this; }
-    public           WrappingWriter append(double d)       { write(String.valueOf(d)); return this; }
-    public           WrappingWriter append(Object o)       { write(String.valueOf(o)); return this; }
+    @NotNull public WrappingWriter append(String s)       { write(s); return this; }
+    @NotNull public WrappingWriter append(int n)          { write(String.valueOf(n)); return this; }
+    @NotNull public WrappingWriter append(long l)         { write(String.valueOf(l)); return this; }
+    @NotNull public WrappingWriter append(double d)       { write(String.valueOf(d)); return this; }
+    @NotNull public WrappingWriter append(Object o)       { write(String.valueOf(o)); return this; }
 
     @Override public void write(String s) {
         try { wrapped.write(s); }
