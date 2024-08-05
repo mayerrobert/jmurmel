@@ -66,7 +66,7 @@
 ;;; - I/O
 ;;;     - [write-char](#function-write-char)
 ;;;     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
-;;;     - [format](#function-format)
+;;;     - [format](#function-format), [formatter](#macro-formatter)
 ;;;     - [with-output-to-string](#macro-with-output-to-string)
 
 ;;; - misc
@@ -3415,6 +3415,8 @@
 ;;; = Function: format
 ;;;     (format destination control-string args*) -> result
 ;;;
+;;; Since: 1.5
+;;;
 ;;; A simplified subset of Common Lisp's function `format`.
 ;;;
 ;;; Note that this simplified `format` does not use or set CL's printer variables
@@ -3520,7 +3522,7 @@
     (write (if colonp
                (string-join
                  ""
-                 (svref #("" "M" "MM" "MMM")                                 (floor n            1000))
+                 (svref #("" "M" "MM" "MMM")                                      (floor n            1000))
                  (svref #("" "C" "CC" "CCC" "CCCC" "D" "DC" "DCC" "DCCC" "DCCCC") (floor (rem n 1000) 100))
                  (svref #("" "X" "XX" "XXX" "XXXX" "L" "LX" "LXX" "LXXX" "LXXXX") (floor (rem n 100)  10))
                  (svref #("" "I" "II" "III" "IIII" "V" "VI" "VII" "VIII" "VIIII")        (rem n 10)))
@@ -3530,8 +3532,8 @@
                  (svref #("" "C" "CC" "CCC" "CD" "D" "DC" "DCC" "DCCC" "CM") (floor (rem n 1000) 100))
                  (svref #("" "X" "XX" "XXX" "XL" "L" "LX" "LXX" "LXXX" "XC") (floor (rem n 100)  10))
                  (svref #("" "I" "II" "III" "IV" "V" "VI" "VII" "VIII" "IX")        (rem n 10))))
-             nil
-             output-stream))
+           nil
+           output-stream))
 
   (cdr arguments))
 
@@ -3667,6 +3669,23 @@
      jformat-string))
 
 
+;;; = Macro: formatter
+;;;     (formatter control-string) -> function
+;;;
+;;; Since: 1.5
+;;;
+;;; Returns a function with the argument list `(destination . args)`
+;;; that writes to `destination` and returns unused args as a list.
+;;;
+;;; Sample usage:
+;;;
+;;;     (let ((dest (make-array 0 'character t)))
+;;;       (values ((formatter "~&~A~A") dest 'a 'b 'c)
+;;;               dest))
+;;;
+;;;     -> (c)
+;;;     -> "
+;;;     ab"
 (defmacro formatter (control-string)
   (let* ((body (cons () ()))
          (append-to body))
@@ -3738,7 +3757,7 @@
                      ((#\r #\R)
                       (if (car params)
                           (do-integer (car params) colonp atp (cdr params))
-                          (collect-setq 
+                          (collect-setq
                             (if atp
                                 `(m%print-roman arguments output-stream ,colonp)
                                 `(error "english numbers are not supported")))))

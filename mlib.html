@@ -68,7 +68,7 @@ mlib provides the following Common Lisp-like functions and macros:
 - I/O
     - [write-char](#function-write-char)
     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
-    - [format](#function-format)
+    - [format](#function-format), [formatter](#macro-formatter)
     - [with-output-to-string](#macro-with-output-to-string)
 - misc
     - [time](#macro-time)
@@ -1388,6 +1388,8 @@ Sample usage:
 ### Function: format
     (format destination control-string args*) -> result
 
+Since: 1.5
+
 A simplified subset of Common Lisp's function `format`.
 
 Note that this simplified `format` does not use or set CL's printer variables
@@ -1406,4 +1408,22 @@ the modifier `@` for always printing the sign and the modifier `:` for grouping 
 and the modifier `@` will always print the sign.
 
 `A` and `S` support `~mincol,colinc,minpad,padcharA` for padding, and the modifier `@` for left-padding.
+
+### Macro: formatter
+    (formatter control-string) -> function
+
+Since: 1.5
+
+Returns a function with the argument list `(destination . args)`
+that writes to `destination` and returns unused args as a list.
+
+Sample usage:
+
+    (let ((dest (make-array 0 'character t)))
+      (values ((formatter "~&~A~A") dest 'a 'b 'c)
+              dest))
+
+    -> (c)
+    -> "
+    ab"
 </textarea>

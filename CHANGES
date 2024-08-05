@@ -3,7 +3,7 @@ Changes in JMurmel-1.5.0 relative to JMurmel-1.4.8
 
  * renamed format to jformat, format-locale to jformat-locale
 
- * mlib: added format
+ * mlib: added format, formatter
 
 
 Changes in JMurmel-1.4.8 relative to JMurmel-1.4.7
