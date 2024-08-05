@@ -1979,6 +1979,23 @@ all the result list to a single list. FUNCTION must return a list."
      (assert-equal (apply #'format (list nil (formatter ,str) ,@args)) ,expected)
      ))
 
+;; CLHS https://www.lispworks.com/documentation/HyperSpec/Body/22_cba.htm
+(test "1101"
+      "~,,' ,4:B" 13)
+
+(test "1 0001"
+      "~,,' ,4:B" 17)
+
+;; in CLHS ist das falsch
+(test "000001101 0000 0101"
+      "~19,'0,' ,4:B" 3333)
+
+(test "1 22"
+      "~3,,,' ,2:R" 17)
+
+(test "6|55|35"
+      "~,,'|,2:D" #xFFFF)
+
 ;; no format characters
 (test "helloo"
       "helloo")
@@ -2023,6 +2040,12 @@ all the result list to a single list. FUNCTION must return a list."
 
 (test "xHELLOOx"
       "x~12,5,'0rx" 'HELLOO)
+
+(test "xIIIIx"
+      "x~:@Rx" 4)
+
+(test "xIVx"
+      "x~@Rx" 4)
 
 
 ;; X

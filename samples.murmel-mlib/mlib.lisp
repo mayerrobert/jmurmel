@@ -3427,7 +3427,7 @@
 ;;; `B, D, O, R, X` support `mincol, padchar, commachar` and `comma-interval`,
 ;;; the modifier `@` for always printing the sign and the modifier `:` for grouping digits.
 ;;;
-;;; `R` does not support printing english or roman numbers (giving the base is required).
+;;; `R` does not support printing english numbers (giving the base, `@` or `:@` is required).
 ;;;
 ;;; `E, F, G`: CL's full `format` is `~w,d,k,overflowchar,padcharF`, this subset only supports `~w,dF`
 ;;; and the modifier `@` will always print the sign.
@@ -3506,6 +3506,33 @@
         (write (nreverse rev) nil output-stream))
 
       (write (car arguments) nil output-stream))
+  (cdr arguments))
+
+
+;;
+(defun m%print-roman (arguments output-stream colonp)
+  (let ((n (car arguments)))
+    (unless (and (numberp n) (= n (truncate n)))
+      (error "not an integer: ~d" n))
+    (unless (<= 1 n 3999)
+      (error "number too large to print in Roman numerals: ~d" n))
+
+    (write (if colonp
+               (string-join
+                 ""
+                 (svref #("" "M" "MM" "MMM")                                 (floor n            1000))
+                 (svref #("" "C" "CC" "CCC" "CCCC" "D" "DC" "DCC" "DCCC" "DCCCC") (floor (rem n 1000) 100))
+                 (svref #("" "X" "XX" "XXX" "XXXX" "L" "LX" "LXX" "LXXX" "LXXXX") (floor (rem n 100)  10))
+                 (svref #("" "I" "II" "III" "IIII" "V" "VI" "VII" "VIII" "VIIII")        (rem n 10)))
+               (string-join
+                 ""
+                 (svref #("" "M" "MM" "MMM")                                 (floor n            1000))
+                 (svref #("" "C" "CC" "CCC" "CD" "D" "DC" "DCC" "DCCC" "CM") (floor (rem n 1000) 100))
+                 (svref #("" "X" "XX" "XXX" "XL" "L" "LX" "LXX" "LXXX" "XC") (floor (rem n 100)  10))
+                 (svref #("" "I" "II" "III" "IV" "V" "VI" "VII" "VIII" "IX")        (rem n 10))))
+             nil
+             output-stream))
+
   (cdr arguments))
 
 
@@ -3709,7 +3736,12 @@
                      ;; Tilde R: Radix
                      ;; ~nR prints arg in radix n. sbcl supports 2..36
                      ((#\r #\R)
-                      (do-integer (car params) colonp atp (cdr params)))
+                      (if (car params)
+                          (do-integer (car params) colonp atp (cdr params))
+                          (collect-setq 
+                            (if atp
+                                `(m%print-roman arguments output-stream ,colonp)
+                                `(error "english numbers are not supported")))))
 
                      ;; Tilde D: Decimal
                      ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
@@ -3859,7 +3891,11 @@
                 ;; Tilde R: Radix
                 ;; ~nR prints arg in radix n. sbcl supports 2..36
                 ((#\r #\R)
-                 (setq arguments (m%print-integer arguments output-stream (car params) colonp atp (cdr params))))
+                 (if (car params)
+                     (setq arguments (m%print-integer arguments output-stream (car params) colonp atp (cdr params)))
+                     (if atp
+                         (setq arguments (m%print-roman arguments output-stream colonp))
+                         (error "english numbers are not supported"))))
 
                 ;; Tilde D: Decimal
                 ;; ~mincolD uses a column width of mincol; spaces are inserted on the left

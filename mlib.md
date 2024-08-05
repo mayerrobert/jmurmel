@@ -1391,7 +1391,7 @@ Only the format characters `C, %, &, |, ~, B ,D, O, R, X, E, F, G, A, S, W` are 
 `B, D, O, R, X` support `mincol, padchar, commachar` and `comma-interval`,
 the modifier `@` for always printing the sign and the modifier `:` for grouping digits.
 
-`R` does not support printing english or roman numbers (giving the base is required).
+`R` does not support printing english numbers (giving the base, `@` or `:@` is required).
 
 `E, F, G`: CL's full `format` is `~w,d,k,overflowchar,padcharF`, this subset only supports `~w,dF`
 and the modifier `@` will always print the sign.

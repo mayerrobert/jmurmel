@@ -1,3 +1,10 @@
+full form is therefore ~mincol,padchar,commachar,comma-intervalB
+(format nil "~19,'0,' ,4:B" 3333)
+
+(format nil "~19,0,' ,4:B" 3333) ;; ist eig falsch geht aber in Murmel
+
+
+
 wieso verbietet der compiler re-define/defun?
 
 
@@ -309,18 +316,6 @@ Neu: Murmel raise                  ... (raise condition-type msg) macht throw ne
 
 format könnte noch "Tilde Slash: Call Function ~/name/" unterstützen: http://www.lispworks.com/documentation/HyperSpec/Body/22_ced.htm
 parameter reihenfolge: stream arg colonp at-sign-p more-params
-
-Roman numerals: https://stackoverflow.com/questions/19266018/converting-integer-to-roman-numeral
-string int_to_roman(int a)
-{
-    string ans;
-    string M[] = {"","M","MM","MMM"};
-    string C[] = {"","C","CC","CCC","CD","D","DC","DCC","DCCC","CM"};
-    string X[] = {"","X","XX","XXX","XL","L","LX","LXX","LXXX","XC"};
-    string I[] = {"","I","II","III","IV","V","VI","VII","VIII","IX"};
-    ans = M[a/1000]+C[(a%1000)/100]+X[(a%100)/10]+I[(a%10)];
-    return ans;
-}
 
 
 
