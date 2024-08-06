@@ -2063,6 +2063,10 @@ all the result list to a single list. FUNCTION must return a list."
 (test "x(1)****x"
       "x~5,3,1,'*Ax" '(1))
 
+#-murmel (setq *print-case* :downcase)
+(test "nil ()"
+      "~a ~:a" nil nil)
+
 
 ;; print 65535 with a leading sign in radix 4, group 3 digits with '_', left pad with '0' to 20 chars
 (assert-equal (with-output-to-string (s)

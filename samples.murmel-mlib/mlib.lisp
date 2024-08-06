@@ -3865,7 +3865,7 @@
                      ((#\t #\T)
                       (collect `(write ,(nchars params #\Tab) nil output-stream)))
 
-                     (t (error "unimplemented format character"))))))
+                     (t (error "unimplemented format character '%s'" (car elem)))))))
          ,'arguments))))
 
 
@@ -4006,7 +4006,7 @@
                  (dotimes (n (or (car params) 1))
                    (write #\Tab nil output-stream)))
 
-                (t (error "unimplemented format character")))))))))
+                (t (error "unimplemented format character '%s'" (car elem))))))))))
 
 (defmacro m%float-fmtstring)
 
