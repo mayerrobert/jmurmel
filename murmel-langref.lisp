@@ -470,10 +470,10 @@ pi ; ==> 3.141592653589793
 ; may not be used as a function nor as a variable:
 ;
 ;     nil, t,
-;     lambda, quote, cond, labels, if, define, defun, let, let*, letrec, macrolet,
+;     lambda, quote, cond, labels, if, define, defun, let, let*, letrec,
 ;     setq, progn, catch, thwrow, unwind-protect, try,
 ;     multiple-value-bind, multiple-value-call,
-;     defmacro, declaim, load, require, provide
+;     macrolet, defmacro, declaim, load, require, provide
 
 
 ;;; == Variables and Scope ============
@@ -490,9 +490,9 @@ pi ; ==> 3.141592653589793
 ; temporarily replaced by a local or dynamic binding, though).
 ;
 ; Murmel's local bindings are lexical, i.e. a symbol is bound to
-; a newly created variable when a let/let\*/letrec/lambda form
+; a newly created variable when a `let/let*/letrec/lambda` form
 ; is evaluated. The symbol's binding as well as the associated variable
-; are removed when leaving the lexical scope of the `let/let\*/letrec/lambda`
+; are removed when leaving the lexical scope of the `let/let*/letrec/lambda`
 ; form, restoring any previously existing binding (which may have
 ; been local or global).
 ; Except: `let* dynamic` will treat global symbols as "special", see below.
@@ -517,7 +517,7 @@ pi ; ==> 3.141592653589793
 (define *global-var* 42)               ; ==> *gloval-var*
 (define f1 (lambda (p1 p2) (+ p1 p2))) ; ==> f1
 
-; `define` forms can appear inside toplevel `let, let*, letrec, multiple-value-bind` forms.
+; `define` forms can appear inside toplevel `let, let*, letrec, multiple-value-bind, labels` forms.
 
 ;;; = (defun symbol (params\*) [docstring] forms\*) -> symbol
 ;
@@ -532,8 +532,8 @@ pi ; ==> 3.141592653589793
 
 (defun f2 (p1 p2) (+ p1 p2)) ; ==> f2
 
-; `defun` forms that appear inside toplevel `let, let*, letrec, multiple-value-bind` forms
-; will bind a globally visible symbol to a closure (aka let-over-lambda):
+; `defun` forms can appear inside toplevel `let, let*, letrec, multiple-value-bind, labels` forms
+; and will bind a globally visible symbol to a closure (aka let-over-lambda):
 
 (let ((counter 0))
   (defun pre-increment-counter ()
