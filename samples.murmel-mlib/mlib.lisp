@@ -3531,14 +3531,14 @@
 (defun m%print-roman (arguments output-stream colonp)
   (let ((n (car arguments)))
     (unless (and (numberp n) (= n (truncate n)))
-      (error "not an integer: ~d" n))
-    (unless (<= 1 n 3999)
-      (error "number too large to print in Roman numerals: ~d" n))
+      (error "not an integer: %s" n))
+    (unless (<= 1 n (if colonp 4999 3999))
+      (error "number too large to print in Roman numerals: %s" n))
 
     (write (if colonp
                (string-join
                  ""
-                 (svref #("" "M" "MM" "MMM")                                      (floor n            1000))
+                 (svref #("" "M" "MM" "MMM" "MMMM")                               (floor n            1000))
                  (svref #("" "C" "CC" "CCC" "CCCC" "D" "DC" "DCC" "DCCC" "DCCCC") (floor (rem n 1000) 100))
                  (svref #("" "X" "XX" "XXX" "XXXX" "L" "LX" "LXX" "LXXX" "LXXXX") (floor (rem n 100)  10))
                  (svref #("" "I" "II" "III" "IIII" "V" "VI" "VII" "VIII" "VIIII")        (rem n 10)))

@@ -1,8 +1,8 @@
+error messages vereinheitlichen:
+func - msg: value
 
-full form is therefore ~mincol,padchar,commachar,comma-intervalB
-(format nil "~19,'0,' ,4:B" 3333)
-
-(format nil "~19,0,' ,4:B" 3333) ;; ist eig falsch geht aber in Murmel
+sollte int-with-default negative zahlen verweigern? gibts negative format params?
+-> sbcl ist picky, murmel, abcl, ecl nicht
 
 
 

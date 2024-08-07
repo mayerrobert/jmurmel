@@ -2840,3 +2840,13 @@ string int_to_roman(int a)
 
 
 format: tilde newline https://www.lispworks.com/documentation/HyperSpec/Body/22_cic.htm
+
+mit alten roman numerals gehts bis 4999:
+* (format nil "~:@R" 4999)
+"MMMMDCCCCLXXXXVIIII"
+
+
+full form is therefore ~mincol,padchar,commachar,comma-intervalB
+(format nil "~19,'0,' ,4:B" 3333)
+
+(format nil "~19,0,' ,4:B" 3333) ;; ist eig falsch (ist es?) geht aber in Murmel
