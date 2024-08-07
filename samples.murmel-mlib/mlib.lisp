@@ -3422,7 +3422,7 @@
 ;;; Note that this simplified `format` does not use or set CL's printer variables
 ;;; such as `*print-base*`, `*print-circle*`, ... .
 ;;;
-;;; Only the format characters `C, %, &, |, ~, B ,D, O, R, X, E, F, G, A, S, W` are supported.
+;;; Only the format characters `C, %, &, |, ~, B ,D, O, R, X, E, F, G, A, S, W` and Tilde-Newline are supported.
 ;;;
 ;;; `C` supports the modifier `@` for printing #\-style escaping.
 ;;;
@@ -3613,6 +3613,13 @@
                        (labels ((collect-arg (arg)
                                   (setq append-to-args (cdr (rplacd append-to-args (cons arg ())))))
 
+                                (whitespacep (c)
+                                  (or (eql c #\ )
+                                      (eql c #\Tab)
+                                      (eql c #\Vt)
+                                      (eql c #\Page)
+                                      (eql c #\Return)))
+
                                 (next ()
                                   (setq code (sref control-string i))
                                   (case code
@@ -3653,6 +3660,13 @@
                                          (loop (char-code code)))
                                        (setq arg (truncate arg sign)))
                                      (next))
+
+                                    (#\Newline
+                                     (let loop ()
+                                       (when (and (< (1+ i) control-string-length)
+                                                  (whitespacep (sref control-string (1+ i))))
+                                         (incf i)
+                                         (loop))))
 
                                     (t
                                      (when arg
