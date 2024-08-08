@@ -2850,3 +2850,6 @@ full form is therefore ~mincol,padchar,commachar,comma-intervalB
 (format nil "~19,'0,' ,4:B" 3333)
 
 (format nil "~19,0,' ,4:B" 3333) ;; ist eig falsch (ist es?) geht aber in Murmel
+
+error messages vereinheitlichen:
+func - msg: 'value'

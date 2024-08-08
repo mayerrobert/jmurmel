@@ -319,7 +319,7 @@
              (let ((keydesignator (car clause)))
                (if (and keydesignator (symbolp keydesignator))
                    `((typep ,tmp ',keydesignator) ,@(cdr clause))
-                   (error 'simple-error "bad clause in typecase: %s" clause))))
+                   (error 'simple-error "typecase - bad clause '%s'" clause))))
 
            (do-clauses (key)
              (let* ((result (list ()))
@@ -378,13 +378,13 @@
 (m%def-macro-fun endp (obj)
   `(cond ((consp ,obj) nil)
          ((null  ,obj) t)
-         (t (error 'simple-type-error "not a list: %s" ,obj))))
+         (t (error 'simple-type-error "endp - not a list: '%s'" ,obj))))
 
 
 (defun m%nonneg-integer-number (n)
   (cond ((integerp n)
          (if (< n 0)
-             #1=(error 'simple-type-error "must be an integer >= 0: %s" n)
+             #1=(error 'simple-type-error "must be an integer >= 0: '%s'" n)
              n))
 
         ((numberp n)
@@ -611,7 +611,7 @@
                      ((consp ele) (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
                      ((null ele) (rplacd (last splice) ())  (inner (cdr inner-lists) (cadr inner-lists)))
                      ((atom ele) (if (cdr inner-lists)
-                                     (error 'simple-type-error "nconc - not a list: %s" ele)
+                                     (error 'simple-type-error "nconc - not a list: '%s'" ele)
                                      (rplacd (last splice) ele)))))))
            result)
 
@@ -620,7 +620,7 @@
 
           ((atom result)
            (if (cdr outer-lists)
-               (error 'simple-type-error "nconc - not a list: %s" result)
+               (error 'simple-type-error "nconc - not a list: '%s'" result)
                result))))))
 
 
@@ -786,7 +786,7 @@
                                       (progn
                                         (setq append-to (cdr (rplacd append-to (list (car r)))))
                                         (loop (cdr r)))
-                                      (if r (error 'simple-type-error "the value %s is not of type list" r))))
+                                      (if r (error 'simple-type-error "%s - not a list: '%s'" ',name r))))
                              (loop (unzip-tails args))))
                       (let loop ((lst lst))
                            (when lst
@@ -1068,7 +1068,7 @@
                     ((stringp ,vec) sref)
                     ((bit-vector-p ,vec) bvref)
                     ((vectorp ,vec) seqref)
-                    (t (error 'simple-type-error "dovector - not a vector: %s" ,vec))))
+                    (t (error 'simple-type-error "dovector - not a vector: '%s'" ,vec))))
             (,limit (vector-length ,vec))
             (,idx 0)
             ,var)
@@ -1544,7 +1544,7 @@
                           (cons `(setf ,(car args) ,(cadr args))
                                 (if (cddr args)
                                     (loop (cddr args))))
-                          #1=(error "odd number of arguments to setf"))))
+                          #1=(error "setf - odd number of arguments"))))
 
               (if (symbolp (car args))
                   `(setq   ,(car args)  ,@(cdr args))
@@ -1634,7 +1634,7 @@
         (let loop ((pairs pairs) (append-to body))
           (if pairs
               (progn
-                (unless (cdr pairs) (error 'program-error "odd number of arguments to psetf"))
+                (unless (cdr pairs) (error 'program-error "psetf - odd number of arguments"))
                 (let ((place (car pairs))
                       (values-form (cadr pairs)))
                   (destructuring-bind (vars vals stores setter reader) (get-setf-expansion place)
@@ -1671,7 +1671,7 @@
 ;;; Similar to CL's `shiftf`.
 (defmacro shiftf places-and-value
   (unless (cdr places-and-value)
-    (error 'program-error "not enough arguments to shiftf"))
+    (error 'program-error "shiftf - not enough arguments"))
 
   (let* ((body (list ()))
          (append-to body))
@@ -1942,7 +1942,7 @@
 (defun evenp (n)
   (if (integerp n)
       (= 0.0 (mod n 2))
-      (error 'simple-type-error "not an integer: %s" n)))
+      (error 'simple-type-error "evenp - not an integer: '%s'" n)))
 
 
 ;;; = Function: oddp
@@ -1954,7 +1954,7 @@
 (defun oddp (n)
   (if (integerp n)
       (= 1.0 (mod n 2))
-      (error 'simple-type-error "not an integer: %s" n)))
+      (error 'simple-type-error "oddp - not an integer: '%s'" n)))
 
 
 ;;; = Function: char=
@@ -2024,7 +2024,7 @@
   (multiple-value-bind (obj pos) (apply read-from-string (cdr args))
     (if (typep obj (car args))
         (values obj pos)
-        (error 'parse-error "expected an object of type %s, got %s" (car args) obj))))
+        (error 'parse-error "parse - expected an object of type '%s', got '%s'" (car args) obj))))
 
 
 ;;; = Function: parse-integer
@@ -2148,7 +2148,7 @@
         ((null arg)
          (lambda () (values nil nil)))
 
-        (t (error "scan: cannot create a generator function from given arguments"))))
+        (t (error "scan - cannot create a generator function from given arguments"))))
 
 
 (defun scan (arg . more-args)
@@ -2195,7 +2195,7 @@
 ;;; Once the first generator indicates "at end" for the first time no more generators will be called.
 (defun scan-multiple (generator . more-generators)
   (unless (functionp generator)
-    (error 'simple-type-error "not a generator"))
+    (error 'simple-type-error "scan-multiple - not a generator"))
 
   (if more-generators
 
@@ -2234,7 +2234,7 @@
 ;;; A single generator would be returned unchanged.
 (defun scan-concat (generator . more-generators)
   (unless (functionp generator)
-    (error 'simple-type-error "not a generator"))
+    (error 'simple-type-error "scan-concat - not a generator"))
 
   (if more-generators
       (let ((more-generators more-generators))
@@ -2304,7 +2304,7 @@
     ((null seq)    nil)
     ((consp seq)   (copy-list seq))
     ((vectorp seq) (vector-copy seq))
-    (t             (error 'simple-type-error "copy-seq - %s is not a sequence" seq))))
+    (t             (error 'simple-type-error "copy-seq - not a sequence: '%s'" seq))))
 
 
 ;;; = Function: length
@@ -2318,7 +2318,7 @@
     ((null seq) 0)
     ((listp seq) (list-length seq))
     ((vectorp seq) (vector-length seq))
-    (t (error 'simple-type-error "length - %s is not a sequence" seq))))
+    (t (error 'simple-type-error "length - not a sequence: '%s'" seq))))
 
 
 ;;; = Function: reverse
@@ -2349,7 +2349,7 @@
       ((simple-vector-p seq)    (reverse/vector seq (make-array (vector-length seq)) svref svset))
       ((bit-vector-p seq)       (reverse/vector seq (make-array (vector-length seq) 'bit) bvref bvset))
       ((vectorp seq)            (reverse/vector seq (make-array (vector-length seq)) seqref seqset))
-      (t                        (error 'simple-type-error "reverse - %s is not a sequence" seq)))))
+      (t                        (error 'simple-type-error "reverse - not a sequence: '%s'" seq)))))
 
 
 ;;; = Function: nreverse
@@ -2388,7 +2388,7 @@
       ((simple-vector-p seq)    (nreverse/vector seq svref svset))
       ((bit-vector-p seq)       (nreverse/vector seq bvref bvset))
       ((vectorp seq)            (nreverse/vector seq seqref seqset))
-      (t                        (error 'simple-type-error "nreverse - %s is not a sequence" seq)))))
+      (t                        (error 'simple-type-error "nreverse - not a sequence: '%s'" seq)))))
 
 
 ;;; = Function: remove-if
@@ -2425,7 +2425,7 @@
       ((simple-vector-p seq)     (list->simple-vector     (remove-if/vector seq)))
       ((simple-bit-vector-p seq) (list->bit-vector        (remove-if/vector seq)))
       ((vectorp seq)             (list->simple-vector     (remove-if/vector seq)))
-      (t                         (error 'simple-type-error "remove-if - %s is not a sequence" seq)))))
+      (t                         (error 'simple-type-error "remove-if - not a sequence: '%s'" seq)))))
 
 
 ;;; = Function: remove
@@ -2548,7 +2548,7 @@
                has-next-result (lambda () (< result-cursor result-length))
                result-length (vector-length result)))
 
-        (t (error 'simple-type-error "map-into: not a sequence: %s" result)))
+        (t (error 'simple-type-error "map-into - not a sequence: '%s'" result)))
 
       (if (cdr sequences)
           ;; 2 or more sequences given
@@ -2576,7 +2576,7 @@
                       (when (and (has-next-result) (< i len))
                         (set-result (func (seqref seq i)))
                         (loop (1+ i)))))
-                (t (error 'simple-type-error "map-into: not a sequence: %s" seq)))
+                (t (error 'simple-type-error "map-into: not a sequence: '%s'" seq)))
 
               ;; 0 sequences given
               (let loop ()
@@ -2646,7 +2646,7 @@
             ((simple-vector-p seq)     (reduce/vector seq svref))
             ((bit-vector-p seq)        (reduce/vector seq bvref))
             ((vectorp seq)             (reduce/vector seq seqref))
-            (t (error 'simple-type-error "reduce - %s is not a sequence" seq))))))
+            (t (error 'simple-type-error "reduce - not a sequence: '%s'" seq))))))
 
 
 ; hash tables *********************************************************
@@ -2805,7 +2805,7 @@
 (defun write-char (c . dest)
   (if (characterp c)
       (write c nil (car dest))
-      (error 'simple-type-error "write-char - %s is not a character" c)))
+      (error 'simple-type-error "write-char - not a character: '%s'" c)))
 
 
 ;;; = Function: terpri, prin1, princ, print
@@ -3440,7 +3440,7 @@
            (if obj
                (if (characterp obj)
                    obj
-                   (error "not a character: %s" obj))
+                   (error "format - not a character: '%s'" obj))
                default))
 
          (int-with-default (obj default)
@@ -3448,7 +3448,7 @@
                (if (numberp obj)
                    (if (= obj (setq obj (truncate obj)))
                        obj
-                       #1=(error "not an integer: %s" obj))
+                       #1=(error "format - not an integer: '%s'" obj))
                    #1#)
                default)))
 
@@ -3531,9 +3531,9 @@
 (defun m%print-roman (arguments output-stream colonp)
   (let ((n (car arguments)))
     (unless (and (numberp n) (= n (truncate n)))
-      (error "not an integer: %s" n))
+      (error "format - not an integer: '%s'" n))
     (unless (<= 1 n (if colonp 4999 3999))
-      (error "number too large to print in Roman numerals: %s" n))
+      (error "format - number too large to print in Roman numerals: '%s'" n))
 
     (write (if colonp
                (string-join
@@ -3795,7 +3795,7 @@
                           (collect-setq
                             (if atp
                                 `(m%print-roman arguments output-stream ,colonp)
-                                `(error "english numbers are not supported")))))
+                                `(error "format - english numbers are not supported")))))
 
                      ;; Tilde D: Decimal
                      ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
@@ -3868,7 +3868,7 @@
 
                      ;; Tilde W: Write
                      ((#\w #\W)
-                      ;;(when params (error "too many arguments, format character W accepts 0"))
+                      ;;(when params (error "format - too many arguments, format character W accepts 0"))
                       (collect-shift `(write (car arguments) t output-stream)))
 
 
@@ -3878,7 +3878,7 @@
                      ((#\t #\T)
                       (collect `(write ,(nchars params #\Tab) nil output-stream)))
 
-                     (t (error "unimplemented format character '%s'" (car elem)))))))
+                     (t (error "format - unimplemented format character '%s'" (car elem)))))))
          ,'arguments))))
 
 
@@ -3949,7 +3949,7 @@
                      (setq arguments (m%print-integer arguments output-stream (car params) colonp atp (cdr params)))
                      (if atp
                          (setq arguments (m%print-roman arguments output-stream colonp))
-                         (error "english numbers are not supported"))))
+                         (error "format - english numbers are not supported"))))
 
                 ;; Tilde D: Decimal
                 ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
@@ -4007,7 +4007,7 @@
 
                 ;; Tilde W: Write
                 ((#\w #\W)
-                 ;;(when params (error "too many arguments, format character C accepts 0"))
+                 ;;(when params (error "format - too many arguments, format character C accepts 0"))
                  (write (car arguments) t output-stream)
                  (setq arguments (cdr arguments)))
 
@@ -4019,7 +4019,7 @@
                  (dotimes (n (or (car params) 1))
                    (write #\Tab nil output-stream)))
 
-                (t (error "unimplemented format character '%s'" (car elem))))))))))
+                (t (error "format - unimplemented format character '%s'" (car elem))))))))))
 
 ) ; macrolet
 

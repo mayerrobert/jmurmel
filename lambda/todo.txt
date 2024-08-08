@@ -1,5 +1,3 @@
-error messages vereinheitlichen:
-func - msg: value
 
 sollte int-with-default negative zahlen verweigern? gibts negative format params?
 -> sbcl ist picky, murmel, abcl, ecl nicht
