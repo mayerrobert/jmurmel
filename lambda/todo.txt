@@ -1,9 +1,4 @@
 
-sollte int-with-default negative zahlen verweigern? gibts negative format params?
--> sbcl ist picky, murmel, abcl, ecl nicht
-
-
-
 wieso verbietet der compiler re-define/defun?
 
 
@@ -62,6 +57,7 @@ cons im interpreter incrementiert nCells immer, egal ob tracing aufgedreht ist o
 
 
 vielleicht doch nochmal scheme macros ansehen? https://www.reddit.com/r/Common_Lisp/comments/1b95lj6/schemelike_macros_for_cl/
+und https://www.jucs.org/jucs_16_2/embedding_hygiene_compatible_macros/jucs_16_02_0271_0295_costanza.pdf
 
 einfacher repl in CL: https://www.cliki.net/repl
 
