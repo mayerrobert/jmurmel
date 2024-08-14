@@ -8,14 +8,22 @@
 ;;; see https://pages.mtu.edu/%7Eshene/COURSES/cs201/NOTES/chap04/arms.html, https://en.wikipedia.org/wiki/Narcissistic_number
 ;;; and https://www.reddit.com/r/ProgrammingLanguages/comments/176it3o/showcase_your_lang_by_sharing_an_armstrong_number/
 
+#+murmel
 (require "mlib")
 
-(defmacro pr items
+#-murmel
+(defun string->list (s)
+  (coerce s 'list))
+
+
+
+(defmacro pr #+murmel items
+             #-murmel (&rest items)
   "Helper that will print each argument and then a newline."
   `(progn ,@(mapcar (lambda (it)
-                      (list 'write it nil))
+                      (list 'write it #-murmel :escape nil))
                     items)
-          (writeln)))
+          (terpri)))
 
 
 
@@ -71,6 +79,8 @@
         (values nil nil))))
 
 
+#+murmel
+(progn
 (defun armstrongp (n)
   "Return true if 'n' is an Armstrong number."
   (= n (summing
@@ -82,6 +92,7 @@
           (when (armstrongp n)
             (incf count)
             (pr "Armstrong number " count ": " n)))))
+)
 
 
 
@@ -90,11 +101,11 @@
 (defun armsp (n)
   "Return true if 'n' is an Armstrong number."
   (labels ((number->digit-list (n)
-             (string->list (jformat nil "%d" n)))
+             (string->list (format nil "~d" n)))
            (char->number (c)
              (- (char-code c) (char-code #\0))))
 
-    (= n (apply + (mapcar (lambda (c) (expt (char->number c) 3))
+    (= n (apply #'+ (mapcar (lambda (c) (expt (char->number c) 3))
                           (number->digit-list n))))))
 
 (time (let ((count 0))

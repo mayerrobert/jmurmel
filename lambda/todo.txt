@@ -1,3 +1,10 @@
+http://clhs.lisp.se/Body/f_apply.htm:
+Murmel apply will genau ein argument. sollte 0 oder 1 argument gehen (aka ein optionales argument default null)
+"Because a function can neither detect whether it was called via apply nor whether (if so) the last argument to apply was a constant, conforming programs must neither rely on the list structure of a rest list to be freshly consed, nor modify that list structure."
+-> compiler könnte bei varargs also doch arraySlice verwenden
+   murmel-langref enthielt als compiler restriction "The list containing optional arguments cannot be used as an argument to `rplacd`."
+   in 9c2fd0245275eaa176c2168ccffa53e523af43a8 aus MurmelJavaCompiler.params() ausgebaut: arraySlice -> arrayToList
+   -> wieder einführen, rplaca und rplacd sollten für restargumentlist verboten sein, weil apply könnte ein listliteral übergeben und das darf nicht mutiert werden
 
 wieso verbietet der compiler re-define/defun?
 
