@@ -340,6 +340,9 @@
 ; conses and lists ****************************************************
 
 (defmacro m%def-macro-fun (name params . body)
+  "Expand into a defmacro as well as a defun.
+   Must only be used when body uses each parameter exactly once in the given order."
+
   `(progn
      (defmacro ,name ,params ,@body)
      (defun ,name ,params (,name ,@params))))
@@ -375,10 +378,10 @@
 ;;; This is the recommended way to test for the end of a proper list. It
 ;;; returns true if `obj` is `nil`, false if `obj` is a `cons`,
 ;;; and a `type-error` for any other type of `object`.
-(m%def-macro-fun endp (obj)
-  `(cond ((consp ,obj) nil)
-         ((null  ,obj) t)
-         (t (error 'simple-type-error "endp - not a list: '%s'" ,obj))))
+(defun endp (obj)
+  (cond ((consp obj) nil)
+        ((null  obj) t)
+        (t (error 'simple-type-error "endp - not a list: '%s'" obj))))
 
 
 (defun m%nonneg-integer-number (n)
