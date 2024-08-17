@@ -375,6 +375,14 @@ multiline comment
 (deftest let.18 *g4* 3.0)
 
 
+;;; test defmacro
+(labels ((f () (list '+ 1 2)))
+  (defmacro m () (f)))
+
+(deftest defmacro.1
+  (m) 3)
+
+
 ;;; test named let, let*, letrec
 #+murmel
 (progn
@@ -527,6 +535,18 @@ multiline comment
     (m))
   1)
 
+;; test nested defun: labels -> macrolet -> defun
+(labels ((f () (list '+ 2 3)))
+  (macrolet ((m () (f)))
+    (defmacro m2 () (m))
+    (defun f-labels () (m2))))
+
+(deftest macrolet.2
+  (m2) 5)
+
+(deftest macrolet.3
+  (f-labels) 5)
+
 
 ;;; test cond
 (deftest cond.1
@@ -569,6 +589,7 @@ multiline comment
 )
 
 
+;;; test labels
 (deftest labels.1
   (labels () 1) 1)
 

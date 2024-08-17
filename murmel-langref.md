@@ -1791,9 +1791,11 @@ Murmel language:
 
 Compiler issues:
 
-- `define`/ `defun`/ `defmacro` only work as top level forms
-  or within `progn, let, let*, letrec, labels` or `multiple-value-bind` forms,
+- `define` and `defun` only work as top level forms
+  or within `progn, let, let*, letrec, labels, macrolet` or `multiple-value-bind` forms,
   other use as non-toplevel form will throw a "not-yet-implemented" compiler error.
+- `defmacro` only works as a top level form
+  or within `progn, macrolet` or `labels` forms,
 - `define`-ing an already `define`-d symbol is not supported
 - `macroexpand-1` is limited to quoted forms
 - macro expansion is only done at compiletime, e.g. `(defmacro m() 1) (eval '(m))`

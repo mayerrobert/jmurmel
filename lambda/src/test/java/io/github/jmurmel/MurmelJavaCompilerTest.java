@@ -586,6 +586,16 @@ public class MurmelJavaCompilerTest {
         assertEquals("labelsmutual produced wrong result", 5L, program.body());
     }
 
+    @Test
+    public void testNestedDefun() throws Exception {
+        final MurmelProgram program = compile("(labels ((f () (list '+ 2 3)))"
+                                              + "  (macrolet ((m () (f)))"
+                                              + "    (defmacro m2 () (m))"
+                                              + "    (defun f-labels () (m2))))" 
+                                              + "  (f-labels)");
+        assertNotNull("failed to compile nested defun to class", program);
+        assertEquals("nested defun produced wrong result", 5.0, program.body());
+    }
 
 
     @Test
