@@ -589,7 +589,9 @@
               ((= 0 1) `(m%last0 ,lst))
               (t `(m%lastn ,lst ,n)))
             `(m%lastn ,lst ,n))
-        `(m%last1 ,lst))))
+        `(m%last1 ,lst)))
+
+) ; macrolet
 
 
 ;;; = Function: nconc
