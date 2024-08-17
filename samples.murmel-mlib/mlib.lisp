@@ -3596,100 +3596,100 @@
 ) ; labels
 
 
-;; private: used by the macro 'formatter' and by the function 'm%format-function'
-(defun m%parse-control-string (control-string)
-  (let* ((result (cons () ()))
-         (append-to result)
-         (i 0)
-         (j nil)
-         (control-string-length (length control-string)))
-    (when (> control-string-length 0)
-      (labels ((collect (obj)
-                 (setq append-to (cdr (rplacd append-to (cons obj ())))))
+(labels ((parse-control-string (control-string)
+           ;; used by the macro 'formatter' and by the function 'm%format-function'
+           (let* ((result (cons () ()))
+                  (append-to result)
+                  (i 0)
+                  (j nil)
+                  (control-string-length (length control-string)))
+             (when (> control-string-length 0)
+               (labels ((collect (obj)
+                          (setq append-to (cdr (rplacd append-to (cons obj ())))))
 
-               (start ()
-                 (when (< i control-string-length)
-                   (when (eql (sref control-string i) #\~)
-                     (and j (< j i) (collect (string-subseq control-string j i)))
-                     (incf i)
-                     (let* (code colonp atp arg
-                            (args (cons () ()))
-                            (append-to-args args))
-                       (labels ((collect-arg (arg)
-                                  (setq append-to-args (cdr (rplacd append-to-args (cons arg ())))))
+                        (start ()
+                          (when (< i control-string-length)
+                            (when (eql (sref control-string i) #\~)
+                              (and j (< j i) (collect (string-subseq control-string j i)))
+                              (incf i)
+                              (let* (code colonp atp arg
+                                          (args (cons () ()))
+                                          (append-to-args args))
+                                (labels ((collect-arg (arg)
+                                           (setq append-to-args (cdr (rplacd append-to-args (cons arg ())))))
 
-                                (whitespacep (c)
-                                  (or (eql c #\ )
-                                      (eql c #\Tab)
-                                      (eql c #\Vt)
-                                      (eql c #\Page)
-                                      (eql c #\Return)))
+                                         (whitespacep (c)
+                                           (or (eql c #\ )
+                                               (eql c #\Tab)
+                                               (eql c #\Vt)
+                                               (eql c #\Page)
+                                               (eql c #\Return)))
 
-                                (next ()
-                                  (setq code (sref control-string i))
-                                  (case code
-                                    (#\'
-                                     (setq arg (sref control-string (incf i)))
-                                     (incf i)
-                                     (next))
+                                         (next ()
+                                           (setq code (sref control-string i))
+                                           (case code
+                                             (#\'
+                                              (setq arg (sref control-string (incf i)))
+                                              (incf i)
+                                              (next))
 
-                                    (#\,
-                                     (collect-arg arg)
-                                     (setq arg nil)
-                                     (incf i)
-                                     (next))
+                                             (#\,
+                                              (collect-arg arg)
+                                              (setq arg nil)
+                                              (incf i)
+                                              (next))
 
-                                    (#\:
-                                     (setq colonp t)
-                                     (incf i)
-                                     (next))
+                                             (#\:
+                                              (setq colonp t)
+                                              (incf i)
+                                              (next))
 
-                                    (#\@
-                                     (setq atp t)
-                                     (incf i)
-                                     (next))
+                                             (#\@
+                                              (setq atp t)
+                                              (incf i)
+                                              (next))
 
-                                    ((#\+ #\- #\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
-                                     (setq arg 0)
-                                     (let ((sign 1))
-                                       (if (eql code #\+)
-                                           (setq i (1+ i) code (sref control-string i))
-                                           (when (eql code #\-)
-                                             (setq i (1+ i) code (sref control-string i) sign -1)))
-                                       (labels ((loop (code)
-                                                 (when (and (>= code 48) (<= code 57))
-                                                   (setq arg (+ (* arg 10) (- code 48))
-                                                         i (1+ i))
-                                                   (when (< i control-string-length)
-                                                     (loop (char-code (sref control-string i)))))))
-                                         (loop (char-code code)))
-                                       (setq arg (truncate arg sign)))
-                                     (next))
+                                             ((#\+ #\- #\0 #\1 #\2 #\3 #\4 #\5 #\6 #\7 #\8 #\9)
+                                              (setq arg 0)
+                                              (let ((sign 1))
+                                                (if (eql code #\+)
+                                                    (setq i (1+ i) code (sref control-string i))
+                                                    (when (eql code #\-)
+                                                      (setq i (1+ i) code (sref control-string i) sign -1)))
+                                                (labels ((loop (code)
+                                                          (when (and (>= code 48) (<= code 57))
+                                                            (setq arg (+ (* arg 10) (- code 48))
+                                                                  i (1+ i))
+                                                            (when (< i control-string-length)
+                                                              (loop (char-code (sref control-string i)))))))
+                                                  (loop (char-code code)))
+                                                (setq arg (truncate arg sign)))
+                                              (next))
 
-                                    (#\Newline
-                                     (let loop ()
-                                       (when (and (< (1+ i) control-string-length)
-                                                  (whitespacep (sref control-string (1+ i))))
-                                         (incf i)
-                                         (loop))))
+                                             (#\Newline
+                                              (let loop ()
+                                                   (when (and (< (1+ i) control-string-length)
+                                                              (whitespacep (sref control-string (1+ i))))
+                                                     (incf i)
+                                                     (loop))))
 
-                                    (t
-                                     (when arg
-                                       (collect-arg arg)
-                                       (setq arg nil))
-                                     (collect (list* code colonp atp (cdr args)))))))
-                         (next)))
+                                             (t
+                                              (when arg
+                                                (collect-arg arg)
+                                                (setq arg nil))
+                                              (collect (list* code colonp atp (cdr args)))))))
+                                  (next)))
 
-                     (setf j (1+ i)))
-                   (unless j (setf j i))
-                   (incf i)
-                   (start))
-                 (when (< j i)
-                   (collect (string-subseq control-string j i))
-                   (setq j i))))
-        (start)))
+                              (setf j (1+ i)))
+                            (unless j (setf j i))
+                            (incf i)
+                            (start))
+                          (when (< j i)
+                            (collect (string-subseq control-string j i))
+                            (setq j i))))
+                 (start)))
 
-    (cdr result)))
+             (cdr result))))
 
 
 (macrolet ((float-fmtstring ()
@@ -3754,7 +3754,7 @@
                (collect-setq `(m%print-float arguments output-stream ,(float-fmtstring)))))
 
       `(lambda (output-stream . arguments)
-         ,@(dolist (elem (m%parse-control-string control-string) (cdr body))
+         ,@(dolist (elem (parse-control-string control-string) (cdr body))
              (if (stringp elem)
                  (collect `(write ,elem nil output-stream))
                  (let ((colonp (cadr elem))
@@ -3890,7 +3890,7 @@
 ;; private: used by the function 'format'
 (defun m%format-function (control-string)
   (lambda (output-stream . arguments)
-    (dolist (elem (m%parse-control-string control-string))
+    (dolist (elem (parse-control-string control-string))
       (if (stringp elem)
           (write elem nil output-stream)
           (let ((colonp (cadr elem))
@@ -4027,7 +4027,7 @@
                 (t (error "format - unimplemented format character '%s'" (car elem))))))))))
 
 ) ; macrolet
-
+) ; labels
 
 ;; semi-private: used by the function 'format' and the expansion of the macro 'format'
 (defun m%format (destination f . args)
