@@ -4029,8 +4029,9 @@
 ) ; macrolet
 ) ; labels
 
-;; semi-private: used by the function 'format' and the expansion of the macro 'format'
-(defun m%format (destination f . args)
+
+;; semi-private: used by the function 'm%format' and the expansion of the macro 'format'
+(defun m%do-format (destination f . args)
   (if destination
       (progn (apply f (cons destination args))
              nil)
@@ -4038,18 +4039,21 @@
         (apply f (cons destination args)))))
 
 
-(defun format (destination control-string . args)
-  (apply #'m%format (list* destination
-                           (if (functionp control-string)
-                               control-string
-                               (m%format-function control-string))
-                           args)))
+(defun m%format (destination control-string . args)
+  (apply #'m%do-format (list* destination
+                              (if (functionp control-string)
+                                  control-string
+                                  (m%format-function control-string))
+                              args)))
 
 
 (defmacro format (destination control-string . args)
   (if (stringp control-string)
-      `(m%format ,destination (formatter ,control-string) ,@args)
-      `(format ,destination ,control-string ,@args)))
+      `(m%do-format ,destination (formatter ,control-string) ,@args)
+      `(m%format ,destination ,control-string ,@args)))
+
+
+(define format m%format)
 
 
 (defmacro m%def-macro-fun)

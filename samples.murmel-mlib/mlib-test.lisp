@@ -1972,6 +1972,12 @@ all the result list to a single list. FUNCTION must return a list."
 
 ;;; - format
 
+(tests format
+  (format nil "Hello, ~A" "World!") => "Hello, World!"
+  (format nil (formatter "Hello, ~A") "World!") => "Hello, World!"
+)
+
+
 (defmacro test (expected
                 str #-murmel cl:&rest #+murmel . args)
   `(progn
