@@ -38,12 +38,12 @@
                  (c (cdr c))))
          (if (= idx 0)
              (car seq)
-             (error "idx must be >= 0"))))
+             (jerror "idx must be >= 0"))))
 
     (vector
      (elt seq idx))
 
-    (t (error "not a nonempty sequence"))))
+    (t (jerror "not a nonempty sequence"))))
 
 (defun seqset (seq idx val)
   (typecase seq
@@ -54,7 +54,7 @@
                  (c (rplacd c val))))
          (if (= idx 0)
              (rplaca seq val)
-             (error "idx must be >= 0"))))
+             (jerror "idx must be >= 0"))))
     (vector
      (setf (elt seq idx) val)))
 
@@ -84,7 +84,7 @@
   (let ((h (make-hash-table :test test)))
     (labels ((luup (lst)
                (when lst
-                 (unless (cdr lst) (error "last tuple is missing a value"))
+                 (unless (cdr lst) (jerror "last tuple is missing a value"))
                  (setf (gethash (car lst) h) (cadr lst))
                  (luup (cddr lst)))))
       (luup pairs))
@@ -536,6 +536,8 @@ multiline comment
   1)
 
 ;; test nested defun: labels -> macrolet -> defun
+#+murmel
+(progn
 (labels ((f () (list '+ 2 3)))
   (macrolet ((m () (f)))
     (defmacro m2 () (m))
@@ -546,6 +548,7 @@ multiline comment
 
 (deftest macrolet.3
   (f-labels) 5)
+)
 
 
 ;;; test cond
@@ -686,7 +689,13 @@ multiline comment
 
 
 ;;; try
-(defun fail #+murmel datum #-murmel (&rest datum) (apply #'error datum))
+#+murmel
+(defun fail datum
+  (apply #'jerror datum))
+#-murmel
+(defun fail (&rest datum)
+  (apply #'error datum))
+
 (defun fail1 () (fail "test"))
 
 (deftest try.1 (try (values 1 2 3)) 1)
@@ -703,7 +712,7 @@ multiline comment
 (progn
   (setq *condition-handler* (lambda (e) (throw 'target "oops")))
 
-  (deftest condition-handler.1 (catch 'target (error "test")) "oops")
+  (deftest condition-handler.1 (catch 'target (jerror "test")) "oops")
   (deftest condition-handler.2 (catch 'target (fail1)) "oops")
 
   ; dynamically replace the error handler, error will be handled by replacement.
@@ -718,7 +727,7 @@ multiline comment
                   (*condition-handler* (lambda (e)
                                          ;(write "inner handler: ") (writeln e)
                                          (setq inner-result 'inner-was-here)
-                                         (error "hi-from-inner"))))
+                                         (jerror "hi-from-inner"))))
     (deftest condition-handler.4 (list (catch 'target (fail "test3")) inner-result) '("oops" inner-was-here)))
 
   (setq *condition-handler* nil)
@@ -1553,9 +1562,13 @@ multiline comment
                                   file-error
                                   stream-error end-of-file reader-error))
 
+#-murmel
+(defun jerror (&rest args)
+  (apply #'error args))
+
 (defun fling (cnd)
   (labels ((do-fling ()
-             (error cnd)))
+             (jerror cnd)))
     (do-fling)))
 
 (defmacro get-condition (form)
@@ -1568,7 +1581,7 @@ multiline comment
            (if cnd-types
                (let ((cnd-type (car cnd-types)))
                  ;;(jformat t "condition %s%n" cnd-type)
-                 (deftest cnd.X.1 (typep (get-condition (error cnd-type)) cnd-type) t)
+                 (deftest cnd.X.1 (typep (get-condition (jerror cnd-type)) cnd-type) t)
                  (deftest cnd.X.2 (typep (get-condition (fling cnd-type)) cnd-type) t)
                  (looop (cdr cnd-types))))))
   (looop *all-murmel-conditions*))
@@ -1755,4 +1768,4 @@ multiline comment
       "Failure.")
   #-murmel :escape nil)
 
-#+murmel (if (> *failed* 0) (error "%d/%d errors" *failed* *count*))
+#+murmel (if (> *failed* 0) (jerror "%d/%d errors" *failed* *count*))

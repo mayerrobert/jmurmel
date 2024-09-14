@@ -67,6 +67,7 @@
 ;;;     - [write-char](#function-write-char)
 ;;;     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
 ;;;     - [format](#function-format), [formatter](#macro-formatter)
+;;;     - [error](#function-error)
 ;;;     - [with-output-to-string](#macro-with-output-to-string)
 
 ;;; - misc
@@ -319,7 +320,7 @@
              (let ((keydesignator (car clause)))
                (if (and keydesignator (symbolp keydesignator))
                    `((typep ,tmp ',keydesignator) ,@(cdr clause))
-                   (error 'simple-error "typecase - bad clause '%s'" clause))))
+                   (jerror 'simple-error "typecase - bad clause '%s'" clause))))
 
            (do-clauses (key)
              (let* ((result (list ()))
@@ -381,13 +382,13 @@
 (defun endp (obj)
   (cond ((consp obj) nil)
         ((null  obj) t)
-        (t (error 'simple-type-error "endp - not a list: '%s'" obj))))
+        (t (jerror 'simple-type-error "endp - not a list: '%s'" obj))))
 
 
 (defun m%nonneg-integer-number (n)
   (cond ((integerp n)
          (if (< n 0)
-             #1=(error 'simple-type-error "must be an integer >= 0: '%s'" n)
+             #1=(jerror 'simple-type-error "must be an integer >= 0: '%s'" n)
              n))
 
         ((numberp n)
@@ -616,7 +617,7 @@
                      ((consp ele) (rplacd (last splice) ele)  (setq splice ele)  (inner (cdr inner-lists) (cadr inner-lists)))
                      ((null ele) (rplacd (last splice) ())  (inner (cdr inner-lists) (cadr inner-lists)))
                      ((atom ele) (if (cdr inner-lists)
-                                     (error 'simple-type-error "nconc - not a list: '%s'" ele)
+                                     (jerror 'simple-type-error "nconc - not a list: '%s'" ele)
                                      (rplacd (last splice) ele)))))))
            result)
 
@@ -625,7 +626,7 @@
 
           ((atom result)
            (if (cdr outer-lists)
-               (error 'simple-type-error "nconc - not a list: '%s'" result)
+               (jerror 'simple-type-error "nconc - not a list: '%s'" result)
                result))))))
 
 
@@ -791,7 +792,7 @@
                                       (progn
                                         (setq append-to (cdr (rplacd append-to (list (car r)))))
                                         (loop (cdr r)))
-                                      (if r (error 'simple-type-error "%s - not a list: '%s'" ',name r))))
+                                      (if r (jerror 'simple-type-error "%s - not a list: '%s'" ',name r))))
                              (loop (unzip-tails args))))
                       (let loop ((lst lst))
                            (when lst
@@ -1073,7 +1074,7 @@
                     ((stringp ,vec) sref)
                     ((bit-vector-p ,vec) bvref)
                     ((vectorp ,vec) seqref)
-                    (t (error 'simple-type-error "dovector - not a vector: '%s'" ,vec))))
+                    (t (jerror 'simple-type-error "dovector - not a vector: '%s'" ,vec))))
             (,limit (vector-length ,vec))
             (,idx 0)
             ,var)
@@ -1113,7 +1114,7 @@
                (progn
                  ,@body
                  (,loop (cddr ,lst) (caddr ,lst) (car (cdddr ,lst))))
-               (error "doplist - odd number of elements in plist"))
+               (jerror "doplist - odd number of elements in plist"))
            (progn ,@result)))))
 
 
@@ -1519,7 +1520,7 @@
                    (values ,@(cdr setter))
                    (values ,@(cdr reader)))))
 
-              (t (error "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, hashref, gethash, svref, bvref, bit, sref char and values are supported for 'place', got %s" place))))))))
+              (t (jerror "get-setf-expansion - only symbols, car..cdddr, nth, elt, seqref, hashref, gethash, svref, bvref, bit, sref char and values are supported for 'place', got %s" place))))))))
 
 
 ;;; = Macro: setf
@@ -1549,7 +1550,7 @@
                           (cons `(setf ,(car args) ,(cadr args))
                                 (if (cddr args)
                                     (loop (cddr args))))
-                          #1=(error "setf - odd number of arguments"))))
+                          #1=(jerror "setf - odd number of arguments"))))
 
               (if (symbolp (car args))
                   `(setq   ,(car args)  ,@(cdr args))
@@ -1639,7 +1640,7 @@
         (let loop ((pairs pairs) (append-to body))
           (if pairs
               (progn
-                (unless (cdr pairs) (error 'program-error "psetf - odd number of arguments"))
+                (unless (cdr pairs) (jerror 'program-error "psetf - odd number of arguments"))
                 (let ((place (car pairs))
                       (values-form (cadr pairs)))
                   (destructuring-bind (vars vals stores setter reader) (get-setf-expansion place)
@@ -1676,7 +1677,7 @@
 ;;; Similar to CL's `shiftf`.
 (defmacro shiftf places-and-value
   (unless (cdr places-and-value)
-    (error 'program-error "shiftf - not enough arguments"))
+    (jerror 'program-error "shiftf - not enough arguments"))
 
   (let* ((body (list ()))
          (append-to body))
@@ -1947,7 +1948,7 @@
 (defun evenp (n)
   (if (integerp n)
       (= 0.0 (mod n 2))
-      (error 'simple-type-error "evenp - not an integer: '%s'" n)))
+      (jerror 'simple-type-error "evenp - not an integer: '%s'" n)))
 
 
 ;;; = Function: oddp
@@ -1959,7 +1960,7 @@
 (defun oddp (n)
   (if (integerp n)
       (= 1.0 (mod n 2))
-      (error 'simple-type-error "oddp - not an integer: '%s'" n)))
+      (jerror 'simple-type-error "oddp - not an integer: '%s'" n)))
 
 
 ;;; = Function: char=
@@ -2029,7 +2030,7 @@
   (multiple-value-bind (obj pos) (apply read-from-string (cdr args))
     (if (typep obj (car args))
         (values obj pos)
-        (error 'parse-error "parse - expected an object of type '%s', got '%s'" (car args) obj))))
+        (jerror 'parse-error "parse - expected an object of type '%s', got '%s'" (car args) obj))))
 
 
 ;;; = Function: parse-integer
@@ -2153,7 +2154,7 @@
         ((null arg)
          (lambda () (values nil nil)))
 
-        (t (error "scan - cannot create a generator function from given arguments"))))
+        (t (jerror "scan - cannot create a generator function from given arguments"))))
 
 
 (defun scan (arg . more-args)
@@ -2200,7 +2201,7 @@
 ;;; Once the first generator indicates "at end" for the first time no more generators will be called.
 (defun scan-multiple (generator . more-generators)
   (unless (functionp generator)
-    (error 'simple-type-error "scan-multiple - not a generator"))
+    (jerror 'simple-type-error "scan-multiple - not a generator"))
 
   (if more-generators
 
@@ -2239,7 +2240,7 @@
 ;;; A single generator would be returned unchanged.
 (defun scan-concat (generator . more-generators)
   (unless (functionp generator)
-    (error 'simple-type-error "scan-concat - not a generator"))
+    (jerror 'simple-type-error "scan-concat - not a generator"))
 
   (if more-generators
       (let ((more-generators more-generators))
@@ -2309,7 +2310,7 @@
     ((null seq)    nil)
     ((consp seq)   (copy-list seq))
     ((vectorp seq) (vector-copy seq))
-    (t             (error 'simple-type-error "copy-seq - not a sequence: '%s'" seq))))
+    (t             (jerror 'simple-type-error "copy-seq - not a sequence: '%s'" seq))))
 
 
 ;;; = Function: length
@@ -2323,7 +2324,7 @@
     ((null seq) 0)
     ((listp seq) (list-length seq))
     ((vectorp seq) (vector-length seq))
-    (t (error 'simple-type-error "length - not a sequence: '%s'" seq))))
+    (t (jerror 'simple-type-error "length - not a sequence: '%s'" seq))))
 
 
 ;;; = Function: reverse
@@ -2354,7 +2355,7 @@
       ((simple-vector-p seq)    (reverse/vector seq (make-array (vector-length seq)) svref svset))
       ((bit-vector-p seq)       (reverse/vector seq (make-array (vector-length seq) 'bit) bvref bvset))
       ((vectorp seq)            (reverse/vector seq (make-array (vector-length seq)) seqref seqset))
-      (t                        (error 'simple-type-error "reverse - not a sequence: '%s'" seq)))))
+      (t                        (jerror 'simple-type-error "reverse - not a sequence: '%s'" seq)))))
 
 
 ;;; = Function: nreverse
@@ -2393,7 +2394,7 @@
       ((simple-vector-p seq)    (nreverse/vector seq svref svset))
       ((bit-vector-p seq)       (nreverse/vector seq bvref bvset))
       ((vectorp seq)            (nreverse/vector seq seqref seqset))
-      (t                        (error 'simple-type-error "nreverse - not a sequence: '%s'" seq)))))
+      (t                        (jerror 'simple-type-error "nreverse - not a sequence: '%s'" seq)))))
 
 
 ;;; = Function: remove-if
@@ -2430,7 +2431,7 @@
       ((simple-vector-p seq)     (list->simple-vector     (remove-if/vector seq)))
       ((simple-bit-vector-p seq) (list->bit-vector        (remove-if/vector seq)))
       ((vectorp seq)             (list->simple-vector     (remove-if/vector seq)))
-      (t                         (error 'simple-type-error "remove-if - not a sequence: '%s'" seq)))))
+      (t                         (jerror 'simple-type-error "remove-if - not a sequence: '%s'" seq)))))
 
 
 ;;; = Function: remove
@@ -2446,11 +2447,11 @@
 
 (labels ((m%list->sequence (lst result-type)
            (cond ((eq result-type 'null)              (when lst
-                                                        (error 'simple-type-error "cannot create a sequence of type null w/ length > 0"))
+                                                        (jerror 'simple-type-error "cannot create a sequence of type null w/ length > 0"))
                                                       nil)
                  ((eq result-type 'list)              lst)
                  ((eq result-type 'cons)              (unless lst
-                                                        (error 'simple-type-error "cannot create a sequence of type cons w/ length 0"))
+                                                        (jerror 'simple-type-error "cannot create a sequence of type cons w/ length 0"))
                                                       lst)
                  ((eq result-type 'vector)            (list->simple-vector lst))
                  ((eq result-type 'simple-vector)     (list->simple-vector lst))
@@ -2458,7 +2459,7 @@
                  ((eq result-type 'bit-vector)        (list->bit-vector lst))
                  ((eq result-type 'string)            (list->string lst))
                  ((eq result-type 'simple-string)     (list->string lst))
-                 (t                                   (error 'simple-type-error "%s is a bad type specifier for sequences" result-type)))))
+                 (t                                   (jerror 'simple-type-error "%s is a bad type specifier for sequences" result-type)))))
 
 
 ;;; = Function: concatenate
@@ -2553,7 +2554,7 @@
                has-next-result (lambda () (< result-cursor result-length))
                result-length (vector-length result)))
 
-        (t (error 'simple-type-error "map-into - not a sequence: '%s'" result)))
+        (t (jerror 'simple-type-error "map-into - not a sequence: '%s'" result)))
 
       (if (cdr sequences)
           ;; 2 or more sequences given
@@ -2581,7 +2582,7 @@
                       (when (and (has-next-result) (< i len))
                         (set-result (func (seqref seq i)))
                         (loop (1+ i)))))
-                (t (error 'simple-type-error "map-into: not a sequence: '%s'" seq)))
+                (t (jerror 'simple-type-error "map-into: not a sequence: '%s'" seq)))
 
               ;; 0 sequences given
               (let loop ()
@@ -2651,7 +2652,7 @@
             ((simple-vector-p seq)     (reduce/vector seq svref))
             ((bit-vector-p seq)        (reduce/vector seq bvref))
             ((vectorp seq)             (reduce/vector seq seqref))
-            (t (error 'simple-type-error "reduce - not a sequence: '%s'" seq))))))
+            (t (jerror 'simple-type-error "reduce - not a sequence: '%s'" seq))))))
 
 
 ; hash tables *********************************************************
@@ -2810,7 +2811,7 @@
 (defun write-char (c . dest)
   (if (characterp c)
       (write c nil (car dest))
-      (error 'simple-type-error "write-char - not a character: '%s'" c)))
+      (jerror 'simple-type-error "write-char - not a character: '%s'" c)))
 
 
 ;;; = Function: terpri, prin1, princ, print
@@ -3445,7 +3446,7 @@
            (if obj
                (if (characterp obj)
                    obj
-                   (error "format - not a character: '%s'" obj))
+                   (jerror "format - not a character: '%s'" obj))
                default))
 
          (int-with-default (obj default)
@@ -3454,7 +3455,7 @@
                         (= obj (setq obj (truncate obj)))
                         (>= obj 0))
                    obj
-                   (error "format - not an integer >= 0: '%s'" obj))
+                   (jerror "format - not an integer >= 0: '%s'" obj))
                default)))
 
 ;; semi-private: used by the function generated by 'format-function' and the expansion of 'formatter'
@@ -3536,9 +3537,9 @@
 (defun m%print-roman (arguments output-stream colonp)
   (let ((n (car arguments)))
     (unless (and (numberp n) (= n (truncate n)))
-      (error "format - not an integer: '%s'" n))
+      (jerror "format - not an integer: '%s'" n))
     (unless (<= 1 n (if colonp 4999 3999))
-      (error "format - number too large to print in Roman numerals: '%s'" n))
+      (jerror "format - number too large to print in Roman numerals: '%s'" n))
 
     (write (if colonp
                (string-join
@@ -3800,7 +3801,7 @@
                           (collect-setq
                             (if atp
                                 `(m%print-roman arguments output-stream ,colonp)
-                                `(error "format - english numbers are not supported")))))
+                                `(jerror "format - english numbers are not supported")))))
 
                      ;; Tilde D: Decimal
                      ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
@@ -3873,7 +3874,7 @@
 
                      ;; Tilde W: Write
                      ((#\w #\W)
-                      ;;(when params (error "format - too many arguments, format character W accepts 0"))
+                      ;;(when params (jerror "format - too many arguments, format character W accepts 0"))
                       (collect-shift `(write (car arguments) t output-stream)))
 
 
@@ -3883,7 +3884,7 @@
                      ((#\t #\T)
                       (collect `(write ,(nchars params #\Tab) nil output-stream)))
 
-                     (t (error "format - unimplemented format character '%s'" (car elem)))))))
+                     (t (jerror "format - unimplemented format character '%s'" (car elem)))))))
          ,'arguments))))
 
 
@@ -3954,7 +3955,7 @@
                      (setq arguments (m%print-integer arguments output-stream (car params) colonp atp (cdr params)))
                      (if atp
                          (setq arguments (m%print-roman arguments output-stream colonp))
-                         (error "format - english numbers are not supported"))))
+                         (jerror "format - english numbers are not supported"))))
 
                 ;; Tilde D: Decimal
                 ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
@@ -4012,7 +4013,7 @@
 
                 ;; Tilde W: Write
                 ((#\w #\W)
-                 ;;(when params (error "format - too many arguments, format character C accepts 0"))
+                 ;;(when params (jerror "format - too many arguments, format character C accepts 0"))
                  (write (car arguments) t output-stream)
                  (setq arguments (cdr arguments)))
 
@@ -4024,7 +4025,7 @@
                  (dotimes (n (or (car params) 1))
                    (write #\Tab nil output-stream)))
 
-                (t (error "format - unimplemented format character '%s'" (car elem))))))))))
+                (t (jerror "format - unimplemented format character '%s'" (car elem))))))))))
 
 ) ; macrolet
 ) ; labels
@@ -4054,6 +4055,18 @@
 
 
 (define format m%format)
+
+
+;;; = Function: error
+;;;     (error [condition-type] control-string args*) -> |
+;;;
+;;; Since: 1.5
+;;;
+;;; A simplified subset of Common Lisp's function `error`.
+(defun error (datum . args)
+  (if (typep datum 'symbol)
+      (jerror datum (apply format (cons nil args)))
+      (jerror 'simple-error (apply format (list* nil datum args)))))
 
 
 (defmacro m%def-macro-fun)

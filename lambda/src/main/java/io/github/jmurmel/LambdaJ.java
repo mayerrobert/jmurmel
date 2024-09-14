@@ -2302,7 +2302,7 @@ public class LambdaJ {
 
         // misc
         public static final String VALUES = "values";
-        public static final String ERROR = "error";
+        public static final String JERROR = "jerror";
         public static final String JMETHOD = "jmethod";
 
         private Names() {}
@@ -2500,7 +2500,7 @@ public class LambdaJ {
         sTrace("trace", Features.HAVE_XTRA, -1)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.trace(args); } },
         sUntrace("untrace", Features.HAVE_XTRA, -1)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.untrace(args); } },
         sMacroexpand1("macroexpand-1", Features.HAVE_XTRA, 1)          { @Override Object apply(LambdaJ intp, ConsCell args) { return macroexpand1(intp, args); } },
-        sError(ERROR, Features.HAVE_UTIL, 1, -1)                       { @Override Object apply(LambdaJ intp, ConsCell args) { error(intp.typeSpecs(), car(args), listToArray(cdr(args))); return null; } },
+        sJError(JERROR, Features.HAVE_UTIL, 1, -1)                     { @Override Object apply(LambdaJ intp, ConsCell args) { jerror(intp.typeSpecs(), car(args), listToArray(cdr(args))); return null; } },
         sImplType("lisp-implementation-type", Features.HAVE_UTIL, 0)   { @Override Object apply(LambdaJ intp, ConsCell args) { return "JMurmel"; } },
         sImplVersion("lisp-implementation-version", Features.HAVE_UTIL, 0) { @Override Object apply(LambdaJ intp, ConsCell args) { return ENGINE_VERSION_NUM; } },
 
@@ -2887,7 +2887,7 @@ public class LambdaJ {
                 case sThrow: {
                     final Object throwTag = eval(car(ccArguments), env, stack, level, traceLvl);
                     final Object throwResult = eval(cadr(ccArguments), env, stack, level, traceLvl);
-                    // todo checken obs tag gibt, sonst (error 'control-error)
+                    // todo checken obs tag gibt, sonst (jerror 'control-error)
                     throw new ReturnException(throwTag, throwResult, values);
                 }
 
@@ -6275,23 +6275,23 @@ public class LambdaJ {
             else return new LambdaJSymbol("gensym");
         }
 
-        static void error(Map<LambdaJSymbol, TypeSpec> typeSpecs, Object datum, Object... args) {
+        static void jerror(Map<LambdaJSymbol, TypeSpec> typeSpecs, Object datum, Object... args) {
             if (datum instanceof Throwable) wrap0((Throwable)datum);
 
-            if (stringp(datum)) { throw new SimpleError(requireString(ERROR, datum), args); }
+            if (stringp(datum)) { throw new SimpleError(requireString(JERROR, datum), args); }
 
             final String msg;
             switch (args.length) {
             case 0:  msg = null;  break;
-            case 1:  msg = String.format(requireString(ERROR, args[0]));  break;
-            default: msg = String.format(requireString(ERROR, args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
+            case 1:  msg = String.format(requireString(JERROR, args[0]));  break;
+            default: msg = String.format(requireString(JERROR, args[0]), Arrays.copyOfRange(args, 1, args.length));  break;
             }
 
             @SuppressWarnings("SuspiciousMethodCalls")
             final TypeSpec murmelTypeSpec = typeSpecs.get(datum);
             if (murmelTypeSpec != null) murmelTypeSpec.thrower.accept(msg);
 
-            throw new SimpleTypeError("error: unknown condition type " + printSEx(datum) + ": " + msg);
+            throw new SimpleTypeError("jerror: unknown condition type " + printSEx(datum) + ": " + msg);
         }
     }
 
@@ -7951,7 +7951,7 @@ public class LambdaJ {
                                + "--no-vector ...  no vector support\n"
                                + "--no-hash .....  no hash-table support\n"
                                + "--no-io .......  no primitive functions read, write, writeln, lnwrite,\n"
-                               + "--no-util .....  no primitive functions consp, symbolp, listp, null, error,\n"
+                               + "--no-util .....  no primitive functions consp, symbolp, listp, null, jerror,\n"
                                + "                 append, assoc, assq, list, list*, jformat, jformat-locale,\n"
                                + "                 no time related primitives or symbols\n"
                                + "                 no symbol *features*\n"
@@ -8791,18 +8791,18 @@ public class LambdaJ {
         public final Object _trace     (Object... args) { clrValues(); return null; }
         public final Object _untrace   (Object... args) { clrValues(); return null; }
 
-        public final Object _error     (Object... args) { clrValues(); varargs1(ERROR, args); LambdaJ.Subr.error(typeSpecs(), args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
-        public final Object error1     (Object a1)      { clrValues(); LambdaJ.Subr.error(typeSpecs(), a1, NOARGS); return null; }
-        public final Object error2     (Object a1, Object a2) { clrValues(); LambdaJ.Subr.error(typeSpecs(), a1, a2); return null; }
-        public final Object error3     (Object a1, Object a2, Object a3) { clrValues(); LambdaJ.Subr.error(typeSpecs(), a1, a2, a3); return null; }
-        public final Object error4     (Object a1, Object a2, Object a3, Object a4) { clrValues(); LambdaJ.Subr.error(typeSpecs(), a1, a2, a3, a4); return null; }
-        public final Object errorN     (Object a1, Object a2, Object a3, Object... args) {
+        public final Object _jerror    (Object... args) { clrValues(); varargs1(JERROR, args); LambdaJ.Subr.jerror(typeSpecs(), args[0], Arrays.copyOfRange(args, 1, args.length)); return null; }
+        public final Object jerror1    (Object a1)      { clrValues(); LambdaJ.Subr.jerror(typeSpecs(), a1, NOARGS); return null; }
+        public final Object jerror2    (Object a1, Object a2) { clrValues(); LambdaJ.Subr.jerror(typeSpecs(), a1, a2); return null; }
+        public final Object jerror3    (Object a1, Object a2, Object a3) { clrValues(); LambdaJ.Subr.jerror(typeSpecs(), a1, a2, a3); return null; }
+        public final Object jerror4    (Object a1, Object a2, Object a3, Object a4) { clrValues(); LambdaJ.Subr.jerror(typeSpecs(), a1, a2, a3, a4); return null; }
+        public final Object jerrorN    (Object a1, Object a2, Object a3, Object... args) {
             clrValues();
             final Object[] newArgs = new Object[args.length + 2];
             newArgs[0] = a2;
             newArgs[1] = a3;
             System.arraycopy(args, 0, newArgs, 2, args.length);
-            LambdaJ.Subr.error(typeSpecs(), a1, newArgs);
+            LambdaJ.Subr.jerror(typeSpecs(), a1, newArgs);
             return null;
         }
 
@@ -9307,7 +9307,7 @@ public class LambdaJ {
         }
 
         public final Object doThrow(Object tag, Object primaryResult) {
-            // todo checken obs tag gibt, sonst (error 'control-error)
+            // todo checken obs tag gibt, sonst (jerror 'control-error)
             throw new ReturnException(tag, primaryResult, values);
         }
 
@@ -9625,7 +9625,7 @@ public class LambdaJ {
             case "gensym": return (CompilerPrimitive)this::_gensym;
             case "trace": return (CompilerPrimitive)this::_trace;
             case "untrace": return (CompilerPrimitive)this::_untrace;
-            case ERROR: return (CompilerPrimitive)this::_error;
+            case JERROR: return (CompilerPrimitive)this::_jerror;
             case "lisp-implementation-type": return (CompilerPrimitive)this::implType;
             case "lisp-implementation-version": return (CompilerPrimitive)this::implVersion;
 
@@ -9833,7 +9833,7 @@ public class LambdaJ {
         + "fround" + "\n" +"ffloor" + "\n" +"fceiling" + "\n" +"ftruncate" + "\n"
         + "sqrt" + "\n" +"log" + "\n" +"log10" + "\n" +"exp" + "\n" +"expt" + "\n" +"mod" + "\n" +"rem" + "\n" +"signum" + "\n" +"random" + "\n"
         + "gensym" + "\n" +"trace" + "\n" +"untrace" + "\n"
-        + ERROR + "\n" +JMETHOD + "\n" +"jproxy";
+        + JERROR + "\n" +JMETHOD + "\n" +"jproxy";
 
         private static final String aliasedPrimitives =
         "+@add" + "\n" + "*@mul" + "\n" + "-@sub" + "\n" + "/@quot" + "\n"
@@ -11806,13 +11806,13 @@ public class LambdaJ {
                 if (emitJmethod(sb, args, null, null, -1, false, null)) return true;
                 emitCallPrimitive(sb, "findMethod", args, env, topEnv, rsfx);
                 return true;
-            case sError:
+            case sJError:
                 switch (listLength(args)) {
-                case 1:  emitCallPrimitive(sb, "error1", args, env, topEnv, rsfx); return true;
-                case 2:  emitCallPrimitive(sb, "error2", args, env, topEnv, rsfx); return true;
-                case 3:  emitCallPrimitive(sb, "error3", args, env, topEnv, rsfx); return true;
-                case 4:  emitCallPrimitive(sb, "error4", args, env, topEnv, rsfx); return true;
-                default: emitCallPrimitive(sb, "errorN", args, env, topEnv, rsfx); return true;
+                case 1:  emitCallPrimitive(sb, "jerror1", args, env, topEnv, rsfx); return true;
+                case 2:  emitCallPrimitive(sb, "jerror2", args, env, topEnv, rsfx); return true;
+                case 3:  emitCallPrimitive(sb, "jerror3", args, env, topEnv, rsfx); return true;
+                case 4:  emitCallPrimitive(sb, "jerror4", args, env, topEnv, rsfx); return true;
+                default: emitCallPrimitive(sb, "jerrorN", args, env, topEnv, rsfx); return true;
                 }
             case sMakeArray:
                 switch (listLength(args)) {

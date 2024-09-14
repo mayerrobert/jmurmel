@@ -167,7 +167,7 @@ gensym
 macroexpand-1
 trace
 untrace
-error
+jerror
 lisp-implementation-type
 lisp-implementation-version
 

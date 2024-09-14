@@ -69,6 +69,7 @@ mlib provides the following Common Lisp-like functions and macros:
     - [write-char](#function-write-char)
     - [terpri, prin1, princ, print](#function-terpri-prin1-princ-print), [pprint](#function-pprint)
     - [format](#function-format), [formatter](#macro-formatter)
+    - [error](#function-error)
     - [with-output-to-string](#macro-with-output-to-string)
 - misc
     - [time](#macro-time)
@@ -1426,4 +1427,11 @@ Sample usage:
     -> (c)
     -> "
     ab"
+
+### Function: error
+    (error [condition-type] control-string args*) -> |
+
+Since: 1.5
+
+A simplified subset of Common Lisp's function `error`.
 </textarea>

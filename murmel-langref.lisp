@@ -1394,25 +1394,25 @@ pi ; ==> 3.141592653589793
 (macroexpand-1 '(add2 3))      ; --> (+ 3 2)
                                ; --> t
 
-; = (error datum . arguments) -> |
+; = (jerror datum . arguments) -> |
 ;
-; Since 1.4
+; Since 1.5
 ;
 ; Similar to CL's `error`.
 ; `datum` can also be a condition,
 ; e.g. to re-raise a condition that is not handled.
 
-(try (error 'simple-error "an error occurred") 'err)
+(try (jerror 'simple-error "an error occurred") 'err)
   ; -> err
   ; -> simple-error - an error occurred
 
 (writeln (try (multiple-value-bind (result condition)
-                                   (try (error 'simple-error "an error occurred") 'err)
+                                   (try (jerror 'simple-error "an error occurred") 'err)
                 (if (eq result 'err)
                     (if (typep condition 'arithmetic-error)
                         (writeln "an arithmetic error occurred")
                         (progn (writeln "another error occurred, rethrowing")
-                               (error condition)))
+                               (jerror condition)))
                     (writeln "no error")))
 
               'outer-err))  ; ==> outer-err
@@ -1804,7 +1804,7 @@ pi ; ==> 3.141592653589793
 ; - macro expansion is only done at compiletime, e.g. `(defmacro m() 1) (eval '(m))`
 ;   won't work
 ; - reassigning predefined primitives with `setq` is not supported, e.g.
-;   `(setq trunc (lambda (p) (1+ p)))` is an error (and wouldn't make much sense)
+;   `(setq truncate (lambda (p) (1+ p)))` is an error (and wouldn't make much sense)
 
 
 ;;; == Copyright ======================

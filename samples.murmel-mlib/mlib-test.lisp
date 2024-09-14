@@ -2116,4 +2116,4 @@ all the result list to a single list. FUNCTION must return a list."
 
 #+murmel
 (unless (zerop *error-count*)
-  (error "mlib-test.lisp: %d/%d asserts failed.%n" *error-count* *success-count*))
+  (jerror "mlib-test.lisp: %d/%d asserts failed.%n" *error-count* *success-count*))

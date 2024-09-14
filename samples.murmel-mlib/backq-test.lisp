@@ -177,4 +177,4 @@
 
 #+murmel
 (unless (zerop *error-count*)
-  (error "backq-test.lisp: %d/%d asserts failed.%n" *error-count* *success-count*))
+  (jerror "backq-test.lisp: %d/%d asserts failed.%n" *error-count* *success-count*))

@@ -2856,3 +2856,18 @@ func - msg: 'value'
 
 sollte int-with-default negative zahlen verweigern? gibts negative format params?
 -> sbcl ist picky, murmel, abcl, ecl nicht
+
+
+Murmel format    -> Murmel jformat ... nimmt Java format string
+                 -> jformat-locale
+Neu                 Mlib format und formatter
+
+Murmel error     -> Murmel jerror  ... (jerror datum . args) datum ist condition oder symbol (conditon-type) oder Java format string
+
+Neu              -> Mlib error     ... (error datum . args)  datum ist condition oder symbol (conditon-type) oder Murmel format string oder formatfunktion
+                                       (defun error (datum . args)
+                                         (if (stringp datum) (raise 'simple-error (apply format (list* nil datum args)))
+                                           (raise datum (apply format args))))
+
+Neu: Murmel raise                  ... (raise condition-type msg) macht throw new condition-type(msg)
+-> brauchts nicht, jerror kann das
