@@ -1,5 +1,4 @@
 http://clhs.lisp.se/Body/f_apply.htm:
-Murmel apply will genau ein argument. sollte 0 oder 1 argument gehen (aka ein optionales argument default null)
 "Because a function can neither detect whether it was called via apply nor whether (if so) the last argument to apply was a constant, conforming programs must neither rely on the list structure
  of a rest list to be freshly consed, nor modify that list structure."
 -> compiler könnte bei varargs also doch arraySlice verwenden
