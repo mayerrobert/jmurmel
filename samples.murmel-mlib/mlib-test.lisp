@@ -2001,6 +2001,10 @@ all the result list to a single list. FUNCTION must return a list."
 
 (test "6|55|35"
       "~,,'|,2:D" #xFFFF)
+(test "6|55|35"
+      "~,,v,v:D" #\| 2 #xFFFF)
+(test "'@@12:34:56'"
+      "'~v,v,v,v:d'" 10 #\@ #\: 2 123456)
 
 ;; no format characters
 (test "helloo"
@@ -2062,6 +2066,8 @@ all the result list to a single list. FUNCTION must return a list."
 ;; A
 (test "x_________________123x"
       "x~20,1,0,'_@ax" "123")
+(test "x_________________123x"
+      "x~v,v,v,v@ax" 20 1 0 #\_ "123")
 
 (test "x(1 2 3)*************x"
       "x~20,,,'*ax" '(1 2 3))
