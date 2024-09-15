@@ -3918,7 +3918,14 @@
                 (atp (caddr elem))
                 (params (cdddr elem)))
 
-            (labels ((do-float (c arg)
+            (labels ((do-char (c)
+                       (dotimes (n (prefix-param (or (car params) 1)))
+                         (write c nil output-stream)))
+
+                     (do-integer (base)
+                       (setq arguments (m%print-integer arguments output-stream base colonp atp params)))
+
+                     (do-float (c arg)
                        (if (floatp arg)
                            (jformat-locale output-stream "en-US" (float-fmtstring) arg)
                            (write arg nil output-stream))
@@ -3950,20 +3957,17 @@
                 ;; (~& should omit the first newline if the output stream
                 ;; is already at the beginning of a line, this is not implemented.)
                 ((#\% #\&)
-                 (dotimes (n (prefix-param (or (car params) 1)))
-                   (write #\Newline nil output-stream)))
+                 (do-char #\Newline))
 
                 ;; Tilde Vertical-Bar: Page
                 ;; This outputs a page separator character, if possible. ~n| does this n times.
                 (#\|
-                 (dotimes (n (prefix-param (or (car params) 1)))
-                   (write #\Page nil output-stream)))
+                 (do-char #\Page))
 
                 ;; Tilde Tilde: Tilde
                 ;; This outputs a tilde. ~n~ outputs n tildes.
                 (#\~
-                 (dotimes (n (prefix-param (or (car params) 1)))
-                   (write #\~ nil output-stream)))
+                 (do-char #\~))
 
 
                 ;; Radix Control
@@ -3985,19 +3989,19 @@
                 ;; The @ modifier causes the number's sign to be printed always; the default
                 ;; is to print it only if the number is negative. The : modifier is ignored.
                 ((#\d #\D)
-                 (setq arguments (m%print-integer arguments output-stream 10 colonp atp params)))
+                 (do-integer 10))
 
                 ;; Tilde B: Binary
                 ((#\b #\B)
-                 (setq arguments (m%print-integer arguments output-stream 2 colonp atp params)))
+                 (do-integer 2))
 
                 ;; Tilde O: Octal
                 ((#\o #\O)
-                 (setq arguments (m%print-integer arguments output-stream 8 colonp atp params)))
+                 (do-integer 8))
 
                 ;; Tilde X: Hexadecimal
                 ((#\x #\X)
-                 (setq arguments (m%print-integer arguments output-stream 16 colonp atp params)))
+                 (do-integer 16))
 
 
                 ;; Floating point
@@ -4042,8 +4046,7 @@
 
                 ;; Tilde T: Tabulate
                 ((#\t #\T)
-                 (dotimes (n (prefix-param (or (car params) 1)))
-                   (write #\Tab nil output-stream)))
+                 (do-char #\Tab))
 
                 (t (jerror "format - unimplemented format character '%s'" (car elem))))))))))
 
