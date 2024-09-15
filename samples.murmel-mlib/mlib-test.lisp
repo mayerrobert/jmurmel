@@ -1981,8 +1981,9 @@ all the result list to a single list. FUNCTION must return a list."
 (defmacro test (expected
                 str #-murmel cl:&rest #+murmel . args)
   `(progn
-     (assert-equal (format    nil ,str ,@args) ,expected)
-     (assert-equal (apply #'format (list nil (formatter ,str) ,@args)) ,expected)
+     (assert-equal ,expected (format    nil ,str ,@args) ,expected)
+     (assert-equal ,expected (apply #'format (list nil (formatter ,str) ,@args)) ,expected)
+     (assert-equal ,expected (apply #'format (list nil ,str ,@args)) ,expected)
      ))
 
 ;; CLHS https://www.lispworks.com/documentation/HyperSpec/Body/22_cba.htm
@@ -2089,6 +2090,8 @@ all the result list to a single list. FUNCTION must return a list."
 ;; F
 (test "123.46"
       "~5,2f" 123.456)
+;(test "123.46"
+;      "~v,vf" 5 2 123.456)
 
 (test "+123.46"
       "~5,2@f" 123.456)
@@ -2096,6 +2099,7 @@ all the result list to a single list. FUNCTION must return a list."
 (test #+murmel "+123.456789"
       #-murmel "+123.45679"
       "~@f" 123.456789)
+
 
 ;; G
 ;; ~g shows differences between CL and Murmel as CL's format may append spaces after ~g
@@ -2106,6 +2110,13 @@ all the result list to a single list. FUNCTION must return a list."
 #+murmel
 (test "y+123.456y"
       "y~@gy" 123.456)
+
+
+;; ~~
+(test "~~~~~"
+      "~5~")
+(test "~~~~~"
+      "~v~" 5)
 
 
 ;;; Summary
