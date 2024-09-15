@@ -2090,8 +2090,8 @@ all the result list to a single list. FUNCTION must return a list."
 ;; F
 (test "123.46"
       "~5,2f" 123.456)
-;(test "123.46"
-;      "~v,vf" 5 2 123.456)
+(test "123.46"
+      "~v,vf" 5 2 123.456)
 
 (test "+123.46"
       "~5,2@f" 123.456)

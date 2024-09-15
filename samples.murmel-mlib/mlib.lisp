@@ -3570,8 +3570,8 @@
 
 ;; semi-private: used by the expansion of 'formatter'
 (defun m%print-float (arguments output-stream jformat-string)
-  (if (floatp (car arguments))
-      (jformat-locale output-stream "en-US" jformat-string (car arguments))
+  (if (numberp (car arguments))
+      (jformat-locale output-stream "en-US" jformat-string (* 1.0 (car arguments)))
       (write (car arguments) nil output-stream))
   (cdr arguments))
 
@@ -3720,6 +3720,20 @@
              jformat-string)))
 
 
+;; semi-private: used by the expansion of 'formatter'
+(defun m%print-float-fmt (arguments output-stream c atp w d)
+  (when (eq #\v w)
+    (setq w (pop arguments)))
+  (when (eq #\v d)
+    (setq d (pop arguments)))
+
+  (let ((arg (car arguments)))
+    (if (numberp arg)
+        (jformat-locale output-stream "en-US" (float-fmtstring c atp w d) (* 1.0 arg))
+        (write arg nil output-stream)))
+  (cdr arguments))
+
+
 ;;; = Macro: formatter
 ;;;     (formatter control-string) -> function
 ;;;
@@ -3762,7 +3776,11 @@
                                  `(m%print-simple-integer arguments output-stream ,base))))
 
              (do-float (c atp params)
-               (collect-setq `(m%print-float arguments output-stream ,(float-fmtstring c atp (car params) (cadr params))))))
+               (let ((w (car params))
+                     (d (cadr params)))
+                 (if (or (eq #\v w) (eq #\v d))
+                     (collect-setq `(m%print-float-fmt arguments output-stream ,c ,atp ',w ',d))
+                     (collect-setq `(m%print-float arguments output-stream ,(float-fmtstring c atp w d)))))))
 
       `(lambda (output-stream . arguments)
          ,@(dolist (elem (parse-control-string control-string) (cdr body))
@@ -3918,16 +3936,20 @@
                (setq arguments (m%print-integer arguments output-stream base colonp atp params)))
 
              (do-float (c atp params)
-               (let ((arg (car arguments)))
+               (let ((w (prefix-param (car params)))
+                     (d (prefix-param (cadr params)))
+                     (arg (car arguments)))
                  (if (floatp arg)
-                     (jformat-locale output-stream "en-US" (float-fmtstring c atp  (car params) (cadr params)) arg)
+                     (jformat-locale output-stream "en-US" (float-fmtstring c atp w d) arg)
                      (write arg nil output-stream)))
                (setq arguments (cdr arguments)))
 
              (do-general-float (c atp params)
-               (let ((arg (car arguments)))
+               (let ((w (prefix-param (car params)))
+                     (d (prefix-param (cadr params)))
+                     (arg (car arguments)))
                  (if (and (floatp arg) params)
-                     (jformat-locale output-stream "en-US" (float-fmtstring atp  (car params) (cadr params)) arg)
+                     (jformat-locale output-stream "en-US" (float-fmtstring atp w d) arg)
                      (progn
                        (and atp (floatp arg) (>= arg 0) (write #\+ nil output-stream))
                        (write arg nil output-stream))))
