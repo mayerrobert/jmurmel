@@ -2040,6 +2040,11 @@ all the result list to a single list. FUNCTION must return a list."
 
 
 ;; R
+(test "x-123x"
+      "x~10rx" -123)
+(test "x-173x"
+      "x~8rx" -123)
+
 (test "x00-18x"
       "x~12,5,'0rx" -20)
 
