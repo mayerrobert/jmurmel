@@ -2124,6 +2124,12 @@ all the result list to a single list. FUNCTION must return a list."
       "~v~" 5)
 
 
+;; Tilde Newline
+(test "xx"
+      "x~
+      x")
+
+
 ;;; Summary
 ;;; print succeeded and failed tests if any
 

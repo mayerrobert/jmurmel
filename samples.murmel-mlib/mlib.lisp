@@ -530,15 +530,15 @@
 ;;; the result is `lst`.
 (macrolet ((m%last0-macro ()
              `(let loop ((rest lst))
-                   (if (consp rest)
-                       (loop (cdr rest))
-                       rest)))
+                (if (consp rest)
+                    (loop (cdr rest))
+                    rest)))
 
            (m%last1-macro ()
              `(let loop ((rest lst))
-                   (if (consp (cdr rest))
-                       (loop (cdr rest))
-                       rest)))
+                (if (consp (cdr rest))
+                    (loop (cdr rest))
+                    rest)))
 
            ;; m%lastn-macro won't work for n <= 0.
            ;; This causes no ill effect because the code below avoids this,
@@ -550,19 +550,19 @@
                       (checked-lst lst)
                       (n n))
                   (let ,scan ()
-                       (setq checked-lst (cdr checked-lst))
-                       (if (atom checked-lst)
+                    (setq checked-lst (cdr checked-lst))
+                    (if (atom checked-lst)
 
-                           returned-lst
+                        returned-lst
 
-                           (if (= (setq n (1- n)) 0)
-                               (let ,pop ()
-                                    (setq returned-lst (cdr returned-lst)
-                                          checked-lst (cdr checked-lst))
-                                    (if (atom checked-lst)
-                                        returned-lst
-                                        (,pop)))
-                 (,scan))))))))
+                        (if (= (setq n (1- n)) 0)
+                            (let ,pop ()
+                              (setq returned-lst (cdr returned-lst)
+                                    checked-lst (cdr checked-lst))
+                              (if (atom checked-lst)
+                                  returned-lst
+                                  (,pop)))
+                            (,scan))))))))
 
   (defun m%last0 (lst)
     (m%last0-macro))
@@ -724,9 +724,9 @@
              (let ((loop (gensym "loop"))
                    (l (gensym "lst")))
                `(let ,loop ((,l ,lst))
-                     (if ,l
-                         (when (car ,l) (,loop (cdr ,l)))
-                         t))))
+                  (if ,l
+                      (when (car ,l) (,loop (cdr ,l)))
+                      t))))
 
            ;; Helper macros to generate defuns for the various mapXX functions
            (m%mapx (name acc accn)
@@ -737,9 +737,9 @@
                            (apply func ,(if accn (list accn 'args) 'args))
                            (loop (unzip-tails args))))
                     (let loop ((lst lst))
-                         (when lst
-                           (func ,(if acc (list acc 'lst) 'lst))
-                           (loop (cdr lst)))))
+                      (when lst
+                        (func ,(if acc (list acc 'lst) 'lst))
+                        (loop (cdr lst)))))
                 lst))
 
            (m%mapx-cons (name acc accn)
@@ -747,13 +747,13 @@
                 (let* ((result (list ())) (append-to result))
                   (if more-lists
                       (let loop ((args (cons lst more-lists)))
-                           (when (m%notany-null args)
-                             (setq append-to (cdr (rplacd append-to (list (apply func ,(if accn (list accn 'args) 'args))))))
-                             (loop (unzip-tails args))))
+                        (when (m%notany-null args)
+                          (setq append-to (cdr (rplacd append-to (list (apply func ,(if accn (list accn 'args) 'args))))))
+                          (loop (unzip-tails args))))
                       (let loop ((lst lst))
-                           (when lst
-                             (setq append-to (cdr (rplacd append-to (list (func ,(if acc (list acc 'lst) 'lst))))))
-                             (loop (cdr lst)))))
+                        (when lst
+                          (setq append-to (cdr (rplacd append-to (list (func ,(if acc (list acc 'lst) 'lst))))))
+                          (loop (cdr lst)))))
 
                   (cdr result))))
 
@@ -769,15 +769,15 @@
                   (let* ((result (list ())) (append-to result))
                     (if more-lists
                         (let loop ((args (cons lst more-lists)))
-                             (when (m%notany-null args)
-                               (setq append-to (m%last append-to))
-                               (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
-                               (loop (unzip-tails args))))
+                          (when (m%notany-null args)
+                            (setq append-to (m%last append-to))
+                            (rplacd append-to (apply func ,(if accn (list accn 'args) 'args)))
+                            (loop (unzip-tails args))))
                         (let loop ((lst lst))
-                             (when lst
-                               (setq append-to (m%last append-to))
-                               (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
-                               (loop (cdr lst)))))
+                          (when lst
+                            (setq append-to (m%last append-to))
+                            (rplacd append-to (func ,(if acc (list acc 'lst) 'lst)))
+                            (loop (cdr lst)))))
 
                     (cdr result)))))
 
@@ -786,22 +786,21 @@
                 (let* ((result (list ())) (append-to result))
                   (if more-lists
                       (let loop ((args (cons lst more-lists)))
-                           (when (m%notany-null args)
-                             (let loop ((r (apply func ,(if accn (list accn 'args) 'args))))
-                               #1=(if (consp r)
-                                      (progn
-                                        (setq append-to (cdr (rplacd append-to (list (car r)))))
-                                        (loop (cdr r)))
-                                      (if r (jerror 'simple-type-error "%s - not a list: '%s'" ',name r))))
-                             (loop (unzip-tails args))))
+                        (when (m%notany-null args)
+                          (let loop ((r (apply func ,(if accn (list accn 'args) 'args))))
+                            #1=(if (consp r)
+                                   (progn
+                                     (setq append-to (cdr (rplacd append-to (list (car r)))))
+                                     (loop (cdr r)))
+                                   (if r (jerror 'simple-type-error "%s - not a list: '%s'" ',name r))))
+                          (loop (unzip-tails args))))
                       (let loop ((lst lst))
-                           (when lst
-                             (let loop ((r (func ,(if acc (list acc 'lst) 'lst))))
+                        (when lst
+                          (let loop ((r (func ,(if acc (list acc 'lst) 'lst))))
                                #1#)
-                             (loop (cdr lst)))))
+                          (loop (cdr lst)))))
 
-                  (cdr result))))
-           )
+                  (cdr result)))))
 
 
 ;;; = Function: mapcar
@@ -1738,8 +1737,7 @@
       nil))
 
 
-(macrolet (
-           ;; Helper macro to generate defmacro's for inplace modification macros.
+(macrolet (;; Helper macro to generate defmacro's for inplace modification macros.
            (m%inplace (name noarg arg)
              `(defmacro ,name (place . delta-form)
                (let ((tmp (gensym)))
@@ -2474,7 +2472,7 @@
 ;;; All of the sequences are copied from; the result does not share any structure
 ;;; with any of the sequences.
 (defun concatenate (result-type . sequences)
-  (let ((result (list nil))) 
+  (let ((result (list nil)))
     (let* loop ((sequences sequences)
                 (append-to result))
       (when sequences
@@ -3668,7 +3666,7 @@
                                              (#\Newline
                                               (let loop ()
                                                 (when (and (< (1+ i) control-string-length)
-                                                           (member c '(#\  #\Tab #\Vt #\Page #\Return)))
+                                                           (member (sref control-string (1+ i)) '(#\  #\Tab #\Vt #\Page #\Return)))
                                                   (incf i)
                                                   (loop))))
 
