@@ -3426,7 +3426,7 @@
 ;;; Note that this simplified `format` does not use or set CL's printer variables
 ;;; such as `*print-base*`, `*print-circle*`, ... .
 ;;;
-;;; Only the format characters `C, %, &, |, ~, B ,D, O, R, X, E, F, G, A, S, W` and Tilde-Newline are supported.
+;;; Only the format characters `C, %, &, |, ~, *, B ,D, O, R, X, E, F, G, A, S, W` and Tilde-Newline are supported.
 ;;;
 ;;; `C` supports the modifier `@` for printing #\-style escaping.
 ;;;
@@ -3765,296 +3765,351 @@
                      (collect-setq `(m%print-float-fmt arguments output-stream ,c ,atp ',w ',d))
                      (collect-setq `(m%print-float arguments output-stream ,(float-fmtstring c atp w d)))))))
 
-      `(lambda (output-stream . arguments)
-         ,@(dolist (elem (parse-control-string control-string) (cdr body))
-             (if (stringp elem)
-                 (collect `(write ,elem nil output-stream))
-                 (let ((colonp (cadr elem))
-                       (atp (caddr elem))
-                       (params (cdddr elem)))
+      `(lambda (output-stream . orig-arguments)
+         (let ((arguments orig-arguments))
+           ,@(dolist (elem (parse-control-string control-string) (cdr body))
+               (if (stringp elem)
+                   (collect `(write ,elem nil output-stream))
+                   (let ((colonp (cadr elem))
+                         (atp (caddr elem))
+                         (params (cdddr elem)))
 
-                   (case (car elem)
+                     (case (car elem)
 
-                     ;; Basic output
+                       ;; Basic output
 
-                     ;; Tilde C: Character
-                     ;; The next arg should be a character.
-                     ;; ~c and ~:c will print the character, ~@c and ~@:c will print a #\... sequence,
-                     ;; (i.e. : is ignored)
-                     ((#\c #\C)
-                      (collect-shift `(write (car arguments) ,atp output-stream)))
+                       ;; Tilde C: Character
+                       ;; The next arg should be a character.
+                       ;; ~c and ~:c will print the character, ~@c and ~@:c will print a #\... sequence,
+                       ;; (i.e. : is ignored)
+                       ((#\c #\C)
+                        (collect-shift `(write (car arguments) ,atp output-stream)))
 
-                     ;; Tilde Percent: Newline
-                     ;; Tilde Ampersand: Fresh-Line
-                     ;; ~n% and ~n& output n newlines. No arg is used.
-                     ;; (~& should omit the first newline if the output stream
-                     ;; is already at the beginning of a line, this is not implemented.)
-                     ((#\% #\&)
-                      (if (eql #\v (car params))
-                          (collect `(dotimes (n (pop arguments)) (write #\Newline nil output-stream)))
-                          (collect `(write ,(nchars params #\Newline) nil output-stream))))
+                       ;; Tilde Percent: Newline
+                       ;; Tilde Ampersand: Fresh-Line
+                       ;; ~n% and ~n& output n newlines. No arg is used.
+                       ;; (~& should omit the first newline if the output stream
+                       ;; is already at the beginning of a line, this is not implemented.)
+                       ((#\% #\&)
+                        (if (eql #\v (car params))
+                            (collect `(dotimes (n (pop arguments)) (write #\Newline nil output-stream)))
+                            (collect `(write ,(nchars params #\Newline) nil output-stream))))
 
-                     ;; Tilde Vertical-Bar: Page
-                     ;; This outputs a page separator character, if possible. ~n| does this n times.
-                     (#\|
-                      (if (eql #\v (car params))
-                          (collect `(dotimes (n (pop arguments)) (write #\Page nil output-stream)))
-                          (collect `(write ,(nchars params #\Page) nil output-stream))))
+                       ;; Tilde Vertical-Bar: Page
+                       ;; This outputs a page separator character, if possible. ~n| does this n times.
+                       (#\|
+                        (if (eql #\v (car params))
+                            (collect `(dotimes (n (pop arguments)) (write #\Page nil output-stream)))
+                            (collect `(write ,(nchars params #\Page) nil output-stream))))
 
-                     ;; Tilde Tilde: Tilde
-                     ;; This outputs a tilde. ~n~ outputs n tildes.
-                     (#\~
-                      (if (eql #\v (car params))
-                          (collect `(dotimes (n (pop arguments)) (write #\~ nil output-stream)))
-                          (collect `(write ,(nchars params #\~) nil output-stream))))
+                       ;; Tilde Tilde: Tilde
+                       ;; This outputs a tilde. ~n~ outputs n tildes.
+                       (#\~
+                        (if (eql #\v (car params))
+                            (collect `(dotimes (n (pop arguments)) (write #\~ nil output-stream)))
+                            (collect `(write ,(nchars params #\~) nil output-stream))))
 
 
-                     ;; Radix Control
+                       ;; Radix Control
 
-                     ;; Tilde R: Radix
-                     ;; ~nR prints arg in radix n. sbcl supports 2..36
-                     ((#\r #\R)
-                      (if (car params)
-                          (do-integer (car params) colonp atp (cdr params))
-                          (collect-setq
+                       ;; Tilde R: Radix
+                       ;; ~nR prints arg in radix n. sbcl supports 2..36
+                       ((#\r #\R)
+                        (if (car params)
+                            (do-integer (car params) colonp atp (cdr params))
+                            (collect-setq
+                             (if atp
+                                 `(m%print-roman arguments output-stream ,colonp)
+                                 `(jerror "format - english numbers are not supported")))))
+
+                       ;; Tilde D: Decimal
+                       ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
+                       ;; if the number requires fewer than mincol columns for its digits and sign.
+                       ;; ~mincol,padcharD uses padchar as the pad character instead of space.
+                       ;; If arg is not an integer, it is printed in ~A format and decimal base.
+                       ;; The @ modifier causes the number's sign to be printed always; the default
+                       ;; is to print it only if the number is negative. The : modifier is ignored.
+                       ((#\d #\D)
+                        (if (or colonp params)
+                            (collect-setq  `(m%print-integer arguments output-stream 10 ,colonp ,atp ',params))
                             (if atp
-                                `(m%print-roman arguments output-stream ,colonp)
-                                `(jerror "format - english numbers are not supported")))))
+                                (collect-setq `(let ((arg (car arguments)))
+                                                 (and (integerp arg)
+                                                      (>= arg 0)
+                                                      (write #\+ nil output-stream))
+                                                 (write arg nil output-stream)
+                                                 (cdr arguments)))
+                                (collect-shift `(write (car arguments) nil output-stream)))))
 
-                     ;; Tilde D: Decimal
-                     ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
-                     ;; if the number requires fewer than mincol columns for its digits and sign.
-                     ;; ~mincol,padcharD uses padchar as the pad character instead of space.
-                     ;; If arg is not an integer, it is printed in ~A format and decimal base.
-                     ;; The @ modifier causes the number's sign to be printed always; the default
-                     ;; is to print it only if the number is negative. The : modifier is ignored.
-                     ((#\d #\D)
-                      (if (or colonp params)
-                          (collect-setq  `(m%print-integer arguments output-stream 10 ,colonp ,atp ',params))
-                          (if atp
-                              (collect-setq `(let ((arg (car arguments)))
-                                               (and (integerp arg)
-                                                    (>= arg 0)
-                                                    (write #\+ nil output-stream))
-                                               (write arg nil output-stream)
-                                               (cdr arguments)))
-                              (collect-shift `(write (car arguments) nil output-stream)))))
+                       ;; Tilde B: Binary
+                       ((#\b #\B)
+                        (do-integer 2 colonp atp params))
 
-                     ;; Tilde B: Binary
-                     ((#\b #\B)
-                      (do-integer 2 colonp atp params))
+                       ;; Tilde O: Octal
+                       ((#\o #\O)
+                        (do-integer 8 colonp atp params))
 
-                     ;; Tilde O: Octal
-                     ((#\o #\O)
-                      (do-integer 8 colonp atp params))
-
-                     ;; Tilde X: Hexadecimal
-                     ((#\x #\X)
-                      (do-integer 16 colonp atp params))
+                       ;; Tilde X: Hexadecimal
+                       ((#\x #\X)
+                        (do-integer 16 colonp atp params))
 
 
-                     ;; Floating point
+                       ;; Floating point
 
-                     ;; Tilde E: Exponential Floating-Point
-                     ((#\e #\E)
-                      (do-float #\e atp params))
+                       ;; Tilde E: Exponential Floating-Point
+                       ((#\e #\E)
+                        (do-float #\e atp params))
 
-                     ;; Tilde F: Fixed-Format Floating-Point
-                     ((#\f #\F)
-                      (do-float #\f atp params))
+                       ;; Tilde F: Fixed-Format Floating-Point
+                       ((#\f #\F)
+                        (do-float #\f atp params))
 
-                     ;; Tilde G: General Floating-Point
-                     ((#\g #\G)
-                      (if params
-                          (do-float #\g atp params)
-                          (collect-shift (if atp
-                                             `(let ((arg (car arguments)))
-                                                (and (floatp arg)
-                                                     (>= arg 0)
-                                                     (write #\+ nil output-stream))
-                                                (write arg nil output-stream))
-                                             `(write (car arguments) nil output-stream)))))
-
-
-                     ;; Printer Operations
-
-                     ;; Tilde A: Aesthetic
-                     ((#\a #\A)
-                      (if (or colonp (car params))
-                          (collect-setq `(m%print-obj arguments output-stream nil ,colonp ,atp ',params))
-                          (collect-shift `(write (car arguments) nil output-stream))))
-
-                     ;; Tilde S: Standard
-                     ((#\s #\S)
-                      (if (or colonp (car params))
-                          (collect-setq `(m%print-obj arguments output-stream t ,colonp ,atp ',params))
-                          (collect-shift `(write (car arguments) t output-stream))))
-
-                     ;; Tilde W: Write
-                     ((#\w #\W)
-                      ;;(when params (jerror "format - too many arguments, format character W accepts 0"))
-                      (collect-shift `(write (car arguments) t output-stream)))
+                       ;; Tilde G: General Floating-Point
+                       ((#\g #\G)
+                        (if params
+                            (do-float #\g atp params)
+                            (collect-shift (if atp
+                                               `(let ((arg (car arguments)))
+                                                  (and (floatp arg)
+                                                       (>= arg 0)
+                                                       (write #\+ nil output-stream))
+                                                  (write arg nil output-stream))
+                                               `(write (car arguments) nil output-stream)))))
 
 
-                     ;; Layout Control
+                       ;; Printer Operations
 
-                     ;; Tilde T: Tabulate
-                     ((#\t #\T)
-                      (if (eql #\v (car params))
-                          (collect `(dotimes (n (pop arguments)) (write #\Tab nil output-stream)))
-                          (collect `(write ,(nchars params #\Tab) nil output-stream))))
+                       ;; Tilde A: Aesthetic
+                       ((#\a #\A)
+                        (if (or colonp (car params))
+                            (collect-setq `(m%print-obj arguments output-stream nil ,colonp ,atp ',params))
+                            (collect-shift `(write (car arguments) nil output-stream))))
 
-                     (t (jerror "format - unimplemented format character '%s'" (car elem)))))))
-         ,'arguments))))
+                       ;; Tilde S: Standard
+                       ((#\s #\S)
+                        (if (or colonp (car params))
+                            (collect-setq `(m%print-obj arguments output-stream t ,colonp ,atp ',params))
+                            (collect-shift `(write (car arguments) t output-stream))))
+
+                       ;; Tilde W: Write
+                       ((#\w #\W)
+                        ;;(when params (jerror "format - too many arguments, format character W accepts 0"))
+                        (collect-shift `(write (car arguments) t output-stream)))
+
+
+                       ;; Layout Control
+
+                       ;; Tilde T: Tabulate
+                       ((#\t #\T)
+                        (if (eql #\v (car params))
+                            (collect `(dotimes (n (pop arguments)) (write #\Tab nil output-stream)))
+                            (collect `(write ,(nchars params #\Tab) nil output-stream))))
+
+
+                       ;; Control flow
+
+                       ;; Tilde *: Goto
+                       ;; @... absolute, :... backwards
+                       (#\*
+                        (cond (atp
+                               (when colonp (jerror 'simple-error "can't use both : and @ modifiers with ~*"))
+                               (case (car params)
+                                 ((nil) (collect `(setq arguments orig-arguments)))
+                                 (#\v   (collect `(setq arguments (nthcdr (car arguments) orig-arguments))))
+                                 (t     (collect `(setq arguments (nthcdr ,(car params) orig-arguments))))))
+
+                              (colonp
+                               (case (car params)
+                                 ((nil) (collect `(setq arguments (last orig-arguments (+ (list-length arguments) 1)))))
+                                 (#\v   (collect `(setq arguments (last orig-arguments (+ (list-length arguments) (car arguments))))))
+                                 (t     (collect `(setq arguments (last orig-arguments (+ (list-length arguments) ,(car params))))))))
+
+                              (t
+                               (case (car params)
+                                 ((nil) (collect `(setq arguments (cdr arguments))))
+                                 (#\v   (collect `(setq arguments (nthcdr (car arguments) (cdr arguments)))))
+                                 (t     (collect `(setq arguments (nthcdr ,(car params) arguments))))))))
+
+
+                       (t (jerror "format - unimplemented format character '%s'" (car elem)))))))
+
+           ,'arguments)))))
 
 
 ;; private: used by the function 'format'
 (defun m%format-function (control-string)
-  (lambda (output-stream . arguments)
-    (labels ((do-char (c params)
-               (dotimes (n (prefix-param (or (car params) 1)))
-                 (write c nil output-stream)))
+  (lambda (output-stream . orig-arguments)
+    (let ((arguments orig-arguments))
+      (labels ((do-char (c params)
+                 (dotimes (n (prefix-param (or (car params) 1)))
+                   (write c nil output-stream)))
 
-             (do-integer (base colonp atp params)
-               (setq arguments (m%print-integer arguments output-stream base colonp atp params)))
+               (do-integer (base colonp atp params)
+                 (setq arguments (m%print-integer arguments output-stream base colonp atp params)))
 
-             (do-float (c atp params)
-               (let ((w (prefix-param (car params)))
-                     (d (prefix-param (cadr params)))
-                     (arg (car arguments)))
-                 (if (floatp arg)
-                     (jformat-locale output-stream "en-US" (float-fmtstring c atp w d) arg)
-                     (write arg nil output-stream)))
-               (setq arguments (cdr arguments)))
-
-             (do-general-float (c atp params)
-               (let ((w (prefix-param (car params)))
-                     (d (prefix-param (cadr params)))
-                     (arg (car arguments)))
-                 (if (and (floatp arg) params)
-                     (jformat-locale output-stream "en-US" (float-fmtstring atp w d) arg)
-                     (progn
-                       (and atp (floatp arg) (>= arg 0) (write #\+ nil output-stream))
-                       (write arg nil output-stream))))
-               (setq arguments (cdr arguments))))
-
-      (dolist (elem (parse-control-string control-string))
-        (if (stringp elem)
-            (write elem nil output-stream)
-            (let ((colonp (cadr elem))
-                  (atp (caddr elem))
-                  (params (cdddr elem)))
-
-              (case (car elem)
-
-                ;; Basic output
-
-                ;; Tilde C: Character
-                ;; The next arg should be a character.
-                ;; ~c and ~:c will print the character, ~@c and ~@:c will print a #\... sequence,
-                ;; (i.e. : is ignored)
-                ((#\c #\C)
-                 (write (car arguments) atp output-stream)
+               (do-float (c atp params)
+                 (let ((w (prefix-param (car params)))
+                       (d (prefix-param (cadr params)))
+                       (arg (car arguments)))
+                   (if (floatp arg)
+                       (jformat-locale output-stream "en-US" (float-fmtstring c atp w d) arg)
+                       (write arg nil output-stream)))
                  (setq arguments (cdr arguments)))
 
-                ;; Tilde Percent: Newline
-                ;; Tilde Ampersand: Fresh-Line
-                ;; ~n% and ~n& output n newlines. No arg is used.
-                ;; (~& should omit the first newline if the output stream
-                ;; is already at the beginning of a line, this is not implemented.)
-                ((#\% #\&)
-                 (do-char #\Newline params))
+               (do-general-float (c atp params)
+                 (let ((w (prefix-param (car params)))
+                       (d (prefix-param (cadr params)))
+                       (arg (car arguments)))
+                   (if (and (floatp arg) params)
+                       (jformat-locale output-stream "en-US" (float-fmtstring atp w d) arg)
+                       (progn
+                         (and atp (floatp arg) (>= arg 0) (write #\+ nil output-stream))
+                         (write arg nil output-stream))))
+                 (setq arguments (cdr arguments))))
 
-                ;; Tilde Vertical-Bar: Page
-                ;; This outputs a page separator character, if possible. ~n| does this n times.
-                (#\|
-                 (do-char #\Page params))
+        (dolist (elem (parse-control-string control-string))
+          (if (stringp elem)
+              (write elem nil output-stream)
+              (let ((colonp (cadr elem))
+                    (atp (caddr elem))
+                    (params (cdddr elem)))
 
-                ;; Tilde Tilde: Tilde
-                ;; This outputs a tilde. ~n~ outputs n tildes.
-                (#\~
-                 (do-char #\~ params))
+                (case (car elem)
 
+                  ;; Basic output
 
-                ;; Radix Control
+                  ;; Tilde C: Character
+                  ;; The next arg should be a character.
+                  ;; ~c and ~:c will print the character, ~@c and ~@:c will print a #\... sequence,
+                  ;; (i.e. : is ignored)
+                  ((#\c #\C)
+                   (write (car arguments) atp output-stream)
+                   (setq arguments (cdr arguments)))
 
-                ;; Tilde R: Radix
-                ;; ~nR prints arg in radix n. sbcl supports 2..36
-                ((#\r #\R)
-                 (if (car params)
-                     (setq arguments (m%print-integer arguments output-stream (car params) colonp atp (cdr params)))
-                     (if atp
-                         (setq arguments (m%print-roman arguments output-stream colonp))
-                         (jerror "format - english numbers are not supported"))))
+                  ;; Tilde Percent: Newline
+                  ;; Tilde Ampersand: Fresh-Line
+                  ;; ~n% and ~n& output n newlines. No arg is used.
+                  ;; (~& should omit the first newline if the output stream
+                  ;; is already at the beginning of a line, this is not implemented.)
+                  ((#\% #\&)
+                   (do-char #\Newline params))
 
-                ;; Tilde D: Decimal
-                ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
-                ;; if the number requires fewer than mincol columns for its digits and sign.
-                ;; ~mincol,padcharD uses padchar as the pad character instead of space.
-                ;; If arg is not an integer, it is printed in ~A format and decimal base.
-                ;; The @ modifier causes the number's sign to be printed always; the default
-                ;; is to print it only if the number is negative. The : modifier is ignored.
-                ((#\d #\D)
-                 (do-integer 10 colonp atp params))
+                  ;; Tilde Vertical-Bar: Page
+                  ;; This outputs a page separator character, if possible. ~n| does this n times.
+                  (#\|
+                   (do-char #\Page params))
 
-                ;; Tilde B: Binary
-                ((#\b #\B)
-                 (do-integer 2 colonp atp params))
-
-                ;; Tilde O: Octal
-                ((#\o #\O)
-                 (do-integer 8 colonp atp params))
-
-                ;; Tilde X: Hexadecimal
-                ((#\x #\X)
-                 (do-integer 16 colonp atp params))
+                  ;; Tilde Tilde: Tilde
+                  ;; This outputs a tilde. ~n~ outputs n tildes.
+                  (#\~
+                   (do-char #\~ params))
 
 
-                ;; Floating point
+                  ;; Radix Control
 
-                ;; Tilde E: Exponential Floating-Point
-                ((#\e #\E)
-                 (do-float #\e atp params))
+                  ;; Tilde R: Radix
+                  ;; ~nR prints arg in radix n. sbcl supports 2..36
+                  ((#\r #\R)
+                   (if (car params)
+                       (setq arguments (m%print-integer arguments output-stream (car params) colonp atp (cdr params)))
+                       (if atp
+                           (setq arguments (m%print-roman arguments output-stream colonp))
+                           (jerror "format - english numbers are not supported"))))
 
-                ;; Tilde F: Fixed-Format Floating-Point
-                ((#\f #\F)
-                 (do-float #\f atp params))
+                  ;; Tilde D: Decimal
+                  ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
+                  ;; if the number requires fewer than mincol columns for its digits and sign.
+                  ;; ~mincol,padcharD uses padchar as the pad character instead of space.
+                  ;; If arg is not an integer, it is printed in ~A format and decimal base.
+                  ;; The @ modifier causes the number's sign to be printed always; the default
+                  ;; is to print it only if the number is negative. The : modifier is ignored.
+                  ((#\d #\D)
+                   (do-integer 10 colonp atp params))
 
-                ;; Tilde G: General Floating-Point
-                ((#\g #\G)
-                 (do-general-float #\g atp params))
+                  ;; Tilde B: Binary
+                  ((#\b #\B)
+                   (do-integer 2 colonp atp params))
 
+                  ;; Tilde O: Octal
+                  ((#\o #\O)
+                   (do-integer 8 colonp atp params))
 
-                ;; Printer Operations
-
-                ;; Tilde A: Aesthetic
-                ((#\a #\A)
-                 (if (or colonp (car params))
-                     (setq arguments (m%print-obj arguments output-stream nil colonp atp params))
-                     (progn (write (car arguments) nil output-stream)
-                            (setq arguments (cdr arguments)))))
-
-                ;; Tilde S: Standard
-                ((#\s #\S)
-                 (if (or colonp (car params))
-                     (setq arguments (m%print-obj arguments output-stream t colonp atp params))
-                     (progn (write (car arguments) t output-stream)
-                            (setq arguments (cdr arguments)))))
-
-                ;; Tilde W: Write
-                ((#\w #\W)
-                 ;;(when params (jerror "format - too many arguments, format character C accepts 0"))
-                 (write (car arguments) t output-stream)
-                 (setq arguments (cdr arguments)))
+                  ;; Tilde X: Hexadecimal
+                  ((#\x #\X)
+                   (do-integer 16 colonp atp params))
 
 
-                ;; Layout Control
+                  ;; Floating point
 
-                ;; Tilde T: Tabulate
-                ((#\t #\T)
-                 (do-char #\Tab params))
+                  ;; Tilde E: Exponential Floating-Point
+                  ((#\e #\E)
+                   (do-float #\e atp params))
 
-                (t (jerror "format - unimplemented format character '%s'" (car elem))))))))))
+                  ;; Tilde F: Fixed-Format Floating-Point
+                  ((#\f #\F)
+                   (do-float #\f atp params))
+
+                  ;; Tilde G: General Floating-Point
+                  ((#\g #\G)
+                   (do-general-float #\g atp params))
+
+
+                  ;; Printer Operations
+
+                  ;; Tilde A: Aesthetic
+                  ((#\a #\A)
+                   (if (or colonp (car params))
+                       (setq arguments (m%print-obj arguments output-stream nil colonp atp params))
+                       (progn (write (car arguments) nil output-stream)
+                              (setq arguments (cdr arguments)))))
+
+                  ;; Tilde S: Standard
+                  ((#\s #\S)
+                   (if (or colonp (car params))
+                       (setq arguments (m%print-obj arguments output-stream t colonp atp params))
+                       (progn (write (car arguments) t output-stream)
+                              (setq arguments (cdr arguments)))))
+
+                  ;; Tilde W: Write
+                  ((#\w #\W)
+                   ;;(when params (jerror "format - too many arguments, format character C accepts 0"))
+                   (write (car arguments) t output-stream)
+                   (setq arguments (cdr arguments)))
+
+
+                  ;; Layout Control
+
+                  ;; Tilde T: Tabulate
+                  ((#\t #\T)
+                   (do-char #\Tab params))
+
+
+                  ;; Control flow
+
+                  ;; Tilde *: Goto
+                  ;; @... absolute, :... backwards
+                  (#\*
+                   (cond (atp
+                          (when colonp (jerror 'simple-error "can't use both : and @ modifiers with ~*"))
+                          (case (car params)
+                            ((nil) (setq arguments orig-arguments))
+                            (#\v   (setq arguments (nthcdr (car arguments) orig-arguments)))
+                            (t     (setq arguments (nthcdr (car params) orig-arguments)))))
+
+                         (colonp
+                          (case (car params)
+                            ((nil) (setq arguments (last orig-arguments (+ (list-length arguments) 1))))
+                            (#\v   (setq arguments (last orig-arguments (+ (list-length arguments) (car arguments)))))
+                            (t     (setq arguments (last orig-arguments (+ (list-length arguments) (car params)))))))
+
+                         (t
+                          (case (car params)
+                            ((nil) (setq arguments (cdr arguments)))
+                            (#\v   (setq arguments (nthcdr (car arguments) (cdr arguments))))
+                            (t     (setq arguments (nthcdr (car params) arguments)))))))
+
+
+                  (t (jerror "format - unimplemented format character '%s'" (car elem)))))))))))
 
 ) ; labels
 ) ; macrolet

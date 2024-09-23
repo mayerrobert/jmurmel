@@ -302,6 +302,8 @@ probleme mit "runbody(): code too large"
      und ggf eine symboltable (oder brauchts die symboltable zur laufzeit gar nicht mehr?)
 
 
+format: checks obs genügend argumente gibt
+format: formatter checkt ob argumente zur directive int >= 0 sind, m%format-function nicht
 format könnte noch "Tilde Slash: Call Function ~/name/" unterstützen: http://www.lispworks.com/documentation/HyperSpec/Body/22_ced.htm
 parameter reihenfolge: stream arg colonp at-sign-p more-params
 

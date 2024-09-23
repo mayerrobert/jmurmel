@@ -1986,6 +1986,8 @@ all the result list to a single list. FUNCTION must return a list."
      (assert-equal ,expected (apply #'format (list nil ,str ,@args)) ,expected)
      ))
 
+(defun test-format ()
+
 ;; CLHS https://www.lispworks.com/documentation/HyperSpec/Body/22_cba.htm
 (test "1101"
       "~,,' ,4:B" 13)
@@ -2124,10 +2126,34 @@ all the result list to a single list. FUNCTION must return a list."
       "~v~" 5)
 
 
+;; Tilde asterisk
+(test "5"
+      "~*~d" 4 5)
+(test "5"
+      "~4*~d" 1 2 3 4 5)
+(test "5"
+      "~v*~d" 4 1 2 3 4 5)
+
+(test "1  2  2"
+      "~a  ~a ~:* ~a" 1 2 3 4 5)
+(test "1  2  2"
+      "~a  ~a ~1:* ~a" 1 2 3 4 5)
+
+(test "1  2  1"
+      "~a  ~a ~@* ~a" 1 2 3 4 5)
+(test "1  2  3"
+      "~a  ~a ~2@* ~a" 1 2 3 4 5)
+(test "1  2  2"
+      "~a  ~a ~v@* ~a" 1 2 2 3 4 5)
+
+
 ;; Tilde Newline
 (test "xx"
       "x~
       x")
+)
+
+(test-format)
 
 
 ;;; Summary
