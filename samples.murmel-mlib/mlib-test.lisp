@@ -2156,6 +2156,22 @@ all the result list to a single list. FUNCTION must return a list."
 (test-format)
 
 
+(defun test-format-error ()
+(tests format-not-enough-arguments-for-v
+  (signals-error (format nil "~a ~vd" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~vd" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~vf" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~vf" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~v%" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~v%" "hello")) error)  => t
+)
+)
+
+(test-format-error)
+
+
 ;;; Summary
 ;;; print succeeded and failed tests if any
 

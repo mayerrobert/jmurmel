@@ -3440,9 +3440,15 @@
 ;;;
 ;;; `A` and `S` support `~mincol,colinc,minpad,padcharA` for padding, `:`, and the modifier `@` for left-padding.
 
-(macrolet ((prefix-param (body)
+(macrolet ((require-argument ()
+             `(unless arguments (jerror 'simple-error "format - not enough arguments")))
+
+           (prefix-param (body)
              `(if (eql #\v (car params))
-                  (prog1 (car arguments) (setq arguments (cdr arguments)))
+                  (prog2
+                      (require-argument)
+                      (car arguments)
+                    (setq arguments (cdr arguments)))
                   ,body)))
 
 (labels ((char-with-default (obj default)
@@ -3706,8 +3712,10 @@
 ;; semi-private: used by the expansion of 'formatter'
 (defun m%print-float-fmt (arguments output-stream c atp w d)
   (when (eql #\v w)
+    (require-argument)
     (setq w (pop arguments)))
   (when (eql #\v d)
+    (require-argument)
     (setq d (pop arguments)))
 
   (let ((arg (car arguments)))

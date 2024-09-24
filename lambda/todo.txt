@@ -304,6 +304,7 @@ probleme mit "runbody(): code too large"
 
 format: checks obs genügend argumente gibt
 format: formatter checkt ob argumente zur directive int >= 0 sind, m%format-function nicht
+-> noch offen: ~v@*, ~v:*, ~v*, ~vT, ~v~, ~v|, ~v%, ~v&
 format könnte noch "Tilde Slash: Call Function ~/name/" unterstützen: http://www.lispworks.com/documentation/HyperSpec/Body/22_ced.htm
 parameter reihenfolge: stream arg colonp at-sign-p more-params
 
