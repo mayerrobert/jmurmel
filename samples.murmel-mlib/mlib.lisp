@@ -3759,11 +3759,16 @@
              (collect-setq (form)
                (collect `(setq arguments ,form)))
 
-             (nchars (params c)
+             (nchars (c params)
                (let* ((n (or (car params) 1))
                       (result (make-array n 'character nil)))
                  (dotimes (i n result)
                    (setf (sref result i) c))))
+
+             (do-char (c params)
+               (if (eql #\v (car params))
+                   (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write ,c nil output-stream)))
+                   (collect `(write ,(nchars c params) nil output-stream))))
 
              (do-integer (base colonp atp params)
                (collect-setq (if (or colonp atp params)
@@ -3803,23 +3808,17 @@
                        ;; (~& should omit the first newline if the output stream
                        ;; is already at the beginning of a line, this is not implemented.)
                        ((#\% #\&)
-                        (if (eql #\v (car params))
-                            (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write #\Newline nil output-stream)))
-                            (collect `(write ,(nchars params #\Newline) nil output-stream))))
+                        (do-char #\Newline params))
 
                        ;; Tilde Vertical-Bar: Page
                        ;; This outputs a page separator character, if possible. ~n| does this n times.
                        (#\|
-                        (if (eql #\v (car params))
-                            (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write #\Page nil output-stream)))
-                            (collect `(write ,(nchars params #\Page) nil output-stream))))
+                        (do-char #\Page params))
 
                        ;; Tilde Tilde: Tilde
                        ;; This outputs a tilde. ~n~ outputs n tildes.
                        (#\~
-                        (if (eql #\v (car params))
-                            (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write #\~ nil output-stream)))
-                            (collect `(write ,(nchars params #\~) nil output-stream))))
+                        (do-char #\~ params))
 
 
                        ;; Radix Control
@@ -3832,7 +3831,7 @@
                             (collect-setq
                              (if atp
                                  `(m%print-roman arguments output-stream ,colonp)
-                                 `(jerror "format - english numbers are not supported")))))
+                                 (jerror "format - english numbers are not supported")))))
 
                        ;; Tilde D: Decimal
                        ;; ~mincolD uses a column width of mincol; spaces are inserted on the left
@@ -3913,9 +3912,7 @@
 
                        ;; Tilde T: Tabulate
                        ((#\t #\T)
-                        (if (eql #\v (car params))
-                            (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write #\Tab nil output-stream)))
-                            (collect `(write ,(nchars params #\Tab) nil output-stream))))
+                        (do-char #\Tab params))
 
 
                        ;; Control flow
