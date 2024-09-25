@@ -3745,7 +3745,11 @@
 (defmacro formatter (control-string)
   (let* ((body (list ()))
          (append-to body))
-    (labels ((collect (form)
+
+    (labels ((require-argument-sexp ()
+               `(unless arguments (jerror 'simple-error "format - not enough arguments")))
+
+             (collect (form)
                (setq append-to (cdr (rplacd append-to (list form)))))
 
              (collect-shift (form)
@@ -3800,21 +3804,21 @@
                        ;; is already at the beginning of a line, this is not implemented.)
                        ((#\% #\&)
                         (if (eql #\v (car params))
-                            (collect `(dotimes (n (pop arguments)) (write #\Newline nil output-stream)))
+                            (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write #\Newline nil output-stream)))
                             (collect `(write ,(nchars params #\Newline) nil output-stream))))
 
                        ;; Tilde Vertical-Bar: Page
                        ;; This outputs a page separator character, if possible. ~n| does this n times.
                        (#\|
                         (if (eql #\v (car params))
-                            (collect `(dotimes (n (pop arguments)) (write #\Page nil output-stream)))
+                            (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write #\Page nil output-stream)))
                             (collect `(write ,(nchars params #\Page) nil output-stream))))
 
                        ;; Tilde Tilde: Tilde
                        ;; This outputs a tilde. ~n~ outputs n tildes.
                        (#\~
                         (if (eql #\v (car params))
-                            (collect `(dotimes (n (pop arguments)) (write #\~ nil output-stream)))
+                            (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write #\~ nil output-stream)))
                             (collect `(write ,(nchars params #\~) nil output-stream))))
 
 
@@ -3910,7 +3914,7 @@
                        ;; Tilde T: Tabulate
                        ((#\t #\T)
                         (if (eql #\v (car params))
-                            (collect `(dotimes (n (pop arguments)) (write #\Tab nil output-stream)))
+                            (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write #\Tab nil output-stream)))
                             (collect `(write ,(nchars params #\Tab) nil output-stream))))
 
 
@@ -3923,19 +3927,19 @@
                                (when colonp (jerror 'simple-error "can't use both : and @ modifiers with ~*"))
                                (case (car params)
                                  ((nil) (collect `(setq arguments orig-arguments)))
-                                 (#\v   (collect `(setq arguments (nthcdr (car arguments) orig-arguments))))
+                                 (#\v   (collect `(setq arguments (nthcdr (progn ,(require-argument-sexp) (car arguments)) orig-arguments))))
                                  (t     (collect `(setq arguments (nthcdr ,(car params) orig-arguments))))))
 
                               (colonp
                                (case (car params)
                                  ((nil) (collect `(setq arguments (last orig-arguments (+ (list-length arguments) 1)))))
-                                 (#\v   (collect `(setq arguments (last orig-arguments (+ (list-length arguments) (car arguments))))))
+                                 (#\v   (collect `(setq arguments (last orig-arguments (+ (list-length arguments) (progn ,(require-argument-sexp) (car arguments)))))))
                                  (t     (collect `(setq arguments (last orig-arguments (+ (list-length arguments) ,(car params))))))))
 
                               (t
                                (case (car params)
                                  ((nil) (collect `(setq arguments (cdr arguments))))
-                                 (#\v   (collect `(setq arguments (nthcdr (car arguments) (cdr arguments)))))
+                                 (#\v   (collect `(setq arguments (nthcdr (progn ,(require-argument-sexp) (car arguments)) (cdr arguments)))))
                                  (t     (collect `(setq arguments (nthcdr ,(car params) arguments))))))))
 
 
@@ -4101,19 +4105,19 @@
                           (when colonp (jerror 'simple-error "can't use both : and @ modifiers with ~*"))
                           (case (car params)
                             ((nil) (setq arguments orig-arguments))
-                            (#\v   (setq arguments (nthcdr (car arguments) orig-arguments)))
+                            (#\v   (setq arguments (nthcdr (progn (require-argument) (car arguments)) orig-arguments)))
                             (t     (setq arguments (nthcdr (car params) orig-arguments)))))
 
                          (colonp
                           (case (car params)
                             ((nil) (setq arguments (last orig-arguments (+ (list-length arguments) 1))))
-                            (#\v   (setq arguments (last orig-arguments (+ (list-length arguments) (car arguments)))))
+                            (#\v   (setq arguments (last orig-arguments (+ (list-length arguments) (progn (require-argument) (car arguments))))))
                             (t     (setq arguments (last orig-arguments (+ (list-length arguments) (car params)))))))
 
                          (t
                           (case (car params)
                             ((nil) (setq arguments (cdr arguments)))
-                            (#\v   (setq arguments (nthcdr (car arguments) (cdr arguments))))
+                            (#\v   (setq arguments (nthcdr (progn (require-argument) (car arguments)) (cdr arguments))))
                             (t     (setq arguments (nthcdr (car params) arguments)))))))
 
 

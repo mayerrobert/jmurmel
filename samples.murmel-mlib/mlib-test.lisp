@@ -2136,8 +2136,8 @@ all the result list to a single list. FUNCTION must return a list."
 
 (test "1  2  2"
       "~a  ~a ~:* ~a" 1 2 3 4 5)
-(test "1  2  2"
-      "~a  ~a ~1:* ~a" 1 2 3 4 5)
+(test "1  2  2  3  4"
+      "~a  ~a ~1:* ~a  ~a  ~a" 1 2 3 4 5)
 
 (test "1  2  1"
       "~a  ~a ~@* ~a" 1 2 3 4 5)
@@ -2166,6 +2166,30 @@ all the result list to a single list. FUNCTION must return a list."
 
   (signals-error (format nil "~a ~v%" "hello") error)             => t
   (signals-error (apply #'format '(nil "~a ~v%" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~v*" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~v*" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~v@*" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~v@*" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~v:*" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~v:*" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~vT" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~vT" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~v~" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~v~" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~v|" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~v|" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~v%" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~v%" "hello")) error)  => t
+
+  (signals-error (format nil "~a ~v&" "hello") error)             => t
+  (signals-error (apply #'format '(nil "~a ~v&" "hello")) error)  => t
 )
 )
 
