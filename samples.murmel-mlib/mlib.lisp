@@ -3441,15 +3441,16 @@
 ;;; `A` and `S` support `~mincol,colinc,minpad,padcharA` for padding, `:`, and the modifier `@` for left-padding.
 
 (macrolet ((require-argument ()
-             `(unless arguments (jerror 'simple-error "format - not enough arguments")))
+             `(if arguments
+                  (car arguments)
+                  (jerror 'simple-error "format - not enough arguments")))
 
-           (prefix-param (body)
+           (prefix-param (value-form)
              `(if (eql #\v (car params))
-                  (prog2
+                  (prog1
                       (require-argument)
-                      (car arguments)
                     (setq arguments (cdr arguments)))
-                  ,body)))
+                  ,value-form)))
 
 (labels ((char-with-default (obj default)
            (if obj
@@ -3712,11 +3713,11 @@
 ;; semi-private: used by the expansion of 'formatter'
 (defun m%print-float-fmt (arguments output-stream c atp w d)
   (when (eql #\v w)
-    (require-argument)
-    (setq w (pop arguments)))
+    (setq w (require-argument))
+    (setq arguments (cdr arguments)))
   (when (eql #\v d)
-    (require-argument)
-    (setq d (pop arguments)))
+    (setq d (require-argument))
+    (setq arguments (cdr arguments)))
 
   (let ((arg (car arguments)))
     (if (numberp arg)
@@ -3747,7 +3748,9 @@
          (append-to body))
 
     (labels ((require-argument-sexp ()
-               `(unless arguments (jerror 'simple-error "format - not enough arguments")))
+               `(if arguments
+                    (car arguments)
+                    (jerror 'simple-error "format - not enough arguments")))
 
              (collect (form)
                (setq append-to (cdr (rplacd append-to (list form)))))
@@ -3767,7 +3770,7 @@
 
              (do-char (c params)
                (if (eql #\v (car params))
-                   (collect `(dotimes (n (prog2 ,(require-argument-sexp) (car arguments) (setq arguments (cdr arguments)))) (write ,c nil output-stream)))
+                   (collect `(dotimes (n (prog1 ,(require-argument-sexp) (setq arguments (cdr arguments)))) (write ,c nil output-stream)))
                    (collect `(write ,(nchars c params) nil output-stream))))
 
              (do-integer (base colonp atp params)
@@ -3842,7 +3845,7 @@
                        ;; is to print it only if the number is negative. The : modifier is ignored.
                        ((#\d #\D)
                         (if (or colonp params)
-                            (collect-setq  `(m%print-integer arguments output-stream 10 ,colonp ,atp ',params))
+                            (collect-setq `(m%print-integer arguments output-stream 10 ,colonp ,atp ',params))
                             (if atp
                                 (collect-setq `(let ((arg (car arguments)))
                                                  (and (integerp arg)
@@ -3924,19 +3927,19 @@
                                (when colonp (jerror 'simple-error "can't use both : and @ modifiers with ~*"))
                                (case (car params)
                                  ((nil) (collect `(setq arguments orig-arguments)))
-                                 (#\v   (collect `(setq arguments (nthcdr (progn ,(require-argument-sexp) (car arguments)) orig-arguments))))
+                                 (#\v   (collect `(setq arguments (nthcdr ,(require-argument-sexp) orig-arguments))))
                                  (t     (collect `(setq arguments (nthcdr ,(car params) orig-arguments))))))
 
                               (colonp
                                (case (car params)
                                  ((nil) (collect `(setq arguments (last orig-arguments (+ (list-length arguments) 1)))))
-                                 (#\v   (collect `(setq arguments (last orig-arguments (+ (list-length arguments) (progn ,(require-argument-sexp) (car arguments)))))))
+                                 (#\v   (collect `(setq arguments (last orig-arguments (+ (list-length arguments) ,(require-argument-sexp))))))
                                  (t     (collect `(setq arguments (last orig-arguments (+ (list-length arguments) ,(car params))))))))
 
                               (t
                                (case (car params)
                                  ((nil) (collect `(setq arguments (cdr arguments))))
-                                 (#\v   (collect `(setq arguments (nthcdr (progn ,(require-argument-sexp) (car arguments)) (cdr arguments)))))
+                                 (#\v   (collect `(setq arguments (nthcdr ,(require-argument-sexp) (cdr arguments)))))
                                  (t     (collect `(setq arguments (nthcdr ,(car params) arguments))))))))
 
 
@@ -4102,19 +4105,19 @@
                           (when colonp (jerror 'simple-error "can't use both : and @ modifiers with ~*"))
                           (case (car params)
                             ((nil) (setq arguments orig-arguments))
-                            (#\v   (setq arguments (nthcdr (progn (require-argument) (car arguments)) orig-arguments)))
+                            (#\v   (setq arguments (nthcdr (require-argument) orig-arguments)))
                             (t     (setq arguments (nthcdr (car params) orig-arguments)))))
 
                          (colonp
                           (case (car params)
                             ((nil) (setq arguments (last orig-arguments (+ (list-length arguments) 1))))
-                            (#\v   (setq arguments (last orig-arguments (+ (list-length arguments) (progn (require-argument) (car arguments))))))
+                            (#\v   (setq arguments (last orig-arguments (+ (list-length arguments) (require-argument)))))
                             (t     (setq arguments (last orig-arguments (+ (list-length arguments) (car params)))))))
 
                          (t
                           (case (car params)
                             ((nil) (setq arguments (cdr arguments)))
-                            (#\v   (setq arguments (nthcdr (progn (require-argument) (car arguments)) (cdr arguments))))
+                            (#\v   (setq arguments (nthcdr (require-argument) (cdr arguments))))
                             (t     (setq arguments (nthcdr (car params) arguments)))))))
 
 
