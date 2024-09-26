@@ -234,12 +234,12 @@
 
 (defmacro prog2 (first-form second-form . more-forms)
   (if more-forms
-      (let ((ignore (gensym))
-            (result (gensym)))
-        `(let ((,ignore ,first-form)
-               (,result ,second-form))
-           ,@more-forms
-           ,result))
+      (let ((result (gensym)))
+        `(progn
+           ,first-form
+           (let ((,result ,second-form))
+             ,@more-forms
+             ,result)))
       `(progn ,first-form (values ,second-form))))
 
 
