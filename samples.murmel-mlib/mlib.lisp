@@ -3452,6 +3452,14 @@
                     (setq arguments (cdr arguments)))
                   ,value-form)))
 
+(defun m%nonneg-integer-for-format (arg)
+  "check that arg is a non-negative integer number and return it truncated to an integer"
+  (if (and (numberp arg)
+           (= arg (truncate arg))
+           (>= arg 0))
+      (truncate arg)
+      (jerror "format - not an integer >= 0: '%s'" arg)))
+
 (labels ((char-with-default (obj default)
            (if obj
                (if (characterp obj)
@@ -3700,11 +3708,11 @@
              (vector-add jformat-string #\%)
              (when atp (vector-add jformat-string #\+))
              (when w
-               (dovector (w (write-to-string w))
+               (dovector (w (write-to-string (m%nonneg-integer-for-format w)))
                          (vector-add jformat-string w)))
              (when d
                (vector-add jformat-string #\.)
-               (dovector (d (write-to-string d))
+               (dovector (d (write-to-string (m%nonneg-integer-for-format d)))
                          (vector-add jformat-string d)))
              (vector-add jformat-string c)
              jformat-string)))
@@ -3968,7 +3976,7 @@
                        (write arg nil output-stream)))
                  (setq arguments (cdr arguments)))
 
-               (do-general-float (c atp params)
+               (do-general-float (atp params)
                  (let ((w (prefix-param (car params)))
                        (d (prefix-param (cadr params)))
                        (arg (car arguments)))
@@ -4063,7 +4071,7 @@
 
                   ;; Tilde G: General Floating-Point
                   ((#\g #\G)
-                   (do-general-float #\g atp params))
+                   (do-general-float atp params))
 
 
                   ;; Printer Operations
@@ -4105,19 +4113,19 @@
                           (when colonp (jerror 'simple-error "can't use both : and @ modifiers with ~*"))
                           (case (car params)
                             ((nil) (setq arguments orig-arguments))
-                            (#\v   (setq arguments (nthcdr (require-argument) orig-arguments)))
+                            (#\v   (setq arguments (nthcdr (m%nonneg-integer-for-format (require-argument)) orig-arguments)))
                             (t     (setq arguments (nthcdr (car params) orig-arguments)))))
 
                          (colonp
                           (case (car params)
                             ((nil) (setq arguments (last orig-arguments (+ (list-length arguments) 1))))
-                            (#\v   (setq arguments (last orig-arguments (+ (list-length arguments) (require-argument)))))
+                            (#\v   (setq arguments (last orig-arguments (+ (list-length arguments) (m%nonneg-integer-for-format (require-argument))))))
                             (t     (setq arguments (last orig-arguments (+ (list-length arguments) (car params)))))))
 
                          (t
                           (case (car params)
                             ((nil) (setq arguments (cdr arguments)))
-                            (#\v   (setq arguments (nthcdr (require-argument) (cdr arguments))))
+                            (#\v   (setq arguments (nthcdr (m%nonneg-integer-for-format (require-argument)) (cdr arguments))))
                             (t     (setq arguments (nthcdr (car params) arguments)))))))
 
 
