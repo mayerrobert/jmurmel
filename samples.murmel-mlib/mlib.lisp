@@ -3896,11 +3896,16 @@
                             (do-float #\g atp params)
                             (collect-shift (if atp
                                                `(let ((arg (car arguments)))
-                                                  (and (floatp arg)
-                                                       (>= arg 0)
-                                                       (write #\+ nil output-stream))
-                                                  (write arg nil output-stream))
-                                               `(write (car arguments) nil output-stream)))))
+                                                  (if (numberp arg)
+                                                      (progn
+                                                        (if (>= arg 0)
+                                                            (write #\+ nil output-stream))
+                                                        (write (* 1.0 arg) nil output-stream))
+                                                      (write arg nil output-stream)))
+                                               `(write (if (numberp (car arguments))
+                                                           (* 1.0 (car arguments))
+                                                           (car arguments))
+                                                       nil output-stream)))))
 
 
                        ;; Printer Operations
@@ -3987,11 +3992,13 @@
                  (let ((w (prefix-param (car params)))
                        (d (prefix-param (cadr params)))
                        (arg (car arguments)))
-                   (if (and (floatp arg) params)
-                       (jformat-locale output-stream "en-US" (float-fmtstring atp w d) arg)
-                       (progn
-                         (and atp (floatp arg) (>= arg 0) (write #\+ nil output-stream))
-                         (write arg nil output-stream))))
+                   (if (numberp arg)
+                       (if params
+                           (jformat-locale output-stream "en-US" (float-fmtstring atp w d) (* 1.0 arg))
+                           (progn
+                             (and atp (>= arg 0) (write #\+ nil output-stream))
+                             (write (* 1.0 arg) nil output-stream)))
+                       (write arg nil output-stream)))
                  (setq arguments (cdr arguments))))
 
         (dolist (elem (parse-control-string control-string))

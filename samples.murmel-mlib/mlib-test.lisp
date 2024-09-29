@@ -2111,13 +2111,25 @@ all the result list to a single list. FUNCTION must return a list."
 ;; G
 ;; ~g shows differences between CL and Murmel as CL's format may append spaces after ~g
 #+murmel
+(progn
 (test "x123.456x"
       "x~gx" 123.456)
 
-#+murmel
 (test "y+123.456y"
       "y~@gy" 123.456)
 
+(test "y123.0y"
+      "y~gy" 123)
+
+(test "y+123.0y"
+      "y~@gy" 123)
+)
+
+(test "xyxxy"
+      "~g" 'xyxxy)
+
+(test "xyxxy"
+      "~@g" 'xyxxy)
 
 ;; ~~
 (test "~~~~~"
