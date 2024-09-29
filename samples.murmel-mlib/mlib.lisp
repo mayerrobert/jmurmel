@@ -3774,16 +3774,16 @@
              (collect-setq (form)
                (collect `(setq arguments ,form)))
 
-             (nchars (c params)
-               (let* ((n (m%nonneg-integer-for-format (or (car params) 1)))
-                      (result (make-array n 'character nil)))
-                 (dotimes (i n result)
-                   (setf (sref result i) c))))
-
              (do-char (c params)
-               (if (eql #\v (car params))
-                   (collect `(dotimes (n (prog1 ,(require-argument-sexp) (setq arguments (cdr arguments)))) (write ,c nil output-stream)))
-                   (collect `(write ,(nchars c params) nil output-stream))))
+               (case (car params)
+                 ((nil 1)
+                  (collect `(write ,c nil output-stream)))
+                 (#\v
+                  (collect `(progn
+                              (write (vector-fill (make-array ,(require-argument-sexp) 'character) ,c) nil output-stream)
+                              (setq arguments (cdr arguments)))))
+                 (t
+                  (collect `(write ,(vector-fill (make-array (m%nonneg-integer-for-format (or (car params) 1)) 'character) c) nil output-stream)))))
 
              (do-integer (base colonp atp params)
                (collect-setq (if (or colonp atp params)
@@ -3965,8 +3965,11 @@
   (lambda (output-stream . orig-arguments)
     (let ((arguments orig-arguments))
       (labels ((do-char (c params)
-                 (dotimes (n (prefix-int-with-default 1))
-                   (write c nil output-stream)))
+                 (case (car params)
+                   ((1 nil)
+                    (write c nil output-stream))
+                   (t
+                    (write (vector-fill (make-array (prefix-int-with-default 1) 'character) c) nil output-stream))))
 
                (do-integer (base colonp atp params)
                  (setq arguments (m%print-integer arguments output-stream base colonp atp params)))
