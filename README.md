@@ -78,7 +78,7 @@ for a first peek at JMurmel (compiling Murmel won't work, though, only the inter
 
 **Optional: building from source**
 
-Pre-requisites: JDK8 or higher (8..23-ea is being tested), optionally: maven
+Pre-requisites: JDK8 or higher (8..23 is being tested), optionally: maven
 
 Clone the repo and build using maven
 (this will use the maven wrapper included in the repo, a local maven installation is not required):
@@ -92,7 +92,7 @@ The resulting jar will end up in `lambda\target\jmurmel.jar`
 
 **Quickstart using a precompiled version**
 
-Make sure you have Java 8+ installed (Java 8 is minimum, Java 21 is preferred).
+Make sure you have Java 8+ installed (Java 8 is minimum, more modern versions are preferred).
 
 `java -version` will tell (GNU/linux or Unix or Mac users please adjust as appropriate):
 
