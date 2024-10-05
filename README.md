@@ -4,7 +4,7 @@
 [![CodeQL](https://github.com/mayerrobert/jmurmel/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/mayerrobert/jmurmel/actions/workflows/codeql-analysis.yml)
 
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
-interpreter/ compiler compatible with Java8..22 that can be used standalone as well as embedded.**
+interpreter/ compiler compatible with Java8..23 that can be used standalone as well as embedded.**
 
 Currently weighing in at ~460kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
