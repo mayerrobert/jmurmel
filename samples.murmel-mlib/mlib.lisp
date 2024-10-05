@@ -3983,8 +3983,8 @@
                  (let ((w (prefix-param (car params)))
                        (d (prefix-param (cadr params)))
                        (arg (car arguments)))
-                   (if (floatp arg)
-                       (jformat-locale output-stream "en-US" (float-fmtstring c atp w d) arg)
+                   (if (numberp arg)
+                       (jformat-locale output-stream "en-US" (float-fmtstring c atp w d) (* 1.0 arg))
                        (write arg nil output-stream)))
                  (setq arguments (cdr arguments)))
 

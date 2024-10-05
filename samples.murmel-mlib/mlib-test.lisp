@@ -2095,6 +2095,23 @@ all the result list to a single list. FUNCTION must return a list."
 
 
 ;; F
+
+(test #-murmel "123.456"
+      #+murmel "123.456000"
+      "~f" 123.456)
+
+(test #-murmel "123.0"
+      #+murmel "123.000000"
+      "~f" 123)
+
+(test #-murmel "+123.0"
+      #+murmel "+123.000000"
+      "~@f" 123)
+
+(test #-murmel "123.5"
+      #+murmel "123.456000"
+      "~5f" 123.456)
+
 (test "123.46"
       "~5,2f" 123.456)
 (test "123.46"
@@ -2103,27 +2120,28 @@ all the result list to a single list. FUNCTION must return a list."
 (test "+123.46"
       "~5,2@f" 123.456)
 
-(test #+murmel "+123.456789"
-      #-murmel "+123.45679"
+(test #-murmel "+123.45679"
+      #+murmel "+123.456789"
       "~@f" 123.456789)
 
 
 ;; G
 ;; ~g shows differences between CL and Murmel as CL's format may append spaces after ~g
-#+murmel
-(progn
-(test "x123.456x"
+(test #-murmel "x123.456    x"
+      #+murmel "x123.456x"
       "x~gx" 123.456)
 
-(test "y+123.456y"
+(test #-murmel "y+123.456    y"
+      #+murmel "y+123.456y"
       "y~@gy" 123.456)
 
-(test "y123.0y"
+(test #-murmel "y123.    y"
+      #+murmel "y123.0y"
       "y~gy" 123)
 
-(test "y+123.0y"
+(test #-murmel "y+123.    y"
+      #+murmel "y+123.0y"
       "y~@gy" 123)
-)
 
 (test "xyxxy"
       "~g" 'xyxxy)
