@@ -2036,7 +2036,6 @@ all the result list to a single list. FUNCTION must return a list."
 (test "asdf x00+15x"
       "~a x~5,'0@dx" "asdf" 15)
 
-
 (test "asdf x00-15x"
       "~a x~5,'0dx" "asdf" -15)
 
@@ -2094,7 +2093,18 @@ all the result list to a single list. FUNCTION must return a list."
               "x000000000+33_333_333x")
 
 
-;; F
+;; ~E
+(test #-murmel "1.23456e+2"
+      #+murmel "1.234560e+02"
+      "~e" 123.456)
+
+(test #-murmel "+1.23456e+2"
+      #+murmel "+1.234560e+02"
+      "~@e" 123.456)
+
+
+
+;; ~F
 
 (test #-murmel "123.456"
       #+murmel "123.456000"
@@ -2125,7 +2135,7 @@ all the result list to a single list. FUNCTION must return a list."
       "~@f" 123.456789)
 
 
-;; G
+;; ~G
 ;; ~g shows differences between CL and Murmel as CL's format may append spaces after ~g
 (test #-murmel "x123.456    x"
       #+murmel "x123.456x"
