@@ -78,7 +78,7 @@
         <javassist.version>3.30.2-GA</javassist.version>
 
         <!-- report maven plugins -->
-        <maven-site-plugin.version>3.20.0</maven-site-plugin.version>
+        <maven-site-plugin.version>3.21.0</maven-site-plugin.version>
         <maven-project-info-reports-plugin.version>3.8.0</maven-project-info-reports-plugin.version>
         <maven-jxr-plugin.version>3.5.0</maven-jxr-plugin.version>
         <maven-dependency-plugin.version>3.8.0</maven-dependency-plugin.version>
