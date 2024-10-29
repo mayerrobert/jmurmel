@@ -17,6 +17,30 @@ https://github.com/jOOQ/jOOR/blob/main/jOOR-java-8/src/main/java/org/joor/Compil
 v.a. gschickteren ClassFileManager
 
 
+Python3 in Java: https://www.graalvm.org/python/, https://youtu.be/F8GoDqTtSOE?feature=shared
+
+<dependency>
+  <groupId>org.graalvm.polyglot</groupId>
+  <artifactId>polyglot</artifactId> 
+  <version>24.1.1</version>
+</dependency>
+<dependency>
+  <groupId>org.graalvm.polyglot</groupId>
+  <artifactId>python</artifactId> 
+  <version>24.1.1</version>
+  <type>pom</type>
+</dependency>
+
+import org.graalvm.polyglot.Context;
+
+try (Context context = Context.create()) {
+    context.eval("python", "print('Hello from GraalPy!')");
+}
+
+-> sample herrichten
+
+
+
 closures im compiler haben ein problem: die closure hält eine referenz auf den gesamten stackframe (das Object... array)
 und damit auf alle variablen und nicht nur auf die variablen über die eigentlich geclosed wird.
 -> dadurch kann der gc variablen die in keiner closure benötigt werden nicht freigeben -> speicherleck oder zumindest unnötiger speicherverbrauch 
