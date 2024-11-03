@@ -31,7 +31,7 @@
 
 (defvar *worst* 0)
 
-#+sbcl
+#-murmel
 (defun make-message (n)
   (make-array (+msgSize+) :element-type '(unsigned-byte 8)
                           :initial-element (mod n 256)))
