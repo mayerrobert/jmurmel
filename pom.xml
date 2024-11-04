@@ -46,11 +46,11 @@
 
         <!-- maven plugins -->
         <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
-        <maven-surefire.version>3.5.1</maven-surefire.version>
+        <maven-surefire.version>3.5.2</maven-surefire.version>
         <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
-        <maven-javadoc-plugin.version>3.10.1</maven-javadoc-plugin.version>
-        <maven-pmd-plugin.version>3.25.0</maven-pmd-plugin.version>
+        <maven-javadoc-plugin.version>3.11.1</maven-javadoc-plugin.version>
+        <maven-pmd-plugin.version>3.26.0</maven-pmd-plugin.version>
         <maven-shade-plugin.version>3.6.0</maven-shade-plugin.version>
         <maven-assembly-plugin.version>3.7.1</maven-assembly-plugin.version>
         <maven-clean-plugin.version>3.4.0</maven-clean-plugin.version>
@@ -80,7 +80,7 @@
         <!-- report maven plugins -->
         <maven-site-plugin.version>3.21.0</maven-site-plugin.version>
         <maven-project-info-reports-plugin.version>3.8.0</maven-project-info-reports-plugin.version>
-        <maven-jxr-plugin.version>3.5.0</maven-jxr-plugin.version>
+        <maven-jxr-plugin.version>3.6.0</maven-jxr-plugin.version>
         <maven-dependency-plugin.version>3.8.1</maven-dependency-plugin.version>
         <maven-source-plugin.version>3.3.1</maven-source-plugin.version>
 
