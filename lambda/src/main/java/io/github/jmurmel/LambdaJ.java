@@ -343,6 +343,7 @@ public class LambdaJ {
         default void printObj(Object o) { printObj(o, true); }
         default void printString(CharSequence s) { printObj(s, false); }
         void printEol();
+        default boolean freshLine() { printEol(); return true; }
     }
 
     /** if an atom implements this interface then {@link Writeable#printSEx(LambdaJ.WriteConsumer, boolean)} will be used by the Murmel primitive {@code write} */
@@ -1210,14 +1211,36 @@ public class LambdaJ {
 
     /** this class will write objects as S-expressions to the given {@link WriteConsumer} w/o any eol translation */
     private static final class SExpressionWriter implements ObjectWriter {
-        private final @NotNull WriteConsumer out;
+        private static class ColumnCountingWriteConsumer implements WriteConsumer {
+            private final @NotNull WriteConsumer wrapped;
+            int col;
+
+            ColumnCountingWriteConsumer(@NotNull WriteConsumer wrapped) { this.wrapped = wrapped; }
+
+            @Override public void print(CharSequence s) {
+                wrapped.print(s);
+                if (s.length() != 0) {
+                    int pos;
+                    for (pos = s.length() - 1; pos >= 0; --pos) {
+                        if (s.charAt(pos) == '\n' || s.charAt(pos) == '\r') { col = 0; break; }
+                    }
+                    col += s.length() - 1 - pos;
+                }
+            }
+        }
+        private final @NotNull ColumnCountingWriteConsumer out;
 
         SExpressionWriter(@NotNull WriteConsumer out) { //noinspection ConstantConditions
-                                                        assert out != null; this.out = out; }
+                                                        assert out != null; this.out = new ColumnCountingWriteConsumer(out); }
 
         @Override public void printObj(Object o, boolean printEscape) { printSEx(out, o, printEscape); }
-        @Override public void printEol() { out.print("\n"); }
         @Override public void printString(CharSequence s) { out.print(s); }
+
+        @Override public void printEol() { out.print("\n"); }
+        @Override public boolean freshLine() {
+            if (out.col != 0) { out.print("\n"); return true; }
+            return false;
+        }
     }
 
 
@@ -2491,6 +2514,8 @@ public class LambdaJ {
         sWrite("write", Features.HAVE_IO, 1, 3)                        { @Override Object apply(LambdaJ intp, ConsCell args) { return write(intp.getLispPrinter(args, 2, intp.getLispPrinter()), car(args), cdr(args) == null || cadr(args) != null); } },
         sWriteln("writeln", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
+        sFreshLine("fresh-line", Features.HAVE_IO, 0, 1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(freshLine(intp.getLispPrinter(args, 0, intp.getLispPrinter()))); } },
+
         sJFormat("jformat", Features.HAVE_UTIL, 2, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return Subr.jformat(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
         sJFormatLocale("jformat-locale", Features.HAVE_UTIL,3,-1)      { @Override Object apply(LambdaJ intp, ConsCell args) { return jformatLocale(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
 
@@ -6149,6 +6174,11 @@ public class LambdaJ {
             return null;
         }
 
+        static boolean freshLine(ObjectWriter lispPrinter) {
+            if (lispPrinter == null) throw errorUnsupported("fresh-line", "%s: lispStdout is " + NIL);
+            return lispPrinter.freshLine();
+        }
+
         static Object lnwrite(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
             if (lispPrinter == null) throw errorUnsupported("lnwrite", "%s: lispStdout is " + NIL);
             lispPrinter.printEol();
@@ -8778,6 +8808,9 @@ public class LambdaJ {
         public final Object writelnStdout     ()                { clrValues();                                                    return LambdaJ.Subr.writeln(lispPrinter); }
         public final Object writelnStdout     (Object arg)      { clrValues();                                                    return LambdaJ.Subr.writeln(lispPrinter, arg); }
 
+        public final Object freshLine         (Object... args)  { clrValues(); varargsMinMax("fresh-line",           args, 0, 1); return bool(LambdaJ.Subr.freshLine(getLispPrinter(args, 0, lispPrinter))); }
+        public final Object freshLine         ()                { clrValues();                                                    return bool(LambdaJ.Subr.freshLine(lispPrinter)); }
+
         public final Object _lnwrite          (Object... args)  { clrValues(); varargsMinMax("lnwrite",              args, 0, 3); return LambdaJ.Subr.lnwrite(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
 
         public final Object jformat           (Object... args)  { clrValues(); varargs2("jformat",                   args);       return LambdaJ.Subr.jformat(getLispPrinter(args, 0, null), true, arraySlice(args)); }
@@ -9615,6 +9648,7 @@ public class LambdaJ {
             case "write-to-string": return (CompilerPrimitive)this::writeToString;
             case "write": return (CompilerPrimitive)this::_write;
             case "writeln": return (CompilerPrimitive)this::_writeln;
+            case "fresh-line": return (CompilerPrimitive)this::freshLine;
             case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
 
             case "jformat": return (CompilerPrimitive)this::jformat;
@@ -9840,6 +9874,7 @@ public class LambdaJ {
         + "=@numbereq" + "\n" + "<=@le" + "\n" + "<@lt" + "\n" + ">=@ge" + "\n" + ">@gt" + "\n" + "/=@ne" + "\n"
         + "1+@inc" + "\n" + "1-@dec" + "\n"
         + "read-from-string@readFromStr" + "\n" + "read-textfile-lines@readTextfileLines" + "\n" + "read-textfile@readTextfile" + "\n"
+        + "fresh-line@freshLine" + "\n"
         + "write-textfile-lines@writeTextfileLines" + "\n" + "write-textfile@writeTextfile" + "\n" + "write-to-string@writeToString" + "\n" + "jformat@jformat" + "\n" + "jformat-locale@jformatLocale" + "\n" + "char-code@charInt" + "\n" + "code-char@intChar" + "\n"
         + "string=@stringeq" + "\n" + "string->list@stringToList" + "\n" + "list->string@listToString" + "\n"
         + ADJUSTABLE_ARRAY_P+"@adjustableArrayP" + "\n" + "vector-add@vectorAdd" + "\n" + "vector-remove@vectorRemove" + "\n"
@@ -11841,6 +11876,11 @@ public class LambdaJ {
                         return true;
                     }
                 }
+                break;
+            }
+            case sFreshLine: {
+                if (args == null) { sb.append("freshLine()"); return true; }
+                break;
             }
             case sInc: {
                 if (consp(car(args)) && caar(args) == intern("1+")) {

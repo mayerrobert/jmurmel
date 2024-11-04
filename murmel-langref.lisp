@@ -1268,6 +1268,13 @@ pi ; ==> 3.141592653589793
 (writeln "Hello, World!" nil)
 
 
+; = (fresh-line [dest]) -> boolean
+;
+; Since: 1.5
+;
+; Print an EOL character (-sequence) unless already at the beginning of line.
+
+
 ; = (write-to-string obj [print-escape-p]) -> result-string
 ;
 ; Since: 1.4

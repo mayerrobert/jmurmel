@@ -190,6 +190,7 @@ jproxy
 read
 write
 writeln
+fresh-line
 lnwrite
 jformat
 jformat-locale
