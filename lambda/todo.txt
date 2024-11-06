@@ -1,3 +1,10 @@
+JMurmel> :res
+JMurmel> (load "mlib")
+JMurmel> (format t "aaa~v&bbb" 0)
+JMurmel> :r
+JMurmel> (format t "aaa~v&bbb" 0)
+-> das zweite format gibt einen fehler, irgendwas haut der compiler zsam
+
 defuns (und closures?) die nur ein toplevel "labels" enthalten könnte der interpreter in eine closure umwandeln die die lokalen funktionen im (closure-) environment hat
 -> evalDefun und evalLambda sollten die labels form 1x verarbeiten
 -> "(defun... (labels..." swappen nach "(labels... (defun..." macht dasselbe geht aber nur wenn die lokalen funktionen die defun argumente nicht benutzen, und geht nicht bei dynamic environment
