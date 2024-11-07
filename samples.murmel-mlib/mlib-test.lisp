@@ -2019,6 +2019,27 @@ all the result list to a single list. FUNCTION must return a list."
       "~@c" #\c)
 
 
+;; ~%
+#| todo ~& doesn't work yet with "(format nil..."
+(test "aaa
+bbb"
+      "aaa~&bbb")
+
+(test "aaabbb"
+      "aaa~0&bbb")
+
+(test "aaa
+
+bbb"
+      "aaa~2&bbb")
+
+(test "aaa
+
+bbb"
+      "aaa~v&bbb" 2)
+|#
+
+
 ;; B
 (test "asdf x00000000000000001111x"
       "~a x~20,'0bx" "asdf" 15)

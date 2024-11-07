@@ -3783,7 +3783,7 @@
                               (write (vector-fill (make-array ,(require-argument-sexp) 'character) ,c) nil output-stream)
                               (setq arguments (cdr arguments)))))
                  (t
-                  (collect `(write ,(vector-fill (make-array (m%nonneg-integer-for-format (or (car params) 1)) 'character) c) nil output-stream)))))
+                  (collect `(write ,(vector-fill (make-array (m%nonneg-integer-for-format (car params)) 'character) c) nil output-stream)))))
 
              (do-integer (base colonp atp params)
                (collect-setq (if (or colonp atp params)
@@ -3818,12 +3818,31 @@
                         (collect-shift `(write (car arguments) ,atp output-stream)))
 
                        ;; Tilde Percent: Newline
-                       ;; Tilde Ampersand: Fresh-Line
-                       ;; ~n% and ~n& output n newlines. No arg is used.
-                       ;; (~& should omit the first newline if the output stream
-                       ;; is already at the beginning of a line, this is not implemented.)
-                       ((#\% #\&)
+                       ;; ~n% outputs n newlines. No arg is used.
+                       (#\%
                         (do-char #\Newline params))
+
+                       ;; Tilde Ampersand: Fresh-Line
+                       ;; ~& outputs a newline if not already at the beginning of a line.
+                       ;; ~n& outputs a newline if not already at the beginning of a line followed by n-1 newlines.
+                       ;; No arg is used.
+                       (#\&
+                        (case (car params)
+                          (0)
+                          ((nil 1)
+                           (collect `(fresh-line output-stream)))
+                          (2
+                           (collect `(progn (fresh-line output-stream) (write #\Newline nil output-stream))))
+                          (#\v
+                           (collect `(let ((n ,(require-argument-sexp)))
+                                       (when (> n 0)
+                                         (fresh-line output-stream)
+                                         (write (vector-fill (make-array (1- n) 'character) #\Newline) nil output-stream))
+                                       (setq arguments (cdr arguments)))))
+                          (t
+                           (collect `(progn
+                                       (fresh-line output-stream)
+                                       (write ,(vector-fill (make-array (1- (m%nonneg-integer-for-format (car params))) 'character) #\Newline) nil output-stream))))))
 
                        ;; Tilde Vertical-Bar: Page
                        ;; This outputs a page separator character, if possible. ~n| does this n times.
@@ -4021,12 +4040,25 @@
                    (setq arguments (cdr arguments)))
 
                   ;; Tilde Percent: Newline
-                  ;; Tilde Ampersand: Fresh-Line
-                  ;; ~n% and ~n& output n newlines. No arg is used.
-                  ;; (~& should omit the first newline if the output stream
-                  ;; is already at the beginning of a line, this is not implemented.)
-                  ((#\% #\&)
+                  ;; ~n% outputs n newlines. No arg is used.
+                  (#\%
                    (do-char #\Newline params))
+
+                  ;; Tilde Ampersand: Fresh-Line
+                  ;; ~& outputs a newline if not already at the beginning of a line.
+                  ;; ~n& outputs a newline if not already at the beginning of a line followed by n-1 newlines.
+                  ;; No arg is used.
+                  (#\&
+                   (case (car params)
+                     (0)
+                     ((nil 1)
+                      (fresh-line output-stream))
+                     (2
+                      (progn (fresh-line output-stream) (write #\Newline nil output-stream)))
+                     (t
+                      (progn
+                        (fresh-line output-stream)
+                        (write (vector-fill (make-array (1- (prefix-int-with-default 1)) 'character) #\Newline) nil output-stream)))))
 
                   ;; Tilde Vertical-Bar: Page
                   ;; This outputs a page separator character, if possible. ~n| does this n times.
