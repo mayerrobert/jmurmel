@@ -1203,9 +1203,7 @@ public class LambdaJ {
 
     /** create an ObjectWriter that transforms \n to the given {@code lineSeparator} */
     public static @NotNull ObjectWriter makeWriter(@NotNull WriteConsumer out, String lineSeparator) {
-        if ("\r\n".equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r\n"));
-        if ("\r"  .equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, "\r"));
-
+        if ("\r\n".equals(lineSeparator) || "\r".equals(lineSeparator)) return new SExpressionWriter(new UnixToAnyEol(out, lineSeparator));
         return new SExpressionWriter(out);
     }
 
