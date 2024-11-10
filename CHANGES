@@ -5,7 +5,7 @@ Changes in JMurmel-1.5.0 relative to JMurmel-1.4.8
      format to jformat,
      format-locale to jformat-locale
      error to jerror
- * compiler allows defmacro inside labels forms
+ * changed defmacro: is now allowed inside labels forms
 
  * added fresh-line
 

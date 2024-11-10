@@ -10504,7 +10504,7 @@ public class LambdaJ {
 
             final ConsCell ccForm = (ConsCell)form;
             containingForm = ccForm;
-            final Object op = car(ccForm);      // first element of the of the form should be a symbol or a form that computes a symbol
+            final Object op = car(ccForm);      // first element of the form should be a symbol or a form that computes a symbol
             assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
             final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
 
@@ -11405,6 +11405,7 @@ public class LambdaJ {
                 sb.append("        private final MurmelFunction ").append(javasym(symbol, env)).append(" = ");
                 emitNamedLambda(LABELS, sb, symbol, cadr(ccSymbolParamsAndBody), (ConsCell)cddr(ccSymbolParamsAndBody), env, topEnv, rsfx+1, false);
                 sb.append(";\n");
+                macroEnv.addFunction(symbol, intp.makeClosure(cadr(ccSymbolParamsAndBody), (ConsCell)cddr(ccSymbolParamsAndBody), macroEnv.toEnv()));
             }
 
             sb.append("        public final Object apply(Object... ignored) {\n");

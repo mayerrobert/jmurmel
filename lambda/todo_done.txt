@@ -2871,3 +2871,27 @@ Neu              -> Mlib error     ... (error datum . args)  datum ist condition
 
 Neu: Murmel raise                  ... (raise condition-type msg) macht throw new condition-type(msg)
 -> brauchts nicht, jerror kann das
+
+
+
+JMurmel> :res
+JMurmel> (load "mlib")
+JMurmel> (format t "aaa~v&bbb" 0)
+JMurmel> :r
+JMurmel> (format t "aaa~v&bbb" 0)
+-> das zweite format gibt einen fehler, irgendwas haut der compiler zsam
+
+einfacherer reproducer:
+
+JMurmel> (labels ((l () 1)) (defmacro m() (l)) (m))
+
+==> 1
+JMurmel> :r
+
+==> 1
+JMurmel> (m)
+
+Error: unbound-variable - eval: 'l' is not bound
+error occurred in line 1:34..1:36: (l)
+error occurred in line 1:1..1:2: (m)
+JMurmel>

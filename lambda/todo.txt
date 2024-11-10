@@ -1,9 +1,6 @@
-JMurmel> :res
-JMurmel> (load "mlib")
-JMurmel> (format t "aaa~v&bbb" 0)
-JMurmel> :r
-JMurmel> (format t "aaa~v&bbb" 0)
--> das zweite format gibt einen fehler, irgendwas haut der compiler zsam
+im Online REPL schreibt "java nil t" in die JS console
+-> output stream des compiler umlenken?!
+
 
 defuns (und closures?) die nur ein toplevel "labels" enthalten könnte der interpreter in eine closure umwandeln die die lokalen funktionen im (closure-) environment hat
 -> evalDefun und evalLambda sollten die labels form 1x verarbeiten
@@ -44,7 +41,9 @@ try (Context context = Context.create()) {
     context.eval("python", "print('Hello from GraalPy!')");
 }
 
--> sample herrichten
+-> sample herrichten, vielleicht mit ezlib, s.u.
+
+https://github.com/saicone/ezlib: Runtime library/dependency loader & relocator for Java in a single class, https://docs.saicone.com/ezlib
 
 
 
