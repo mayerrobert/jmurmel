@@ -2020,7 +2020,6 @@ all the result list to a single list. FUNCTION must return a list."
 
 
 ;; ~%
-#| todo ~& doesn't work yet with "(format nil..."
 (test "aaa
 bbb"
       "aaa~&bbb")
@@ -2037,7 +2036,6 @@ bbb"
 
 bbb"
       "aaa~v&bbb" 2)
-|#
 
 
 ;; B

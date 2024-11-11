@@ -1272,6 +1272,20 @@ Since: 1.5
 Print an EOL character (-sequence) unless already at the beginning of line.
 
 
+### (make-string-writer) -> writer
+
+Since: 1.5
+
+Create a Lisp writer that writes to an internal buffer.
+The writer object can also be used as a string.
+
+    (define s (make-string-writer)) ; ==> s
+    (typep s 'string)               ; ==> t
+    (write 'abc nil s)              ; ==> abc
+    (slength s)                     ; ==> 3
+    (string->list s)                ; ==> (#\a #\b #\c)
+
+
 ### (write-to-string obj [print-escape-p]) -> result-string
 
 Since: 1.4

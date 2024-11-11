@@ -1208,7 +1208,7 @@ public class LambdaJ {
     }
 
     /** this class will write objects as S-expressions to the given {@link WriteConsumer} w/o any eol translation */
-    private static final class SExpressionWriter implements ObjectWriter {
+    private static class SExpressionWriter implements ObjectWriter {
         private static class ColumnCountingWriteConsumer implements WriteConsumer {
             private final @NotNull WriteConsumer wrapped;
             int col;
@@ -1239,6 +1239,22 @@ public class LambdaJ {
             if (out.col != 0) { out.print("\n"); return true; }
             return false;
         }
+    }
+
+    private static class StringSexpWriter extends SExpressionWriter implements CharSequence {
+        private StringBuilder sb;
+        private StringSexpWriter(@NotNull WriteConsumer out) { super(out); }
+
+        static StringSexpWriter make() {
+            final StringBuilder sb = new StringBuilder();
+            final StringSexpWriter ret = new StringSexpWriter(sb::append);
+            ret.sb = sb;
+            return ret;
+        }
+
+        @Override public int length() { return sb.length(); }
+        @Override public char charAt(int index) { return sb.charAt(index); }
+        @Override public CharSequence subSequence(int start, int end) { return sb.subSequence(start, end); }
     }
 
 
@@ -2513,6 +2529,8 @@ public class LambdaJ {
         sWriteln("writeln", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
         sFreshLine("fresh-line", Features.HAVE_IO, 0, 1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(freshLine(intp.getLispPrinter(args, 0, intp.getLispPrinter()))); } },
+
+        sMakeStringWriter("make-string-writer", Features.HAVE_IO, 0)   { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.StringSexpWriter.make(); } },
 
         sJFormat("jformat", Features.HAVE_UTIL, 2, -1)                 { @Override Object apply(LambdaJ intp, ConsCell args) { return Subr.jformat(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
         sJFormatLocale("jformat-locale", Features.HAVE_UTIL,3,-1)      { @Override Object apply(LambdaJ intp, ConsCell args) { return jformatLocale(intp.getLispPrinter(args, 0, null), intp.have(Features.HAVE_IO), args); } },
@@ -6683,6 +6701,7 @@ public class LambdaJ {
         final Object consumer = car(ccDest);
         if (consumer == null) return defaultIfNull;
         if (consumer == sT) return lispPrinter;
+        if (consumer instanceof ObjectWriter) return (ObjectWriter)consumer;
         if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { wrap0(e); } });
         throw new SimpleTypeError("cannot coerce %s into a printer", printSEx(consumer));
     }
@@ -8309,6 +8328,7 @@ public class LambdaJ {
             final Object consumer = args[nth];
             if (consumer == null) return defaultIfNull;
             if (consumer == sT) return lispPrinter;
+            if (consumer instanceof ObjectWriter) return (ObjectWriter)consumer;
             if (consumer instanceof Appendable) return new SExpressionWriter(csq -> { try { ((Appendable)consumer).append(csq); } catch (IOException e) { wrap0(e); } });
             throw new SimpleTypeError("cannot coerce %s into a printer", printSEx(consumer));
         }
@@ -8808,6 +8828,9 @@ public class LambdaJ {
 
         public final Object freshLine         (Object... args)  { clrValues(); varargsMinMax("fresh-line",           args, 0, 1); return bool(LambdaJ.Subr.freshLine(getLispPrinter(args, 0, lispPrinter))); }
         public final Object freshLine         ()                { clrValues();                                                    return bool(LambdaJ.Subr.freshLine(lispPrinter)); }
+
+        public final Object makeStringWriter  (Object... args)  { clrValues(); noArgs("make-string-writer",          args);       return LambdaJ.StringSexpWriter.make(); }
+        public final Object makeStringWriter  ()                { clrValues();                                                    return LambdaJ.StringSexpWriter.make(); }
 
         public final Object _lnwrite          (Object... args)  { clrValues(); varargsMinMax("lnwrite",              args, 0, 3); return LambdaJ.Subr.lnwrite(getLispPrinter(args, 2, lispPrinter), arraySlice(args), noSecondArgOrNotNull(args)); }
 
@@ -9647,6 +9670,7 @@ public class LambdaJ {
             case "write": return (CompilerPrimitive)this::_write;
             case "writeln": return (CompilerPrimitive)this::_writeln;
             case "fresh-line": return (CompilerPrimitive)this::freshLine;
+            case "make-string-writer": return (CompilerPrimitive)this::makeStringWriter;
             case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
 
             case "jformat": return (CompilerPrimitive)this::jformat;
@@ -9872,7 +9896,7 @@ public class LambdaJ {
         + "=@numbereq" + "\n" + "<=@le" + "\n" + "<@lt" + "\n" + ">=@ge" + "\n" + ">@gt" + "\n" + "/=@ne" + "\n"
         + "1+@inc" + "\n" + "1-@dec" + "\n"
         + "read-from-string@readFromStr" + "\n" + "read-textfile-lines@readTextfileLines" + "\n" + "read-textfile@readTextfile" + "\n"
-        + "fresh-line@freshLine" + "\n"
+        + "fresh-line@freshLine" + "\n" + "make-string-writer@makeStringWriter" + "\n"
         + "write-textfile-lines@writeTextfileLines" + "\n" + "write-textfile@writeTextfile" + "\n" + "write-to-string@writeToString" + "\n" + "jformat@jformat" + "\n" + "jformat-locale@jformatLocale" + "\n" + "char-code@charInt" + "\n" + "code-char@intChar" + "\n"
         + "string=@stringeq" + "\n" + "string->list@stringToList" + "\n" + "list->string@listToString" + "\n"
         + ADJUSTABLE_ARRAY_P+"@adjustableArrayP" + "\n" + "vector-add@vectorAdd" + "\n" + "vector-remove@vectorRemove" + "\n"
@@ -11880,6 +11904,9 @@ public class LambdaJ {
             case sFreshLine: {
                 if (args == null) { sb.append("freshLine()"); return true; }
                 break;
+            }
+            case sMakeStringWriter: {
+                sb.append("makeStringWriter()"); return true;
             }
             case sInc: {
                 if (consp(car(args)) && caar(args) == intern("1+")) {

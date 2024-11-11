@@ -2852,7 +2852,7 @@
 ;;; CL's optional `string-form` and `element-type` are not supported,
 ;;; therefore the return value of `with-output-to-string` always is the string.
 (defmacro with-output-to-string (s . body)
-  `(let ((,@s (make-array 0 'character t)))
+  `(let ((,@s (make-string-writer)))
      ,@body
      ,@s))
 

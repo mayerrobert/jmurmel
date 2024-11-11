@@ -191,6 +191,7 @@ read
 write
 writeln
 fresh-line
+make-string-writer
 lnwrite
 jformat
 jformat-locale
