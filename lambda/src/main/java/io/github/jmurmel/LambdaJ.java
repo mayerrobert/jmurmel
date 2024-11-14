@@ -7515,7 +7515,7 @@ public class LambdaJ {
                     interpreter.resetCounters();
                     parser = new SExpressionReader(interpreter.features, interpreter.trace, interpreter.tracer, interpreter.getSymbolTable(), interpreter.featuresEnvEntry,
                                                    echo ? echoingSupplier : nonechoingSupplier, null);
-                    outWriter = makeWriter(stdout);
+                    outWriter = makeWriter(stdout, nl);
                     interpreter.init(parser, outWriter, null);
                     if (args != null) injectCommandlineArgs(interpreter, args);
                     if (replVars) initReplVars();
@@ -7593,11 +7593,11 @@ public class LambdaJ {
 
                     stdout.print(nl);
                     if (resultMv == NO_VALUES) {
-                        stdout.print("==> "); outWriter.printObj(result, true); stdout.print(nl);
+                        stdout.print("==> "); outWriter.printObj(result, true); outWriter.printEol();
                     }
                     else if (resultMv != null) {
                         for (Object value : resultMv) {
-                            stdout.print(" -> ");  outWriter.printObj(value, true);  stdout.print(nl);
+                            stdout.print(" -> ");  outWriter.printObj(value, true);  outWriter.printEol();
                         }
                     }
                 }
