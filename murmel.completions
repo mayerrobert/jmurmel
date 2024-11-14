@@ -191,6 +191,7 @@ read
 write
 writeln
 fresh-line
+tabulate
 make-string-writer
 lnwrite
 jformat

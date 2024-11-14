@@ -344,6 +344,7 @@ public class LambdaJ {
         default void printString(CharSequence s) { printObj(s, false); }
         void printEol();
         default boolean freshLine() { printEol(); return true; }
+        default void tabulate(boolean relative, int colnum, int colinc) { printString("  "); }
     }
 
     /** if an atom implements this interface then {@link Writeable#printSEx(LambdaJ.WriteConsumer, boolean)} will be used by the Murmel primitive {@code write} */
@@ -1238,6 +1239,33 @@ public class LambdaJ {
         @Override public boolean freshLine() {
             if (out.col != 0) { out.print("\n"); return true; }
             return false;
+        }
+        @Override public void tabulate(boolean relative, int colnum, int colinc) {
+            if (relative) {
+                // ~@T performs relative tabulation.
+                // ~colnum,colinc@T outputs colnum spaces and then outputs the smallest non-negative number of additional spaces
+                // necessary to move the cursor to a column that is a multiple of colinc.
+                blanks(colnum);
+                if (colinc > 1 && out.col % colinc != 0) blanks(colinc - out.col % colinc);
+            }
+            else {
+                // ~T spaces over to a given column.
+                // ~colnum,colincT will output sufficient spaces to move the cursor to column colnum.
+                // If the cursor is already at or beyond column colnum, it will output spaces to move it to column colnum+k*colinc
+                // for the smallest positive integer k possible, unless colinc is zero, in which case no spaces are output if the cursor is already at or beyond column colnum.
+                final int cols = colnum - out.col;
+                blanks(cols);
+                if (colinc > 0 && cols <= 0) {
+                    int n = out.col - colnum;
+                    blanks(colinc - n % colinc);
+                }
+            }
+        }
+
+        private void blanks(int n) {
+            for (int i = 0; i < n; ++i) {
+                out.print(" ");
+            }
         }
     }
 
@@ -2529,6 +2557,9 @@ public class LambdaJ {
         sWriteln("writeln", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return writeln(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
         sLnwrite("lnwrite", Features.HAVE_IO, 0, 3)                    { @Override Object apply(LambdaJ intp, ConsCell args) { return lnwrite(intp.getLispPrinter(args, 2, intp.getLispPrinter()), args, cdr(args) == null || cadr(args) != null); } },
         sFreshLine("fresh-line", Features.HAVE_IO, 0, 1)               { @Override Object apply(LambdaJ intp, ConsCell args) { return intp.boolResult(freshLine(intp.getLispPrinter(args, 0, intp.getLispPrinter()))); } },
+        sTabulate("tabulate", Features.HAVE_IO, 3, 4)                  { @Override Object apply(LambdaJ intp, ConsCell args) { tabulate(intp.getLispPrinter(args, 3, intp.getLispPrinter()),
+                                                                                                                                        car(args) != null, toNonnegInt("tabulate", cadr(args)), toNonnegInt("tabulate", caddr(args)));
+                                                                                                                               return null; } },
 
         sMakeStringWriter("make-string-writer", Features.HAVE_IO, 0)   { @Override Object apply(LambdaJ intp, ConsCell args) { return LambdaJ.StringSexpWriter.make(); } },
 
@@ -6195,6 +6226,11 @@ public class LambdaJ {
             return lispPrinter.freshLine();
         }
 
+        static void tabulate(ObjectWriter lispPrinter, boolean relative, int colnum, int colinc) {
+            if (lispPrinter == null) throw errorUnsupported("tabulate", "%s: lispStdout is " + NIL);
+            lispPrinter.tabulate(relative, colnum, colinc);
+        }
+
         static Object lnwrite(ObjectWriter lispPrinter, ConsCell arg, boolean printEscape) {
             if (lispPrinter == null) throw errorUnsupported("lnwrite", "%s: lispStdout is " + NIL);
             lispPrinter.printEol();
@@ -8829,6 +8865,8 @@ public class LambdaJ {
         public final Object freshLine         (Object... args)  { clrValues(); varargsMinMax("fresh-line",           args, 0, 1); return bool(LambdaJ.Subr.freshLine(getLispPrinter(args, 0, lispPrinter))); }
         public final Object freshLine         ()                { clrValues();                                                    return bool(LambdaJ.Subr.freshLine(lispPrinter)); }
 
+        public final Object _tabulate         (Object... args)  { clrValues(); varargsMinMax("tabulate",             args, 3, 4); LambdaJ.Subr.tabulate(getLispPrinter(args, 3, lispPrinter), args[0] != null, toNonnegInt("tabulate", args[1]), toNonnegInt("tabulate", args[2])); return null; }
+
         public final Object makeStringWriter  (Object... args)  { clrValues(); noArgs("make-string-writer",          args);       return LambdaJ.StringSexpWriter.make(); }
         public final Object makeStringWriter  ()                { clrValues();                                                    return LambdaJ.StringSexpWriter.make(); }
 
@@ -9670,6 +9708,7 @@ public class LambdaJ {
             case "write": return (CompilerPrimitive)this::_write;
             case "writeln": return (CompilerPrimitive)this::_writeln;
             case "fresh-line": return (CompilerPrimitive)this::freshLine;
+            case "tabulate": return (CompilerPrimitive)this::_tabulate;
             case "make-string-writer": return (CompilerPrimitive)this::makeStringWriter;
             case "lnwrite": return (CompilerPrimitive)this::_lnwrite;
 
@@ -9887,7 +9926,7 @@ public class LambdaJ {
         + APPEND + "\n" +VALUES + "\n"
         + "round" + "\n" +"floor" + "\n" +"ceiling" + "\n" +"truncate" + "\n"
         + "fround" + "\n" +"ffloor" + "\n" +"fceiling" + "\n" +"ftruncate" + "\n"
-        + "sqrt" + "\n" +"log" + "\n" +"log10" + "\n" +"exp" + "\n" +"expt" + "\n" +"mod" + "\n" +"rem" + "\n" +"signum" + "\n" +"random" + "\n"
+        + "sqrt" + "\n" +"log" + "\n" +"log10" + "\n" +"exp" + "\n" +"expt" + "\n" +"mod" + "\n" +"rem" + "\n" +"signum" + "\n" +"random" + "\n" + "tabulate" + "\n"
         + "gensym" + "\n" +"trace" + "\n" +"untrace" + "\n"
         + JERROR + "\n" +JMETHOD + "\n" +"jproxy";
 

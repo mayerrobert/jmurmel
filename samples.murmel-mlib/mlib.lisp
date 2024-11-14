@@ -3951,7 +3951,16 @@
 
                        ;; Tilde T: Tabulate
                        ((#\t #\T)
-                        (do-char #\Tab params))
+                        (let* ((colnum (case (car params)
+                                         ((nil 1) 1)
+                                         (#\v (require-argument-sexp))
+                                         (t m%nonneg-integer-for-format (car params))))
+                               (params (cdr params))
+                               (colinc (case (car params)
+                                         ((nil 1) 1)
+                                         (#\v (require-argument-sexp))
+                                         (t m%nonneg-integer-for-format (car params)))))
+                          (collect `(tabulate ,atp ,colnum ,colinc output-stream))))
 
 
                        ;; Control flow
@@ -4147,7 +4156,10 @@
 
                   ;; Tilde T: Tabulate
                   ((#\t #\T)
-                   (do-char #\Tab params))
+                   (let* ((colnum (prefix-int-with-default 1))
+                          (params (cdr params))
+                          (colinc (prefix-int-with-default 1)))
+                     (tabulate atp colnum colinc output-stream)))
 
 
                   ;; Control flow

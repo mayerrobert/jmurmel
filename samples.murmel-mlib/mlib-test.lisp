@@ -2122,7 +2122,6 @@ bbb"
       "~@e" 123.456)
 
 
-
 ;; ~F
 
 (test #-murmel "123.456"
@@ -2178,11 +2177,26 @@ bbb"
 (test "xyxxy"
       "~@g" 'xyxxy)
 
+
 ;; ~~
 (test "~~~~~"
       "~5~")
 (test "~~~~~"
       "~v~" 5)
+
+
+;; ~T
+(test "12345678 abc"
+      "12345678~tabc")
+
+(test "12345678  abc"
+      "12345678~10tabc")
+
+(test "12345678   abc"
+      "12345678~2,3tabc")
+
+(test "12345678  abc"
+      "12345678~v,v@tabc" 2 2)
 
 
 ;; Tilde asterisk

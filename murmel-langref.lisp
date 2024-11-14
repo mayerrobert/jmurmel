@@ -1275,6 +1275,18 @@ pi ; ==> 3.141592653589793
 ; Print an EOL character (-sequence) unless already at the beginning of line.
 
 
+; = (tabulate relativep colnum colinc) -> nil
+;
+; Since: 1.5
+;
+; If `relativep` is nil then output sufficient spaces to move the cursor to column `colnum`.
+; If the cursor was already at or beyond column `colnum` and `colinc` is non-zero,
+; then output spaces to move the cursor to column `colnum+k*colinc` for the smallest positive integer `k` possible.
+;
+; If `relativep` is non-nil then output `colnum` spaces and then output the smallest non-negative number of additional spaces
+; necessary to move the cursor to a column that is a multiple of `colinc`.
+
+
 ; = (make-string-writer) -> writer
 ;
 ; Since: 1.5
