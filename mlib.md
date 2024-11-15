@@ -1422,7 +1422,7 @@ Sample usage:
     ab"
 
 ### Function: error
-    (error [condition-type] control-string args*) -> |
+    (error [condition-type] controlstring-or-formatfunction args*) -> |
 
 Since: 1.5
 

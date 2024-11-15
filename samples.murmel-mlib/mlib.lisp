@@ -4222,13 +4222,13 @@
 
 
 ;;; = Function: error
-;;;     (error [condition-type] control-string args*) -> |
+;;;     (error [condition-type] controlstring-or-formatfunction args*) -> |
 ;;;
 ;;; Since: 1.5
 ;;;
 ;;; A simplified subset of Common Lisp's function `error`.
 (defun error (datum . args)
-  (if (typep datum 'symbol)
+  (if (symbolp datum)
       (jerror datum (apply format (cons nil args)))
       (jerror 'simple-error (apply format (list* nil datum args)))))
 
