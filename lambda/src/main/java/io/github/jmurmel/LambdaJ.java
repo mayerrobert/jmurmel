@@ -1280,6 +1280,7 @@ public class LambdaJ {
             return ret;
         }
 
+        @Override public String toString() { return sb.toString(); }
         @Override public int length() { return sb.length(); }
         @Override public char charAt(int index) { return sb.charAt(index); }
         @Override public CharSequence subSequence(int start, int end) { return sb.subSequence(start, end); }
