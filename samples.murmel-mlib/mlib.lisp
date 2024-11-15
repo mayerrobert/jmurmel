@@ -3426,9 +3426,9 @@
 ;;; Note that this simplified `format` does not use or set CL's printer variables
 ;;; such as `*print-base*`, `*print-circle*`, ... .
 ;;;
-;;; Only the format characters `C, %, &, |, ~, *, B ,D, O, R, X, E, F, G, A, S, W` and Tilde-Newline are supported.
+;;; Only the format characters `C, %, &, |, ~, *, B ,D, O, R, X, E, F, G, A, S, W, T` and Tilde-Newline are supported.
 ;;;
-;;; `C` supports the modifier `@` for printing #\-style escaping.
+;;; `C` supports the modifier `@` for printing `#\`-style escaping.
 ;;;
 ;;; `B, D, O, R, X` support `mincol, padchar, commachar` and `comma-interval`,
 ;;; the modifier `@` for always printing the sign and the modifier `:` for grouping digits.
@@ -3439,6 +3439,8 @@
 ;;; and the modifier `@` for always printing the sign.
 ;;;
 ;;; `A` and `S` support `~mincol,colinc,minpad,padcharA` for padding, `:`, and the modifier `@` for left-padding.
+;;;
+;;; `T` supports `@` for relative tabbing but ignores the modifier colon (`:`).
 
 (macrolet ((require-argument ()
              `(if arguments
@@ -3744,7 +3746,7 @@
 ;;; Since: 1.5
 ;;;
 ;;; Returns a function with the argument list `(destination . args)`
-;;; that writes to `destination` and returns unused args as a list.
+;;; that writes to `destination` and returns unused arguments as a list.
 ;;;
 ;;; Sample usage:
 ;;;
