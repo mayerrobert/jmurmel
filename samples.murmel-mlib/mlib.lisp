@@ -3455,13 +3455,13 @@
                   ,value-form))
 
            (prefix-param-with-default (default)
-             `(if (eql #\v (car params))
-                  (prog1
-                      (require-argument)
-                    (setq arguments (cdr arguments)))
-                  (if (car params)
-                      (car params)
-                      ,default)))
+             `(cond ((eql #\v (car params))
+                     (prog1
+                         (require-argument)
+                       (setq arguments (cdr arguments))))
+                    ((car params))
+                    (t
+                     ,default)))
 
            (prefix-char-with-default (default)
              `(m%char-for-format (prefix-param-with-default ,default)))
@@ -3502,36 +3502,35 @@
          (arg (car arguments))
          (rev (make-array 0 'character t)))
 
-    (if (integerp arg)
-        (progn
-          (if colonp
-              ;; grouping: separate 'comma-interval' digits with 'commachar'
-              (labels ((loop (n pos)
-                        (when (< n 0)
-                          (when (= pos comma-interval)
-                            (vector-add rev commachar)
-                            (setq pos 0))
-                          (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (- (rem n base))))
-                          (loop (truncate n base) (1+ pos)))))
-                (loop (if (> arg 0) (- arg) arg) 0))
+    (cond ((integerp arg)
+           (if colonp
+               ;; grouping: separate 'comma-interval' digits with 'commachar'
+               (labels ((loop (n pos)
+                              (when (< n 0)
+                                (when (= pos comma-interval)
+                                  (vector-add rev commachar)
+                                  (setq pos 0))
+                                (vector-add rev (sref "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ" (- (rem n base))))
+                                (loop (truncate n base) (1+ pos)))))
+                 (loop (if (> arg 0) (- arg) arg) 0))
 
-              ;; no grouping
-              (append-reversed-num rev arg base))
+               ;; no grouping
+               (append-reversed-num rev arg base))
 
-          ;; print sign and number
-          (if (< arg 0)
-              (vector-add rev #\-)
-              (when atp
-                (vector-add rev #\+)))
+           ;; print sign and number
+           (if (< arg 0)
+               (vector-add rev #\-)
+               (when atp
+                 (vector-add rev #\+)))
 
-          ;; padding
-          (if mincol
-              (dotimes (i (- mincol (slength rev)))
-                (vector-add rev padchar)))
+           ;; padding
+           (when mincol
+             (dotimes (i (- mincol (slength rev)))
+               (vector-add rev padchar)))
 
-          (write (nreverse rev) nil output-stream))
+           (write (nreverse rev) nil output-stream))
 
-        (write (car arguments) nil output-stream)))
+          (t (write (car arguments) nil output-stream))))
 
   (cdr arguments))
 
@@ -3598,11 +3597,9 @@
          (params (cdr params))
          (padchar (prefix-char-with-default #\ ))
          (arg (car arguments))
-         (str (if arg
-                  (write-to-string arg escapep)
-                  (if colonp
-                      "()"
-                      "nil"))))
+         (str (cond (arg    (write-to-string arg escapep))
+                    (colonp "()")
+                    (t      "nil"))))
 
     (unless atp
       (write str nil output-stream))
