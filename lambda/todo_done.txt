@@ -2895,3 +2895,8 @@ Error: unbound-variable - eval: 'l' is not bound
 error occurred in line 1:34..1:36: (l)
 error occurred in line 1:1..1:2: (m)
 JMurmel>
+
+
+
+define/ defun und defmacro sollte in labels erlaubt sein
+-> define/ defun geht
