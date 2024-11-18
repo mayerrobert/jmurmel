@@ -55,7 +55,6 @@ print(part1, _2*_6)
 
     (incf i))
 
-  (princ "AOC 2022 day 13 part1: ") (princ part1) (terpri)
-  (princ "AOC 2022 day 13 part2: ") (princ (* position-1 position-2)) (terpri))
+  (format t "AOC 2022 day 13 part1: ~d~%AOC 2022 day 13 part2: ~d~%" part1 (* position-1 position-2)))
 
 nil
