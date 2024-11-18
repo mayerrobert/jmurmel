@@ -4192,30 +4192,19 @@
 ) ; macrolet
 
 
-;; semi-private: used by the function 'm%format' and the expansion of the macro 'format'
-(defun m%do-format (destination f . args)
-  (if destination
-      (progn (apply f (cons destination args))
-             nil)
-      (with-output-to-string (destination)
-        (apply f (cons destination args)))))
+(defun format (destination control-string . args)
+  (let ((f (if (functionp control-string)
+               control-string
+               (m%format-function control-string))))
 
+    (if destination
 
-(defun m%format (destination control-string . args)
-  (apply #'m%do-format (list* destination
-                              (if (functionp control-string)
-                                  control-string
-                                  (m%format-function control-string))
-                              args)))
+        (progn
+          (apply f (cons destination args))
+          nil)
 
-
-(defmacro format (destination control-string . args)
-  (if (stringp control-string)
-      `(m%do-format ,destination (formatter ,control-string) ,@args)
-      `(m%format ,destination ,control-string ,@args)))
-
-
-(define format m%format)
+        (with-output-to-string (destination)
+          (apply f (cons destination args))))))
 
 
 ;;; = Function: error
