@@ -169,19 +169,28 @@
 
 ;;; = Macro: and
 ;;;     (and forms*) -> result
+;;;     (and* forms*) -> boolean
 ;;;
 ;;; Since: 1.1
 ;;;
 ;;; Short-circuiting logical and.
 ;;; Return `t` if no forms were given,
 ;;; otherwise return the values resulting from the evaluation of the last form unless any of the `forms` evaluate to `nil`,
-;;; `nil` otherwise.
+;;; `nil` otherwise,
+;;; or in case of `and*`: `t` or `nil` as appropriate.
 (defmacro and forms
   (if forms
       (if (cdr forms)
           `(if ,(car forms)
                (and ,@(cdr forms)))
           (car forms))
+      t))
+
+
+(defmacro and* forms
+  (if forms
+      `(if ,(car forms)
+           (and* ,@(cdr forms)))
       t))
 
 

@@ -139,13 +139,15 @@ Logical not.
 
 ### Macro: and
     (and forms*) -> result
+    (and* forms*) -> boolean
 
 Since: 1.1
 
 Short-circuiting logical and.
 Return `t` if no forms were given,
 otherwise return the values resulting from the evaluation of the last form unless any of the `forms` evaluate to `nil`,
-`nil` otherwise.
+`nil` otherwise,
+or in case of `and*`: `t` or `nil` as appropriate.
 
 ### Macro: or
     (or forms*) -> result
