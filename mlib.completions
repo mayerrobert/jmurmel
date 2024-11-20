@@ -21,6 +21,7 @@ incf
 multiple-value-list
 nth-value
 or
+or*
 pop
 prog1
 prog2

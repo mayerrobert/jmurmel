@@ -9,7 +9,7 @@ Changes in JMurmel-1.5.0 relative to JMurmel-1.4.8
 
  * added fresh-line, make-string-writer, tabulate
 
- * mlib: added format, formatter, error
+ * mlib: added format, formatter, error, or*
 
 
 Changes in JMurmel-1.4.8 relative to JMurmel-1.4.7

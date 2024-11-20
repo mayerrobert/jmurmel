@@ -187,12 +187,14 @@
 
 ;;; = Macro: or
 ;;;     (or forms*) -> result
+;;;     (or* forms*) -> boolean
 ;;;
 ;;; Since: 1.1
 ;;;
 ;;; Short-circuiting logical or.
 ;;; Return `nil` unless any of the `forms` evaluate to non-nil,
-;;; the result of the first form returning non-nil otherwise.
+;;; the result of the first form returning non-nil otherwise,
+;;; or in case of `or*`: `t` or `nil` as appropriate.
 (defmacro or forms
   (labels ((m%or (tmp forms)
              (when forms
@@ -205,7 +207,7 @@
     ;; strip off any leading nil
     (let loop ()
       (when forms
-        (when (null (car forms))
+        (unless (car forms)
           (setq forms (cdr forms))
           (loop))))
 
@@ -217,6 +219,22 @@
                    ,temp
                    ,(m%or temp (cdr forms)))))
           (car forms)))))
+
+
+(defmacro or* forms
+    ;; strip off any leading nil
+    (let loop ()
+      (when forms
+        (unless (car forms)
+          (setq forms (cdr forms))
+          (loop))))
+
+    (when forms
+      (if forms
+          `(if ,(car forms)
+               t
+               (or* ,@(cdr forms)))
+          nil)))
 
 
 ;;; = Macro: prog1, prog2
@@ -1458,10 +1476,10 @@
               ((eq 'nth op)    `((,read-var) ((nthcdr ,@args)) #0#             #1#                                #11#               ))
 
               ((eq 'svref op)                        (setf-helper args tmp1 tmp2 store-var 'svref 'svset))
-              ((or (eq 'bvref op) (eq 'bit op))      (setf-helper args tmp1 tmp2 store-var 'bvref 'bvset))
-              ((or (eq 'sref op) (eq 'char op))      (setf-helper args tmp1 tmp2 store-var 'sref 'sset))
+              ((or* (eq 'bvref op) (eq 'bit op))     (setf-helper args tmp1 tmp2 store-var 'bvref 'bvset))
+              ((or* (eq 'sref op) (eq 'char op))     (setf-helper args tmp1 tmp2 store-var 'sref 'sset))
 
-              ((or (eq 'seqref op) (eq 'elt op))     (setf-helper args tmp1 tmp2 store-var 'seqref 'seqset))
+              ((or* (eq 'seqref op) (eq 'elt op))    (setf-helper args tmp1 tmp2 store-var 'seqref 'seqset))
 
               ;; hashref with default value: setf (hashref h k def) - eval and ignore default value form
               ((and (eq 'hashref op) (cddr args))
@@ -1556,27 +1574,27 @@
 
                   (let ((op (caar args)))
                     (cond
-                      ((eq   'car op) `(m%rplaca         ,@#2=(cdar args)  ,#3=(cadr args)))
-                      ((eq  'caar op) `(m%rplaca ( car   ,@#2#)  ,#3#))
-                      ((eq  'cadr op) `(m%rplaca ( cdr   ,@#2#)  ,#3#))
-                      ((eq 'caaar op) `(m%rplaca (caar   ,@#2#)  ,#3#))
-                      ((eq 'caadr op) `(m%rplaca (cadr   ,@#2#)  ,#3#))
-                      ((eq 'cadar op) `(m%rplaca (cdar   ,@#2#)  ,#3#))
-                      ((eq 'caddr op) `(m%rplaca (cddr   ,@#2#)  ,#3#))
-                      ((eq   'nth op) `(m%rplaca (nthcdr ,@#2#)  ,#3#))
+                      ((eq   'car op) `(m%rplaca          ,@#2=(cdar args)  ,#3=(cadr args)))
+                      ((eq  'caar op) `(m%rplaca ( car    ,@#2#)  ,#3#))
+                      ((eq  'cadr op) `(m%rplaca ( cdr    ,@#2#)  ,#3#))
+                      ((eq 'caaar op) `(m%rplaca (caar    ,@#2#)  ,#3#))
+                      ((eq 'caadr op) `(m%rplaca (cadr    ,@#2#)  ,#3#))
+                      ((eq 'cadar op) `(m%rplaca (cdar    ,@#2#)  ,#3#))
+                      ((eq 'caddr op) `(m%rplaca (cddr    ,@#2#)  ,#3#))
+                      ((eq   'nth op) `(m%rplaca (nthcdr  ,@#2#)  ,#3#))
 
-                      ((eq   'cdr op) `(m%rplacd         ,@#2#   ,#3#))
-                      ((eq  'cdar op) `(m%rplacd ( car   ,@#2#)  ,#3#))
-                      ((eq  'cddr op) `(m%rplacd ( cdr   ,@#2#)  ,#3#))
-                      ((eq 'cdaar op) `(m%rplacd (caar   ,@#2#)  ,#3#))
-                      ((eq 'cdadr op) `(m%rplacd (cadr   ,@#2#)  ,#3#))
-                      ((eq 'cddar op) `(m%rplacd (cdar   ,@#2#)  ,#3#))
-                      ((eq 'cdddr op) `(m%rplacd (cddr   ,@#2#)  ,#3#))
+                      ((eq   'cdr op) `(m%rplacd          ,@#2#   ,#3#))
+                      ((eq  'cdar op) `(m%rplacd ( car    ,@#2#)  ,#3#))
+                      ((eq  'cddr op) `(m%rplacd ( cdr    ,@#2#)  ,#3#))
+                      ((eq 'cdaar op) `(m%rplacd (caar    ,@#2#)  ,#3#))
+                      ((eq 'cdadr op) `(m%rplacd (cadr    ,@#2#)  ,#3#))
+                      ((eq 'cddar op) `(m%rplacd (cdar    ,@#2#)  ,#3#))
+                      ((eq 'cdddr op) `(m%rplacd (cddr    ,@#2#)  ,#3#))
 
-                      ((eq 'svref op)                    `(svset  ,@#2# ,#3#))
-                      ((or (eq 'bvref op) (eq 'bit op))  `(bvset  ,@#2# ,#3#))
-                      ((or (eq 'sref op) (eq 'char op))  `(sset   ,@#2# ,#3#))
-                      ((or (eq 'seqref op) (eq 'elt op)) `(seqset ,@#2# ,#3#))
+                      ((eq 'svref op)                     `(svset  ,@#2# ,#3#))
+                      ((or* (eq 'bvref op) (eq 'bit op))  `(bvset  ,@#2# ,#3#))
+                      ((or* (eq 'sref op) (eq 'char op))  `(sset   ,@#2# ,#3#))
+                      ((or* (eq 'seqref op) (eq 'elt op)) `(seqset ,@#2# ,#3#))
 
                       ;; hashref with default value: setf (hashref h k def) - eval and ignore default value form
                       ((and (eq 'hashref op) (cdr (cddar args)))
@@ -3096,8 +3114,8 @@
 ; logic, program structure ********************************************
 
 (defun m%symbol-or-lambda (x)
-  (or (symbolp x)
-      (and (consp x) (eq 'lambda (car x)))))
+  (or* (symbolp x)
+       (and (consp x) (eq 'lambda (car x)))))
 
 ;;; = Macro: ->
 ;;;     (-> forms*) -> result
@@ -3767,14 +3785,14 @@
                   (collect `(write ,(vector-fill (make-array (m%nonneg-integer-for-format (car params)) 'character) c) nil output-stream)))))
 
              (do-integer (base colonp atp params)
-               (collect-setq (if (or colonp atp params)
+               (collect-setq (if (or* colonp atp params)
                                  `(m%print-integer        arguments output-stream ,base ,colonp ,atp ',params)
                                  `(m%print-simple-integer arguments output-stream ,base))))
 
              (do-float (c atp params)
                (let ((w (car params))
                      (d (cadr params)))
-                 (if (or (eql #\v w) (eql #\v d))
+                 (if (or* (eql #\v w) (eql #\v d))
                      (collect-setq `(m%print-float-fmt arguments output-stream ,c ,atp ',w ',d))
                      (collect-setq `(m%print-float arguments output-stream ,(float-fmtstring c atp w d)))))))
 
@@ -3856,7 +3874,7 @@
                        ;; The @ modifier causes the number's sign to be printed always; the default
                        ;; is to print it only if the number is negative. The : modifier is ignored.
                        ((#\d #\D)
-                        (if (or colonp params)
+                        (if (or* colonp params)
                             (collect-setq `(m%print-integer arguments output-stream 10 ,colonp ,atp ',params))
                             (if atp
                                 (collect-setq `(let ((arg (car arguments)))
@@ -3912,13 +3930,13 @@
 
                        ;; Tilde A: Aesthetic
                        ((#\a #\A)
-                        (if (or colonp (car params))
+                        (if (or* colonp (car params))
                             (collect-setq `(m%print-obj arguments output-stream nil ,colonp ,atp ',params))
                             (collect-shift `(write (car arguments) nil output-stream))))
 
                        ;; Tilde S: Standard
                        ((#\s #\S)
-                        (if (or colonp (car params))
+                        (if (or* colonp (car params))
                             (collect-setq `(m%print-obj arguments output-stream t ,colonp ,atp ',params))
                             (collect-shift `(write (car arguments) t output-stream))))
 
@@ -4114,14 +4132,14 @@
 
                   ;; Tilde A: Aesthetic
                   ((#\a #\A)
-                   (if (or colonp (car params))
+                   (if (or* colonp (car params))
                        (setq arguments (m%print-obj arguments output-stream nil colonp atp params))
                        (progn (write (car arguments) nil output-stream)
                               (setq arguments (cdr arguments)))))
 
                   ;; Tilde S: Standard
                   ((#\s #\S)
-                   (if (or colonp (car params))
+                   (if (or* colonp (car params))
                        (setq arguments (m%print-obj arguments output-stream t colonp atp params))
                        (progn (write (car arguments) t output-stream)
                               (setq arguments (cdr arguments)))))

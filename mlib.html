@@ -158,12 +158,14 @@ otherwise return the values resulting from the evaluation of the last form unles
 
 ### Macro: or
     (or forms*) -> result
+    (or* forms*) -> boolean
 
 Since: 1.1
 
 Short-circuiting logical or.
 Return `nil` unless any of the `forms` evaluate to non-nil,
-the result of the first form returning non-nil otherwise.
+the result of the first form returning non-nil otherwise,
+or in case of `or*`: `t` or `nil` as appropriate.
 
 ### Macro: prog1, prog2
     (prog1 first-form more-forms*) -> result-1
