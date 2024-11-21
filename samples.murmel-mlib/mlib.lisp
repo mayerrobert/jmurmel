@@ -2453,20 +2453,29 @@
 
 
 (labels ((m%list->sequence (lst result-type)
-           (cond ((eq result-type 'null)              (when lst
-                                                        (jerror 'simple-type-error "cannot create a sequence of type null w/ length > 0"))
-                                                      nil)
-                 ((eq result-type 'list)              lst)
-                 ((eq result-type 'cons)              (unless lst
-                                                        (jerror 'simple-type-error "cannot create a sequence of type cons w/ length 0"))
-                                                      lst)
-                 ((eq result-type 'vector)            (list->simple-vector lst))
-                 ((eq result-type 'simple-vector)     (list->simple-vector lst))
-                 ((eq result-type 'simple-bit-vector) (list->bit-vector lst))
-                 ((eq result-type 'bit-vector)        (list->bit-vector lst))
-                 ((eq result-type 'string)            (list->string lst))
-                 ((eq result-type 'simple-string)     (list->string lst))
-                 (t                                   (jerror 'simple-type-error "%s is a bad type specifier for sequences" result-type)))))
+           (cond ((eq result-type 'null)
+                  (when lst
+                    (jerror 'simple-type-error "cannot create a sequence of type null w/ length > 0")))
+
+                 ((eq result-type 'list)
+                  lst)
+
+                 ((eq result-type 'cons)
+                  (unless lst
+                    (jerror 'simple-type-error "cannot create a sequence of type cons w/ length 0"))
+                  lst)
+
+                 ((or* (eq result-type 'vector) (eq result-type 'simple-vector))
+                  (list->simple-vector lst))
+
+                 ((or* (eq result-type 'simple-bit-vector) (eq result-type 'bit-vector))
+                  (list->bit-vector lst))
+
+                 ((or* (eq result-type 'string) (eq result-type 'simple-string))
+                  (list->string lst))
+
+                 (t
+                  (jerror 'simple-type-error "%s is a bad type specifier for sequences" result-type)))))
 
 
 ;;; = Function: concatenate
@@ -2668,11 +2677,6 @@
 ;;;     (gethash key hash [default]) -> object, was-present-p
 ;;;
 ;;; Since: 1.4
-(defmacro gethash (key hash . default)
-  (if default
-      `(hashref ,hash ,key ,@default)
-      `(hashref ,hash ,key)))
-
 (defun gethash (key hash . default)
   (if default
       (hashref hash key (car default))
@@ -2683,11 +2687,8 @@
 ;;;     (remhash key hash) -> was-present-p
 ;;;
 ;;; Since: 1.4
-(defmacro remhash (key hash)
-  `(hash-table-remove ,hash ,key))
-
 (defun remhash (key hash)
-  (remhash key hash))
+  (hash-table-remove hash key))
 
 
 ;;; = Function: maphash
