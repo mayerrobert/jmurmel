@@ -2789,6 +2789,10 @@ isStmtExpr in evalStmt nochmal ansehen: ignoredX = multiple-value-call
 -> zuweisung ist unnötig
 
 
+toplevel atoms (auch symbole) ausser dem letzten könnte toplevelFormToJava() (oder die schleife in formsToJavaSource?) gleich wegputzen
+-> (ignorieren, nicht in bodyForms stecken, mit note())
+
+
 mlib: bei z.b. decf ist die eval reihenfolge anders, siehe CLHS 5.1.3 http://www.ai.mit.edu/projects/iiip/doc/CommonLISP/HyperSpec/Body/sec_5-1-3.html
 siehe auch sbcl/src/code/primordial-extensions.lisp
 ;; Define "exchanged subtract" So that DECF on a symbol requires no LET binding:

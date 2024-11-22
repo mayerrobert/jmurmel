@@ -149,10 +149,6 @@ kamma ein lambda das sofort ausgeführt wird in ein let umwandeln? vielleicht gl
 -> wird schon verwendet, u.a. in setf und psetf
 
 
-toplevel atoms (auch symbole) ausser dem letzten könnte toplevelFormToJava() (oder die schleife in formsToJavaSource?) gleich wegputzen
--> (ignorieren, nicht in bodyForms stecken, mit note())
-
-
 CL hat (machine-type), Chez auch
 
 
