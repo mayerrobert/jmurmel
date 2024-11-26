@@ -1,5 +1,4 @@
-toplevel labels wird in runBody() reingeneriert, folgende defuns bekommen nicht mehr die sonderbehandlung dass kein "defun_...()" nötig ist
--> toplevel labels die keinen normalen code enthalten (nur define/ defun/ defmacro/ macrolet/ labels) irgendwie aus runBody rausheben
+emitLabels könnte bei labels forms die nur atoms und defmacro enthalten die lokalen funktionen weglassen und nur den body in ein progn reingenerieren
 
 wie gross wird eigentlich der constructor der generierten MurmelProgram, mit den vielen "public CompilerGlobal _caar = new CompilerGlobal(..."
 

@@ -10176,7 +10176,30 @@ public class LambdaJ {
                         return globalEnv;
                     }
 
-                    case sLabels:
+                    case sLabels: {
+                        if (!complexFormSeen) {
+                            final ConsCell ccBodyForms = (ConsCell)cddr(ccForm);
+                            globalEnv = toplevelLetBody(ret, globals, globalEnv, ccBodyForms, 1);
+                            for (Object bodyForm : ccBodyForms) {
+                                if (consp(bodyForm)) {
+                                    final Object bodyFormOp = car(bodyForm);
+                                    if (bodyFormOp != sDefine && bodyFormOp != intern(DEFUN) && bodyFormOp != intern(DEFMACRO)) {
+                                        complexFormSeen = true;
+                                        bodyForms.add(ccForm);
+                                        return globalEnv;
+                                    }
+                                }
+                            }
+
+                            // body of labels form contains only define/ defun/ defmacro
+                            ret.append("    {\n        ");
+                            emitLabels(ret, (ConsCell)cdr(ccForm), globalEnv, globalEnv, 1, false);
+                            ret.append(";\n    }\n\n");
+                            return globalEnv;
+                        }
+                        // else fallthrough
+                    }
+
                     case sLet:
                     case sLetStar:
                     case sLetrec: {

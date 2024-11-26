@@ -2904,3 +2904,6 @@ JMurmel>
 
 define/ defun und defmacro sollte in labels erlaubt sein
 -> define/ defun geht
+
+toplevel labels wird in runBody() reingeneriert, folgende defuns bekommen nicht mehr die sonderbehandlung dass kein "defun_...()" nötig ist
+-> toplevel labels die keinen normalen code enthalten (nur define/ defun/ defmacro/ macrolet/ labels) irgendwie aus runBody rausheben
