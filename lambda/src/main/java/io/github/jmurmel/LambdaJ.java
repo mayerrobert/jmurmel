@@ -11470,7 +11470,7 @@ public class LambdaJ {
 
             final Object localFuncs = car(args);
             if (localFuncs == null || cddr(args) == null && atom(cadr(args))) {
-                // no local functions or body is one single atom (the latter can't use the functions so skip them
+                // no local functions or body is one single atom (the latter can't use the functions so skip them)
                 emitProgn(sb, cdr(args), env, topEnv, rsfx, isLast);
                 return;
             }
