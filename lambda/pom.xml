@@ -35,18 +35,18 @@
 
     <profiles>
         <profile>
-            <id>up-to-21</id>
+            <id>up-to-23</id>
             <activation>
-                <jdk>[1.8,21]</jdk>
+                <jdk>[1.8,23]</jdk>
             </activation>
             <properties>
                 <maven.site.skip>false</maven.site.skip>
             </properties>
         </profile>
         <profile>
-            <id>from-22</id>
+            <id>from-24</id>
             <activation>
-                <jdk>[22,)</jdk>
+                <jdk>[24,)</jdk>
             </activation>
             <build>
                 <plugins>
@@ -57,7 +57,9 @@
 
                         <configuration>
                             <excludes>
-                                <exclude>**/*ManualTest.java</exclude>
+                                <!-- archunit 1.3.0 contains a shaded asm 9.7 which doesn't support Java24/classfile version 68.
+                                     next archunit version (not yet released) will use asm 9.7.1 -->
+                                <exclude>**/ArchitectureTest.java</exclude>
                             </excludes>
                         </configuration>
                     </plugin>
