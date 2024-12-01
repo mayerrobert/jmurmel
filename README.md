@@ -4,7 +4,7 @@
 [![CodeQL](https://github.com/mayerrobert/jmurmel/actions/workflows/codeql-analysis.yml/badge.svg)](https://github.com/mayerrobert/jmurmel/actions/workflows/codeql-analysis.yml)
 
 **JMurmel is a lightweight Lisp-1-ish (mostly based on a small subset of Common Lisp with a side of Scheme)
-interpreter/ compiler compatible with Java8..23 that can be used standalone as well as embedded.**
+interpreter/ compiler compatible with Java8..24-ea that can be used standalone as well as embedded.**
 
 Currently weighing in at ~460kB (size of the compiled jmurmel.jar file
 containing the interpreter + compiler + runtime + REPL),
@@ -78,7 +78,7 @@ for a first peek at JMurmel (compiling Murmel won't work, though, only the inter
 
 **Optional: building from source**
 
-Pre-requisites: JDK8 or higher (8..23 is being tested), optionally: maven
+Pre-requisites: JDK8 or higher (8..24-ea is being tested), optionally: maven
 
 Clone the repo and build using maven
 (this will use the maven wrapper included in the repo, a local maven installation is not required):
@@ -207,7 +207,7 @@ to get a command history and TAB-completion at the JMurmel REPL.
 
 JMurmel can also be used embedded in another Java program.
 JMurmel uses Java8 only, but should run on higher versions as well
-(Github CI builds and tests 8, 17, 20 and 21-ea).
+(Github CI builds and tests 8..24-ea).
 It comes as one self contained jar, no further dependencies needed.
 
 Minimal "Hello, World!" example:
