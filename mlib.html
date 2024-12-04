@@ -114,6 +114,8 @@ as well as the following additional functions and macros:
     - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat)
 - strings
     - [string-trim](#function-string-trim), [string-subseq](#function-string-subseq), [string-replace](#function-string-replace), [string-split](#function-string-split), [string-join](#function-string-join)
+- hash tables
+    - [frequencies](#function-frequencies)
 
 ## Description of functions and macros
 
@@ -1019,6 +1021,14 @@ Since: 1.4
 
 Similar to CL's `maphash` but modifying the hash-table
 from within `function` is not supported.
+
+### Function: frequencies
+    (frequencies sequence [test]) -> hash-table
+
+Since: 1.5
+
+Count the number of times each value occurs in the sequence
+according to the test function `test` which defaults to `eql`.
 
 ### Function: identity
     (identity object) -> object

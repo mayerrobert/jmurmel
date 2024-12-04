@@ -113,6 +113,8 @@
 ;;;     - [scan](#function-scan), [scan-multiple](#function-scan-multiple), [scan-concat](#function-scan-concat)
 ;;; - strings
 ;;;     - [string-trim](#function-string-trim), [string-subseq](#function-string-subseq), [string-replace](#function-string-replace), [string-split](#function-string-split), [string-join](#function-string-join)
+;;; - hash tables
+;;;     - [frequencies](#function-frequencies)
 
 
 ;;; == Description of functions and macros
@@ -1462,6 +1464,7 @@
   (let ((read-var (gensym "read-var"))
         (tmp1 (gensym "tmp1"))
         (tmp2 (gensym "tmp2"))
+        (tmp3 (gensym "tmp3"))
         (store-var (gensym "store-var")))
     (if (symbolp place) `(nil nil (,read-var) (setq ,place ,read-var) ,place)
       (let ((op (car place))
@@ -1492,22 +1495,22 @@
 
               ;; hashref with default value: setf (hashref h k def) - eval and ignore default value form
               ((and (eq 'hashref op) (cddr args))
-               `((,tmp1 ,tmp2)
+               `((,tmp1 ,tmp2 ,tmp3)
                  (,(car args) ,(cadr args) ,(caddr args))
                  (,store-var)
                  (hashset ,tmp1 ,tmp2 ,store-var)
-                 (hashref ,tmp1 ,tmp2)))
+                 (hashref ,tmp1 ,tmp2 ,tmp3)))
 
               ;; hashref w/o default value
               ((eq 'hashref op)                      (setf-helper args tmp1 tmp2 store-var 'hashref 'hashset))
 
               ;; gethash with default value: setf (gethash k hash def) - eval and ignore default value form
               ((and (eq 'gethash op) (cddr args))
-               `((,tmp1 ,tmp2)
+               `((,tmp1 ,tmp2 ,tmp3)
                  (,(cadr args) ,(car args) ,(caddr args))
                  (,store-var)
                  (hashset ,tmp1 ,tmp2 ,store-var)
-                 (hashref ,tmp1 ,tmp2)))
+                 (hashref ,tmp1 ,tmp2 ,tmp3)))
 
               ((eq 'gethash op)
                `((,tmp1 ,tmp2)
@@ -2701,6 +2704,23 @@
 (defun maphash (function hash)
   (dogenerator (pair (scan-hash-table hash))
     (function (car pair) (cdr pair))))
+
+
+
+;;; = Function: frequencies
+;;;     (frequencies sequence [test]) -> hash-table
+;;;
+;;; Since: 1.5
+;;;
+;;; Count the number of times each value occurs in the sequence
+;;; according to the test function `test` which defaults to `eql`.
+(defun frequencies (seq . test)
+  (let ((counts (make-hash-table (car test))))
+    (if (listp seq)
+        (dolist (x seq counts)
+          (incf (hashref counts x 0)))
+        (dovector (x seq counts)
+          (incf (hashref counts x 0))))))
 
 
 ; higher order ********************************************************

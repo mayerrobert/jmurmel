@@ -145,3 +145,4 @@ string-subseq
 maphash
 remhash
 gethash
+frequencies

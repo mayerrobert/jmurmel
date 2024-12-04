@@ -1517,6 +1517,22 @@ all the result list to a single list. FUNCTION must return a list."
 ; =>  NIL
 )
 
+#+murmel
+(defun hash-equal (h1 h2)
+  (if (= (hash-table-count h1) (hash-table-count h2))
+      (let ((ok t))
+        (maphash (lambda (k v)
+                   (unless (eql v (hashref h2 k))
+                     (setq ok nil)))
+                 h1)
+        ok)
+      nil))
+
+#+murmel
+(tests frequencies
+  (hash-equal (frequencies '(1 2 2 3 3 3 4 4 4 4 5 5 5 5 5))  #H(eql 1 1 2 2 3 3 4 4 5 5)) => t
+  (hash-equal (frequencies #(1 2 2 3 3 3 4 4 4 4 5 5 5 5 5))  #H(eql 1 1 2 2 3 3 4 4 5 5)) => t)
+
 
 ;;; - higher order
 
