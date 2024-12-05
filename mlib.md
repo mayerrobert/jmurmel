@@ -1014,12 +1014,17 @@ Similar to CL's `maphash` but modifying the hash-table
 from within `function` is not supported.
 
 ### Function: frequencies
-    (frequencies sequence [test]) -> hash-table
+    (frequencies sequence-or-generator [test]) -> hash-table
 
 Since: 1.5
 
-Count the number of times each value occurs in the sequence
+Count the number of times each value occurs in `sequence-or-generator`
 according to the test function `test` which defaults to `eql`.
+
+Sample usage:
+
+    (frequencies ()) ; ==> nil
+    (frequencies #(1 2 3 1 2 1)) ; ==> #H(eql 1 3 2 2 3 1)
 
 ### Function: identity
     (identity object) -> object

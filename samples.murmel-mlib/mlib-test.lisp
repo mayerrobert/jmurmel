@@ -1530,8 +1530,9 @@ all the result list to a single list. FUNCTION must return a list."
 
 #+murmel
 (tests frequencies
-  (hash-equal (frequencies '(1 2 2 3 3 3 4 4 4 4 5 5 5 5 5))  #H(eql 1 1 2 2 3 3 4 4 5 5)) => t
-  (hash-equal (frequencies #(1 2 2 3 3 3 4 4 4 4 5 5 5 5 5))  #H(eql 1 1 2 2 3 3 4 4 5 5)) => t)
+  (hash-equal (frequencies '(1 2 2 3 3 3 4 4 4 4 5 5 5 5 5))         #H(eql 1 1 2 2 3 3 4 4 5 5)) => t
+  (hash-equal (frequencies #(1 2 2 3 3 3 4 4 4 4 5 5 5 5 5))         #H(eql 1 1 2 2 3 3 4 4 5 5)) => t
+  (hash-equal (frequencies (scan #(1 2 2 3 3 3 4 4 4 4 5 5 5 5 5)))  #H(eql 1 1 2 2 3 3 4 4 5 5)) => t)
 
 
 ;;; - higher order

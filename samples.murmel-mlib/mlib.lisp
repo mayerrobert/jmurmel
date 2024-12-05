@@ -2708,19 +2708,34 @@
 
 
 ;;; = Function: frequencies
-;;;     (frequencies sequence [test]) -> hash-table
+;;;     (frequencies sequence-or-generator [test]) -> hash-table
 ;;;
 ;;; Since: 1.5
 ;;;
-;;; Count the number of times each value occurs in the sequence
+;;; Count the number of times each value occurs in `sequence-or-generator`
 ;;; according to the test function `test` which defaults to `eql`.
+;;;
+;;; Sample usage:
+;;;
+;;;     (frequencies ()) ; ==> nil
+;;;     (frequencies #(1 2 3 1 2 1)) ; ==> #H(eql 1 3 2 2 3 1)
 (defun frequencies (seq . test)
   (let ((counts (make-hash-table (car test))))
-    (if (listp seq)
-        (dolist (x seq counts)
-          (incf (hashref counts x 0)))
-        (dovector (x seq counts)
-          (incf (hashref counts x 0))))))
+    (cond ((null seq) ())
+
+          ((listp seq)
+           (dolist (x seq counts)
+             (incf (hashref counts x 0))))
+
+          ((vectorp seq)
+           (dovector (x seq counts)
+             (incf (hashref counts x 0))))
+
+          ((functionp seq)
+           (dogenerator (x seq counts)
+             (incf (hashref counts x 0))))
+
+          (t (jerror 'simple-type-error "frequencies - not a sequence or generator: '%s'" seq)))))
 
 
 ; higher order ********************************************************
