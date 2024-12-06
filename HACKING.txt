@@ -172,3 +172,20 @@ Java 9+ linux:
 java -XX:+UnlockDiagnosticVMOptions -XX:+DebugNonSafepoints -javaagent:ap-loader-all.jar=start,event=cpu,file=profile.html \
         -jar lambda/target/jmurmel.jar --run --libdir samples.murmel-mlib/ samples.murmel-mlib/benchmark/3.08_destru.lisp
     run the benchmark 3.08_destru in compiled mode and create a CPU flamegraph in "profile.html"
+
+
+Java24 JEP 483 Ahead-of-time Class Loading & Linking;
+training run
+  java -Xms100m -Xmx1g -XX:+UseParallelGC -XX:AOTMode=record -XX:AOTConfiguration=app.aotconf -jar jmurmel.jar --eval (write 1)
+create cache
+  java -Xms100m -Xmx1g -XX:+UseParallelGC -XX:AOTMode=create -XX:AOTConfiguration=app.aotconf -XX:AOTCache=app.aot -jar jmurmel.jar --eval (write 1)
+run using cache
+  java -Xms100m -Xmx1g -XX:+UseParallelGC -XX:AOTCache=app.aot -jar jmurmel.jar --eval (write 1)
+run using cache and log class loading
+  java -verbose:class -Xms100m -Xmx1g -XX:+UseParallelGC -XX:AOTCache=app.aot -jar jmurmel.jar --eval (write 1)
+
+
+Java24 JEP 483 Ahead-of-time Class Loading & JEP 450 Linking and compact object headers:
+  java -Xms100m -Xmx1g -XX:+UnlockExperimentalVMOptions -XX:+UseCompactObjectHeaders -XX:+UseParallelGC -XX:AOTMode=record -XX:AOTConfiguration=app.aotconf -jar jmurmel.jar --eval (write 1)
+  java -Xms100m -Xmx1g -XX:+UnlockExperimentalVMOptions -XX:+UseCompactObjectHeaders -XX:+UseParallelGC -XX:AOTMode=create -XX:AOTConfiguration=app.aotconf -XX:AOTCache=app.aot -jar jmurmel.jar --eval (write 1)
+  java -Xms100m -Xmx1g -XX:+UnlockExperimentalVMOptions -XX:+UseCompactObjectHeaders -XX:+UseParallelGC -XX:AOTMode=on -XX:AOTCache=app.aot  -jar jmurmel.jar --eval (write 1)
