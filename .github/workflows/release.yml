@@ -50,7 +50,7 @@ jobs:
       run: zip -j ${{ github.ref_name }}-w64-slim.zip LICENSE scripts/target/jmurmel.exe samples.murmel-mlib/mlib.lisp murmel-langref.md murmel-langref.html mlib.md mlib.html && zip -r ${{ github.ref_name }}-w64-slim.zip legal/launch4j/
 
     - name: Create release and upload files
-      uses: softprops/action-gh-release@7b4da11513bf3f43f9999e90eabced41ab8bb048 # v2.2.0
+      uses: softprops/action-gh-release@v2
       with:
         prerelease: true
         files: |
