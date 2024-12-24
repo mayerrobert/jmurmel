@@ -2863,7 +2863,7 @@ public class LambdaJ {
                 // first element of the of the form should be a symbol that evals to a funtion or lambda
                 // or an expression that evals to a funtion or lambda
                 final Object operator = car(ccForm);
-                assert operator != null && operator != sNil : "not a function: nil - should have been caught by expandForm()";
+                assert !isNil(operator) : "not a function: nil - should have been caught by expandForm()";
 
                 final ConsCell ccArguments = (ConsCell)cdr(ccForm);   // list with remaining atoms/ expressions
 
@@ -3670,7 +3670,7 @@ public class LambdaJ {
     }
 
     private Object evalSymbol(Object form, ConsCell env) {
-        if (form == null || form == sNil) return null;
+        if (isNil(form)) return null;
         if (form == sT) return form;
         final ConsCell envEntry = lookupEnvEntry(form, env);
         if (envEntry != null) {
@@ -4300,10 +4300,12 @@ public class LambdaJ {
 
 
     /** the following predicates more or less implement Murmel's type system, see also {@link Subr#typep} and {@link Subr#adjustableArrayP} */
+    static boolean isNil(Object o)       { assert o != sNil; return o == null; }
+
     static boolean consp(Object o)       { return o instanceof ConsCell; }
     static boolean atom(Object o)        { return !consp(o); }
 
-    static boolean symbolp(Object o)     { return o == null || o instanceof LambdaJSymbol; }
+    static boolean symbolp(Object o)     { return isNil(o) || o instanceof LambdaJSymbol; }
 
     static boolean numberp(Object o)     { return integerp(o) || floatp(o) || o instanceof Number; }
     static boolean floatp(Object o)      { return o instanceof Double || o instanceof Float || o instanceof BigDecimal; }
@@ -4314,7 +4316,7 @@ public class LambdaJ {
     static boolean randomstatep(Object o){ return o instanceof Random; }
 
     static boolean vectorp(Object o)     { return stringp(o) || bitvectorp(o) || svectorp(o) || o instanceof List; }
-    static boolean svectorp(Object o)    { return o != null && o.getClass().isArray() && !bitvectorp(o) && !stringp(o); }
+    static boolean svectorp(Object o)    { return !isNil(o) && o.getClass().isArray() && !bitvectorp(o) && !stringp(o); }
     static boolean stringp(Object o)     { return sstringp(o) || o instanceof CharSequence; }
     static boolean sstringp(Object o)    { return o instanceof String || o instanceof char[]; }
     static boolean bitvectorp(Object o)  { return sbitvectorp(o) || o instanceof Bitvector; }
@@ -4325,7 +4327,7 @@ public class LambdaJ {
     final  boolean functionp(Object o)   { return functionp0(o) || have(Features.HAVE_OLDLAMBDA) && consp(o) && car(o) == sLambda; }
     static boolean functionp0(Object o)  { return o instanceof Primitive || o instanceof Closure || o instanceof MurmelJavaProgram.CompilerPrimitive || o instanceof MurmelFunction || o instanceof OpenCodedPrimitive; }
 
-    static boolean listp(Object o)       { return o == null || consp(o); }
+    static boolean listp(Object o)       { return isNil(o) || consp(o); }
 
 
     // these *should* have no usages as these checks would be superfluous.
@@ -4449,7 +4451,7 @@ public class LambdaJ {
     }
 
     static int listLength(ConsCell list) {
-        if (list == null) return 0;
+        if (isNil(list)) return 0;
         int n = 0;
         for (Object ignored: list) n++;
         return n;
@@ -4458,7 +4460,7 @@ public class LambdaJ {
     /** return the cons whose car is eq to {@code atom}.
      *  Note: searches using object identity (eq), will work for interned symbols, won't reliably work for e.g. numbers */
     static ConsCell assq(Object atom, Object lst) {
-        if (lst == null) return null;
+        if (isNil(lst)) return null;
 
         for (Object entry: requireList(ASSQ, lst)) {
             if (entry != null && atom == car(entry)) {
@@ -9873,7 +9875,7 @@ public class LambdaJ {
         /** return {@code form} as a Java expression */
         private ConsCell containingForm;
         private @NotNull String javasym(Object form, ConsCell env) {
-            if (form == null || form == sNil) return "(Object)null";
+            if (isNil(form)) return "(Object)null";
             final ConsCell symentry = fastassq(form, env);
             if (symentry == null) {
                 if (passTwo) errorMalformedFmt("compilation unit", "undefined symbol %s", form);
@@ -10137,7 +10139,7 @@ public class LambdaJ {
                 containingForm = ccForm;
                 final Object op = car(ccForm);
 
-                assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
+                assert !isNil(op) : "not a function: nil - should have been caught by expandForm()";
 
                 if (symbolp(op)) {
                     switch (((LambdaJSymbol)op).wellknownSymbol) {
@@ -10592,7 +10594,7 @@ public class LambdaJ {
             final ConsCell ccForm = (ConsCell)form;
             containingForm = ccForm;
             final Object op = car(ccForm);      // first element of the form should be a symbol or a form that computes a symbol
-            assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
+            assert !isNil(op) : "not a function: nil - should have been caught by expandForm()";
             final ConsCell ccArguments = listOrMalformed("emitStmt", cdr(ccForm));   // list with remaining atoms/ forms
 
             final LambdaJSymbol symop;
@@ -10902,7 +10904,7 @@ public class LambdaJ {
                 final ConsCell ccForm = (ConsCell)form;
                 containingForm = ccForm;
                 final Object op = car(ccForm);      // first element of the of the form should be a symbol or a form that computes a symbol
-                assert op != null && op != sNil : "not a function: nil - should have been caught by expandForm()";
+                assert !isNil(op) : "not a function: nil - should have been caught by expandForm()";
                 final ConsCell ccArguments = listOrMalformed("emitForm", cdr(ccForm));   // list with remaining atoms/ forms
 
                 if (symbolp(op)) {
@@ -11168,10 +11170,10 @@ public class LambdaJ {
             if (setRc) { pfx = "setRc(";  sfx = ")"; }
             else       { pfx =            sfx = "";  }
 
-            if (form == null || form == sNil) { sb.append(pfx).append(jFalse).append(sfx); return; }
-            if (form == sT)                   { sb.append(pfx).append(jTrue).append(sfx); return; }
-            if (symbolp(form))                { sb.append(pfx);  emitForm(sb, form, env, topEnv, rsfx, false); sb.append(sfx).append(isNotNull); return; }
-            if (atom(form))                   { sb.append(pfx).append(jTrue).append(sfx); return; } // must be an atom other than nil, t or a symbol -> true. Todo note wg. constant condition?
+            if (isNil(form))   { sb.append(pfx).append(jFalse).append(sfx); return; }
+            if (form == sT)    { sb.append(pfx).append(jTrue).append(sfx); return; }
+            if (symbolp(form)) { sb.append(pfx);  emitForm(sb, form, env, topEnv, rsfx, false); sb.append(sfx).append(isNotNull); return; }
+            if (atom(form))    { sb.append(pfx).append(jTrue).append(sfx); return; } // must be an atom other than nil, t or a symbol -> true. Todo note wg. constant condition?
 
             final ConsCell ccForm = (ConsCell)form;
             final ConsCell ccArgs = (ConsCell)cdr(ccForm);
@@ -11231,7 +11233,7 @@ public class LambdaJ {
 
         /** write atoms that are not symbols (and "nil" is acceptable, too) */
         private void emitAtom(WrappingWriter sb, Object form) {
-            if (form == null || form == sNil) sb.append("(Object)null");
+            if (isNil(form)) sb.append("(Object)null");
             else if (form instanceof Integer) sb.append(Integer.toString((Integer) form));
             else if (form instanceof Long) sb.append(Long.toString((Long) form)).append('L');
             else if (form instanceof Double) sb.append(Double.toString((Double) form));
@@ -11796,7 +11798,7 @@ public class LambdaJ {
                 final Object applyOp = car(args);
                 final Object applyArg = cadr(args);
 
-                if (applyOp == null || applyOp == sNil) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": " + NIL);
+                if (isNil(applyOp)) throw new UndefinedFunction("function application: not a primitive or " + LAMBDA + ": " + NIL);
                 if (applyOp == sList) { sb.append("requireList("); emitForm(sb, applyArg, env, topEnv, rsfx, false); sb.append(')'); return true; }
 
                 if (applyOp != sApply) { // apply needs special treatment for TCO
@@ -12306,7 +12308,7 @@ public class LambdaJ {
          *  <p>If pool is true then above Java expression is added as an entry to the constant pool
          *  and a reference to the new or already existing identical constant pool entry is emitted. */
         private void emitQuotedForm(WrappingWriter sb, Object form, boolean pool) {
-            if (form == null || form == sNil) sb.append("(Object)null");
+            if (isNil(form)) sb.append("(Object)null");
             else if (form == sT) sb.append("_t");
 
             else if (symbolp(form)) {
