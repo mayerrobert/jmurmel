@@ -3290,12 +3290,30 @@
 ;;;
 ;;; Since: 1.4.2
 ;;;
-;;; Return a fresh immutable `simple-string`
-;;; whose value is the substring [start end-excl[.
+;;; Return a fresh mutable `simple-string`
+;;; whose value is the substring `[start end-excl[` of `str`.
+;(defun string-subseq (str start . end-excl)
+;  (if end-excl
+;      ((jmethod "String" "substring" "int" "int") str start (car end-excl))
+;      ((jmethod "String" "substring" "int") str start)))
+
 (defun string-subseq (str start . end-excl)
-  (if end-excl
-      ((jmethod "String" "substring" "int" "int") str start (car end-excl))
-      ((jmethod "String" "substring" "int") str start)))
+  (let ((len (slength str)))
+    (when (or* (< start 0) (>= start len))
+      (jerror "string-subseq: start must be >= 0 and < string length"))
+    (setq end-excl (if end-excl
+                       (car end-excl)
+                       len))
+    (when (or* (< end-excl start) (> end-excl len))
+      (jerror "string-subseq: end-excl must be >= start and < string length"))
+
+    (if (= end-excl start)
+        ""
+
+        (let ((result (make-array (- end-excl start) 'character)))
+          (dotimes (i (- end-excl start))
+            (sset result i (sref str (+ start i))))
+          result))))
 
 
 ;;; = Function: string-replace

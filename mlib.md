@@ -1280,8 +1280,8 @@ Example usage:
 
 Since: 1.4.2
 
-Return a fresh immutable `simple-string`
-whose value is the substring [start end-excl[.
+Return a fresh mutable `simple-string`
+whose value is the substring `[start end-excl[` of `str`.
 
 ### Function: string-replace
     (string-replace str srch replacement) -> result
