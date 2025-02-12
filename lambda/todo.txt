@@ -1,7 +1,12 @@
+cheerpj 3.1 https://labs.leaningtech.com/blog/cheerpj-3.1
+
 mlib hat subst/ nsubst, das ist für lists
 -> CL hat noch subsitute/ nsubstitute, das ist für sequence
 -> "replace sequence-1 sequence-2 &key start1 end1 start2 end2 => sequence-1"
    "fill sequence item &key start end => sequence" gibts auch noch
+
+elisp hat mapconcat, serapeum auch
+
 
 
 emitLabels könnte bei labels forms die nur atoms und defmacro enthalten die lokalen funktionen weglassen und nur den body in ein progn reingenerieren
