@@ -64,7 +64,7 @@
         <git-commit-id-plugin.version>4.9.10</git-commit-id-plugin.version>
         <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
         <spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
-        <spotbugs.version>4.9.0</spotbugs.version>
+        <spotbugs.version>4.9.1</spotbugs.version>
 
         <!-- 1.17.4 is the last version that supports Java8 -->
         <!--<pitest-maven-plugin.version>1.17.4</pitest-maven-plugin.version>-->
