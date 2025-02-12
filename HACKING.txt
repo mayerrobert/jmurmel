@@ -77,6 +77,7 @@ mvn modernizer:modernizer
     See https://github.com/gaul/modernizer-maven-plugin for more info
 
 
+Note: starting with version 1.18.0 pitest requires Java11+. Use 1.17.4 on Java8. 
 mvn test -Ppitest -pl lambda
     run mutation testing c/o https://pitest.org/, see lambda/target/pit-reports/index.html for test coverage results.
     PIT likes Java heap memory, if it goes too slow then you might consider increasing the value for -Xmx in .mvn/jvm.config
