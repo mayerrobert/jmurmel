@@ -1,4 +1,5 @@
-cheerpj 3.1 https://labs.leaningtech.com/blog/cheerpj-3.1
+https://github.com/actions/runner-images/issues/11101
+-> linux version in graalvm.yml umstellen
 
 mlib hat subst/ nsubst, das ist für lists
 -> CL hat noch subsitute/ nsubstitute, das ist für sequence
