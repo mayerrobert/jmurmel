@@ -45,7 +45,7 @@
         <jmh.version>1.37</jmh.version>
 
         <!-- maven plugins -->
-        <maven-compiler-plugin.version>3.13.0</maven-compiler-plugin.version>
+        <maven-compiler-plugin.version>3.14.0</maven-compiler-plugin.version>
         <maven-surefire.version>3.5.2</maven-surefire.version>
         <maven-release-plugin.version>3.1.1</maven-release-plugin.version>
         <maven-enforcer-plugin.version>3.5.0</maven-enforcer-plugin.version>
