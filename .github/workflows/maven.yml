@@ -61,7 +61,7 @@ jobs:
           && cp samples.murmel-mlib/mlib.lisp .
 
     - name: Upload Jar, mlib, docs
-      uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: jmurmel-temurin-${{ matrix.java }}
         path: |
@@ -84,7 +84,7 @@ jobs:
 
     - name: Upload launch4j exe, mlib, docs
       if: ${{ matrix.java == '8' }}
-      uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9dce8ec1 # v4.6.1
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: jmurmel-w64-slim
         path: |
