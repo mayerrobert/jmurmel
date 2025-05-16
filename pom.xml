@@ -72,7 +72,7 @@
 
         <!-- 1.17.4 is the last version that supports Java8 -->
         <!--<pitest-maven-plugin.version>1.17.4</pitest-maven-plugin.version>-->
-        <pitest-maven-plugin.version>1.18.2</pitest-maven-plugin.version>
+        <pitest-maven-plugin.version>1.19.3</pitest-maven-plugin.version>
         <pitest-testng-plugin.version>1.0.0</pitest-testng-plugin.version>
 
         <jacoco-maven-plugin.version>0.8.12</jacoco-maven-plugin.version>
