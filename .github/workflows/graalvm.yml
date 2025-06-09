@@ -14,7 +14,7 @@ on:
       - "scribbles/**"
 
 env:
-  JAVA_VERSION: 23
+  JAVA_VERSION: 24
 
 permissions:
   contents: read
