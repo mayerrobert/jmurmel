@@ -1,3 +1,5 @@
+fuzzing: https://gitlab.com/gitlab-org/security-products/analyzers/fuzzers/javafuzz
+
 https://github.com/actions/runner-images/issues/11101
 -> linux version in graalvm.yml umstellen
 
