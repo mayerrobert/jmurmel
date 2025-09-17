@@ -65,10 +65,8 @@
         <findbugs-maven-plugin.version>3.0.5</findbugs-maven-plugin.version>
 
         <!-- spotbugs-maven-plugin 4.8.6.6 is the last version that supports Java8. works with spotbugs.version 4.9.1 -->
-        <!--<spotbugs-maven-plugin.version>4.8.6.6</spotbugs-maven-plugin.version>
-        <spotbugs.version>4.9.3</spotbugs.version>-->
-        <spotbugs-maven-plugin.version>4.9.3.0</spotbugs-maven-plugin.version>
-        <spotbugs.version>4.9.3</spotbugs.version>
+        <spotbugs-maven-plugin.version>4.9.6.0</spotbugs-maven-plugin.version>
+        <spotbugs.version>4.9.6</spotbugs.version>
 
         <!-- 1.17.4 is the last version that supports Java8 -->
         <!--<pitest-maven-plugin.version>1.17.4</pitest-maven-plugin.version>-->
