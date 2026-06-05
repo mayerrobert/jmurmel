@@ -1,8 +1,5 @@
 fuzzing: https://gitlab.com/gitlab-org/security-products/analyzers/fuzzers/javafuzz
 
-https://github.com/actions/runner-images/issues/11101
--> linux version in graalvm.yml umstellen
-
 mlib hat subst/ nsubst, das ist für lists
 -> CL hat noch subsitute/ nsubstitute, das ist für sequence
 -> "replace sequence-1 sequence-2 &key start1 end1 start2 end2 => sequence-1"
