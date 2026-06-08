@@ -29,7 +29,7 @@ jobs:
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
-      - uses: graalvm/setup-graalvm@eec48106e0bf45f2976c2ff0c3e22395cced8243 # v1
+      - uses: graalvm/setup-graalvm@329c42c5f4c343bceb505f0b28cc8499bc2bf174 # v1
         with:
           distribution: 'graalvm'
           java-version: ${{ env.JAVA_VERSION }}
