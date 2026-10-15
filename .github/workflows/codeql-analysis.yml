@@ -88,4 +88,4 @@ jobs:
       run: mvn -V -B clean package --file pom.xml "-Djavac.target=${{ env.JAVA_VERSION }}" -DskipTests
 
     - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@4e94bd11f71e507f7f87df81788dff88d1dacbfb # v4.31.0
+      uses: github/codeql-action/analyze@24c54180a607b1449ed407dd24f251e4e9147c8d # v4.38.3
